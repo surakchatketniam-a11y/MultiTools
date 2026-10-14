@@ -1724,6 +1724,25 @@
             if (!toolMeta.usesSharedKeypad) return;
             if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
 
+            // If a price field lost focus while using the shared keypad,
+            // restore that input and insert the literal separator there.
+            if (appState.activeToolId === 'unit_price' && (e.key === ' ' || e.code === 'Space')) {
+                e.preventDefault();
+                const fieldIndex = appState.activeFieldIndex;
+                if (fieldIndex % 2 === 0 && fieldIndex < appState.unit_price.rows.length * 2) {
+                    const input = document.querySelectorAll('#toolTopPanel .unit-quick-input')[fieldIndex / 2];
+                    if (input) {
+                        input.focus();
+                        if (!/\s$/.test(input.value)) {
+                            const end = input.value.length;
+                            input.setRangeText(' ', end, end, 'end');
+                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    }
+                }
+                return;
+            }
+
             if (e.key >= '0' && e.key <= '9') {
                 e.preventDefault();
                 handleSharedKeyInput(e.key);
@@ -2027,7 +2046,7 @@
                 .filter(item => Math.abs(item.unitPrice - minUnitPrice) < 1e-7)
                 .map(item => item.index);
 
-            container.innerHTML = `<div class="text-xs text-[var(--app-muted)] px-1 pb-1">💡 เคล็ดลับ: พิมพ์ <b>ราคา เว้นวรรค จำนวน</b> ในช่องราคา เช่น <b>864 5</b> ระบบจะแยกช่องให้อัตโนมัติ</div>`;
+            container.innerHTML = `<div class="text-xs text-[var(--app-muted)] px-1 pb-1">💡 เคล็ดลับ: พิมพ์ <b>ราคา เว้นวรรค จำนวน</b> ในช่องราคา เช่น <b>864 50</b> ระบบจะแยกช่องให้อัตโนมัติ</div>`;
 
             function refreshUnitPriceResults() {
                 const liveItems = rows.map((r, index) => ({ index, id: r.id, price: parseFloat(r.price), qty: parseFloat(r.qty) }))
@@ -2038,16 +2057,22 @@
                 container.querySelectorAll('.unit-price-output').forEach((cell, index) => {
                     const item = liveItems.find(entry => entry.index === index);
                     const isBest = liveBest.includes(index) && liveItems.length >= 2;
+                    const calcRow = cell.closest('.calc-row');
+                    calcRow.classList.toggle('cheapest-row', isBest);
+                    calcRow.querySelector('.cell-label span').textContent = `${rows[index].id}${isBest ? ' ★' : ''}`;
                     cell.innerHTML = item ? `<span class="text-[1.08rem] ${isBest ? (isAirbnb ? 'text-[#ff385c] font-bold' : appState.theme === 'together' ? 'text-[var(--app-accent)] font-bold' : 'text-green-700 font-bold') : 'text-[#222222] font-semibold'}">${formatNum(item.unitPrice, 3)}</span>` : `<span class="placeholder-text">ราคาต่อหน่วย</span>`;
                 });
                 if (!liveItems.length) setStatusBanner('empty', 'กรุณาป้อนข้อมูลของคุณ');
                 else if (liveItems.length === 1) setStatusBanner('info', `ตัวเลือก <b>${liveItems[0].id}</b>: ${formatNum(liveItems[0].unitPrice, 3)} บาท/หน่วย <span class="text-xs font-normal text-[#6a6a6a] block">ป้อนแถวอื่นเพิ่มเพื่อเปรียบเทียบความคุ้มค่า</span>`);
                 else {
                     const best = liveItems.find(item => Math.abs(item.unitPrice - liveMin) < 1e-7);
+                    const bestLabels = liveItems.filter(item => Math.abs(item.unitPrice - liveMin) < 1e-7).map(item => item.id).join(', ');
                     const next = [...liveItems].sort((a, b) => a.unitPrice - b.unitPrice).find(item => item.unitPrice > liveMin + 1e-7);
                     if (next) {
                         const pct = (((next.unitPrice - best.unitPrice) / next.unitPrice) * 100).toFixed(1);
-                        setStatusBanner('success', `<span class="text-[var(--app-accent)]">★ ตัวเลือก ${best.id} คุ้มที่สุด</span> (${formatNum(best.unitPrice, 3)} / หน่วย)<span class="text-xs font-medium block text-[#3f3f3f]">ถูกกว่าตัวเลือก ${next.id} ${pct}% หรือประหยัด ${formatNum(next.unitPrice - best.unitPrice, 3)} บาท/หน่วย</span>`);
+                        setStatusBanner('success', `<span class="text-[var(--app-accent)]">★ ตัวเลือก ${bestLabels} คุ้มที่สุด</span> (${formatNum(best.unitPrice, 3)} / หน่วย)<span class="text-xs font-medium block text-[#3f3f3f]">ถูกกว่าตัวเลือก ${next.id} ${pct}% หรือประหยัด ${formatNum(next.unitPrice - best.unitPrice, 3)} บาท/หน่วย</span>`);
+                    } else {
+                        setStatusBanner('success', `⚖️ ตัวเลือก <b>${bestLabels}</b> ราคาต่อหน่วยเท่ากัน (${formatNum(liveMin, 3)} / หน่วย)`);
                     }
                 }
             }
@@ -2075,32 +2100,55 @@
                 // Cell 2: Price
                 const priceCell = document.createElement('div');
                 priceCell.className = `cell cell-input ${isPriceActive ? 'active-cell' : ''}`;
-                priceCell.innerHTML = `<input class="unit-quick-input" type="text" inputmode="decimal" autocomplete="off" aria-label="ราคา ${row.id}" placeholder="ราคา" value="${row.price}">`;
+                priceCell.innerHTML = `<input class="unit-quick-input" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="ราคา ${row.id}" placeholder="ราคา" value="${row.price}">`;
                 const quickInput = priceCell.querySelector('.unit-quick-input');
+                let quickPairActive = false;
                 quickInput.addEventListener('click', (event) => event.stopPropagation());
                 quickInput.addEventListener('focus', () => { appState.activeFieldIndex = priceFieldIdx; });
                 quickInput.addEventListener('input', (event) => {
-                    const raw = event.target.value.trim();
-                    const parts = raw.split(/\s+/).filter(Boolean);
-                    if (parts.length >= 2 && parts.every(part => /^\d*\.?\d+$/.test(part))) {
-                        row.price = parts[0];
-                        row.qty = parts[1];
-                        event.target.value = parts[0];
-                        renderActiveTool();
+                    const raw = event.target.value;
+                    const pair = raw.match(/^(\d*\.?\d+)\s+(\d*\.?\d*)$/);
+                    if (pair) {
+                        quickPairActive = true;
+                        row.price = pair[1];
+                        row.qty = pair[2];
+                        qtyCell.innerHTML = row.qty
+                            ? `<span class="value-text">${formatInputDisplay(row.qty)}</span>`
+                            : '<span class="placeholder-text">จำนวน</span>';
+                        refreshUnitPriceResults();
                     } else if (/^\d*\.?\d*$/.test(raw)) {
                         row.price = raw;
+                        if (quickPairActive) {
+                            row.qty = '';
+                            qtyCell.innerHTML = '<span class="placeholder-text">จำนวน</span>';
+                            quickPairActive = false;
+                        }
                         refreshUnitPriceResults();
                     }
                 });
-                quickInput.addEventListener('blur', () => {
-                    const raw = quickInput.value.trim();
-                    const parts = raw.split(/\s+/).filter(Boolean);
-                    if (parts.length >= 2 && parts.every(part => /^\d*\.?\d+$/.test(part))) {
-                        row.price = parts[0];
-                        row.qty = parts[1];
+                const finishQuickInput = () => {
+                    const pair = quickInput.value.trim().match(/^(\d*\.?\d+)\s+(\d*\.?\d+)$/);
+                    if (pair) {
+                        row.price = pair[1];
+                        row.qty = pair[2];
                     }
-                    renderActiveTool();
+                    quickInput.value = row.price;
+                    qtyCell.innerHTML = row.qty
+                        ? `<span class="value-text">${formatInputDisplay(row.qty)}</span>`
+                        : '<span class="placeholder-text">จำนวน</span>';
+                    quickPairActive = false;
+                    refreshUnitPriceResults();
+                };
+                quickInput.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        finishQuickInput();
+                        quickInput.blur();
+                    } else if (event.key === 'Tab') {
+                        finishQuickInput();
+                    }
                 });
+                quickInput.addEventListener('blur', finishQuickInput);
                 priceCell.addEventListener('click', () => {
                     appState.activeFieldIndex = priceFieldIdx;
                     quickInput.focus();
