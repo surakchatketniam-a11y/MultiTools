@@ -1,0 +1,11 @@
+{
+  "name": "เครื่องคิดเลขครบวงจร",
+  "short_name": "เครื่องคิดเลข",
+  "lang": "th",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f7f7f7",
+  "theme_color": "#ff385c",
+  "description": "เครื่องมือคำนวณสำหรับชีวิตประจำวัน ภาษี เงินกู้ และต้นทุนต่อพื้นที่",
+  "icons": []
+}
