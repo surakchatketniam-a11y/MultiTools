@@ -14,10 +14,11 @@ function source(name) {
 }
 
 function context(extra = {}) {
-    const ctx = vm.createContext({ ...extra });
+    const ctx = vm.createContext({ persistAppState() {}, ...extra });
     for (const name of ['normalizeThaiDigits', 'parseNumericInput', 'numberOrDefault', 'integerOrDefault',
         'formatLocalDate', 'addCalendarDays', 'parseDateInputThai', 'parseFrankfurterRates',
-        'evaluateArithmeticExpression', 'escapeHTML', 'formatInputDisplay', 'formatNum', 'formatMoney']) {
+        'evaluateArithmeticExpression', 'escapeHTML', 'formatInputDisplay', 'formatNum', 'formatMoney',
+        'validateCalendarDate', 'countWorkingDays', 'offsetWorkingDays', 'normalizeWorkDays', 'formatDateInTimezone']) {
         vm.runInContext(source(name), ctx);
     }
     return ctx;
@@ -163,4 +164,70 @@ test('currency loader commits only valid snapshots and preserves rates/date afte
     await ctx.loadFrankfurterRates(true);
     assert.equal(currency.ratesInTHB.USD, 40);
     assert.equal(currency.lastUpdated, updated);
+});
+
+test('working days support reverse ranges, holidays and signed offsets', () => {
+    const ctx = context();
+    const friday = new Date('2026-10-16T00:00:00'), monday = new Date('2026-10-19T00:00:00');
+    const weekday = date => date.getDay() !== 0 && date.getDay() !== 6;
+    assert.equal(ctx.countWorkingDays(friday, monday, weekday), 2);
+    assert.equal(ctx.countWorkingDays(monday, friday, weekday), 2);
+    assert.equal(ctx.formatLocalDate(ctx.offsetWorkingDays(friday, 1, weekday)), '2026-10-19');
+    assert.equal(ctx.formatLocalDate(ctx.offsetWorkingDays(monday, -1, weekday)), '2026-10-16');
+    const withHoliday = date => weekday(date) && ctx.formatLocalDate(date) !== '2026-10-19';
+    assert.equal(ctx.formatLocalDate(ctx.offsetWorkingDays(friday, 1, withHoliday)), '2026-10-20');
+    assert.equal(ctx.formatLocalDate(ctx.offsetWorkingDays(friday, 0, () => false)), '2026-10-16');
+});
+
+test('working day search terminates with invalid offsets or no matching days', () => {
+    const ctx = context(), start = new Date('2026-10-16T00:00:00');
+    assert.throws(() => ctx.offsetWorkingDays(start, 1, () => false, 7), /ไม่พบวันทำการ/);
+    for (const amount of [NaN, Infinity, .5, 1000000]) assert.throws(() => ctx.offsetWorkingDays(start, amount, () => true));
+    assert.throws(() => ctx.offsetWorkingDays(new Date(NaN), 1, () => true));
+    assert.throws(() => ctx.countWorkingDays(start, new Date('2027-01-01T00:00:00'), () => true, 7));
+});
+
+test('restored empty/invalid weekdays recover before a workday renderer searches', () => {
+    const ctx = context({ appState: { date_work: { startDate: '2026-10-16', endDate: '2026-10-19', mode: 'add',
+        offset: 1, workDays: [], includeThaiHolidays: false, customHolidays: '', calendarEra: 'CE' } } });
+    assert.deepEqual(Array.from(ctx.normalizeWorkDays(['1', 8, -1])), [1, 2, 3, 4, 5]);
+    assert.deepEqual(Array.from(ctx.normalizeWorkDays([0, 0, 2])), [0, 2]);
+    const result = calculation(ctx, 'renderWorkdayTool', null, '({target:formatLocalDate(target),recoveredDays,calculationError})');
+    assert.equal(result.target, '2026-10-19');
+    assert.equal(result.recoveredDays, true);
+    assert.equal(result.calculationError, '');
+    ctx.appState.date_work.offset = '1.5';
+    assert.match(calculation(ctx, 'renderWorkdayTool', null, 'calculationError'), /จำนวนเต็ม/);
+});
+
+test('meeting reference dates use the selected timezone across midnight', () => {
+    const ctx = context();
+    const date = new Date('2026-10-14T18:00:00Z');
+    assert.equal(ctx.formatDateInTimezone(date, 'Asia/Bangkok'), '2026-10-15');
+    assert.equal(ctx.formatDateInTimezone(date, 'America/New_York'), '2026-10-14');
+});
+
+test('undo restores the cleared tool and a second empty clear preserves the snapshot', () => {
+    const undoButton = { disabled: true };
+    let renders = 0;
+    const ctx = context({ appState: { activeToolId: 'unit_price', activeFieldIndex: 1,
+        unit_price: { rows: [{ id: 'A', price: '864', qty: '50' }, { id: 'B', price: '900', qty: '50' }] },
+        currency: { amount: '100' } }, document: { getElementById: () => undoButton },
+        renderSidebarMenu() {}, renderActiveTool() { renders++; } });
+    vm.runInContext('let lastClearSnapshot = null;\n' + ['captureToolSnapshot', 'rememberToolClear', 'undoLastClear'].map(source).join('\n'), ctx);
+    const snapshot = ctx.captureToolSnapshot();
+    ctx.appState.unit_price.rows[0].qty = '';
+    ctx.rememberToolClear(snapshot);
+    assert.equal(undoButton.disabled, false);
+    ctx.rememberToolClear(ctx.captureToolSnapshot()); // clearing an empty field is a no-op
+    ctx.appState.activeToolId = 'currency';
+    ctx.undoLastClear();
+    assert.equal(ctx.appState.unit_price.rows[0].qty, '50');
+    assert.equal(ctx.appState.unit_price.rows[1].price, '900');
+    assert.equal(ctx.appState.activeToolId, 'unit_price');
+    assert.equal(ctx.appState.activeFieldIndex, 1);
+    assert.equal(ctx.appState.currency.amount, '100');
+    assert.equal(undoButton.disabled, true);
+    ctx.undoLastClear();
+    assert.equal(renders, 1);
 });
