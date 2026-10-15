@@ -1506,7 +1506,11 @@
                     ...(appState.savings.mode === 'emergency' ? ['monthlyExpenses', 'emergencyMonths'] : [])],
                 salary: ['income', 'needsPct', 'wantsPct', 'savingsPct', 'emergencyPct', 'debtPct']
             };
-            const invalid = value => String(value ?? '').trim() !== '' && !Number.isFinite(parseNumericInput(value));
+            const invalid = value => {
+                const text = normalizeThaiDigits(String(value ?? '')).trim().replace(/,/g, '');
+                if (text === '' || text === '.' || text === '-' || text === '-.') return false;
+                return !Number.isFinite(parseNumericInput(text));
+            };
             if (toolId === 'unit_price') return appState.unit_price.rows.some(row => invalid(row.price) || invalid(row.qty));
             const integers = { tip: ['people'], loan: ['months', ...(appState.loan.rateType === 'step' ? ['promoMonths'] : [])] };
             if ((integers[toolId] || []).some(key => !Number.isFinite(integerOrDefault(appState[toolId][key])))) return true;
@@ -1530,16 +1534,18 @@
 
         function formatInputDisplay(valStr) {
             if (valStr === undefined || valStr === null || valStr === '') return '';
-            if (!Number.isFinite(parseNumericInput(valStr))) return escapeHTML(String(valStr));
-            const str = normalizeThaiDigits(String(valStr)).trim().replace(/,/g, '');
-            const parts = str.split('.');
+            const clean = normalizeThaiDigits(String(valStr)).trim().replace(/,/g, '');
+            if (clean === '-' || clean === '.' || clean === '-.') return clean;
+            if (!Number.isFinite(parseNumericInput(clean))) return escapeHTML(String(valStr));
+            const parts = clean.split('.');
             const intPart = parts[0];
             const decPart = parts.length > 1 ? '.' + parts[1] : '';
             if (intPart === '' && decPart !== '') return '0' + decPart;
             if (intPart === '-' && decPart !== '') return '-0' + decPart;
             const sign = intPart.startsWith('-') ? '-' : '';
-            const digits = intPart.replace(/^-/, '');
-            const formattedInt = digits ? Number(digits).toLocaleString('en-US') : '0';
+            let digits = intPart.replace(/^-/, '');
+            if (digits.length > 1) digits = digits.replace(/^0+(?=\d)/, '');
+            const formattedInt = digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '0';
             return sign + formattedInt + decPart;
         }
 
@@ -1549,7 +1555,9 @@
                 const clean = token.replace(/,/g, '');
                 const parts = clean.split('.');
                 if (!/^\d+$/.test(parts[0])) return token;
-                const formatted = Number(parts[0]).toLocaleString('en-US');
+                let digits = parts[0];
+                if (digits.length > 1) digits = digits.replace(/^0+(?=\d)/, '');
+                const formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
                 return parts.length > 1 ? formatted + '.' + parts[1] : formatted;
             });
         }
@@ -2100,7 +2108,9 @@
          **************************************************************/
         function createKeypadFieldHTML(fieldIndex, label, value, unitSuffix = '', placeholder = '0') {
             const isActive = appState.activeFieldIndex === fieldIndex;
-            const invalid = String(value ?? '').trim() !== '' && !Number.isFinite(parseNumericInput(value));
+            const clean = normalizeThaiDigits(String(value ?? '')).trim().replace(/,/g, '');
+            const isIntermediate = clean === '' || clean === '.' || clean === '-' || clean === '-.';
+            const invalid = !isIntermediate && !Number.isFinite(parseNumericInput(clean));
             const displayVal = formatInputDisplay(value);
             return `<div><div class="clev-field-box ${isActive ? 'active-field' : ''}" data-field-index="${fieldIndex}">
                 <label for="numeric-field-${fieldIndex}" class="text-sm font-medium text-[#222222]">${label}</label>
@@ -2127,7 +2137,8 @@
                 const binding = getToolFieldBindings(appState.activeToolId)[index];
                 input.addEventListener('focus', () => setActiveNumericField(index));
                 input.addEventListener('input', event => {
-                    binding.set(input.value);
+                    const formatted = formatInputDisplay(input.value);
+                    if (binding) binding.set(formatted);
                     persistAppState();
                     if (!event.isComposing) renderActiveTool();
                 });
@@ -2148,8 +2159,10 @@
                     }
                 });
                 input.addEventListener('blur', () => {
-                    if (binding && Number.isFinite(parseNumericInput(input.value))) {
-                        binding.set(formatInputDisplay(input.value));
+                    if (binding) {
+                        const formatted = formatInputDisplay(input.value);
+                        binding.set(formatted);
+                        input.value = formatted;
                         persistAppState();
                     }
                 });
@@ -2272,7 +2285,7 @@
 
         function renderVatWhtTool(container) {
             const st = appState.vat_wht;
-            const amount = parseNumericInput(st.amount);
+            const amount = parseNumericInput(String(st.amount ?? '').replace(/,/g, ''));
             const vat = numberOrDefault(st.vatRate, 0);
             const wht = numberOrDefault(st.whtRate, 0);
             const base = Number.isFinite(amount) ? (st.mode === 'after' ? amount / (1 + vat / 100) : amount) : 0;
@@ -2289,12 +2302,19 @@
                 <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2" style="box-shadow:var(--app-elevation)"><div class="flex justify-between"><span>ยอดก่อน VAT</span><b>${Number.isFinite(amount) ? formatMoney(base) : '-'} บาท</b></div><div class="flex justify-between"><span>VAT ${vat}%</span><b>${Number.isFinite(amount) ? formatMoney(vatAmount) : '-'} บาท</b></div><div class="flex justify-between"><span>ยอดรวม VAT</span><b>${Number.isFinite(amount) ? formatMoney(gross) : '-'} บาท</b></div><div class="flex justify-between"><span>หัก ณ ที่จ่าย ${wht}%</span><b>${Number.isFinite(amount) ? `- ${formatMoney(whtAmount)}` : '-'} บาท</b></div><div class="mt-2 p-3 rounded-xl border border-[#16a34a] bg-[#f0fdf4] text-[#15803d] theme-result-highlight flex justify-between"><span class="font-semibold">ยอดโอนสุทธิ</span><b>${Number.isFinite(amount) ? formatMoney(net) : '-'} บาท</b></div></div>`;
             const whtInput = document.getElementById('whtAmount');
             whtInput.addEventListener('blur', () => {
-                if (Number.isFinite(parseNumericInput(whtInput.value))) {
-                    st.amount = formatInputDisplay(whtInput.value);
-                    whtInput.value = st.amount;
-                }
+                const formatted = formatInputDisplay(whtInput.value);
+                st.amount = formatted;
+                whtInput.value = formatted;
+                persistAppState();
             });
-            const rerender = () => { st.amount = whtInput.value; st.mode = document.getElementById('whtMode').value; st.vatRate = document.getElementById('whtVat').value; st.whtRate = document.getElementById('whtRate').value; renderActiveTool(); };
+            const rerender = () => {
+                st.amount = formatInputDisplay(whtInput.value);
+                st.mode = document.getElementById('whtMode').value;
+                st.vatRate = document.getElementById('whtVat').value;
+                st.whtRate = document.getElementById('whtRate').value;
+                persistAppState();
+                renderActiveTool();
+            };
             ['whtAmount','whtMode','whtVat','whtRate'].forEach(id => document.getElementById(id).addEventListener('change', rerender));
             setStatusBanner(Number.isFinite(amount) ? 'success' : 'empty', Number.isFinite(amount) ? `ยอดโอนสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(net)} บาท</span>` : 'กรุณาป้อนยอดเงินเพื่อคำนวณ VAT และหัก ณ ที่จ่าย');
         }
@@ -2532,8 +2552,8 @@
                 const isPriceActive = appState.activeFieldIndex === priceFieldIdx;
                 const isQtyActive = appState.activeFieldIndex === qtyFieldIdx;
 
-                const p = parseNumericInput(row.price);
-                const q = parseNumericInput(row.qty);
+                const p = parseNumericInput(String(row.price ?? '').replace(/,/g, ''));
+                const q = parseNumericInput(String(row.qty ?? '').replace(/,/g, ''));
                 const hasUnitPrice = !isNaN(p) && !isNaN(q) && p > 0 && q > 0;
                 const unitPriceStr = hasUnitPrice ? formatUnitPrice(p / q) : '';
 
@@ -2575,12 +2595,14 @@
                 });
                 const finishQuickInput = () => {
                     const pair = normalizeThaiDigits(quickInput.value).trim().match(/^([\d,.]+)\s+([\d,.]+)$/);
-                    if (pair && Number.isFinite(parseNumericInput(pair[1])) && Number.isFinite(parseNumericInput(pair[2]))) {
+                    if (pair && Number.isFinite(parseNumericInput(pair[1].replace(/,/g, ''))) && Number.isFinite(parseNumericInput(pair[2].replace(/,/g, '')))) {
                         row.price = pair[1];
                         row.qty = pair[2];
                     }
-                    if (Number.isFinite(parseNumericInput(row.price))) row.price = formatInputDisplay(row.price);
-                    if (Number.isFinite(parseNumericInput(row.qty))) row.qty = formatInputDisplay(row.qty);
+                    const cleanP = String(row.price ?? '').replace(/,/g, '');
+                    const cleanQ = String(row.qty ?? '').replace(/,/g, '');
+                    if (Number.isFinite(parseNumericInput(cleanP))) row.price = formatInputDisplay(row.price);
+                    if (Number.isFinite(parseNumericInput(cleanQ))) row.qty = formatInputDisplay(row.qty);
                     quickInput.value = row.price;
                     qtyInput.value = row.qty;
                     quickPairActive = false;
@@ -2610,7 +2632,8 @@
                 qtyInput.addEventListener('focus', () => setActiveNumericField(qtyFieldIdx));
                 qtyInput.addEventListener('input', () => { row.qty = qtyInput.value; refreshUnitPriceResults(); });
                 qtyInput.addEventListener('blur', () => {
-                    if (Number.isFinite(parseNumericInput(row.qty))) {
+                    const cleanQ = String(row.qty ?? '').replace(/,/g, '');
+                    if (Number.isFinite(parseNumericInput(cleanQ))) {
                         row.qty = formatInputDisplay(row.qty);
                         qtyInput.value = row.qty;
                         refreshUnitPriceResults();
@@ -3811,7 +3834,11 @@
                 else modeFields.innerHTML = '';
             };
             renderModeFields();
-            const saveField = (id, key) => container.querySelector(`#${id}`)?.addEventListener('change', event => { st[key] = event.target.value; renderActiveTool(); });
+            const saveField = (id, key) => container.querySelector(`#${id}`)?.addEventListener('change', event => {
+                const val = event.target.value;
+                st[key] = ['goalTarget', 'monthlyExpenses', 'retirementMonthly'].includes(key) ? formatInputDisplay(val) : val;
+                renderActiveTool();
+            });
             container.querySelector('#savingsMode').addEventListener('change', event => { st.mode = event.target.value; renderActiveTool(); });
             saveField('savingsAnnualIncrease', 'annualIncrease');
             saveField('savingsInflation', 'inflationRate');
@@ -4292,8 +4319,20 @@
         document.getElementById('footerInstallBtn').addEventListener('click', triggerInstallFlow);
         document.getElementById('modalDirectInstallBtn').addEventListener('click', triggerInstallFlow);
 
+        function sanitizeSavedNumericValues(obj) {
+            if (!obj || typeof obj !== 'object') return;
+            for (const k of Object.keys(obj)) {
+                if (typeof obj[k] === 'string' && /^\d+,\d+/.test(obj[k])) {
+                    obj[k] = formatInputDisplay(obj[k]);
+                } else if (typeof obj[k] === 'object' && obj[k] !== null) {
+                    sanitizeSavedNumericValues(obj[k]);
+                }
+            }
+        }
+
         // Initialize Application
         window.addEventListener('DOMContentLoaded', () => {
+            sanitizeSavedNumericValues(appState);
             applyTheme(appState.theme);
             renderSidebarMenu();
             setupPWA();

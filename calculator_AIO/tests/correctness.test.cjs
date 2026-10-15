@@ -52,6 +52,9 @@ test('numbers: grouping, Thai digits, decimals, signs and invalid/empty input', 
     assert.equal(ctx.formatInputDisplay('1500.5'), '1,500.5');
     assert.equal(ctx.formatInputDisplay('10000'), '10,000');
     assert.equal(ctx.formatInputDisplay('-1500'), '-1,500');
+    assert.equal(ctx.formatInputDisplay('1,00000000'), '100,000,000');
+    assert.equal(ctx.formatInputDisplay('1,0000'), '10,000');
+    assert.equal(ctx.formatInputDisplay('10,00'), '1,000');
     assert.equal(ctx.formatCalcExpr('1250×12'), '1,250×12');
     assert.equal(ctx.formatCalcExpr('1000+2500.50-300'), '1,000+2,500.50-300');
     assert.equal(ctx.formatMoney(NaN), '—');
