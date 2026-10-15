@@ -854,6 +854,45 @@
         html[data-theme="together"] .theme-result-highlight { background-color: var(--app-accent-soft) !important; border-color: var(--app-accent) !important; color: var(--app-ink) !important; }
         html[data-theme="together"] .theme-result-highlight { color: var(--app-accent) !important; }
         html[data-theme="together"] select { color: var(--app-ink); background-color: #ffffff; }
+
+        /* =========================================================
+           PRINT-TO-PDF & FORMAL RECEIPT STYLES (Phase 3.3)
+           ========================================================= */
+        @media screen {
+            #printFormalReceipt {
+                display: none !important;
+            }
+        }
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 12mm 14mm;
+            }
+            body {
+                background: #ffffff !important;
+                color: #0f172a !important;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Sarabun", "Noto Sans Thai", sans-serif !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .app-shell, #sidebarBackdrop, #sidebarDrawer, #dropdownMenu, #historyFloatingToast, #installModal {
+                display: none !important;
+            }
+            #printFormalReceipt {
+                display: block !important;
+                position: static !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                color: #0f172a !important;
+                box-sizing: border-box !important;
+            }
+            .print-keep-together {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1038,6 +1077,12 @@
                         </svg>
                         <span>ประวัติ & ชุดที่บันทึกไว้</span>
                     </button>
+                    <button id="menuPrintPDF" class="w-full px-4 py-2.5 text-left text-sm hover:bg-[#f7f7f7] flex items-center gap-2.5 font-medium">
+                        <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        <span>พิมพ์ / บันทึกเป็น PDF (Print Receipt)</span>
+                    </button>
                     <hr class="my-1 border-[#ebebeb]">
                     <button id="menuClearCurrent" class="w-full px-4 py-2.5 text-left text-sm hover:bg-[#f7f7f7] flex items-center gap-2.5">
                         <svg class="w-4 h-4 text-[#c13515] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -1075,13 +1120,21 @@
 
             <!-- Shared Status / Result Summary Pill Banner -->
             <section id="sharedStatusBanner" class="status-banner">
-                <div id="sharedStatusText" class="text-[var(--app-muted)] text-[1rem] leading-snug w-full px-7">กรุณาป้อนข้อมูลของคุณ</div>
-                <button id="toggleKeypadBtn" type="button" class="absolute right-2.5 top-1/2 -translate-y-1/2 px-2 py-1 rounded-[6px] border border-[var(--color-hairline-soft)] text-xs flex items-center gap-1 text-[var(--app-muted)] hover:text-[var(--color-ink)] active:scale-95 transition bg-white/70 dark:bg-white/10" aria-label="ย่อหรือขยายแป้นพิมพ์" title="ย่อ/ขยายแป้นพิมพ์">
-                    <svg id="toggleKeypadIcon" class="w-3.5 h-3.5 transition-transform duration-200" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                    </svg>
-                    <span id="toggleKeypadLabel">ย่อ</span>
-                </button>
+                <div id="sharedStatusText" class="text-[var(--app-muted)] text-[0.98rem] leading-snug w-full pl-3 pr-24">กรุณาป้อนข้อมูลของคุณ</div>
+                <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                    <button id="bannerPrintBtn" type="button" class="px-2 py-1 rounded-[6px] border border-[var(--color-hairline-soft)] text-xs flex items-center gap-1 text-[var(--app-muted)] hover:text-[var(--color-ink)] active:scale-95 transition bg-white/70 dark:bg-white/10" aria-label="พิมพ์หรือบันทึกเป็น PDF" title="พิมพ์หรือบันทึกผลลัพธ์เป็นเอกสาร PDF">
+                        <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        <span class="hidden sm:inline font-medium">พิมพ์/PDF</span>
+                    </button>
+                    <button id="toggleKeypadBtn" type="button" class="px-2 py-1 rounded-[6px] border border-[var(--color-hairline-soft)] text-xs flex items-center gap-1 text-[var(--app-muted)] hover:text-[var(--color-ink)] active:scale-95 transition bg-white/70 dark:bg-white/10" aria-label="ย่อหรือขยายแป้นพิมพ์" title="ย่อ/ขยายแป้นพิมพ์">
+                        <svg id="toggleKeypadIcon" class="w-3.5 h-3.5 transition-transform duration-200" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                        <span id="toggleKeypadLabel">ย่อ</span>
+                    </button>
+                </div>
             </section>
 
             <!-- Shared Custom 4x4 On-Screen Keypad -->
@@ -1190,6 +1243,9 @@
         </div>
 
     </div>
+
+    <!-- Dedicated Print/PDF Receipt Container (Rendered exclusively in @media print) -->
+    <div id="printFormalReceipt" class="hidden"></div>
 
     <script>
         const UNIT_DEFINITIONS = {
@@ -2032,6 +2088,449 @@
                     btn.classList.remove('!bg-emerald-100', '!text-emerald-800', '!border-emerald-400');
                 }
             }, 1800);
+        }
+
+        /* -----------------------------------------------------------
+         * PRINT-TO-PDF & FORMAL SUMMARY RECEIPT (Phase 3.3)
+         * ----------------------------------------------------------- */
+        function formatThaiFormalDate(date) {
+            const d = (date instanceof Date) ? date : new Date(date || Date.now());
+            if (isNaN(d.getTime())) return '';
+            const day = d.getDate();
+            const thaiMonths = [
+                'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+            ];
+            const month = thaiMonths[d.getMonth()];
+            const yearThai = d.getFullYear() + 543;
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            return `${day} ${month} พ.ศ. ${yearThai} เวลา ${hours}:${minutes} น.`;
+        }
+
+        function generateFormalPrintHTML(toolId, stateObj) {
+            const state = stateObj || (typeof appState !== 'undefined' ? appState : {});
+            const curToolId = toolId || state.activeToolId || 'loan';
+            const toolMeta = (typeof TOOLS_CATALOG !== 'undefined' ? TOOLS_CATALOG.find(t => t.id === curToolId) : null) || { menuTitle: curToolId, headerTitle: curToolId };
+            const now = new Date();
+            const dateStr = formatThaiFormalDate(now);
+            const refCode = 'REF-' + now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0') + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+
+            let docTitle = `เอกสารสรุปผลการคำนวณ: ${toolMeta.menuTitle || toolMeta.headerTitle}`;
+            let docSubtitle = 'Official Calculation Summary & Analysis Report';
+            let paramsRows = [];
+            let resultCards = [];
+            let breakdownHTML = '';
+
+            if (curToolId === 'loan') {
+                docTitle = 'เอกสารสรุปผลการคำนวณสินเชื่อและตารางผ่อนชำระ';
+                docSubtitle = 'Loan Amortization & Repayment Schedule Report';
+                const st = state.loan || {};
+                const P = numberOrDefault(st.principal, 0);
+                const annualRate = numberOrDefault(st.interestRate, 0);
+                const n = integerOrDefault(st.months, 0);
+                const extra = numberOrDefault(st.extra, 0);
+                const rateType = st.rateType || 'fixed';
+                const rateAfter = numberOrDefault(st.rateAfter, annualRate);
+                const promoMonths = integerOrDefault(st.promoMonths, 0);
+                const calcMethod = st.calcMethod || 'reducing';
+
+                paramsRows = [
+                    ['วงเงินกู้ (Principal)', `${formatMoney(P)} บาท`],
+                    ['อัตราดอกเบี้ยเริ่มต้น', `${annualRate}% ต่อปี`],
+                    ['รูปแบบอัตราดอกเบี้ย', rateType === 'step' ? `ขั้นบันได (${promoMonths} เดือนแรก จากนั้น ${rateAfter}%)` : 'อัตราคงที่ตลอดสัญญา'],
+                    ['ระยะเวลาผ่อนชำระ', `${n} เดือน (${(n / 12).toFixed(1)} ปี)`],
+                    ['วิธีการคำนวณดอกเบี้ย', calcMethod === 'flat' ? 'เงินกู้คงที่ (Flat Rate)' : 'ลดต้นลดดอก (Effective Rate)'],
+                    ['ยอดโปะเงินต้นเพิ่ม', extra > 0 ? `${formatMoney(extra)} บาท/เดือน` : 'ไม่มี (ผ่อนตามเกณฑ์ปกติ)']
+                ];
+
+                const schedule = generateLoanSchedule(st);
+                const baseSchedule = generateLoanSchedule({ ...st, extra: 0 });
+                const normalTotalPaid = baseSchedule.reduce((acc, row) => acc + row.payment, 0);
+                const normalTotalInterest = baseSchedule.reduce((acc, row) => acc + row.interest, 0);
+                const actualTotalPaid = schedule.reduce((acc, row) => acc + row.payment, 0);
+                const actualTotalInterest = schedule.reduce((acc, row) => acc + row.interest, 0);
+                const interestSaved = Math.max(0, normalTotalInterest - actualTotalInterest);
+                const monthsSaved = Math.max(0, baseSchedule.length - schedule.length);
+                const monthlyPay = schedule[0]?.payment || (baseSchedule[0]?.payment || 0);
+
+                resultCards = [
+                    { label: 'ยอดผ่อนชำระต่อเดือน', value: `${formatMoney(monthlyPay)} บาท`, highlight: true },
+                    { label: 'ยอดผ่อนชำระรวมตลอดสัญญา', value: `${formatMoney(actualTotalPaid)} บาท` },
+                    { label: 'ดอกเบี้ยจ่ายรวมทั้งหมด', value: `${formatMoney(actualTotalInterest)} บาท` }
+                ];
+                if (extra > 0) {
+                    resultCards.push({ label: 'ประหยัดดอกเบี้ยได้จากการโปะ', value: `${formatMoney(interestSaved)} บาท`, highlight: true });
+                    resultCards.push({ label: 'ระยะเวลาผ่อนหมดเร็วขึ้น', value: `${monthsSaved} เดือน (ประมาณ ${(monthsSaved / 12).toFixed(1)} ปี)` });
+                }
+
+                if (schedule.length > 0) {
+                    const yearly = aggregateLoanScheduleByYear(schedule);
+                    let tableRowsHTML = yearly.map(yr => `
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px; text-align: center;">ปีที่ ${yr.year}</td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(yr.payment)}</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #b91c1c;">${formatMoney(yr.interest)}</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #15803d;">${formatMoney(yr.principal)}</td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(yr.balance)}</td>
+                        </tr>
+                    `).join('');
+
+                    tableRowsHTML += `
+                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                            <td style="padding: 8px; text-align: center;">รวมทั้งหมด</td>
+                            <td style="padding: 8px; text-align: right;">${formatMoney(actualTotalPaid)}</td>
+                            <td style="padding: 8px; text-align: right; color: #b91c1c;">${formatMoney(actualTotalInterest)}</td>
+                            <td style="padding: 8px; text-align: right; color: #15803d;">${formatMoney(P)}</td>
+                            <td style="padding: 8px; text-align: right;">0.00</td>
+                        </tr>
+                    `;
+
+                    breakdownHTML = `
+                        <div style="margin-top: 20px;">
+                            <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                                ตารางแจกแจงสรุปยอดผ่อนและลดหนี้รายปี (Yearly Amortization Schedule)
+                            </h3>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                <thead>
+                                    <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                                        <th style="padding: 8px; text-align: center;">ปี</th>
+                                        <th style="padding: 8px; text-align: right;">ยอดผ่อนทั้งปี (บาท)</th>
+                                        <th style="padding: 8px; text-align: right;">ดอกเบี้ยทั้งปี (บาท)</th>
+                                        <th style="padding: 8px; text-align: right;">เงินต้นที่ลดได้ (บาท)</th>
+                                        <th style="padding: 8px; text-align: right;">เงินต้นคงเหลือ (บาท)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tableRowsHTML}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
+            } else if (curToolId === 'savings') {
+                docTitle = 'รายงานแผนการออมเงินและดอกเบี้ยทบต้น';
+                docSubtitle = 'Savings & Compound Growth Projection Report';
+                const st = state.savings || {};
+                const init = numberOrDefault(st.initial, 0);
+                const monthly = numberOrDefault(st.monthly, 0);
+                const rate = numberOrDefault(st.interestRate, 0);
+                const retirementYears = Math.max(0, numberOrDefault(st.retirementAge, 0) - numberOrDefault(st.currentAge, 0));
+                const years = st.mode === 'retirement' ? retirementYears : numberOrDefault(st.years, 0);
+                const annualIncrease = numberOrDefault(st.annualIncrease, 0);
+                const inflationRate = numberOrDefault(st.inflationRate, 0);
+
+                let modeLabel = 'สะสมความมั่งคั่ง (Wealth Growth)';
+                if (st.mode === 'retirement') modeLabel = `แผนเกษียณอายุ (ปัจจุบัน ${st.currentAge} ปี เกษียณ ${st.retirementAge} ปี)`;
+                else if (st.mode === 'goal') modeLabel = `เป้าหมายเงินออม (เป้าหมาย: ${formatMoney(st.goalTarget)} บาท)`;
+                else if (st.mode === 'emergency') modeLabel = `เงินสำรองฉุกเฉิน (${st.emergencyMonths} เดือน)`;
+
+                paramsRows = [
+                    ['แผนการออม', modeLabel],
+                    ['เงินต้นเริ่มต้น', `${formatMoney(init)} บาท`],
+                    ['เงินออมต่อเดือน', `${formatMoney(monthly)} บาท/เดือน`],
+                    ['อัตราผลตอบแทนคาดหวัง', `${rate}% ต่อปี`],
+                    ['ระยะเวลาการออม', `${years} ปี (${Math.round(years * 12)} เดือน)`],
+                    ['อัตราเพิ่มเงินออมต่อปี', `${annualIncrease}% ต่อปี`],
+                    ['อัตราเงินเฟ้อที่คาดการณ์', `${inflationRate}% ต่อปี`]
+                ];
+
+                const scheduleData = generateSavingsSchedule(st);
+                const totalBalance = scheduleData.totalBalance || 0;
+                const totalPrincipal = scheduleData.totalPrincipal || 0;
+                const interestEarned = scheduleData.interestEarned || 0;
+                const realValue = totalBalance / Math.pow(1 + inflationRate / 100, years || 1);
+
+                resultCards = [
+                    { label: 'มูลค่าเงินออมรวมในอนาคต', value: `${formatMoney(totalBalance)} บาท`, highlight: true },
+                    { label: 'เงินต้นสะสมที่ฝากทั้งหมด', value: `${formatMoney(totalPrincipal)} บาท` },
+                    { label: 'ดอกเบี้ย / ผลตอบแทนสะสม', value: `+${formatMoney(interestEarned)} บาท`, highlight: true },
+                    { label: 'มูลค่าที่แท้จริงหลังหักเงินเฟ้อ', value: `${formatMoney(realValue)} บาท` }
+                ];
+
+                if (scheduleData.yearlyRows && scheduleData.yearlyRows.length > 0) {
+                    let tableRowsHTML = scheduleData.yearlyRows.map(yr => `
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px; text-align: center;">ปีที่ ${yr.year}</td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(yr.depositThisYear)}</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #15803d;">+${formatMoney(yr.interestThisYear)}</td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(yr.principal)}</td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(yr.balance)}</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #475569;">${formatMoney(yr.realValue)}</td>
+                        </tr>
+                    `).join('');
+
+                    tableRowsHTML += `
+                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                            <td style="padding: 8px; text-align: center;">รวมสะสม</td>
+                            <td style="padding: 8px; text-align: right;">${formatMoney(totalPrincipal - init)}</td>
+                            <td style="padding: 8px; text-align: right; color: #15803d;">+${formatMoney(interestEarned)}</td>
+                            <td style="padding: 8px; text-align: right;">${formatMoney(totalPrincipal)}</td>
+                            <td style="padding: 8px; text-align: right;">${formatMoney(totalBalance)}</td>
+                            <td style="padding: 8px; text-align: right; color: #475569;">${formatMoney(realValue)}</td>
+                        </tr>
+                    `;
+
+                    breakdownHTML = `
+                        <div style="margin-top: 20px;">
+                            <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                                ตารางการเติบโตของเงินออมรายปี (Yearly Growth Breakdown)
+                            </h3>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                <thead>
+                                    <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                                        <th style="padding: 8px; text-align: center;">ปี</th>
+                                        <th style="padding: 8px; text-align: right;">เงินฝากในรอบปี (บาท)</th>
+                                        <th style="padding: 8px; text-align: right;">ดอกเบี้ยในรอบปี (บาท)</th>
+                                        <th style="padding: 8px; text-align: right;">เงินต้นสะสม (บาท)</th>
+                                        <th style="padding: 8px; text-align: right;">ยอดรวมสะสม (บาท)</th>
+                                        <th style="padding: 8px; text-align: right;">มูลค่าแท้จริง (บาท)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tableRowsHTML}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
+            } else if (curToolId === 'vat_wht') {
+                docTitle = 'ใบสรุปรายการภาษีมูลค่าเพิ่มและภาษีหัก ณ ที่จ่าย';
+                docSubtitle = 'VAT & Withholding Tax Settlement Summary';
+                const st = state.vat_wht || {};
+                const amount = parseNumericInput(String(st.amount ?? '').replace(/,/g, ''));
+                const vat = numberOrDefault(st.vatRate, 0);
+                const wht = numberOrDefault(st.whtRate, 0);
+                const base = Number.isFinite(amount) ? (st.mode === 'after' ? amount / (1 + vat / 100) : amount) : 0;
+                const vatAmount = base * vat / 100;
+                const gross = base + vatAmount;
+                const whtAmount = base * wht / 100;
+                const net = gross - whtAmount;
+
+                paramsRows = [
+                    ['ยอดเงินที่ระบุ', `${Number.isFinite(amount) ? formatMoney(amount) : '-'} บาท`],
+                    ['ลักษณะยอดเงินที่ป้อน', st.mode === 'after' ? 'ยอดรวมภาษีมูลค่าเพิ่มแล้ว (Gross Incl. VAT)' : 'ยอดก่อนภาษีมูลค่าเพิ่ม (Base Excl. VAT)'],
+                    ['อัตราภาษีมูลค่าเพิ่ม (VAT)', `${vat}%`],
+                    ['อัตราภาษีเงินได้หัก ณ ที่จ่าย (WHT)', `${wht}%`]
+                ];
+
+                resultCards = [
+                    { label: 'ยอดเงินก่อน VAT (Base Amount)', value: `${formatMoney(base)} บาท` },
+                    { label: `ภาษีมูลค่าเพิ่ม (${vat}%)`, value: `${formatMoney(vatAmount)} บาท` },
+                    { label: 'ยอดรวมภาษีมูลค่าเพิ่ม (Gross Amount)', value: `${formatMoney(gross)} บาท` },
+                    { label: `ภาษีหัก ณ ที่จ่าย (${wht}%)`, value: `-${formatMoney(whtAmount)} บาท` },
+                    { label: 'ยอดเงินโอนสุทธิที่ต้องชำระ (Net Payable)', value: `${formatMoney(net)} บาท`, highlight: true }
+                ];
+
+                breakdownHTML = `
+                    <div style="margin-top: 20px;">
+                        <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                            ตารางแจกแจงรายการหักภาษี (Tax Calculation Statement)
+                        </h3>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                            <tbody>
+                                <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">1. มูลค่าสินค้า/บริการก่อนภาษีมูลค่าเพิ่ม (Base Price)</td><td style="padding: 8px; text-align: right; font-weight: 600;">${formatMoney(base)} บาท</td></tr>
+                                <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">2. ภาษีมูลค่าเพิ่ม VAT ${vat}%</td><td style="padding: 8px; text-align: right; font-weight: 600;">+${formatMoney(vatAmount)} บาท</td></tr>
+                                <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;"><td style="padding: 8px; font-weight: 600;">3. ราคารวมภาษีมูลค่าเพิ่ม (Total Inclusive)</td><td style="padding: 8px; text-align: right; font-weight: 700;">${formatMoney(gross)} บาท</td></tr>
+                                <tr style="border-bottom: 1px solid #e2e8f0; color: #b91c1c;"><td style="padding: 8px;">4. หัก: ภาษีเงินได้ ณ ที่จ่าย ${wht}% (คำนวณจากยอดก่อน VAT)</td><td style="padding: 8px; text-align: right; font-weight: 600;">-${formatMoney(whtAmount)} บาท</td></tr>
+                                <tr style="background: #ecfdf5; border-top: 2px solid #059669; border-bottom: 2px solid #059669; color: #065f46;"><td style="padding: 10px 8px; font-size: 14px; font-weight: 700;">5. ยอดเงินโอนสุทธิที่ต้องชำระ (Net Amount to Pay)</td><td style="padding: 10px 8px; text-align: right; font-size: 16px; font-weight: 800;">${formatMoney(net)} บาท</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+            } else if (curToolId === 'salary') {
+                docTitle = 'แผนการจัดสรรเงินเดือนและงบประมาณการเงิน (50/30/20)';
+                docSubtitle = 'Salary Budgeting & Allocation Plan';
+                const st = state.salary || {};
+                const income = numberOrDefault(st.income, 0);
+                const needsPct = numberOrDefault(st.needsPct, 0);
+                const wantsPct = numberOrDefault(st.wantsPct, 0);
+                const savingsPct = numberOrDefault(st.savingsPct, 0);
+                const emergencyPct = numberOrDefault(st.emergencyPct, 0);
+                const debtPct = numberOrDefault(st.debtPct, 0);
+
+                const needs = income * needsPct / 100;
+                const wants = income * wantsPct / 100;
+                const savings = income * savingsPct / 100;
+                const emergency = income * emergencyPct / 100;
+                const debt = income * debtPct / 100;
+
+                paramsRows = [
+                    ['เงินเดือนสุทธิที่ได้รับ', `${formatMoney(income)} บาท/เดือน (${formatMoney(income * 12)} บาท/ปี)`],
+                    ['สัดส่วนค่าใช้จ่ายจำเป็น (Needs)', `${needsPct}%`],
+                    ['สัดส่วนความต้องการ/ไลฟ์สไตล์ (Wants)', `${wantsPct}%`],
+                    ['สัดส่วนเงินออมและลงทุน (Savings)', `${savingsPct}%`],
+                    ['สัดส่วนสำรองฉุกเฉินเป้าหมาย', `${emergencyPct}%`],
+                    ['สัดส่วนชำระหนี้เพิ่มเติม', `${debtPct}%`]
+                ];
+
+                resultCards = [
+                    { label: 'ค่าใช้จ่ายจำเป็น (Needs 50%)', value: `${formatMoney(needs)} บาท/เดือน` },
+                    { label: 'ความต้องการ / ไลฟ์สไตล์ (Wants 30%)', value: `${formatMoney(wants)} บาท/เดือน` },
+                    { label: 'เงินออมและลงทุน (Savings 20%)', value: `${formatMoney(savings)} บาท/เดือน`, highlight: true },
+                    { label: 'เงินสำรองฉุกเฉินเป้าหมาย', value: `${formatMoney(emergency)} บาท/เดือน` }
+                ];
+
+                breakdownHTML = `
+                    <div style="margin-top: 20px;">
+                        <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                            ตารางจำแนกการจัดสรรงบประมาณรายเดือนและรายปี (Budget Breakdown)
+                        </h3>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                            <thead>
+                                <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                                    <th style="padding: 8px; text-align: left;">หมวดหมู่งบประมาณ</th>
+                                    <th style="padding: 8px; text-align: center;">สัดส่วน</th>
+                                    <th style="padding: 8px; text-align: right;">ยอดต่อเดือน (บาท)</th>
+                                    <th style="padding: 8px; text-align: right;">ยอดต่อปี (บาท)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">1. ค่าใช้จ่ายจำเป็น (Needs) เช่น ค่าที่พัก อาหาร ค่าเดินทาง</td><td style="padding: 8px; text-align: center;">${needsPct}%</td><td style="padding: 8px; text-align: right; font-weight: 600;">${formatMoney(needs)}</td><td style="padding: 8px; text-align: right;">${formatMoney(needs * 12)}</td></tr>
+                                <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">2. ความต้องการส่วนตัว (Wants) เช่น ท่องเที่ยว ช้อปปิ้ง บันเทิง</td><td style="padding: 8px; text-align: center;">${wantsPct}%</td><td style="padding: 8px; text-align: right; font-weight: 600;">${formatMoney(wants)}</td><td style="padding: 8px; text-align: right;">${formatMoney(wants * 12)}</td></tr>
+                                <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">3. เงินออมและการลงทุน (Savings & Investments)</td><td style="padding: 8px; text-align: center;">${savingsPct}%</td><td style="padding: 8px; text-align: right; font-weight: 600; color: #15803d;">${formatMoney(savings)}</td><td style="padding: 8px; text-align: right; color: #15803d;">${formatMoney(savings * 12)}</td></tr>
+                                <tr style="border-bottom: 1px solid #e2e8f0; color: #2563eb;"><td style="padding: 8px;">• เป้าหมายเงินสำรองฉุกเฉิน (Emergency Fund)</td><td style="padding: 8px; text-align: center;">${emergencyPct}%</td><td style="padding: 8px; text-align: right;">${formatMoney(emergency)}</td><td style="padding: 8px; text-align: right;">${formatMoney(emergency * 12)}</td></tr>
+                                <tr style="border-bottom: 1px solid #e2e8f0; color: #7c3aed;"><td style="padding: 8px;">• แผนชำระหนี้เพิ่มเติม (Debt Acceleration)</td><td style="padding: 8px; text-align: center;">${debtPct}%</td><td style="padding: 8px; text-align: right;">${formatMoney(debt)}</td><td style="padding: 8px; text-align: right;">${formatMoney(debt * 12)}</td></tr>
+                                <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;"><td style="padding: 8px;">รวมทั้งสิ้น</td><td style="padding: 8px; text-align: center;">${needsPct + wantsPct + savingsPct}%</td><td style="padding: 8px; text-align: right;">${formatMoney(income)}</td><td style="padding: 8px; text-align: right;">${formatMoney(income * 12)}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+            } else {
+                // Generic Fallback for other calculators
+                const summary = (typeof getToolSummaryText === 'function') ? getToolSummaryText(curToolId) : '';
+                const lines = summary.split('\n').map(l => l.trim()).filter(Boolean);
+                const bullets = lines.filter(l => l.startsWith('•')).map(l => l.replace(/^•\s*/, ''));
+                const highlight = lines.find(l => !l.startsWith('•') && !l.startsWith('---') && !l.includes('Multitools')) || lines[0] || 'ผลลัพธ์การคำนวณ';
+
+                paramsRows = [
+                    ['เครื่องมือคำนวณ', toolMeta.menuTitle || toolMeta.headerTitle],
+                    ['หมวดหมู่', toolMeta.group || 'การคำนวณทั่วไป']
+                ];
+
+                resultCards = [
+                    { label: 'ผลการคำนวณหลัก', value: highlight, highlight: true }
+                ];
+
+                if (bullets.length > 0) {
+                    breakdownHTML = `
+                        <div style="margin-top: 20px;">
+                            <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                                รายละเอียดผลลัพธ์ (Calculation Details)
+                            </h3>
+                            <ul style="font-size: 12px; line-height: 1.8; color: #334155; padding-left: 20px;">
+                                ${bullets.map(b => `<li>${b}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+            }
+
+            const paramsTableHTML = `
+                <div style="margin-bottom: 18px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        ข้อมูลและเงื่อนไขการคำนวณ (Parameters & Inputs)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <tbody>
+                            ${paramsRows.map(([label, val], idx) => `
+                                <tr style="border-bottom: 1px solid #e2e8f0; background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+                                    <td style="padding: 6px 10px; color: #475569; width: 40%; font-weight: 500;">${label}</td>
+                                    <td style="padding: 6px 10px; color: #0f172a; font-weight: 600; text-align: right;">${val}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            const resultsBoxesHTML = `
+                <div style="margin-bottom: 18px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        สรุปผลการคำนวณ (Calculation Results)
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                        ${resultCards.map(c => `
+                            <div style="padding: 10px 12px; border-radius: 6px; border: 1px solid ${c.highlight ? '#10b981' : '#cbd5e1'}; background: ${c.highlight ? '#ecfdf5' : '#f8fafc'};">
+                                <div style="font-size: 11px; color: ${c.highlight ? '#065f46' : '#64748b'}; font-weight: 600;">${c.label}</div>
+                                <div style="font-size: 15px; font-weight: 800; color: ${c.highlight ? '#047857' : '#0f172a'}; margin-top: 4px;">${c.value}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            return `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Sarabun', 'Noto Sans Thai', sans-serif; color: #1e293b; line-height: 1.5; padding: 12px 16px; max-width: 800px; margin: 0 auto; box-sizing: border-box;">
+                    <!-- Top Branding & Doc Meta Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 16px;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="display: inline-block; width: 26px; height: 26px; background: #0f172a; color: #fff; font-weight: 800; border-radius: 5px; text-align: center; line-height: 26px; font-size: 14px;">M</span>
+                                <span style="font-size: 18px; font-weight: 800; letter-spacing: -0.5px; color: #0f172a;">MULTITOOLS AIO</span>
+                            </div>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">เครื่องมือคำนวณและวางแผนทางการเงินครบวงจร (Financial & Utility Toolkit)</div>
+                        </div>
+                        <div style="text-align: right; font-size: 11px; color: #475569;">
+                            <div style="font-weight: 700; color: #0f172a; font-size: 12px;">เอกสารสรุปผลการคำนวณทางการ</div>
+                            <div>รหัสเอกสาร: <span style="font-family: monospace; font-weight: 600;">${refCode}</span></div>
+                            <div>วันที่ออกเอกสาร: ${dateStr}</div>
+                        </div>
+                    </div>
+
+                    <!-- Title Banner -->
+                    <div style="text-align: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 16px;">
+                        <h1 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">${docTitle}</h1>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 3px;">${docSubtitle}</div>
+                    </div>
+
+                    <!-- Section 1: Parameters -->
+                    ${paramsTableHTML}
+
+                    <!-- Section 2: Results -->
+                    ${resultsBoxesHTML}
+
+                    <!-- Section 3: Breakdown (if any) -->
+                    ${breakdownHTML}
+
+                    <!-- Footer & Disclaimer & Signature -->
+                    <div style="margin-top: 24px; padding-top: 14px; border-top: 1px dashed #cbd5e1; font-size: 10.5px; color: #64748b;" class="print-keep-together">
+                        <div style="margin-bottom: 20px; line-height: 1.6;">
+                            <b>หมายเหตุ:</b> ข้อมูลและผลลัพธ์ในเอกสารนี้จัดทำขึ้นโดยโปรแกรม Multitools AIO เพื่อใช้เป็นข้อมูลเบื้องต้นในการวางแผนและตัดสินใจเท่านั้น มิใช่หนังสือรับรองทางการเงินหรือข้อเสนอสัญญาอย่างเป็นทางการจากสถาบันการเงินหรือหน่วยงานภาครัฐ
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end; padding-top: 8px;">
+                            <div>
+                                <div>ผู้จัดทำเอกสาร: ...........................................................</div>
+                                <div style="margin-top: 4px; font-size: 10px; color: #94a3b8;">ระบบคำนวณอัตโนมัติ Multitools Web Application</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div>ลายมือชื่อผู้ตรวจสอบ / ผู้อนุมัติ: ...........................................................</div>
+                                <div style="margin-top: 4px; font-size: 10px; color: #94a3b8;">วันที่: ........ / ........ / ................</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function triggerPrintReceipt(toolId) {
+            if (typeof window === 'undefined' || typeof document === 'undefined') return;
+            const targetId = toolId || appState.activeToolId;
+            if (hasInvalidNumericInput(targetId)) {
+                if (typeof showHistoryToast === 'function') {
+                    showHistoryToast('⚠️ ข้อมูลตัวเลขไม่ถูกต้อง กรุณาแก้ไขก่อนพิมพ์', false);
+                }
+                return;
+            }
+            const printEl = document.getElementById('printFormalReceipt');
+            if (printEl) {
+                printEl.innerHTML = generateFormalPrintHTML(targetId, appState);
+            }
+            window.print();
         }
 
         /* -----------------------------------------------------------
@@ -3219,7 +3718,7 @@
                     <div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">ยอดที่กรอกคือ</label><select id="whtMode" class="airbnb-input w-full"><option value="before" ${st.mode === 'before' ? 'selected' : ''}>ยอดก่อน VAT</option><option value="after" ${st.mode === 'after' ? 'selected' : ''}>ยอดรวม VAT แล้ว</option></select></div><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">VAT (%)</label><input id="whtVat" type="number" value="${st.vatRate}" class="airbnb-input w-full"></div></div>
                     <div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">หัก ณ ที่จ่าย (%)</label><select id="whtRate" class="airbnb-input w-full"><option value="0" ${wht === 0 ? 'selected' : ''}>ไม่หัก</option><option value="1" ${wht === 1 ? 'selected' : ''}>1%</option><option value="3" ${wht === 3 ? 'selected' : ''}>3%</option><option value="5" ${wht === 5 ? 'selected' : ''}>5%</option></select></div>
                 </div>
-                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2" style="box-shadow:var(--app-elevation)"><div class="flex justify-between"><span>ยอดก่อน VAT</span><b>${Number.isFinite(amount) ? formatMoney(base) : '-'} บาท</b></div><div class="flex justify-between"><span>VAT ${vat}%</span><b>${Number.isFinite(amount) ? formatMoney(vatAmount) : '-'} บาท</b></div><div class="flex justify-between"><span>ยอดรวม VAT</span><b>${Number.isFinite(amount) ? formatMoney(gross) : '-'} บาท</b></div><div class="flex justify-between"><span>หัก ณ ที่จ่าย ${wht}%</span><b>${Number.isFinite(amount) ? `- ${formatMoney(whtAmount)}` : '-'} บาท</b></div><div class="mt-2 p-3 rounded-xl border border-[#16a34a] bg-[#f0fdf4] text-[#15803d] theme-result-highlight flex justify-between"><span class="font-semibold">ยอดโอนสุทธิ</span><b>${Number.isFinite(amount) ? formatMoney(net) : '-'} บาท</b></div></div>`;
+                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2" style="box-shadow:var(--app-elevation)"><div class="flex justify-between"><span>ยอดก่อน VAT</span><b>${Number.isFinite(amount) ? formatMoney(base) : '-'} บาท</b></div><div class="flex justify-between"><span>VAT ${vat}%</span><b>${Number.isFinite(amount) ? formatMoney(vatAmount) : '-'} บาท</b></div><div class="flex justify-between"><span>ยอดรวม VAT</span><b>${Number.isFinite(amount) ? formatMoney(gross) : '-'} บาท</b></div><div class="flex justify-between"><span>หัก ณ ที่จ่าย ${wht}%</span><b>${Number.isFinite(amount) ? `- ${formatMoney(whtAmount)}` : '-'} บาท</b></div><div class="mt-2 p-3 rounded-xl border border-[#16a34a] bg-[#f0fdf4] text-[#15803d] theme-result-highlight flex justify-between"><span class="font-semibold">ยอดโอนสุทธิ</span><b>${Number.isFinite(amount) ? formatMoney(net) : '-'} บาท</b></div>${Number.isFinite(amount) ? `<div class="flex justify-end pt-1"><button id="btnPrintVatWhtSummary" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">🖨️ พิมพ์ใบสรุปภาษี / PDF</button></div>` : ''}</div></div>`;
             const whtInput = document.getElementById('whtAmount');
             whtInput.addEventListener('blur', () => {
                 const formatted = formatInputDisplay(whtInput.value);
@@ -3236,6 +3735,9 @@
                 renderActiveTool();
             };
             ['whtAmount','whtMode','whtVat','whtRate'].forEach(id => document.getElementById(id).addEventListener('change', rerender));
+            container.querySelector('#btnPrintVatWhtSummary')?.addEventListener('click', () => {
+                triggerPrintReceipt('vat_wht');
+            });
             setStatusBanner(Number.isFinite(amount) ? 'success' : 'empty', Number.isFinite(amount) ? `ยอดโอนสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(net)} บาท</span>` : 'กรุณาป้อนยอดเงินเพื่อคำนวณ VAT และหัก ณ ที่จ่าย');
         }
 
@@ -4744,6 +5246,9 @@
                     <div class="flex items-center justify-between gap-2 mb-2">
                         <div class="text-xs font-semibold text-[#6a6a6a]">ตารางผ่อนชำระ (${schedule.length} งวด)</div>
                         <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                            <button id="btnPrintLoanSummary" type="button" title="พิมพ์สรุปสินเชื่อหรือบันทึกเป็นไฟล์ PDF" class="px-2 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
+                                🖨️ พิมพ์/PDF
+                            </button>
                             <button id="btnExportLoanMonthly" type="button" title="ดาวน์โหลดตารางผ่อนรายเดือนทุกงวดเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition-all shadow-sm flex items-center gap-1 cursor-pointer">
                                 📥 รายงวด (.CSV)
                             </button>
@@ -4761,6 +5266,10 @@
                     ${schedule.length > 120 ? `<div class="text-[11px] text-[#888] text-center mt-2">แสดงบนหน้าจอ 120 งวดแรก · ดาวน์โหลดไฟล์ CSV เพื่อดูครบทั้ง ${schedule.length} งวด</div>` : ''}
                 `;
                 loanRoot.appendChild(table);
+
+                table.querySelector('#btnPrintLoanSummary')?.addEventListener('click', () => {
+                    triggerPrintReceipt('loan');
+                });
 
                 table.querySelector('#btnExportLoanMonthly')?.addEventListener('click', (e) => {
                     const btn = e.currentTarget;
@@ -4909,6 +5418,9 @@
                     <div class="flex items-center justify-between gap-2 mb-2">
                         <div class="text-xs font-semibold text-[#6a6a6a]">ตารางเงินออมสะสม (${years} ปี)</div>
                         <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                            <button id="btnPrintSavingsSummary" type="button" title="พิมพ์แผนการออมเงินหรือบันทึกเป็นไฟล์ PDF" class="px-2 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
+                                🖨️ พิมพ์/PDF
+                            </button>
                             <button id="btnExportSavingsMonthly" type="button" title="ดาวน์โหลดตารางเงินออมรายเดือนทุกงวดเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2 py-1 text-xs font-medium rounded-lg border border-[var(--app-hairline)] text-[#4a4a4a] bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
                                 📥 รายงวด (.CSV)
                             </button>
@@ -4925,6 +5437,9 @@
                 savingsRoot.appendChild(yearlyTable);
 
                 const savingsData = { monthlyRows, yearlyRows, totalBalance, totalPrincipal, interestEarned };
+                yearlyTable.querySelector('#btnPrintSavingsSummary')?.addEventListener('click', () => {
+                    triggerPrintReceipt('savings');
+                });
                 yearlyTable.querySelector('#btnExportSavingsMonthly')?.addEventListener('click', (e) => {
                     const btn = e.currentTarget;
                     const csv = buildSavingsScheduleCSV(savingsData, 'monthly');
@@ -4967,7 +5482,7 @@
             const emergency = income * emergencyPct / 100;
             const debt = income * debtPct / 100;
 
-            container.innerHTML = `<div class="flex flex-col gap-2"><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3"><div class="text-xs text-[#6a6a6a] mb-2">หลักการเริ่มต้น 50/30/20: ค่าใช้จ่ายจำเป็น / ความต้องการ / ออมและลงทุน</div>${createKeypadFieldHTML(0, 'เงินเดือนสุทธิที่ได้รับ', st.income, 'บาท/เดือน', 'เช่น 30,000')}</div><div class="grid grid-cols-3 gap-2">${[['salaryNeedsPct','ค่าใช้จ่ายจำเป็น (%)',st.needsPct],['salaryWantsPct','ไลฟ์สไตล์ (%)',st.wantsPct],['salarySavingsPct','ออม/ลงทุน (%)',st.savingsPct]].map(([id,label,value]) => `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-2"><label class="text-[10px] text-[#6a6a6a] block">${label}</label><input id="${id}" type="number" min="0" max="100" step="1" value="${value}" class="airbnb-input w-full"></div>`).join('')}</div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2"><div class="text-xs font-semibold text-[#6a6a6a]">เป้าหมายย่อยที่แนะนำ</div><div class="grid grid-cols-2 gap-2"><label class="text-xs">เงินสำรองฉุกเฉิน (% ของเงินเดือน)<input id="salaryEmergencyPct" type="number" min="0" max="100" value="${st.emergencyPct}" class="airbnb-input w-full mt-1"></label><label class="text-xs">ชำระหนี้เพิ่มเติม (% ของเงินเดือน)<input id="salaryDebtPct" type="number" min="0" max="100" value="${st.debtPct}" class="airbnb-input w-full mt-1"></label></div></div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2"><div class="flex justify-between"><span>ค่าใช้จ่ายจำเป็น</span><b>${formatMoney(needs)} บาท</b></div><div class="flex justify-between"><span>ความต้องการ/ไลฟ์สไตล์</span><b>${formatMoney(wants)} บาท</b></div><div class="flex justify-between"><span>ออมและลงทุน</span><b>${formatMoney(savings)} บาท</b></div><div class="flex justify-between text-[var(--app-accent)]"><span>เป้าหมายเงินฉุกเฉิน</span><b>${formatMoney(emergency)} บาท/เดือน</b></div><div class="flex justify-between"><span>แนวทางชำระหนี้เพิ่ม</span><b>${formatMoney(debt)} บาท/เดือน</b></div></div></div>`;
+            container.innerHTML = `<div class="flex flex-col gap-2"><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3"><div class="text-xs text-[#6a6a6a] mb-2">หลักการเริ่มต้น 50/30/20: ค่าใช้จ่ายจำเป็น / ความต้องการ / ออมและลงทุน</div>${createKeypadFieldHTML(0, 'เงินเดือนสุทธิที่ได้รับ', st.income, 'บาท/เดือน', 'เช่น 30,000')}</div><div class="grid grid-cols-3 gap-2">${[['salaryNeedsPct','ค่าใช้จ่ายจำเป็น (%)',st.needsPct],['salaryWantsPct','ไลฟ์สไตล์ (%)',st.wantsPct],['salarySavingsPct','ออม/ลงทุน (%)',st.savingsPct]].map(([id,label,value]) => `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-2"><label class="text-[10px] text-[#6a6a6a] block">${label}</label><input id="${id}" type="number" min="0" max="100" step="1" value="${value}" class="airbnb-input w-full"></div>`).join('')}</div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2"><div class="text-xs font-semibold text-[#6a6a6a]">เป้าหมายย่อยที่แนะนำ</div><div class="grid grid-cols-2 gap-2"><label class="text-xs">เงินสำรองฉุกเฉิน (% ของเงินเดือน)<input id="salaryEmergencyPct" type="number" min="0" max="100" value="${st.emergencyPct}" class="airbnb-input w-full mt-1"></label><label class="text-xs">ชำระหนี้เพิ่มเติม (% ของเงินเดือน)<input id="salaryDebtPct" type="number" min="0" max="100" value="${st.debtPct}" class="airbnb-input w-full mt-1"></label></div></div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2"><div class="flex justify-between"><span>ค่าใช้จ่ายจำเป็น</span><b>${formatMoney(needs)} บาท</b></div><div class="flex justify-between"><span>ความต้องการ/ไลฟ์สไตล์</span><b>${formatMoney(wants)} บาท</b></div><div class="flex justify-between"><span>ออมและลงทุน</span><b>${formatMoney(savings)} บาท</b></div><div class="flex justify-between text-[var(--app-accent)]"><span>เป้าหมายเงินฉุกเฉิน</span><b>${formatMoney(emergency)} บาท/เดือน</b></div><div class="flex justify-between"><span>แนวทางชำระหนี้เพิ่ม</span><b>${formatMoney(debt)} บาท/เดือน</b></div>${income > 0 ? `<div class="flex justify-end pt-2"><button id="btnPrintSalarySummary" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">🖨️ พิมพ์แผนการเงิน / PDF</button></div>` : ''}</div></div>`;
             attachFieldClickListeners(container);
             const save = (id, key) => document.getElementById(id)?.addEventListener('change', event => { st[key] = event.target.value; renderActiveTool(); });
             save('salaryNeedsPct', 'needsPct');
@@ -4975,6 +5490,9 @@
             save('salarySavingsPct', 'savingsPct');
             save('salaryEmergencyPct', 'emergencyPct');
             save('salaryDebtPct', 'debtPct');
+            container.querySelector('#btnPrintSalarySummary')?.addEventListener('click', () => {
+                triggerPrintReceipt('salary');
+            });
             if (income <= 0) setStatusBanner('empty', 'กรุณากรอกเงินเดือนสุทธิที่ได้รับ');
             else if (Math.abs(totalPct - 100) > 0.01) setStatusBanner('empty', `สัดส่วนหลักรวม ${formatNum(totalPct, 0)}% ควรปรับให้รวมเท่ากับ 100%`);
             else setStatusBanner('success', `จัดสรรเงินเดือน ${formatMoney(income)} บาทเรียบร้อย · ออม/ลงทุน ${formatMoney(savings)} บาทต่อเดือน`);
@@ -5345,6 +5863,20 @@
             dropdownMenu.classList.add('hidden');
             openSidebar();
             switchDrawerTab('history');
+        });
+        document.getElementById('menuPrintPDF')?.addEventListener('click', () => {
+            dropdownMenu.classList.add('hidden');
+            triggerPrintReceipt();
+        });
+        document.getElementById('bannerPrintBtn')?.addEventListener('click', () => {
+            triggerPrintReceipt();
+        });
+
+        window.addEventListener('beforeprint', () => {
+            const printEl = document.getElementById('printFormalReceipt');
+            if (printEl && (!printEl.innerHTML || !printEl.innerHTML.trim())) {
+                printEl.innerHTML = generateFormalPrintHTML(appState.activeToolId, appState);
+            }
         });
         document.getElementById('sidebarTabTools')?.addEventListener('click', () => switchDrawerTab('tools'));
         document.getElementById('sidebarTabHistory')?.addEventListener('click', () => switchDrawerTab('history'));

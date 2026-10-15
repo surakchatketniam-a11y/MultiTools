@@ -35,6 +35,7 @@ function context(extra = {}) {
         'validateCalendarDate', 'countWorkingDays', 'offsetWorkingDays', 'normalizeWorkDays', 'formatDateInTimezone',
         'generateLoanSchedule', 'aggregateLoanScheduleByYear', 'rowsToCSV', 'buildLoanAmortizationCSV',
         'generateSavingsSchedule', 'buildSavingsScheduleCSV', 'getCSVFilename',
+        'formatThaiFormalDate', 'generateFormalPrintHTML',
         'getCalculationHistory', 'saveCalculationHistory', 'formatHistoryTime', 'extractShortSummary', 'extractDetailText',
         'recordCalculationHistory', 'pinCalculationHistory', 'unpinCalculationHistory', 'renameCalculationHistory',
         'deleteCalculationHistory', 'clearCalculationHistory', 'restoreCalculationHistory']) {
@@ -595,6 +596,100 @@ test('calculation history and saved sets: auto-recording, pinning, renaming, FIF
     allHist = ctx.getCalculationHistory();
     assert.equal(allHist.length, 0);
 });
+
+test('formal print-to-pdf: generates accurate Thai receipt documents for loan, savings, vat_wht, and salary', () => {
+    const ctx = context();
+
+    // 1. Thai Buddhist Era formal date formatting
+    const sampleDate = new Date('2026-10-15T11:45:00+07:00');
+    const formattedDate = ctx.formatThaiFormalDate(sampleDate);
+    assert.ok(formattedDate.includes('15 ตุลาคม พ.ศ. 2569'), 'Date must include Thai day, month, and BE year (2569)');
+    assert.ok(formattedDate.includes('น.'), 'Time must end with Thai minute abbreviation (น.)');
+
+    // 2. Loan Formal Receipt
+    const loanState = {
+        activeToolId: 'loan',
+        loan: {
+            principal: '2,000,000',
+            interestRate: '5.0',
+            months: '360',
+            extra: '2,000',
+            rateType: 'fixed',
+            calcMethod: 'reducing'
+        }
+    };
+    const loanDoc = ctx.generateFormalPrintHTML('loan', loanState);
+    assert.ok(loanDoc.includes('MULTITOOLS AIO'));
+    assert.ok(loanDoc.includes('เอกสารสรุปผลการคำนวณสินเชื่อและตารางผ่อนชำระ'));
+    assert.ok(loanDoc.includes('2,000,000.00 บาท'), 'Must list loan principal');
+    assert.ok(loanDoc.includes('ยอดผ่อนชำระต่อเดือน'));
+    assert.ok(loanDoc.includes('ตารางแจกแจงสรุปยอดผ่อนและลดหนี้รายปี'), 'Must contain yearly amortization table');
+    assert.ok(loanDoc.includes('ปีที่ 1'));
+
+    // 3. Savings Formal Receipt
+    const savingsState = {
+        activeToolId: 'savings',
+        savings: {
+            initial: '50,000',
+            monthly: '5,000',
+            interestRate: '4.0',
+            years: '10',
+            annualIncrease: '0',
+            inflationRate: '2.0',
+            mode: 'growth'
+        }
+    };
+    const savingsDoc = ctx.generateFormalPrintHTML('savings', savingsState);
+    assert.ok(savingsDoc.includes('รายงานแผนการออมเงินและดอกเบี้ยทบต้น'));
+    assert.ok(savingsDoc.includes('50,000.00 บาท'), 'Must list initial deposit');
+    assert.ok(savingsDoc.includes('มูลค่าเงินออมรวมในอนาคต'));
+    assert.ok(savingsDoc.includes('ตารางการเติบโตของเงินออมรายปี'));
+    assert.ok(savingsDoc.includes('ปีที่ 10'));
+
+    // 4. VAT & WHT Formal Receipt
+    const vatWhtState = {
+        activeToolId: 'vat_wht',
+        vat_wht: {
+            amount: '10,000',
+            mode: 'before',
+            vatRate: '7',
+            whtRate: '3'
+        }
+    };
+    const vatDoc = ctx.generateFormalPrintHTML('vat_wht', vatWhtState);
+    assert.ok(vatDoc.includes('ใบสรุปรายการภาษีมูลค่าเพิ่มและภาษีหัก ณ ที่จ่าย'));
+    assert.ok(vatDoc.includes('10,000.00 บาท'), 'Base amount');
+    assert.ok(vatDoc.includes('700.00 บาท'), 'VAT amount (7%)');
+    assert.ok(vatDoc.includes('10,700.00 บาท'), 'Gross amount with VAT');
+    assert.ok(vatDoc.includes('300.00 บาท'), 'WHT deduction (3%)');
+    assert.ok(vatDoc.includes('10,400.00 บาท'), 'Net payable amount');
+
+    // 5. Salary Formal Receipt
+    const salaryState = {
+        activeToolId: 'salary',
+        salary: {
+            income: '40,000',
+            needsPct: '50',
+            wantsPct: '30',
+            savingsPct: '20',
+            emergencyPct: '10',
+            debtPct: '10'
+        }
+    };
+    const salaryDoc = ctx.generateFormalPrintHTML('salary', salaryState);
+    assert.ok(salaryDoc.includes('แผนการจัดสรรเงินเดือนและงบประมาณการเงิน (50/30/20)'));
+    assert.ok(salaryDoc.includes('40,000.00 บาท/เดือน'));
+    assert.ok(salaryDoc.includes('20,000.00 บาท'), 'Needs 50% = 20,000');
+    assert.ok(salaryDoc.includes('12,000.00 บาท'), 'Wants 30% = 12,000');
+    assert.ok(salaryDoc.includes('8,000.00 บาท'), 'Savings 20% = 8,000');
+
+    // 6. Generic Calculator Fallback
+    const genericDoc = ctx.generateFormalPrintHTML('tip', { activeToolId: 'tip' });
+    assert.ok(genericDoc.includes('MULTITOOLS AIO'));
+    assert.ok(genericDoc.includes('เอกสารสรุปผลการคำนวณ'));
+    assert.ok(genericDoc.includes('ข้อมูลและเงื่อนไขการคำนวณ'));
+});
+
 
 
 
