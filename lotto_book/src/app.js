@@ -13,14 +13,15 @@
         async init() {
             console.log('[LottoBook] Initializing application...');
 
-            this.initTheme();
             await this.loadHistoricalData();
             this.initNavigation();
             this.handleHashChange();
             this.registerServiceWorker();
 
             // Listen to browser hash changes
-            window.addEventListener('hashchange', () => this.handleHashChange());
+            window.addEventListener('hashchange', () => {
+                if (window.location.hash !== '#mainContent') this.handleHashChange();
+            });
         },
 
         async loadHistoricalData() {
@@ -31,13 +32,13 @@
 
                 // Merge with any custom results saved by user
                 const customResults = root.LottoStorage ? root.LottoStorage.getCustomResults() : [];
-                
+
                 const mergedMap = new Map();
                 builtInResults.forEach(r => mergedMap.set(r.drawDate, r));
                 customResults.forEach(r => mergedMap.set(r.drawDate, r));
 
                 this.historicalResults = Array.from(mergedMap.values()).sort((a, b) => b.drawDate.localeCompare(a.drawDate));
-                
+
                 this.resultsMap = {};
                 this.historicalResults.forEach(r => {
                     this.resultsMap[r.drawDate] = r;
@@ -65,29 +66,18 @@
             const validTabs = ['tickets', 'check', 'stats'];
             this.currentTab = validTabs.includes(hash) ? hash : 'tickets';
 
-            // Update Header & Nav active states
-            document.querySelectorAll('[data-nav-tab]').forEach(btn => {
-                const isActive = btn.dataset.navTab === this.currentTab;
-                if (isActive) {
-                    btn.classList.add('bg-[#FF385C]', 'text-white', 'shadow-xs');
-                    btn.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
-                } else {
-                    btn.classList.remove('bg-[#FF385C]', 'text-white', 'shadow-xs');
-                    btn.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700');
-                }
+            document.querySelectorAll('[data-nav-tab], [data-mobile-nav]').forEach(link => {
+                const active = (link.dataset.navTab || link.dataset.mobileNav) === this.currentTab;
+                if (active) link.setAttribute('aria-current', 'page');
+                else link.removeAttribute('aria-current');
             });
-
-            // Update mobile bottom nav active states
-            document.querySelectorAll('[data-mobile-nav]').forEach(btn => {
-                const isActive = btn.dataset.mobileNav === this.currentTab;
-                if (isActive) {
-                    btn.classList.add('text-[#FF385C]');
-                    btn.classList.remove('text-gray-500', 'dark:text-gray-400');
-                } else {
-                    btn.classList.remove('text-[#FF385C]');
-                    btn.classList.add('text-gray-500', 'dark:text-gray-400');
-                }
-            });
+            const headings = {
+                tickets: ['สมุดสลากของคุณ', 'บันทึกสลาก ดูยอดใช้จ่าย และกำหนดงบในแต่ละงวด'],
+                check: ['ตรวจผลรางวัล', 'ตรวจเลขที่สนใจ หรือดูผลสลากที่บันทึกไว้ในแต่ละงวด'],
+                stats: ['สำรวจสถิติย้อนหลัง', 'ดูความถี่และการกระจายของตัวเลขจากผลรางวัลที่ผ่านมา']
+            };
+            document.getElementById('pageTitle').textContent = headings[this.currentTab][0];
+            document.getElementById('pageDescription').textContent = headings[this.currentTab][1];
 
             this.renderCurrentView();
         },
@@ -96,7 +86,7 @@
             const container = document.getElementById('viewContainer');
             if (!container) return;
 
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo({ top: 0, behavior: 'instant' });
 
             if (this.currentTab === 'tickets') {
                 root.LottoMyTicketsView.render(container);
@@ -105,36 +95,7 @@
             } else if (this.currentTab === 'stats') {
                 root.LottoHistoricalStatsView.render(container);
             }
-        },
-
-        // Theme management
-        initTheme() {
-            const savedTheme = localStorage.getItem('lotto_theme') || 'system';
-            this.applyTheme(savedTheme);
-
-            const themeToggleBtn = document.getElementById('themeToggleBtn');
-            if (themeToggleBtn) {
-                themeToggleBtn.addEventListener('click', () => {
-                    const isDark = document.documentElement.classList.contains('dark');
-                    const newTheme = isDark ? 'light' : 'dark';
-                    localStorage.setItem('lotto_theme', newTheme);
-                    this.applyTheme(newTheme);
-                });
-            }
-        },
-
-        applyTheme(theme) {
-            const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-            if (isDark) {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-
-            const themeIcon = document.getElementById('themeIcon');
-            if (themeIcon) {
-                themeIcon.textContent = isDark ? '☀️' : '🌙';
-            }
+            container.setAttribute('aria-busy', 'false');
         },
 
         // Toast notifications
@@ -143,11 +104,12 @@
             if (!toastContainer) return;
 
             const toast = document.createElement('div');
-            const bgClass = type === 'success' 
-                ? 'bg-emerald-600 text-white' 
-                : (type === 'error' ? 'bg-rose-600 text-white' : 'bg-gray-800 text-white');
+            const bgClass = type === 'success'
+                ? 'toast-success'
+                : (type === 'error' ? 'toast-error' : 'toast-info');
 
-            toast.className = `${bgClass} px-4 py-2.5 rounded-xl shadow-lg text-xs font-semibold flex items-center gap-2 transform transition-all duration-300 translate-y-2 opacity-0`;
+            toast.className = `${bgClass} px-4 py-2.5 rounded-lg text-base font-semibold flex items-center gap-2 transform toast-motion translate-y-2 opacity-0`;
+            toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
             toast.innerHTML = `
                 <span>${type === 'success' ? '✓' : (type === 'error' ? '⚠️' : 'ℹ️')}</span>
                 <span>${message}</span>

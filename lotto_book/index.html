@@ -1,133 +1,75 @@
 <!DOCTYPE html>
-<html lang="th" class="h-full">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>สมุดสลากและสถิติย้อนหลัง | Multitools</title>
-    <meta name="description" content="บันทึกสลากกินแบ่งรัฐบาลไทย ตั้งงวดและงบประมาณ ตรวจผลรางวัลอัตโนมัติ และดูสถิติย้อนหลังตามจริง">
-    <meta name="theme-color" content="#FF385C">
-
-    <!-- PWA & Favicons -->
+    <meta name="description" content="บันทึกสลากกินแบ่งรัฐบาลไทย ตั้งงวดและงบประมาณ ตรวจผลรางวัล และดูสถิติย้อนหลังตามจริง">
+    <meta name="theme-color" content="#000000">
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/svg+xml" href="./favicon.svg">
     <link rel="alternate icon" href="./favicon.ico">
-
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Tailwind CSS CDN -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Anuphan:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./tokens.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#FF385C',
-                        primaryHover: '#E00B41'
-                    }
-                }
-            }
-        }
+            theme: { extend: {
+                colors: {
+                    canvas: 'var(--color-canvas)', surface: 'var(--color-surface-1)', raised: 'var(--color-surface-2)',
+                    ink: 'var(--color-ink)', muted: 'var(--color-ink-muted)', line: 'var(--color-hairline-soft)',
+                    accent: 'var(--color-product-waypoint)', 'accent-soft': 'var(--book-accent-soft)',
+                    action: 'var(--color-inverse-canvas)', 'action-hover': 'var(--color-ink-muted)',
+                    success: 'var(--color-semantic-success)', 'success-soft': 'var(--book-success-soft)',
+                    warning: 'var(--color-semantic-warning)', 'warning-soft': 'var(--book-warning-soft)',
+                    error: 'var(--color-product-boundary)', 'error-soft': 'var(--book-error-soft)'
+                },
+                borderRadius: { lg: 'var(--radius-md)' },
+                fontFamily: { sans: ['Inter', 'Anuphan', 'Noto Sans Thai', 'system-ui', 'sans-serif'] }
+            } }
+        };
     </script>
-
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="./css/style.css">
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-full flex flex-col font-sans antialiased transition-colors duration-200 pb-16 md:pb-0">
-
-    <!-- Header Navigation -->
-    <header class="sticky top-0 z-40 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-            <!-- Brand -->
-            <a href="./#tickets" class="flex items-center gap-2.5 text-gray-900 dark:text-white group">
-                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#FF385C] to-rose-400 text-white flex items-center justify-center font-bold text-lg shadow-sm group-hover:scale-105 transition-transform">
-                    🎟️
-                </div>
-                <div>
-                    <h1 class="text-sm font-bold leading-tight flex items-center gap-1.5">
-                        <span>สมุดสลาก & สถิติ</span>
-                        <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-[#FF385C] font-semibold border border-rose-200 dark:border-rose-800">
-                            Thai GLO
-                        </span>
-                    </h1>
-                    <p class="text-[10px] text-gray-500 dark:text-gray-400">บันทึกงบ • ตรวจผล • สถิติตามจริง</p>
-                </div>
+<body>
+    <a href="#mainContent" class="skip-link">ข้ามไปเนื้อหา</a>
+    <header class="site-header">
+        <div class="shell header-inner">
+            <a href="#tickets" class="brand" aria-label="สมุดสลาก หน้าสลากของฉัน">
+                <svg class="brand-mark" width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M5 5h22v7a4 4 0 0 0 0 8v7H5v-7a4 4 0 0 0 0-8V5Z" stroke="currentColor" stroke-width="2"/><path d="M19 8v3m0 4v3m0 4v2" stroke="currentColor" stroke-width="2"/></svg>
+                <span>สมุดสลาก<span class="brand-byline">BY MULTITOOLS</span></span>
             </a>
-
-            <!-- Desktop View Navigation Tabs -->
-            <nav class="hidden md:flex items-center gap-1 bg-gray-100 dark:bg-gray-700/60 p-1 rounded-2xl text-xs font-semibold">
-                <a href="#tickets" data-nav-tab="tickets" class="px-4 py-2 rounded-xl transition flex items-center gap-1.5">
-                    <span>🎟️</span>
-                    <span>สลากของฉัน</span>
-                </a>
-                <a href="#check" data-nav-tab="check" class="px-4 py-2 rounded-xl transition flex items-center gap-1.5">
-                    <span>🎯</span>
-                    <span>ตรวจผลรางวัล</span>
-                </a>
-                <a href="#stats" data-nav-tab="stats" class="px-4 py-2 rounded-xl transition flex items-center gap-1.5">
-                    <span>📊</span>
-                    <span>สถิติย้อนหลัง</span>
-                </a>
+            <nav class="desktop-nav" aria-label="เมนูหลัก">
+                <a href="#tickets" data-nav-tab="tickets">สลากของฉัน</a>
+                <a href="#check" data-nav-tab="check">ตรวจผลรางวัล</a>
+                <a href="#stats" data-nav-tab="stats">สถิติย้อนหลัง</a>
             </nav>
-
-            <!-- Actions: Link to Calculator & Theme Toggle -->
-            <div class="flex items-center gap-2">
-                <!-- Link to Calculator AIO -->
-                <a href="../calculator_AIO/" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 border border-gray-200 dark:border-gray-600" title="กลับไปหน้าเครื่องคำนวณ มีตังค์">
-                    <span>🧮</span>
-                    <span class="hidden sm:inline">มีตังค์ คำนวณ</span>
-                </a>
-
-                <!-- Theme Toggle Button -->
-                <button type="button" id="themeToggleBtn" class="w-9 h-9 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-sm transition" title="สลับธีม สว่าง / มืด">
-                    <span id="themeIcon">🌙</span>
-                </button>
-            </div>
+            <a href="../calculator_AIO/" class="calculator-link">เครื่องคำนวณ <span aria-hidden="true">↗</span></a>
         </div>
     </header>
-
-    <!-- Main View Container -->
-    <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6">
-        <div id="viewContainer">
-            <!-- Dynamic view content loaded by app.js -->
-            <div class="p-12 text-center text-gray-400">
-                <div class="inline-block animate-spin text-2xl mb-2">⏳</div>
-                <div class="text-sm">กำลังโหลดข้อมูล...</div>
-            </div>
+    <main id="mainContent" class="shell main-content" tabindex="-1">
+        <section class="page-intro" aria-labelledby="pageTitle">
+            <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> สมุดสลาก & สถิติย้อนหลัง</p>
+            <h1 id="pageTitle">สมุดสลากของคุณ</h1>
+            <p id="pageDescription">บันทึกสลาก ดูยอดใช้จ่าย และกำหนดงบในแต่ละงวด</p>
+            <div class="intro-meta"><span>สลากกินแบ่งรัฐบาลไทย</span><span>ข้อมูลบันทึกในอุปกรณ์นี้</span></div>
+        </section>
+        <div id="viewContainer" aria-busy="true">
+            <div class="loading-state" role="status">กำลังโหลดข้อมูลสลาก…</div>
         </div>
     </main>
-
-    <!-- Mobile Bottom Navigation Bar -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 flex justify-around py-2">
-        <a href="#tickets" data-mobile-nav="tickets" class="flex flex-col items-center py-1 px-3 text-xs font-semibold">
-            <span class="text-lg">🎟️</span>
-            <span class="text-[10px] mt-0.5">สลากของฉัน</span>
-        </a>
-        <a href="#check" data-mobile-nav="check" class="flex flex-col items-center py-1 px-3 text-xs font-semibold">
-            <span class="text-lg">🎯</span>
-            <span class="text-[10px] mt-0.5">ตรวจผล</span>
-        </a>
-        <a href="#stats" data-mobile-nav="stats" class="flex flex-col items-center py-1 px-3 text-xs font-semibold">
-            <span class="text-lg">📊</span>
-            <span class="text-[10px] mt-0.5">สถิติ</span>
-        </a>
+    <nav class="mobile-nav" aria-label="เมนูหลักบนมือถือ">
+        <a href="#tickets" data-mobile-nav="tickets"><span aria-hidden="true">▤</span>สลากของฉัน</a>
+        <a href="#check" data-mobile-nav="check"><span aria-hidden="true">◎</span>ตรวจผล</a>
+        <a href="#stats" data-mobile-nav="stats"><span aria-hidden="true">▥</span>สถิติย้อนหลัง</a>
     </nav>
-
-    <!-- Global Toast Notification Container -->
-    <div id="toastContainer" class="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
-    <!-- Footer -->
-    <footer class="mt-auto border-t border-gray-200 dark:border-gray-800 py-6 text-center text-xs text-gray-400 dark:text-gray-500">
-        <div class="max-w-6xl mx-auto px-4">
-            <p>Multitools | สมุดสลากและสถิติย้อนหลัง</p>
-            <p class="mt-1 text-[11px]">ข้อมูลผลรางวัลรวบรวมจากสำนักงานสลากกินแบ่งรัฐบาล (GLO) • เพื่อประโยชน์ในการบันทึกและสถิติส่วนบุคคล</p>
-        </div>
+    <div id="toastContainer" class="toast-container"></div>
+    <footer class="site-footer shell">
+        <a href="../">MULTITOOLS <span aria-hidden="true">↗</span></a>
+        <p>สมุดสลากและสถิติย้อนหลัง<br>ข้อมูลผลรางวัลจากสำนักงานสลากกินแบ่งรัฐบาล (GLO)</p>
     </footer>
-
-    <!-- Core App Scripts -->
     <script src="./src/storage.js"></script>
     <script src="./src/checker.js"></script>
     <script src="./src/stats.js"></script>

@@ -4,8 +4,8 @@
   "description": "บันทึกสลากกินแบ่งรัฐบาลไทย ตั้งงวด งบประมาณ ตรวจผลรางวัล และวิเคราะห์สถิติตามจริง",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#FFFFFF",
-  "theme_color": "#FF385C",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "icons": [
     {
       "src": "./favicon.svg",

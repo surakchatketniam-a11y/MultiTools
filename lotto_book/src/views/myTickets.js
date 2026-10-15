@@ -88,56 +88,56 @@
                     <!-- Top Summary & Budget Card -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <!-- Total All-time Spent -->
-                        <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-between">
+                        <div class="bg-surface  p-4 rounded-lg border border-line   flex flex-col justify-between">
                             <div class="flex items-center justify-between">
-                                <span class="text-xs font-medium text-gray-500 dark:text-gray-400">ค่าใช้จ่ายสะสมทั้งหมด</span>
-                                <span class="p-1.5 bg-rose-50 dark:bg-rose-950/40 text-rose-500 rounded-lg text-sm">💰</span>
+                                <span class="text-base font-medium text-muted ">ค่าใช้จ่ายสะสมทั้งหมด</span>
+                                <span class="p-1.5 bg-accent-soft  text-accent rounded-lg text-base">฿</span>
                             </div>
                             <div class="mt-2">
-                                <div class="text-2xl font-bold text-gray-900 dark:text-white">
+                                <div class="text-2xl font-bold text-ink ">
                                     ฿${spendingSummary.totalSpent.toLocaleString()}
                                 </div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                <div class="text-base text-muted  mt-0.5">
                                     จากสลากทั้งหมด ${spendingSummary.totalTickets.toLocaleString()} ใบ (${spendingSummary.drawCount} งวด)
                                 </div>
                             </div>
                         </div>
 
                         <!-- Current Draw Budget Card -->
-                        <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm md:col-span-2 flex flex-col justify-between">
+                        <div class="bg-surface  p-4 rounded-lg border border-line   md:col-span-2 flex flex-col justify-between">
                             <div class="flex items-center justify-between flex-wrap gap-2">
                                 <div class="flex items-center gap-2">
-                                    <span class="p-1.5 bg-amber-50 dark:bg-amber-950/40 text-amber-500 rounded-lg text-sm">🎯</span>
-                                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                                    <span class="p-1.5 bg-warning-soft  text-warning rounded-lg text-base">◎</span>
+                                    <span class="text-base font-medium text-ink ">
                                         งบประมาณงวด ${formatShortThaiDate(currentSelectedDraw)}
                                     </span>
                                 </div>
                                 <div class="flex items-center gap-1.5">
-                                    <button type="button" id="btnEditBudget" class="text-xs text-[#FF385C] hover:text-[#E00B41] font-medium flex items-center gap-1">
-                                        <span>✏️ ตั้งงบงวดนี้</span>
+                                    <button type="button" id="btnEditBudget" class="text-base text-accent hover:text-accent font-medium flex items-center gap-1">
+                                        <span>✎ ตั้งงบงวดนี้</span>
                                     </button>
                                 </div>
                             </div>
 
                             <div class="mt-2">
                                 <div class="flex justify-between items-baseline mb-1">
-                                    <span class="text-sm font-semibold text-gray-900 dark:text-white">
+                                    <span class="text-base font-semibold text-ink ">
                                         ใช้ไป ฿${drawStats.totalCost.toLocaleString()} 
-                                        <span class="text-xs font-normal text-gray-500 dark:text-gray-400">
+                                        <span class="text-base font-normal text-muted ">
                                             ${drawBudget > 0 ? `/ งบ ฿${drawBudget.toLocaleString()}` : '(ยังไม่ได้ตั้งงบ)'}
                                         </span>
                                     </span>
-                                    <span class="text-xs font-bold ${isOverBudget ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}">
+                                    <span class="text-base font-bold ${isOverBudget ? 'text-error' : 'text-success '}">
                                         ${drawBudget > 0 ? (isOverBudget ? `เกินงบ ฿${(drawStats.totalCost - drawBudget).toLocaleString()}!` : `คงเหลือ ฿${(drawBudget - drawStats.totalCost).toLocaleString()}`) : ''}
                                     </span>
                                 </div>
                                 
                                 ${drawBudget > 0 ? `
-                                    <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
-                                        <div class="h-2.5 rounded-full transition-all duration-300 ${isOverBudget ? 'bg-red-500' : (budgetPercent > 80 ? 'bg-amber-500' : 'bg-[#FF385C]')}" style="width: ${budgetPercent}%"></div>
+                                    <div class="w-full bg-raised  rounded-full h-2.5 overflow-hidden">
+                                        <div class="h-2.5 rounded-full transition ${isOverBudget ? 'bg-error' : (budgetPercent > 80 ? 'bg-warning' : 'bg-action')}" style="width: ${budgetPercent}%"></div>
                                     </div>
                                 ` : `
-                                    <div class="text-xs text-gray-400 dark:text-gray-500 italic">
+                                    <div class="text-base text-muted  ">
                                         กด "ตั้งงบงวดนี้" เพื่อกำหนดวงเงินป้องกันการซื้อสลากเกินตัว
                                     </div>
                                 `}
@@ -146,17 +146,17 @@
                     </div>
 
                     <!-- Add Ticket Form -->
-                    <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                        <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700/60 mb-4">
-                            <h3 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                <span>🎟️</span> บันทึกสลากใหม่
-                            </h3>
-                            <div class="flex gap-1.5 text-xs">
-                                <button type="button" id="btnExportData" class="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition">
-                                    💾 สำรองข้อมูล
+                    <div class="bg-surface  p-5 rounded-lg border border-line  ">
+                        <div class="flex flex-wrap gap-3 items-center justify-between pb-3 border-b border-line  mb-4">
+                            <h2 class="text-base font-bold text-ink  flex items-center gap-2">
+                                <span>▤</span> บันทึกสลากใหม่
+                            </h2>
+                            <div class="flex gap-1.5 text-base">
+                                <button type="button" id="btnExportData" class="px-2.5 py-1 bg-raised hover:bg-raised   text-ink  rounded-lg font-medium transition">
+                                    ↑ สำรองข้อมูล
                                 </button>
-                                <button type="button" id="btnImportData" class="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition">
-                                    📥 นำเข้า
+                                <button type="button" id="btnImportData" class="px-2.5 py-1 bg-raised hover:bg-raised   text-ink  rounded-lg font-medium transition">
+                                    ↓ นำเข้า
                                 </button>
                             </div>
                         </div>
@@ -165,50 +165,50 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                                 <!-- Draw Date -->
                                 <div>
-                                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                    <label for="ticketDrawDate" class="block text-base font-semibold text-ink  mb-1">
                                         งวดวันที่
                                     </label>
                                     <div class="relative">
                                         <input type="date" id="ticketDrawDate" value="${currentSelectedDraw}" required
-                                            class="w-full bg-gray-50 dark:bg-gray-700/60 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-[#FF385C] focus:outline-none">
+                                            class="w-full bg-surface  border border-line  rounded-lg px-3 py-2 text-base text-ink  focus:ring-2 focus:ring-accent focus:outline-none">
                                     </div>
                                 </div>
 
                                 <!-- Ticket Number (Strict String preserving zeros) -->
                                 <div>
-                                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                    <label for="ticketNumber" class="block text-base font-semibold text-ink  mb-1">
                                         หมายเลขสลาก (คงเลข 0 นำหน้า)
                                     </label>
                                     <input type="text" id="ticketNumber" placeholder="เช่น 007579 หรือ 09" maxlength="6" required
-                                        class="w-full font-lotto text-base font-bold text-center bg-gray-50 dark:bg-gray-700/60 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#FF385C] focus:outline-none">
+                                        class="w-full font-lotto text-base font-bold text-center bg-surface  border border-line  rounded-lg px-3 py-2 text-ink  focus:ring-2 focus:ring-accent focus:outline-none">
                                 </div>
 
                                 <!-- Quantity -->
                                 <div>
-                                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                    <label for="ticketCount" class="block text-base font-semibold text-ink mb-1">
                                         จำนวนใบ
                                     </label>
                                     <div class="flex items-center gap-1">
                                         <input type="number" id="ticketCount" value="1" min="1" max="999" required
-                                            class="w-full text-center font-bold bg-gray-50 dark:bg-gray-700/60 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-[#FF385C] focus:outline-none">
+                                            class="w-full text-center font-bold bg-surface  border border-line  rounded-lg px-3 py-2 text-base text-ink  focus:ring-2 focus:ring-accent focus:outline-none">
                                         <div class="flex gap-1">
-                                            <button type="button" class="btn-qty-quick px-2 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs rounded-lg text-gray-700 dark:text-gray-200" data-val="1">+1</button>
-                                            <button type="button" class="btn-qty-quick px-2 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs rounded-lg text-gray-700 dark:text-gray-200" data-val="2">+2</button>
+                                            <button type="button" class="btn-qty-quick px-2 py-2 bg-raised hover:bg-raised   text-base rounded-lg text-ink " data-val="1">+1</button>
+                                            <button type="button" class="btn-qty-quick px-2 py-2 bg-raised hover:bg-raised   text-base rounded-lg text-ink " data-val="2">+2</button>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Price per unit -->
                                 <div>
-                                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                    <label for="ticketCostPerUnit" class="block text-base font-semibold text-ink mb-1">
                                         ราคาต่อใบ (บาท)
                                     </label>
                                     <div class="flex items-center gap-1">
                                         <input type="number" id="ticketCostPerUnit" value="80" min="1" required
-                                            class="w-full text-center font-bold bg-gray-50 dark:bg-gray-700/60 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-[#FF385C] focus:outline-none">
+                                            class="w-full text-center font-bold bg-surface  border border-line  rounded-lg px-3 py-2 text-base text-ink  focus:ring-2 focus:ring-accent focus:outline-none">
                                         <div class="flex gap-1">
-                                            <button type="button" class="btn-cost-quick px-2 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs rounded-lg text-gray-700 dark:text-gray-200" data-val="80">80</button>
-                                            <button type="button" class="btn-cost-quick px-2 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-xs rounded-lg text-gray-700 dark:text-gray-200" data-val="100">100</button>
+                                            <button type="button" class="btn-cost-quick px-2 py-2 bg-raised hover:bg-raised   text-base rounded-lg text-ink " data-val="80">80</button>
+                                            <button type="button" class="btn-cost-quick px-2 py-2 bg-raised hover:bg-raised   text-base rounded-lg text-ink " data-val="100">100</button>
                                         </div>
                                     </div>
                                 </div>
@@ -217,36 +217,36 @@
                             <div class="flex flex-col sm:flex-row gap-3 items-center justify-between pt-1">
                                 <!-- Note Input -->
                                 <div class="w-full sm:flex-1">
-                                    <input type="text" id="ticketNote" placeholder="บันทึกช่วยจำ (เช่น เป๋าตัง, สแกนจากแผง, เลขอ่างน้ำมนต์)"
-                                        class="w-full bg-gray-50 dark:bg-gray-700/60 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-[#FF385C] focus:outline-none">
+                                    <input type="text" aria-label="บันทึกช่วยจำ" id="ticketNote" placeholder="บันทึกช่วยจำ (เช่น เป๋าตัง, สแกนจากแผง, เลขอ่างน้ำมนต์)"
+                                        class="w-full bg-surface  border border-line  rounded-lg px-3 py-2 text-base text-ink  focus:ring-2 focus:ring-accent focus:outline-none">
                                 </div>
 
                                 <!-- Submit Button -->
                                 <button type="submit" id="btnSubmitTicket"
-                                    class="w-full sm:w-auto px-6 py-2.5 bg-[#FF385C] hover:bg-[#E00B41] text-white rounded-xl text-sm font-semibold shadow-sm transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap">
-                                    <span>➕</span> บันทึกสลาก
+                                    class="w-full sm:w-auto px-6 py-2.5 bg-action hover:bg-action-hover text-white rounded-lg text-base font-semibold  transition flex items-center justify-center gap-2 whitespace-nowrap">
+                                    <span>+</span> บันทึกสลาก
                                 </button>
                             </div>
                         </form>
                     </div>
 
                     <!-- Tickets List Section -->
-                    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                    <div class="bg-surface  rounded-lg border border-line   overflow-hidden">
                         <!-- Filter Bar -->
-                        <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div class="p-4 border-b border-line  flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                             <div class="flex items-center gap-2">
-                                <h3 class="text-sm font-bold text-gray-900 dark:text-white">
-                                    📋 รายการสลากที่บันทึกไว้
-                                </h3>
-                                <span class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-semibold rounded-full">
+                                <h2 class="text-base font-bold text-ink ">
+                                    ▤ รายการสลากที่บันทึกไว้
+                                </h2>
+                                <span class="px-2 py-0.5 bg-raised  text-muted  text-base font-semibold rounded-full">
                                     ${filteredTickets.length} รายการ
                                 </span>
                             </div>
 
                             <!-- Filter by Draw Dropdown -->
                             <div class="flex items-center gap-2 w-full sm:w-auto">
-                                <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">กรองงวด:</span>
-                                <select id="drawFilterSelect" class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-1.5 text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-[#FF385C] focus:outline-none flex-1 sm:flex-initial">
+                                <span class="text-base text-muted  whitespace-nowrap">กรองงวด:</span>
+                                <select aria-label="กรองรายการตามงวด" id="drawFilterSelect" class="bg-surface  border border-line  rounded-lg px-3 py-1.5 text-base text-ink  focus:ring-2 focus:ring-accent focus:outline-none flex-1 sm:flex-initial">
                                     <option value="all" ${this.selectedDrawFilter === 'all' ? 'selected' : ''}>ทั้งหมดทุกงวด</option>
                                     ${availableDrawDates.map(d => `
                                         <option value="${d}" ${this.selectedDrawFilter === d ? 'selected' : ''}>
@@ -259,51 +259,51 @@
 
                         <!-- Ticket Table / Cards -->
                         ${filteredTickets.length === 0 ? `
-                            <div class="p-12 text-center text-gray-400 dark:text-gray-500">
-                                <div class="text-4xl mb-2">🏷️</div>
-                                <div class="text-sm font-medium">ยังไม่มีรายการสลากในงวดนี้</div>
-                                <div class="text-xs mt-1">บันทึกสลากใบแรกของคุณด้วยฟอร์มด้านบน</div>
+                            <div class="p-12 text-center text-muted ">
+                                <div class="text-4xl mb-2">▤</div>
+                                <div class="text-base font-medium">ยังไม่มีรายการสลากในงวดนี้</div>
+                                <div class="text-base mt-1">บันทึกสลากใบแรกของคุณด้วยฟอร์มด้านบน</div>
                             </div>
                         ` : `
-                            <div class="divide-y divide-gray-100 dark:divide-gray-700/60">
+                            <div class="divide-y divide-line ">
                                 ${filteredTickets.map(t => {
                                     return `
-                                        <div class="p-4 hover:bg-gray-50/80 dark:hover:bg-gray-750 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                        <div class="p-4 hover:bg-surface  transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                                             <div class="flex items-center gap-3">
-                                                <div class="w-12 h-12 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-[#FF385C] flex flex-col items-center justify-center font-bold">
-                                                    <span class="text-xs font-normal text-gray-400 dark:text-gray-500">สลาก</span>
-                                                    <span class="text-sm leading-none">${t.count} ใบ</span>
+                                                <div class="w-12 h-12 rounded-lg bg-accent-soft  text-accent flex flex-col items-center justify-center font-bold">
+                                                    <span class="text-base font-normal text-muted ">สลาก</span>
+                                                    <span class="text-base leading-none">${t.count} ใบ</span>
                                                 </div>
                                                 <div>
                                                     <div class="flex items-center gap-2">
-                                                        <span class="font-lotto text-xl font-bold tracking-wider text-gray-900 dark:text-white">
+                                                        <span class="font-lotto text-xl font-bold tracking-wider text-ink ">
                                                             ${t.number}
                                                         </span>
-                                                        <span class="text-[10px] px-2 py-0.5 rounded-full font-medium ${t.number.length === 6 ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300'}">
+                                                        <span class="text-base px-2 py-0.5 rounded-full font-medium ${t.number.length === 6 ? 'bg-accent-soft text-accent  ' : 'bg-accent-soft text-accent  '}">
                                                             ${t.number.length === 6 ? '6 หลัก' : (t.number.length === 3 ? '3 ตัว' : '2 ตัว')}
                                                         </span>
                                                     </div>
-                                                    <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                                    <div class="flex items-center gap-2 text-base text-muted  mt-0.5">
                                                         <span>งวด ${formatShortThaiDate(t.drawDate)}</span>
                                                         <span>•</span>
                                                         <span>ใบละ ฿${t.costPerUnit}</span>
-                                                        ${t.note ? `<span>•</span> <span class="text-gray-600 dark:text-gray-300 italic">"${t.note}"</span>` : ''}
+                                                        ${t.note ? `<span>•</span> <span class="text-muted  ">"${t.note}"</span>` : ''}
                                                     </div>
                                                 </div>
                                             </div>
 
                                             <div class="flex items-center justify-between w-full sm:w-auto gap-4 self-end sm:self-center">
                                                 <div class="text-right">
-                                                    <div class="text-sm font-bold text-gray-900 dark:text-white">
+                                                    <div class="text-base font-bold text-ink ">
                                                         ฿${t.totalCost.toLocaleString()}
                                                     </div>
-                                                    <div class="text-[10px] text-gray-400">
+                                                    <div class="text-base text-muted">
                                                         ยอดจ่ายจริง
                                                     </div>
                                                 </div>
                                                 <div class="flex items-center gap-1">
-                                                    <button type="button" data-delete-id="${t.id}" class="btn-delete-ticket p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition" title="ลบรายการ">
-                                                        🗑️
+                                                    <button type="button" data-delete-id="${t.id}" class="btn-delete-ticket p-2 text-muted hover:text-error hover:bg-error-soft  rounded-lg transition" title="ลบรายการ">
+                                                        ×
                                                     </button>
                                                 </div>
                                             </div>
@@ -432,34 +432,37 @@
             const jsonStr = root.LottoStorage.exportDataJSON();
             const csvStr = root.LottoStorage.exportTicketsCSV();
 
-            const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm';
+            const modal = document.createElement('dialog');
+            modal.className = 'book-dialog';
             modal.innerHTML = `
-                <div class="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl p-6 shadow-2xl border border-gray-200 dark:border-gray-700 space-y-4">
+                <div class="bg-surface  w-full max-w-md rounded-lg p-6  border border-line  space-y-4">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-base font-bold text-gray-900 dark:text-white">💾 สำรองข้อมูลสลาก & งบ</h3>
-                        <button type="button" class="btn-close-modal text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg">✕</button>
+                        <h2 class="text-base font-bold text-ink ">↑ สำรองข้อมูลสลาก & งบ</h2>
+                        <button type="button" aria-label="ปิดหน้าต่าง" class="btn-close-modal text-muted hover:text-muted  text-lg">✕</button>
                     </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                    <p class="text-base text-muted ">
                         เลือกรูปแบบไฟล์ที่ต้องการสำรองข้อมูล คุณสามารถนำไฟล์นี้มานำเข้ากู้คืนในอนาคตได้ตลอดเวลา
                     </p>
                     <div class="grid grid-cols-2 gap-3 pt-2">
-                        <button type="button" id="btnDownloadJSON" class="p-3 border border-gray-200 dark:border-gray-700 hover:border-[#FF385C] rounded-xl text-center group transition">
-                            <div class="text-2xl mb-1">📄</div>
-                            <div class="text-xs font-bold text-gray-800 dark:text-gray-200 group-hover:text-[#FF385C]">ดาวน์โหลด JSON</div>
-                            <div class="text-[10px] text-gray-400">สลาก, งบ, และผลย้อนหลัง</div>
+                        <button type="button" id="btnDownloadJSON" class="p-3 border border-line  hover:border-accent rounded-lg text-center group transition">
+                            <div class="text-2xl mb-1">▤</div>
+                            <div class="text-base font-bold text-ink  group-hover:text-accent">ดาวน์โหลด JSON</div>
+                            <div class="text-base text-muted">สลาก, งบ, และผลย้อนหลัง</div>
                         </button>
-                        <button type="button" id="btnDownloadCSV" class="p-3 border border-gray-200 dark:border-gray-700 hover:border-[#FF385C] rounded-xl text-center group transition">
-                            <div class="text-2xl mb-1">📊</div>
-                            <div class="text-xs font-bold text-gray-800 dark:text-gray-200 group-hover:text-[#FF385C]">ดาวน์โหลด CSV</div>
-                            <div class="text-[10px] text-gray-400">เปิดใน Excel / Sheets</div>
+                        <button type="button" id="btnDownloadCSV" class="p-3 border border-line  hover:border-accent rounded-lg text-center group transition">
+                            <div class="text-2xl mb-1">▥</div>
+                            <div class="text-base font-bold text-ink  group-hover:text-accent">ดาวน์โหลด CSV</div>
+                            <div class="text-base text-muted">เปิดใน Excel / Sheets</div>
                         </button>
                     </div>
                 </div>
             `;
+            modal.setAttribute('aria-label', modal.querySelector('h2').textContent.trim());
             document.body.appendChild(modal);
+            modal.addEventListener('close', () => modal.remove(), { once: true });
+            modal.showModal();
 
-            const closeModal = () => modal.remove();
+            const closeModal = () => modal.close();
             modal.querySelector('.btn-close-modal').addEventListener('click', closeModal);
 
             modal.querySelector('#btnDownloadJSON').addEventListener('click', () => {
@@ -488,26 +491,29 @@
         },
 
         showImportModal(parentContainer) {
-            const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm';
+            const modal = document.createElement('dialog');
+            modal.className = 'book-dialog';
             modal.innerHTML = `
-                <div class="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl p-6 shadow-2xl border border-gray-200 dark:border-gray-700 space-y-4">
+                <div class="bg-surface  w-full max-w-md rounded-lg p-6  border border-line  space-y-4">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-base font-bold text-gray-900 dark:text-white">📥 นำเข้าข้อมูลสำรอง</h3>
-                        <button type="button" class="btn-close-modal text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg">✕</button>
+                        <h2 class="text-base font-bold text-ink ">↓ นำเข้าข้อมูลสำรอง</h2>
+                        <button type="button" aria-label="ปิดหน้าต่าง" class="btn-close-modal text-muted hover:text-muted  text-lg">✕</button>
                     </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                    <p class="text-base text-muted ">
                         เลือกไฟล์ JSON ที่เคยสำรองไว้เพื่อนำข้อมูลสลากและงบประมาณกลับเข้ามา
                     </p>
-                    <input type="file" id="importFileInput" accept=".json" class="block w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#FF385C]/10 file:text-[#FF385C] hover:file:bg-[#FF385C]/20 cursor-pointer">
+                    <input type="file" id="importFileInput" accept=".json" class="block w-full text-base text-muted file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-base file:font-semibold file:bg-raised file:text-accent hover:file:bg-surface cursor-pointer">
                     <div class="flex justify-end gap-2 pt-2">
-                        <button type="button" class="btn-close-modal px-4 py-2 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition">ยกเลิก</button>
+                        <button type="button" class="btn-close-modal px-4 py-2 text-base text-muted  hover:bg-raised  rounded-lg transition">ยกเลิก</button>
                     </div>
                 </div>
             `;
+            modal.setAttribute('aria-label', modal.querySelector('h2').textContent.trim());
             document.body.appendChild(modal);
+            modal.addEventListener('close', () => modal.remove(), { once: true });
+            modal.showModal();
 
-            const closeModal = () => modal.remove();
+            const closeModal = () => modal.close();
             modal.querySelectorAll('.btn-close-modal').forEach(b => b.addEventListener('click', closeModal));
 
             const fileInput = modal.querySelector('#importFileInput');

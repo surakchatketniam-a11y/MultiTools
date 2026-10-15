@@ -1,9 +1,10 @@
 // Service Worker for Multitools - LottoBook
-const CACHE_NAME = 'lotto-book-cache-v1';
+const CACHE_NAME = 'lotto-book-cache-v2';
 const ASSETS = [
     './',
     './index.html',
     './css/style.css',
+    './tokens.css',
     './data/glo_results.json',
     './src/storage.js',
     './src/checker.js',
