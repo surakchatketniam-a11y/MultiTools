@@ -14,7 +14,12 @@ function source(name) {
 }
 
 function context(extra = {}) {
-    const mockStorage = { getItem() { return null; }, setItem() {}, removeItem() {} };
+    const memoryStore = {};
+    const mockStorage = {
+        getItem(k) { return Object.prototype.hasOwnProperty.call(memoryStore, k) ? memoryStore[k] : null; },
+        setItem(k, v) { memoryStore[k] = String(v); },
+        removeItem(k) { delete memoryStore[k]; }
+    };
     const ctx = vm.createContext({ persistAppState() {}, localStorage: mockStorage, ...extra });
     const unitDefMatch = html.match(/const UNIT_DEFINITIONS = \{[\s\S]*?\n        \};/);
     if (unitDefMatch) vm.runInContext(unitDefMatch[0].replace(/const /g, 'var '), ctx);
@@ -22,12 +27,17 @@ function context(extra = {}) {
     if (catalogMatch) vm.runInContext(catalogMatch[0].replace(/const /g, 'var '), ctx);
     const holidaysMatch = html.match(/const THAI_FIXED_PUBLIC_HOLIDAYS = [\s\S]*?function isThaiOfficialHoliday\([\s\S]*?\n        \}/);
     if (holidaysMatch) vm.runInContext(holidaysMatch[0].replace(/const /g, 'var '), ctx);
+    const historyConstMatch = html.match(/const HISTORY_STORAGE_KEY = [^;]+;\s*const MAX_HISTORY_UNPINNED = [^;]+;/);
+    if (historyConstMatch) vm.runInContext(historyConstMatch[0].replace(/const /g, 'var '), ctx);
     for (const name of ['normalizeThaiDigits', 'parseNumericInput', 'numberOrDefault', 'integerOrDefault',
         'formatLocalDate', 'addCalendarDays', 'parseDateInputThai', 'parseFrankfurterRates',
         'evaluateArithmeticExpression', 'escapeHTML', 'formatInputDisplay', 'formatCalcExpr', 'formatNum', 'formatUnitPrice', 'formatMoney',
         'validateCalendarDate', 'countWorkingDays', 'offsetWorkingDays', 'normalizeWorkDays', 'formatDateInTimezone',
         'generateLoanSchedule', 'aggregateLoanScheduleByYear', 'rowsToCSV', 'buildLoanAmortizationCSV',
-        'generateSavingsSchedule', 'buildSavingsScheduleCSV', 'getCSVFilename']) {
+        'generateSavingsSchedule', 'buildSavingsScheduleCSV', 'getCSVFilename',
+        'getCalculationHistory', 'saveCalculationHistory', 'formatHistoryTime', 'extractShortSummary', 'extractDetailText',
+        'recordCalculationHistory', 'pinCalculationHistory', 'unpinCalculationHistory', 'renameCalculationHistory',
+        'deleteCalculationHistory', 'clearCalculationHistory', 'restoreCalculationHistory']) {
         vm.runInContext(source(name), ctx);
     }
     return ctx;
@@ -506,6 +516,84 @@ test('savings schedule generates accurate monthly/yearly growth breakdown and va
     // 4. Filename generator
     const fnYearly = ctx.getCSVFilename('savings_schedule', 'yearly');
     assert.match(fnYearly, /^savings_schedule_yearly_\d{8}\.csv$/);
+});
+
+test('calculation history and saved sets: auto-recording, pinning, renaming, FIFO cap and restoration', () => {
+    const rawAppStateMatch = html.match(/const appState = \{[\s\S]*?\n        \};/);
+    assert.ok(rawAppStateMatch);
+    const ctx = context();
+    vm.runInContext(rawAppStateMatch[0].replace(/const /g, 'var '), ctx);
+
+    // 1. Summary Extraction Helpers
+    const loanSummary = `🏦 สรุปยอดผ่อนเงินกู้ & ผ่อนชำระ
+----------------------------------
+• วงเงินกู้: 2,500,000 บาท
+• ดอกเบี้ย: 3.5% ต่อปี (ลดต้นลดดอก)
+• ระยะเวลา: 360 เดือน
+----------------------------------
+💰 ค่างวด: 11,226.12 บาท/เดือน
+• ดอกเบี้ยรวม: +1,541,402.89 บาท
+• ยอดชำระรวม: 4,041,402.89 บาท
+(คำนวณโดย Multitools Calculator)`;
+
+    assert.equal(ctx.extractShortSummary(loanSummary), 'ค่างวด: 11,226.12 บาท/เดือน');
+    assert.equal(ctx.extractDetailText(loanSummary), 'วงเงินกู้: 2,500,000 บาท · ดอกเบี้ย: 3.5% ต่อปี (ลดต้นลดดอก)');
+
+    // 2. Record new calculation history entry
+    ctx.appState.loan = { principal: '2,500,000', interestRate: '3.5', months: '360', extra: '0', rateType: 'fixed', calcMethod: 'reducing' };
+    const entry1 = ctx.recordCalculationHistory(ctx.appState, 'loan', false, '', loanSummary);
+    assert.ok(entry1);
+    assert.equal(entry1.toolId, 'loan');
+    assert.equal(entry1.shortSummary, 'ค่างวด: 11,226.12 บาท/เดือน');
+    assert.equal(entry1.isSaved, false);
+
+    let allHist = ctx.getCalculationHistory();
+    assert.equal(allHist.length, 1);
+
+    // 3. Pin calculation to Saved Sets with custom label
+    const pinned = ctx.pinCalculationHistory(entry1.id, 'บ้านโครงการ A (2.5 ล้าน)');
+    assert.equal(pinned.isSaved, true);
+    assert.equal(pinned.label, 'บ้านโครงการ A (2.5 ล้าน)');
+
+    allHist = ctx.getCalculationHistory();
+    assert.equal(allHist[0].isSaved, true);
+    assert.equal(allHist[0].label, 'บ้านโครงการ A (2.5 ล้าน)');
+
+    // 4. Rename saved set
+    ctx.renameCalculationHistory(entry1.id, 'บ้านโครงการ พฤกษา');
+    allHist = ctx.getCalculationHistory();
+    assert.equal(allHist[0].label, 'บ้านโครงการ พฤกษา');
+
+    // 5. Test FIFO 20-item cap on unpinned items
+    for (let i = 0; i < 25; i++) {
+        ctx.appState.loan.principal = `${i + 1},000,000`;
+        ctx.recordCalculationHistory(ctx.appState, 'loan', false, '', `💰 ค่างวด: ${i + 1}0,000 บาท/เดือน\n• วงเงินกู้: ${i + 1} ล้าน`);
+    }
+
+    allHist = ctx.getCalculationHistory();
+    const savedItems = allHist.filter(h => h.isSaved);
+    const unpinnedItems = allHist.filter(h => !h.isSaved);
+    assert.equal(savedItems.length, 1, 'Pinned items must be preserved indefinitely');
+    assert.equal(unpinnedItems.length, 20, 'Unpinned history must be capped at 20');
+
+    // 6. Restore history item into active state
+    ctx.appState.loan.principal = '0';
+    const restored = ctx.restoreCalculationHistory(entry1.id, ctx.appState);
+    assert.ok(restored);
+    assert.equal(restored.id, entry1.id);
+    assert.equal(ctx.appState.loan.principal, '2,500,000');
+    assert.equal(ctx.appState.activeToolId, 'loan');
+
+    // 7. Clear history (unpinned only)
+    ctx.clearCalculationHistory(true);
+    allHist = ctx.getCalculationHistory();
+    assert.equal(allHist.length, 1, 'Only saved items must remain after clearing unpinned history');
+    assert.equal(allHist[0].id, entry1.id);
+
+    // 8. Delete saved item
+    ctx.deleteCalculationHistory(entry1.id);
+    allHist = ctx.getCalculationHistory();
+    assert.equal(allHist.length, 0);
 });
 
 
