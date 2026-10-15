@@ -1407,6 +1407,77 @@ test('progressive electricity tariff & appliance energy engine: MEA/PEA type 1.1
     assert.match(summaryElec, /1,599\.93 บาท/);
 });
 
+test('thai gold live API parser and loader validates payload structure, updates rates, and handles network failures gracefully', async () => {
+    const ctx = context();
+
+    // 1. Valid API payload parsing
+    const samplePayload = {
+        status: 'success',
+        response: {
+            update_date: '15/10/2569',
+            update_time: 'เวลา 16:22 น. (ครั้งที่ 18)',
+            price: {
+                gold: {
+                    buy: '64,430.00',
+                    sell: '66,750.00'
+                },
+                gold_bar: {
+                    buy: '65,750.00',
+                    sell: '65,950.00'
+                }
+            }
+        }
+    };
+    const parsed = ctx.parseThaiGoldApiResponse(samplePayload);
+    assert.equal(parsed.priceBarBuy, 65750);
+    assert.equal(parsed.priceBarSell, 65950);
+    assert.equal(parsed.priceOrnamentBuy, 64430);
+    assert.equal(parsed.priceOrnamentSell, 66750);
+    assert.equal(parsed.updateDate, '15/10/2569');
+    assert.equal(parsed.updateTime, 'เวลา 16:22 น. (ครั้งที่ 18)');
+
+    // 2. Invalid or missing fields rejection
+    assert.throws(() => ctx.parseThaiGoldApiResponse(null), /Invalid Thai Gold API response/);
+    assert.throws(() => ctx.parseThaiGoldApiResponse({ status: 'error' }), /Invalid Thai Gold API response/);
+    assert.throws(() => ctx.parseThaiGoldApiResponse({
+        status: 'success',
+        response: { price: { gold: { buy: '0', sell: '0' }, gold_bar: { buy: '0', sell: '0' } } }
+    }), /Missing or invalid gold rates/);
+
+    // 3. Gold loader commits live rates on success
+    const gold_thai = {
+        mode: 'buy',
+        goldType: 'ornament',
+        weightUnit: 'baht',
+        weightValue: '1',
+        craftFee: '800',
+        priceBarBuy: '43900',
+        priceBarSell: '44000',
+        priceOrnamentBuy: '43115',
+        priceOrnamentSell: '44500'
+    };
+    const mockCtx = context({
+        appState: { activeToolId: 'gold_thai', gold_thai },
+        persistAppState() {},
+        fetch: async () => ({
+            ok: true,
+            status: 200,
+            json: async () => samplePayload
+        })
+    });
+    await mockCtx.loadThaiGoldRates(true);
+    assert.equal(mockCtx.appState.gold_thai.priceBarSell, '65950');
+    assert.equal(mockCtx.appState.gold_thai.priceOrnamentSell, '66750');
+    assert.equal(mockCtx.appState.gold_thai.rateSource, 'สมาคมค้าทองคำ (สดจาก API)');
+    assert.ok(mockCtx.appState.gold_thai.lastUpdated);
+
+    // 4. Gold loader falls back safely on network error without corrupting existing rates
+    mockCtx.fetch = async () => { throw new Error('Offline / Network Error'); };
+    await mockCtx.loadThaiGoldRates(true);
+    assert.equal(mockCtx.appState.gold_thai.priceBarSell, '65950'); // Preserves previous valid rates
+    assert.equal(mockCtx.appState.gold_thai.rateSource, 'ค่าเดิมในเครื่อง (เชื่อมต่อ API ไม่สำเร็จ)');
+});
+
 
 
 

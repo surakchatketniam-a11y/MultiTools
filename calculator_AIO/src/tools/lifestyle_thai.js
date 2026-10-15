@@ -213,6 +213,79 @@ function calculateApplianceEnergy(appliancesList, avgUnitCost = 4.5) {
 }
 
 /* -----------------------------------------------------------
+ * LIVE API: ระบบดึงราคาทองคำสมาคมค้าทองคำแบบเรียลไทม์
+ * ----------------------------------------------------------- */
+function parseThaiGoldApiResponse(payload) {
+    if (!payload || payload.status !== 'success' || !payload.response || !payload.response.price) {
+        throw new Error('Invalid Thai Gold API response structure');
+    }
+    const price = payload.response.price;
+    const priceBarBuy = parseNumericInput(price.gold_bar?.buy);
+    const priceBarSell = parseNumericInput(price.gold_bar?.sell);
+    const priceOrnamentBuy = parseNumericInput(price.gold?.buy);
+    const priceOrnamentSell = parseNumericInput(price.gold?.sell);
+
+    if (!Number.isFinite(priceBarBuy) || priceBarBuy <= 0 ||
+        !Number.isFinite(priceBarSell) || priceBarSell <= 0 ||
+        !Number.isFinite(priceOrnamentBuy) || priceOrnamentBuy <= 0 ||
+        !Number.isFinite(priceOrnamentSell) || priceOrnamentSell <= 0) {
+        throw new Error('Missing or invalid gold rates in API response');
+    }
+
+    const updateDate = String(payload.response.update_date || '').trim();
+    const updateTime = String(payload.response.update_time || '').trim();
+
+    return {
+        priceBarBuy,
+        priceBarSell,
+        priceOrnamentBuy,
+        priceOrnamentSell,
+        updateDate,
+        updateTime
+    };
+}
+
+let goldFetchInFlight = false;
+
+async function loadThaiGoldRates(force = false) {
+    if (typeof appState === 'undefined' || !appState.gold_thai) return;
+    const st = appState.gold_thai;
+    const now = Date.now();
+    if (goldFetchInFlight) return;
+    if (!force && st.lastAttempt && now - new Date(st.lastAttempt).getTime() < 30000) return;
+
+    goldFetchInFlight = true;
+    st.lastAttempt = new Date().toISOString();
+    if (appState.activeToolId === 'gold_thai' && typeof renderActiveTool === 'function') {
+        renderActiveTool();
+    }
+
+    try {
+        const response = await fetch('https://api.chnwt.dev/thai-gold-api/latest', { cache: 'no-store' });
+        if (!response.ok) throw new Error(`Thai Gold API HTTP ${response.status}`);
+        const payload = await response.json();
+        const parsed = parseThaiGoldApiResponse(payload);
+
+        st.priceBarBuy = String(parsed.priceBarBuy);
+        st.priceBarSell = String(parsed.priceBarSell);
+        st.priceOrnamentBuy = String(parsed.priceOrnamentBuy);
+        st.priceOrnamentSell = String(parsed.priceOrnamentSell);
+        st.lastUpdated = new Date().toISOString();
+        st.apiUpdateDate = parsed.updateDate;
+        st.apiUpdateTime = parsed.updateTime;
+        st.rateSource = 'สมาคมค้าทองคำ (สดจาก API)';
+    } catch (error) {
+        st.rateSource = 'ค่าเดิมในเครื่อง (เชื่อมต่อ API ไม่สำเร็จ)';
+    } finally {
+        goldFetchInFlight = false;
+        if (typeof persistAppState === 'function') persistAppState();
+        if (appState.activeToolId === 'gold_thai' && typeof renderActiveTool === 'function') {
+            renderActiveTool();
+        }
+    }
+}
+
+/* -----------------------------------------------------------
  * UI RENDERER: คำนวณราคาทองคำไทย (gold_thai)
  * ----------------------------------------------------------- */
 function renderGoldThaiTool(container) {
@@ -227,7 +300,11 @@ function renderGoldThaiTool(container) {
         priceBarSell: '44000',
         priceOrnamentBuy: '43115',
         priceOrnamentSell: '44500',
-        savingsCostPerBaht: '40000'
+        savingsCostPerBaht: '40000',
+        rateSource: 'สมาคมค้าทองคำ',
+        lastUpdated: null,
+        apiUpdateDate: '',
+        apiUpdateTime: ''
     };
 
     const calc = calculateGoldThai(st);
@@ -248,8 +325,16 @@ function renderGoldThaiTool(container) {
             <!-- Reference Prices Banner (Gold Association Bar) -->
             <div class="bg-amber-500/10 border border-amber-500/30 rounded-[var(--app-card-radius)] p-3 text-xs text-amber-900 dark:text-amber-200 space-y-1.5" style="box-shadow:var(--app-elevation)">
                 <div class="flex justify-between items-center font-bold">
-                    <span>👑 ราคาทองสมาคมค้าทองคำ (ความบริสุทธิ์ 96.5%)</span>
-                    <button id="btnToggleCustomGoldRates" class="text-[11px] underline text-amber-800 dark:text-amber-300">ปรับราคาเอง</button>
+                    <span class="flex items-center gap-1.5 truncate">
+                        👑 ราคาทองสมาคมค้าทองคำ (96.5%)
+                    </span>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button id="btnFetchGoldRates" type="button" class="flex items-center gap-1 text-[11px] font-semibold text-amber-800 dark:text-amber-300 hover:underline cursor-pointer ${goldFetchInFlight ? 'opacity-50 pointer-events-none' : ''}">
+                            <span class="${goldFetchInFlight ? 'animate-spin inline-block' : ''}">🔄</span> ${goldFetchInFlight ? 'กำลังดึง...' : 'ดึงราคาวันนี้'}
+                        </button>
+                        <span class="text-neutral-300 dark:text-neutral-700">|</span>
+                        <button id="btnToggleCustomGoldRates" type="button" class="text-[11px] underline text-neutral-500 hover:text-neutral-700 dark:text-neutral-400">ปรับราคาเอง</button>
+                    </div>
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-[11px]">
                     <div class="bg-white/80 dark:bg-black/20 p-2 rounded-lg">
@@ -260,6 +345,11 @@ function renderGoldThaiTool(container) {
                         <span class="text-neutral-500 block">ทองรูปพรรณ 96.5%</span>
                         <b>รับซื้อ: ${formatMoney(calc.prices.priceOrnamentBuy)} | ขายออก: ${formatMoney(calc.prices.priceOrnamentSell)}</b>
                     </div>
+                </div>
+
+                <div class="flex justify-between items-center text-[10px] text-neutral-500 dark:text-neutral-400 pt-0.5">
+                    <span>แหล่งข้อมูล: ${escapeHTML(st.rateSource || 'สมาคมค้าทองคำ')} ${st.apiUpdateTime ? `(${escapeHTML(st.apiUpdateTime)})` : ''}</span>
+                    ${st.lastUpdated ? `<span>อัปเดต: ${new Date(st.lastUpdated).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.</span>` : ''}
                 </div>
 
                 <!-- Custom Rates Inputs (Hidden by default) -->
@@ -447,6 +537,10 @@ function renderGoldThaiTool(container) {
     bindInput('goldOrnamentSell', 'priceOrnamentSell');
     bindInput('goldOrnamentBuy', 'priceOrnamentBuy');
 
+    document.getElementById('btnFetchGoldRates')?.addEventListener('click', () => {
+        loadThaiGoldRates(true);
+    });
+
     document.getElementById('btnToggleCustomGoldRates')?.addEventListener('click', () => {
         const panel = document.getElementById('goldCustomRatesPanel');
         panel?.classList.toggle('hidden');
@@ -455,6 +549,11 @@ function renderGoldThaiTool(container) {
     container.querySelector('#btnPrintGoldThaiSummary')?.addEventListener('click', () => {
         triggerPrintReceipt('gold_thai');
     });
+
+    const stale = !st.lastUpdated || (Date.now() - new Date(st.lastUpdated).getTime() > 30 * 60 * 1000);
+    if (stale && !goldFetchInFlight && typeof window !== 'undefined' && typeof window.fetch === 'function') {
+        loadThaiGoldRates();
+    }
 
     if (calc.bahtWeight <= 0) {
         setStatusBanner('empty', 'กรุณาระบุน้ำหนักทองคำที่ต้องการคำนวณ');
@@ -758,6 +857,8 @@ function renderElectricityBillTool(container) {
 // Module export definitions
 (function(root) {
     const exportsObj = {
+        parseThaiGoldApiResponse,
+        loadThaiGoldRates,
         calculateGoldThai,
         calculateElectricityBill,
         calculateApplianceEnergy,
