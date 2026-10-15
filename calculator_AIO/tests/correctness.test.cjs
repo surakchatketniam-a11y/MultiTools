@@ -266,7 +266,9 @@ test('getToolSummaryText formats context-rich summary for key tools, and discoun
         appState: {
             vat_wht: { amount: '10000', vatRate: '7', whtRate: '3' },
             discount: { price: '1000', discountPct: '150', extraPct: '0' },
-            unit_price: { rows: [{ id: 'A', price: '864', qty: '50' }, { id: 'B', price: '900', qty: '50' }] }
+            unit_price: { rows: [{ id: 'A', price: '864', qty: '50' }, { id: 'B', price: '900', qty: '50' }] },
+            loan: { principal: '500000', interestRate: '4.5', months: '36', extra: '0', calcMethod: 'reducing' },
+            savings: { initial: '10000', monthly: '3000', interestRate: '2.5', years: '5', annualIncrease: '0', mode: 'growth' }
         }
     });
     const catalogMatch = html.match(/const TOOL_GROUPS = \[[\s\S]*?const TOOLS_CATALOG = \[[\s\S]*?\];/);
@@ -287,7 +289,18 @@ test('getToolSummaryText formats context-rich summary for key tools, and discoun
     assert.match(unitPriceText, /18\.00 บาท\/หน่วย/);
     assert.match(unitPriceText, /ตัวเลือก A/);
 
-    // 3. Discount capping
+    // 3. Loan summary
+    const loanText = ctx.getToolSummaryText('loan');
+    assert.match(loanText, /สรุปยอดผ่อนเงินกู้/);
+    assert.match(loanText, /500,000\.00 บาท/);
+    assert.match(loanText, /ค่างวด:/);
+
+    // 4. Savings summary
+    const savingsText = ctx.getToolSummaryText('savings');
+    assert.match(savingsText, /สรุปการวางแผนเงินออม/);
+    assert.match(savingsText, /ยอดเงินออมสุทธิ:/);
+
+    // 5. Discount capping
     const discountRes = calculation(ctx, 'renderDiscountTool', null, '({finalPrice, saved, isOver100})');
     assert.equal(discountRes.finalPrice, 0);
     assert.equal(discountRes.saved, 1000);
