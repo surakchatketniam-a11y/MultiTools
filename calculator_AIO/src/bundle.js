@@ -10016,39 +10016,39 @@ function renderLaborSeveranceTool(container) {
     const calc = calculateLaborSeverance(st);
 
     container.innerHTML = `
-        <div class="flex flex-col gap-3 p-1">
+        <div class="legal-labor-tool flex flex-col gap-3 p-1">
             <!-- Mode Switch: Duration vs Dates -->
-            <div class="segment-group grid-cols-2 balanced-segment-modes" role="tablist" aria-label="วิธีระบุอายุงาน">
-                <button type="button" class="segment-btn ${st.mode === 'duration' ? 'active' : ''}" data-mode="duration">⏳ ระบุอายุงาน (ปี/เดือน/วัน)</button>
-                <button type="button" class="segment-btn ${st.mode === 'dates' ? 'active' : ''}" data-mode="dates">📅 ระบุวันที่เริ่มงาน - วันเลิกจ้าง</button>
+            <div class="segment-group grid-cols-2 balanced-segment-modes" role="group" aria-label="วิธีระบุอายุงาน">
+                <button type="button" aria-pressed="${st.mode === 'duration'}" class="segment-btn ${st.mode === 'duration' ? 'active' : ''}" data-mode="duration">ระบุอายุงาน</button>
+                <button type="button" aria-pressed="${st.mode === 'dates'}" class="segment-btn ${st.mode === 'dates' ? 'active' : ''}" data-mode="dates">ระบุช่วงวันที่</button>
             </div>
 
             <!-- Main Input Form -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">
-                    💼 ข้อมูลค่าจ้างและอายุงาน
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">
+                    ข้อมูลค่าจ้างและอายุงาน
                 </div>
 
                 <div>
-                    <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">เงินเดือนล่าสุด / ค่าจ้างเฉลี่ย 30 วันสุดท้าย (บาท)</label>
+                    <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">เงินเดือนล่าสุด / ค่าจ้างเฉลี่ย 30 วันสุดท้าย (บาท)</label>
                     <input id="sevSalaryInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.salaryMonthly))}" placeholder="เช่น 35,000" class="airbnb-input w-full text-base font-semibold">
                     <div class="text-[11px] text-[var(--app-muted)] mt-0.5">คิดเป็นค่าจ้างรายวัน: <b>${formatMoney(calc.dailyWage)} บาท/วัน</b> (เงินเดือน ÷ 30)</div>
                 </div>
 
                 ${st.mode === 'duration' ? `
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">อายุการทำงานที่ผ่านมา</label>
+                        <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">อายุการทำงานที่ผ่านมา</label>
                         <div class="grid grid-cols-3 gap-2">
                             <div>
-                                <span class="text-[11px] text-neutral-400 block mb-0.5">ปี</span>
+                                <span class="text-[11px] text-[var(--app-muted)] block mb-0.5">ปี</span>
                                 <input id="sevYearsInput" type="number" min="0" max="60" value="${escapeHTML(st.serviceYears)}" class="airbnb-input w-full text-center font-bold">
                             </div>
                             <div>
-                                <span class="text-[11px] text-neutral-400 block mb-0.5">เดือน</span>
+                                <span class="text-[11px] text-[var(--app-muted)] block mb-0.5">เดือน</span>
                                 <input id="sevMonthsInput" type="number" min="0" max="11" value="${escapeHTML(st.serviceMonths)}" class="airbnb-input w-full text-center font-bold">
                             </div>
                             <div>
-                                <span class="text-[11px] text-neutral-400 block mb-0.5">วัน</span>
+                                <span class="text-[11px] text-[var(--app-muted)] block mb-0.5">วัน</span>
                                 <input id="sevDaysInput" type="number" min="0" max="30" value="${escapeHTML(st.serviceDays)}" class="airbnb-input w-full text-center font-bold">
                             </div>
                         </div>
@@ -10056,11 +10056,11 @@ function renderLaborSeveranceTool(container) {
                 ` : `
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">วันเริ่มงาน</label>
+                            <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">วันเริ่มงาน</label>
                             <input id="sevStartDateInput" type="date" value="${escapeHTML(st.startDate)}" class="airbnb-input w-full text-xs font-semibold">
                         </div>
                         <div>
-                            <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">วันเลิกจ้าง / วันสุดท้าย</label>
+                            <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">วันเลิกจ้าง / วันสุดท้าย</label>
                             <input id="sevEndDateInput" type="date" value="${escapeHTML(st.endDate)}" class="airbnb-input w-full text-xs font-semibold">
                         </div>
                     </div>
@@ -10071,20 +10071,20 @@ function renderLaborSeveranceTool(container) {
 
                 <!-- Notice & Vacation Leave -->
                 <div class="border-t border-[var(--app-hairline)] pt-3 space-y-3">
-                    <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">
-                        ⚖️ สิทธิเพิ่มเติม (ค่าตกใจ & พักร้อนคงเหลือ)
+                    <div class="text-xs font-bold text-[var(--app-ink)]">
+                        สิทธิเพิ่มเติมและวันพักร้อนคงเหลือ
                     </div>
 
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">การบอกกล่าวล่วงหน้า</label>
+                            <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">การบอกกล่าวล่วงหน้า</label>
                             <select id="sevNoticeSelect" class="airbnb-input w-full text-xs font-semibold">
                                 <option value="no" ${st.noticeGiven === 'no' ? 'selected' : ''}>เลิกจ้างทันที (ได้ค่าตกใจ ม.17)</option>
                                 <option value="yes" ${st.noticeGiven === 'yes' ? 'selected' : ''}>แจ้งล่วงหน้าถูกต้อง (ไม่ได้ค่าตกใจ)</option>
                             </select>
                         </div>
                         <div>
-                            <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">วันพักร้อนคงเหลือ (วัน)</label>
+                            <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">วันพักร้อนคงเหลือ (วัน)</label>
                             <input id="sevLeaveInput" type="number" min="0" max="60" value="${escapeHTML(st.unusedLeaveDays)}" placeholder="0" class="airbnb-input w-full text-xs font-semibold">
                         </div>
                     </div>
@@ -10092,44 +10092,47 @@ function renderLaborSeveranceTool(container) {
             </div>
 
             <!-- Results Card -->
-            <div class="bg-gradient-to-br from-white to-amber-50/20 dark:from-[#1f1f1f] dark:to-neutral-900 border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
-                <div class="flex items-center justify-between">
+            <div class="themed-result-card theme-result-highlight p-5 space-y-3">
+                <div class="flex flex-col items-center gap-2 text-center">
                     <div class="text-xs font-bold text-[var(--app-ink)]">
-                        💰 ยอดเงินรวมที่ต้องได้รับทั้งสิ้น (Gross Package)
+                        ประมาณการเงินชดเชยและสิทธิรวม
                     </div>
-                    <span class="tool-metric-chip">${calc.tierLabel}</span>
+                    <span class="tool-metric-chip max-w-full">${calc.tierLabel}</span>
                 </div>
 
-                <div class="text-2xl md:text-3xl font-extrabold text-[var(--app-accent)]" id="sevTotalResult">
+                <div class="themed-result-value text-center text-2xl md:text-3xl font-extrabold" id="sevTotalResult">
                     ${formatMoney(calc.totalSeverancePackage)} บาท
                 </div>
 
-                <!-- Breakdown Items -->
-                <div class="space-y-1.5 text-xs border-t border-[var(--app-hairline)] pt-2.5">
-                    <div class="flex justify-between tool-summary-row py-1">
+            </div>
+
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">รายละเอียดการคำนวณ</div>
+                <div class="space-y-1 text-xs">
+                    <div class="flex justify-between gap-3 tool-summary-row py-2">
                         <span class="text-[var(--app-muted)]">1. ค่าชดเชยตามกฎหมาย ม.118 (${calc.severanceDays} วัน):</span>
                         <b class="font-bold text-[var(--app-ink)]">${formatMoney(calc.severancePay)} บาท</b>
                     </div>
-                    <div class="flex justify-between tool-summary-row py-1">
+                    <div class="flex justify-between gap-3 tool-summary-row py-2">
                         <span class="text-[var(--app-muted)]">2. ค่าบอกกล่าวล่วงหน้า (ค่าตกใจ ม.17):</span>
-                        <b class="font-semibold text-amber-600 dark:text-amber-400">${calc.noticePay > 0 ? `+${formatMoney(calc.noticePay)} บาท` : '0.00 บาท'}</b>
+                        <b class="font-semibold text-[var(--app-ink)]">${calc.noticePay > 0 ? `+${formatMoney(calc.noticePay)} บาท` : '0.00 บาท'}</b>
                     </div>
-                    <div class="flex justify-between tool-summary-row py-1">
+                    <div class="flex justify-between gap-3 tool-summary-row py-2">
                         <span class="text-[var(--app-muted)]">3. ค่าจ้างวันหยุดพักผ่อนคงเหลือ (${calc.unusedLeaveDays} วัน):</span>
-                        <b class="font-semibold text-emerald-600 dark:text-emerald-400">${calc.leavePay > 0 ? `+${formatMoney(calc.leavePay)} บาท` : '0.00 บาท'}</b>
+                        <b class="font-semibold text-[var(--app-ink)]">${calc.leavePay > 0 ? `+${formatMoney(calc.leavePay)} บาท` : '0.00 บาท'}</b>
                     </div>
-                    <div class="flex justify-between tool-summary-row py-1.5 border-t border-dashed border-[var(--app-hairline)]">
-                        <span class="text-blue-600 dark:text-blue-400 font-medium">🛡️ สิทธิยกเว้นภาษีเงินได้ (ตามกฎกระทรวง):</span>
-                        <b class="font-bold text-blue-600 dark:text-blue-400">ยกเว้น ${formatMoney(calc.taxExemptAmount)} บาท</b>
+                    <div class="flex justify-between gap-3 tool-summary-row py-2 border-t border-dashed border-[var(--app-hairline)]">
+                        <span class="text-[var(--app-ink)] font-medium">สิทธิยกเว้นภาษีเงินได้ (ตามกฎกระทรวง):</span>
+                        <b class="font-bold text-[var(--app-ink)]">ยกเว้น ${formatMoney(calc.taxExemptAmount)} บาท</b>
                     </div>
-                    <div class="text-[10px] text-neutral-400">
+                    <div class="text-[10px] text-[var(--app-muted)]">
                         *เงินชดเชยตามกฎหมายได้รับยกเว้นภาษีสำหรับ 300 วันสุดท้ายแต่ไม่เกิน 300,000 บาท ส่วนที่เหลือ (${formatMoney(calc.taxableSeverance)} บ.) นำไปคำนวณภาษีเงินได้ตามปกติ
                     </div>
                 </div>
 
                 <div class="flex justify-end pt-1">
                     <button id="btnPrintSeveranceSummary" type="button" class="tool-action-btn text-xs">
-                        🖨️ พิมพ์เอกสารสรุปเงินชดเชยเลิกจ้าง / PDF
+                        พิมพ์เอกสารสรุปเงินชดเชยเลิกจ้าง / PDF
                     </button>
                 </div>
             </div>
@@ -10205,28 +10208,28 @@ function renderLegalInterestTool(container) {
     const calc = calculateLegalInterest(st);
 
     container.innerHTML = `
-        <div class="flex flex-col gap-3 p-1">
+        <div class="legal-labor-tool flex flex-col gap-3 p-1">
             <!-- Rate Presets Segment -->
-            <div class="segment-group grid-cols-3 balanced-segment-modes" role="tablist" aria-label="อัตราดอกเบี้ยตามกฎหมาย">
-                <button type="button" class="segment-btn ${st.ratePreset === 'default_5' ? 'active' : ''}" data-rate="default_5">⚖️ ผิดนัด 5% (ม.224)</button>
-                <button type="button" class="segment-btn ${st.ratePreset === 'statutory_3' ? 'active' : ''}" data-rate="statutory_3">📜 กฎหมาย 3% (ม.7)</button>
-                <button type="button" class="segment-btn ${st.ratePreset === 'custom' ? 'active' : ''}" data-rate="custom">⚙️ กำหนดเอง</button>
+            <div class="segment-group grid-cols-3 balanced-segment-modes" role="group" aria-label="อัตราดอกเบี้ยตามกฎหมาย">
+                <button type="button" aria-pressed="${st.ratePreset === 'default_5'}" class="segment-btn ${st.ratePreset === 'default_5' ? 'active' : ''}" data-rate="default_5">ผิดนัด 5% (ม.224)</button>
+                <button type="button" aria-pressed="${st.ratePreset === 'statutory_3'}" class="segment-btn ${st.ratePreset === 'statutory_3' ? 'active' : ''}" data-rate="statutory_3">กฎหมาย 3% (ม.7)</button>
+                <button type="button" aria-pressed="${st.ratePreset === 'custom'}" class="segment-btn ${st.ratePreset === 'custom' ? 'active' : ''}" data-rate="custom">กำหนดเอง</button>
             </div>
 
             <!-- Main Input Form -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">
-                    💵 ข้อมูลหนี้และอัตราดอกเบี้ย
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">
+                    ข้อมูลหนี้และอัตราดอกเบี้ย
                 </div>
 
                 <div>
-                    <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ยอดเงินต้นที่ผิดนัดชำระ (บาท)</label>
+                    <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">ยอดเงินต้นที่ผิดนัดชำระ (บาท)</label>
                     <input id="legPrincipalInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.principal))}" placeholder="เช่น 100,000" class="airbnb-input w-full text-base font-semibold">
                 </div>
 
                 ${st.ratePreset === 'custom' ? `
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">อัตราดอกเบี้ยต่อปี (% ต่อปี)</label>
+                        <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">อัตราดอกเบี้ยต่อปี (% ต่อปี)</label>
                         <input id="legCustomRateInput" type="number" step="0.1" min="0" max="100" value="${escapeHTML(st.customRate)}" class="airbnb-input w-full text-sm font-semibold">
                     </div>
                 ` : `
@@ -10238,22 +10241,22 @@ function renderLegalInterestTool(container) {
 
                 <!-- Overdue Period Mode -->
                 <div class="border-t border-[var(--app-hairline)] pt-3 space-y-2">
-                    <div class="flex justify-between items-center">
-                        <label class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">ระยะเวลาผิดนัดชำระ</label>
-                        <div class="flex gap-1 text-[11px]">
-                            <button type="button" class="tool-chip-btn ${st.calcMode === 'dates' ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent)] font-bold' : ''}" data-calcmode="dates">เลือกช่วงวันที่</button>
-                            <button type="button" class="tool-chip-btn ${st.calcMode === 'days' ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent)] font-bold' : ''}" data-calcmode="days">ระบุจำนวนวัน</button>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs font-bold text-[var(--app-ink)]">ระยะเวลาผิดนัดชำระ</label>
+                        <div class="grid grid-cols-2 gap-2 text-[11px]" role="group" aria-label="วิธีระบุระยะเวลาผิดนัด">
+                            <button type="button" class="tool-chip-btn" aria-pressed="${st.calcMode === 'dates'}" data-calcmode="dates">เลือกช่วงวันที่</button>
+                            <button type="button" class="tool-chip-btn" aria-pressed="${st.calcMode === 'days'}" data-calcmode="days">ระบุจำนวนวัน</button>
                         </div>
                     </div>
 
                     ${st.calcMode === 'dates' ? `
                         <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <span class="text-[11px] text-neutral-400 block mb-0.5">วันครบกำหนดชำระ (เริ่มผิดนัด)</span>
+                                <span class="text-[11px] text-[var(--app-muted)] block mb-0.5">วันครบกำหนดชำระ (เริ่มผิดนัด)</span>
                                 <input id="legStartDateInput" type="date" value="${escapeHTML(st.startDate)}" class="airbnb-input w-full text-xs font-semibold">
                             </div>
                             <div>
-                                <span class="text-[11px] text-neutral-400 block mb-0.5">วันชำระจริง / วันปัจจุบัน</span>
+                                <span class="text-[11px] text-[var(--app-muted)] block mb-0.5">วันชำระจริง / วันปัจจุบัน</span>
                                 <input id="legEndDateInput" type="date" value="${escapeHTML(st.endDate)}" class="airbnb-input w-full text-xs font-semibold">
                             </div>
                         </div>
@@ -10262,7 +10265,7 @@ function renderLegalInterestTool(container) {
                         </div>
                     ` : `
                         <div>
-                            <span class="text-[11px] text-neutral-400 block mb-0.5">จำนวนวันผิดนัดชำระจริง (วัน)</span>
+                            <span class="text-[11px] text-[var(--app-muted)] block mb-0.5">จำนวนวันผิดนัดชำระจริง (วัน)</span>
                             <input id="legDaysInput" type="number" min="1" max="10000" value="${escapeHTML(st.overdueDays)}" class="airbnb-input w-full text-sm font-semibold">
                         </div>
                     `}
@@ -10270,44 +10273,47 @@ function renderLegalInterestTool(container) {
             </div>
 
             <!-- Results Card -->
-            <div class="bg-gradient-to-br from-white to-rose-50/20 dark:from-[#1f1f1f] dark:to-neutral-900 border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
-                <div class="flex items-center justify-between">
+            <div class="themed-result-card theme-result-highlight p-5 space-y-3">
+                <div class="flex flex-col items-center gap-2 text-center">
                     <div class="text-xs font-bold text-[var(--app-ink)]">
-                        ⚖️ ยอดหนี้รวมทั้งสิ้นที่ต้องชำระ (เงินต้น + ดอกเบี้ย)
+                        ยอดชำระรวมเงินต้นและดอกเบี้ย
                     </div>
-                    <span class="tool-metric-chip">${calc.overdueDays} วัน (${calc.interestRate}%)</span>
+                    <span class="tool-metric-chip max-w-full">${calc.overdueDays} วัน (${calc.interestRate}%)</span>
                 </div>
 
-                <div class="text-2xl md:text-3xl font-extrabold text-[var(--app-accent)]" id="legTotalResult">
+                <div class="themed-result-value text-center text-2xl md:text-3xl font-extrabold" id="legTotalResult">
                     ${formatMoney(calc.totalPayable)} บาท
                 </div>
 
-                <!-- Breakdown Items -->
-                <div class="space-y-1.5 text-xs border-t border-[var(--app-hairline)] pt-2.5">
-                    <div class="flex justify-between tool-summary-row py-1">
+            </div>
+
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">รายละเอียดการคำนวณ</div>
+                <div class="space-y-1 text-xs">
+                    <div class="flex justify-between gap-3 tool-summary-row py-2">
                         <span class="text-[var(--app-muted)]">เงินต้นที่ค้างชำระ:</span>
                         <b class="font-bold text-[var(--app-ink)]">${formatMoney(calc.principal)} บาท</b>
                     </div>
-                    <div class="flex justify-between tool-summary-row py-1">
+                    <div class="flex justify-between gap-3 tool-summary-row py-2">
                         <span class="text-[var(--app-muted)]">ดอกเบี้ยผิดนัดชำระรวม (${calc.overdueDays} วัน):</span>
-                        <b class="font-bold text-rose-600 dark:text-rose-400">+${formatMoney(calc.totalInterest)} บาท</b>
+                        <b class="font-bold text-[var(--app-ink)]">+${formatMoney(calc.totalInterest)} บาท</b>
                     </div>
-                    <div class="flex justify-between tool-summary-row py-1">
+                    <div class="flex justify-between gap-3 tool-summary-row py-2">
                         <span class="text-[var(--app-muted)]">เฉลี่ยดอกเบี้ยต่อวัน:</span>
                         <span class="text-[var(--app-ink)]">${formatMoney(calc.dailyInterest)} บาท/วัน</span>
                     </div>
-                    <div class="flex justify-between tool-summary-row py-1">
+                    <div class="flex justify-between gap-3 tool-summary-row py-2">
                         <span class="text-[var(--app-muted)]">ประมาณการดอกเบี้ยต่อเดือน (30 วัน):</span>
                         <span class="text-[var(--app-ink)]">${formatMoney(calc.monthlyInterestApprox)} บาท/เดือน</span>
                     </div>
-                    <div class="text-[10px] text-neutral-400 pt-1">
+                    <div class="text-[10px] text-[var(--app-muted)] pt-1">
                         *หมายเหตุตาม ป.พ.พ. ม.224/1: การคิดดอกเบี้ยผิดนัดในหนี้ผ่อนส่งเป็นงวด ห้ามคิดดอกเบี้ยจากเงินต้นงวดที่ยังไม่ถึงกำหนดชำระ
                     </div>
                 </div>
 
                 <div class="flex justify-end pt-1">
                     <button id="btnPrintLegalInterestSummary" type="button" class="tool-action-btn text-xs">
-                        🖨️ พิมพ์เอกสารคำนวณดอกเบี้ยผิดนัด / PDF
+                        พิมพ์เอกสารคำนวณดอกเบี้ยผิดนัด / PDF
                     </button>
                 </div>
             </div>
@@ -10362,7 +10368,7 @@ function renderLegalInterestTool(container) {
         triggerPrintReceipt('legal_interest');
     });
 
-    setStatusBanner('success', `ดอกเบี้ยผิดนัดชำระ (${calc.interestRate}% ต่อปี ${calc.overdueDays} วัน): <b class="text-rose-600 font-bold">+${formatMoney(calc.totalInterest)} บาท</b> (ยอดหนี้รวม ${formatMoney(calc.totalPayable)} บ.)`);
+    setStatusBanner('success', `ดอกเบี้ยผิดนัดชำระ (${calc.interestRate}% ต่อปี ${calc.overdueDays} วัน): <b class="text-[var(--app-accent)] font-bold">+${formatMoney(calc.totalInterest)} บาท</b> (ยอดหนี้รวม ${formatMoney(calc.totalPayable)} บ.)`);
 }
 
 // Module export definitions
