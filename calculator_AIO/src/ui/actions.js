@@ -231,9 +231,11 @@ function setStatusBanner(stateType, htmlContent) {
     const isDark = appState.theme === 'dark' || appState.theme === 'ferrari';
     const isTogether = appState.theme === 'together';
 
+    const baseTextPad = 'pl-3 pr-24 sm:pr-28';
+
     if (stateType === 'empty') {
         banner.className = 'status-banner';
-        textEl.className = 'text-[var(--app-muted)] text-[1rem]';
+        textEl.className = `text-[var(--app-muted)] text-[1rem] ${baseTextPad}`;
         textEl.innerHTML = htmlContent || 'กรุณาป้อนข้อมูลของคุณ';
     } else if (stateType === 'success') {
         if (typeof scheduleRecordHistory === 'function' && (typeof hasInvalidNumericInput !== 'function' || !hasInvalidNumericInput())) {
@@ -241,21 +243,21 @@ function setStatusBanner(stateType, htmlContent) {
         }
         if (isAirbnb) {
             banner.className = 'status-banner !border-[#ff385c] !bg-[#fff8f9]';
-            textEl.className = 'text-[#222222] text-[0.98rem] font-semibold leading-snug w-full';
+            textEl.className = `text-[#222222] text-[0.98rem] font-semibold leading-snug w-full ${baseTextPad}`;
         } else if (isTogether) {
             banner.className = 'status-banner theme-success';
-            textEl.className = 'text-[var(--app-ink)] text-[1rem] font-bold leading-snug w-full';
+            textEl.className = `text-[var(--app-ink)] text-[1rem] font-bold leading-snug w-full ${baseTextPad}`;
         } else if (isDark) {
             banner.className = 'status-banner theme-success';
-            textEl.className = 'text-[var(--app-ink)] text-[1rem] font-bold leading-snug w-full';
+            textEl.className = `text-[var(--app-ink)] text-[1rem] font-bold leading-snug w-full ${baseTextPad}`;
         } else {
             banner.className = 'status-banner !bg-[#f0fdf4] !border-[#16a34a]';
-            textEl.className = 'text-[#15803d] text-[1rem] font-bold leading-snug w-full';
+            textEl.className = `text-[#15803d] text-[1rem] font-bold leading-snug w-full ${baseTextPad}`;
         }
         textEl.innerHTML = htmlContent;
     } else {
         banner.className = 'status-banner';
-        textEl.className = 'text-[#222222] text-[0.98rem] font-medium leading-snug w-full';
+        textEl.className = `text-[#222222] text-[0.98rem] font-medium leading-snug w-full ${baseTextPad}`;
         textEl.innerHTML = htmlContent;
     }
 }

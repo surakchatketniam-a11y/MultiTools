@@ -2632,14 +2632,32 @@ function toggleTheme() {
 }
 
 function initThemeListeners() {
-    if (typeof document === 'undefined') return;
-    document.getElementById('headerThemeBtn')?.addEventListener('click', toggleTheme);
-    document.getElementById('sidebarThemeToggleBtn')?.addEventListener('click', toggleTheme);
-    document.getElementById('menuThemeAirbnb')?.addEventListener('click', () => applyTheme('airbnb'));
-    document.getElementById('menuThemeClassic')?.addEventListener('click', () => applyTheme('classic'));
-    document.getElementById('menuThemeDark')?.addEventListener('click', () => applyTheme('dark'));
-    document.getElementById('menuThemeTogether')?.addEventListener('click', () => applyTheme('together'));
-    document.getElementById('menuThemeFerrari')?.addEventListener('click', () => applyTheme('ferrari'));
+    if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return;
+    const addSafe = (id, handler) => {
+        const el = document.getElementById(id);
+        if (el && typeof el.addEventListener === 'function') {
+            el.addEventListener('click', handler);
+        }
+    };
+    const closeDropdown = () => {
+        const dd = document.getElementById('dropdownMenu');
+        if (dd && dd.classList) dd.classList.add('hidden');
+    };
+    addSafe('headerThemeBtn', toggleTheme);
+    addSafe('sidebarThemeToggleBtn', toggleTheme);
+    addSafe('menuThemeAirbnb', () => { applyTheme('airbnb'); closeDropdown(); });
+    addSafe('menuThemeClassic', () => { applyTheme('classic'); closeDropdown(); });
+    addSafe('menuThemeDark', () => { applyTheme('dark'); closeDropdown(); });
+    addSafe('menuThemeTogether', () => { applyTheme('together'); closeDropdown(); });
+    addSafe('menuThemeFerrari', () => { applyTheme('ferrari'); closeDropdown(); });
+}
+
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initThemeListeners);
+    } else {
+        initThemeListeners();
+    }
 }
 
 (function(root) {
@@ -6389,9 +6407,11 @@ function setStatusBanner(stateType, htmlContent) {
     const isDark = appState.theme === 'dark' || appState.theme === 'ferrari';
     const isTogether = appState.theme === 'together';
 
+    const baseTextPad = 'pl-3 pr-24 sm:pr-28';
+
     if (stateType === 'empty') {
         banner.className = 'status-banner';
-        textEl.className = 'text-[var(--app-muted)] text-[1rem]';
+        textEl.className = `text-[var(--app-muted)] text-[1rem] ${baseTextPad}`;
         textEl.innerHTML = htmlContent || 'กรุณาป้อนข้อมูลของคุณ';
     } else if (stateType === 'success') {
         if (typeof scheduleRecordHistory === 'function' && (typeof hasInvalidNumericInput !== 'function' || !hasInvalidNumericInput())) {
@@ -6399,21 +6419,21 @@ function setStatusBanner(stateType, htmlContent) {
         }
         if (isAirbnb) {
             banner.className = 'status-banner !border-[#ff385c] !bg-[#fff8f9]';
-            textEl.className = 'text-[#222222] text-[0.98rem] font-semibold leading-snug w-full';
+            textEl.className = `text-[#222222] text-[0.98rem] font-semibold leading-snug w-full ${baseTextPad}`;
         } else if (isTogether) {
             banner.className = 'status-banner theme-success';
-            textEl.className = 'text-[var(--app-ink)] text-[1rem] font-bold leading-snug w-full';
+            textEl.className = `text-[var(--app-ink)] text-[1rem] font-bold leading-snug w-full ${baseTextPad}`;
         } else if (isDark) {
             banner.className = 'status-banner theme-success';
-            textEl.className = 'text-[var(--app-ink)] text-[1rem] font-bold leading-snug w-full';
+            textEl.className = `text-[var(--app-ink)] text-[1rem] font-bold leading-snug w-full ${baseTextPad}`;
         } else {
             banner.className = 'status-banner !bg-[#f0fdf4] !border-[#16a34a]';
-            textEl.className = 'text-[#15803d] text-[1rem] font-bold leading-snug w-full';
+            textEl.className = `text-[#15803d] text-[1rem] font-bold leading-snug w-full ${baseTextPad}`;
         }
         textEl.innerHTML = htmlContent;
     } else {
         banner.className = 'status-banner';
-        textEl.className = 'text-[#222222] text-[0.98rem] font-medium leading-snug w-full';
+        textEl.className = `text-[#222222] text-[0.98rem] font-medium leading-snug w-full ${baseTextPad}`;
         textEl.innerHTML = htmlContent;
     }
 }
@@ -6748,6 +6768,7 @@ function initAppListeners() {
     initModalListeners();
     initCompareModalListeners();
     initPwaListeners();
+    if (typeof initThemeListeners === 'function') initThemeListeners();
 }
 
 (function(root) {

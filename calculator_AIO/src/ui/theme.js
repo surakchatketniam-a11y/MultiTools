@@ -65,14 +65,32 @@ function toggleTheme() {
 }
 
 function initThemeListeners() {
-    if (typeof document === 'undefined') return;
-    document.getElementById('headerThemeBtn')?.addEventListener('click', toggleTheme);
-    document.getElementById('sidebarThemeToggleBtn')?.addEventListener('click', toggleTheme);
-    document.getElementById('menuThemeAirbnb')?.addEventListener('click', () => applyTheme('airbnb'));
-    document.getElementById('menuThemeClassic')?.addEventListener('click', () => applyTheme('classic'));
-    document.getElementById('menuThemeDark')?.addEventListener('click', () => applyTheme('dark'));
-    document.getElementById('menuThemeTogether')?.addEventListener('click', () => applyTheme('together'));
-    document.getElementById('menuThemeFerrari')?.addEventListener('click', () => applyTheme('ferrari'));
+    if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return;
+    const addSafe = (id, handler) => {
+        const el = document.getElementById(id);
+        if (el && typeof el.addEventListener === 'function') {
+            el.addEventListener('click', handler);
+        }
+    };
+    const closeDropdown = () => {
+        const dd = document.getElementById('dropdownMenu');
+        if (dd && dd.classList) dd.classList.add('hidden');
+    };
+    addSafe('headerThemeBtn', toggleTheme);
+    addSafe('sidebarThemeToggleBtn', toggleTheme);
+    addSafe('menuThemeAirbnb', () => { applyTheme('airbnb'); closeDropdown(); });
+    addSafe('menuThemeClassic', () => { applyTheme('classic'); closeDropdown(); });
+    addSafe('menuThemeDark', () => { applyTheme('dark'); closeDropdown(); });
+    addSafe('menuThemeTogether', () => { applyTheme('together'); closeDropdown(); });
+    addSafe('menuThemeFerrari', () => { applyTheme('ferrari'); closeDropdown(); });
+}
+
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initThemeListeners);
+    } else {
+        initThemeListeners();
+    }
 }
 
 (function(root) {

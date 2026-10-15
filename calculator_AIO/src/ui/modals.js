@@ -295,6 +295,7 @@ function initAppListeners() {
     initModalListeners();
     initCompareModalListeners();
     initPwaListeners();
+    if (typeof initThemeListeners === 'function') initThemeListeners();
 }
 
 (function(root) {

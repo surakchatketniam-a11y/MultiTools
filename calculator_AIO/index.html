@@ -1144,13 +1144,12 @@
 
             <!-- Shared Status / Result Summary Pill Banner -->
             <section id="sharedStatusBanner" class="status-banner">
-                <div id="sharedStatusText" class="text-[var(--app-muted)] text-[0.98rem] leading-snug w-full pl-3 pr-24">กรุณาป้อนข้อมูลของคุณ</div>
+                <div id="sharedStatusText" class="text-[var(--app-muted)] text-[0.98rem] leading-snug w-full pl-3 pr-24 sm:pr-28">กรุณาป้อนข้อมูลของคุณ</div>
                 <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-                    <button id="bannerPrintBtn" type="button" class="px-2 py-1 rounded-[6px] border border-[var(--color-hairline-soft)] text-xs flex items-center gap-1 text-[var(--app-muted)] hover:text-[var(--color-ink)] active:scale-95 transition bg-white/70 dark:bg-white/10" aria-label="พิมพ์หรือบันทึกเป็น PDF" title="พิมพ์หรือบันทึกผลลัพธ์เป็นเอกสาร PDF">
+                    <button id="bannerPrintBtn" type="button" class="p-1.5 rounded-[6px] border border-[var(--color-hairline-soft)] text-xs flex items-center justify-center text-[var(--app-muted)] hover:text-[var(--color-ink)] active:scale-95 transition bg-white/70 dark:bg-white/10" aria-label="พิมพ์หรือบันทึกเป็น PDF" title="พิมพ์หรือบันทึกผลลัพธ์เป็นเอกสาร PDF">
                         <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                         </svg>
-                        <span class="hidden sm:inline font-medium">พิมพ์/PDF</span>
                     </button>
                     <button id="toggleKeypadBtn" type="button" class="px-2 py-1 rounded-[6px] border border-[var(--color-hairline-soft)] text-xs flex items-center gap-1 text-[var(--app-muted)] hover:text-[var(--color-ink)] active:scale-95 transition bg-white/70 dark:bg-white/10" aria-label="ย่อหรือขยายแป้นพิมพ์" title="ย่อ/ขยายแป้นพิมพ์">
                         <svg id="toggleKeypadIcon" class="w-3.5 h-3.5 transition-transform duration-200" viewBox="0 0 20 20" fill="currentColor">
