@@ -1,8 +1,15 @@
-const CACHE_NAME = 'multitools-calculator-v6';
+const CACHE_NAME = 'multitools-calculator-v7';
 const STATIC_ASSETS = [
     './',
     './index.html',
-    './manifest.json'
+    './manifest.json',
+    './src/catalog.js',
+    './src/core/formatters.js',
+    './src/core/dates.js',
+    './src/core/rates.js',
+    './src/core/export.js',
+    './src/core/history.js',
+    './src/core/compare.js'
 ];
 
 self.addEventListener('install', (event) => {

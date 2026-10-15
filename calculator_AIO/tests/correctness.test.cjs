@@ -6,6 +6,16 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+const moduleFiles = [
+    'src/catalog.js',
+    'src/core/formatters.js',
+    'src/core/dates.js',
+    'src/core/rates.js',
+    'src/core/export.js',
+    'src/core/history.js',
+    'src/core/compare.js'
+];
+const moduleContents = moduleFiles.map(file => fs.readFileSync(path.join(__dirname, '../', file), 'utf8'));
 
 function source(name) {
     const match = html.match(new RegExp(`        (?:async )?function ${name}\\([^]*?\\n        }`));
@@ -20,27 +30,13 @@ function context(extra = {}) {
         setItem(k, v) { memoryStore[k] = String(v); },
         removeItem(k) { delete memoryStore[k]; }
     };
-    const ctx = vm.createContext({ persistAppState() {}, localStorage: mockStorage, ...extra });
-    const unitDefMatch = html.match(/const UNIT_DEFINITIONS = \{[\s\S]*?\n        \};/);
-    if (unitDefMatch) vm.runInContext(unitDefMatch[0].replace(/const /g, 'var '), ctx);
-    const catalogMatch = html.match(/const TOOL_GROUPS = \[[\s\S]*?const TOOLS_CATALOG = \[[\s\S]*?\];/);
-    if (catalogMatch) vm.runInContext(catalogMatch[0].replace(/const /g, 'var '), ctx);
-    const holidaysMatch = html.match(/const THAI_FIXED_PUBLIC_HOLIDAYS = [\s\S]*?function isThaiOfficialHoliday\([\s\S]*?\n        \}/);
-    if (holidaysMatch) vm.runInContext(holidaysMatch[0].replace(/const /g, 'var '), ctx);
-    const historyConstMatch = html.match(/const HISTORY_STORAGE_KEY = [^;]+;\s*const MAX_HISTORY_UNPINNED = [^;]+;/);
-    if (historyConstMatch) vm.runInContext(historyConstMatch[0].replace(/const /g, 'var '), ctx);
-    for (const name of ['normalizeThaiDigits', 'parseNumericInput', 'numberOrDefault', 'integerOrDefault',
-        'formatLocalDate', 'addCalendarDays', 'parseDateInputThai', 'parseFrankfurterRates',
-        'evaluateArithmeticExpression', 'escapeHTML', 'formatInputDisplay', 'formatCalcExpr', 'formatNum', 'formatUnitPrice', 'formatMoney',
-        'validateCalendarDate', 'countWorkingDays', 'offsetWorkingDays', 'normalizeWorkDays', 'formatDateInTimezone',
-        'generateLoanSchedule', 'aggregateLoanScheduleByYear', 'rowsToCSV', 'buildLoanAmortizationCSV',
-        'generateSavingsSchedule', 'buildSavingsScheduleCSV', 'getCSVFilename',
-        'formatThaiFormalDate', 'generateFormalPrintHTML',
-        'getComparisonPresets', 'compareCalculations', 'generateComparePrintHTML',
-        'getCalculationHistory', 'saveCalculationHistory', 'formatHistoryTime', 'extractShortSummary', 'extractDetailText',
-        'recordCalculationHistory', 'pinCalculationHistory', 'unpinCalculationHistory', 'renameCalculationHistory',
-        'deleteCalculationHistory', 'clearCalculationHistory', 'restoreCalculationHistory']) {
-        vm.runInContext(source(name), ctx);
+    const ctx = vm.createContext({
+        persistAppState() {},
+        localStorage: mockStorage,
+        ...extra
+    });
+    for (const code of moduleContents) {
+        vm.runInContext(code, ctx);
     }
     return ctx;
 }
@@ -51,7 +47,8 @@ function calculation(ctx, name, state, result) {
     return vm.runInContext(`(${prefix}\nreturn (${result});\n})`, ctx)();
 }
 
-test('all shipped inline scripts have valid syntax', () => {
+test('all shipped modular and inline scripts have valid syntax', () => {
+    for (const code of moduleContents) new vm.Script(code);
     for (const match of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)) new vm.Script(match[1]);
 });
 
@@ -267,10 +264,8 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
 });
 
 test('catalog contains exactly 22 tools classified into 5 valid groups with search keywords', () => {
-    const catalogMatch = html.match(/const TOOL_GROUPS = \[[\s\S]*?const TOOLS_CATALOG = \[[\s\S]*?\];/);
-    assert.ok(catalogMatch, 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
-    const ctx = vm.createContext({});
-    const { TOOL_GROUPS, TOOLS_CATALOG } = vm.runInContext('(() => {\n' + catalogMatch[0] + '\nreturn { TOOL_GROUPS, TOOLS_CATALOG };\n})()', ctx);
+    const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
+    assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 5);
     assert.equal(TOOLS_CATALOG.length, 22);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
@@ -292,8 +287,7 @@ test('getToolSummaryText formats context-rich summary for key tools, and discoun
             savings: { initial: '10000', monthly: '3000', interestRate: '2.5', years: '5', annualIncrease: '0', mode: 'growth' }
         }
     });
-    const catalogMatch = html.match(/const TOOL_GROUPS = \[[\s\S]*?const TOOLS_CATALOG = \[[\s\S]*?\];/);
-    vm.runInContext(catalogMatch[0].replace(/const /g, 'var ') + '\n' + source('getToolSummaryText'), ctx);
+    vm.runInContext(source('getToolSummaryText'), ctx);
 
     // 1. VAT + WHT summary
     const vatWhtText = ctx.getToolSummaryText('vat_wht');

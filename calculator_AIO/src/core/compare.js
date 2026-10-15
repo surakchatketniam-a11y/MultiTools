@@ -1,0 +1,606 @@
+// ==============================================================
+// Multitools Calculator - Quick Compare Engine (Phase 3.4)
+// ==============================================================
+
+let isCompareSlotCActive = false;
+let currentCompareData = null;
+
+function getComparisonPresets(toolId) {
+    const presets = {
+        loan: [
+            {
+                label: 'ทางเลือก 1: ดอกเบี้ย 5.0% (30 ปี)',
+                state: { principal: '2,000,000', interestRate: '5.0', months: '360', extra: '0', rateType: 'fixed', calcMethod: 'reducing' }
+            },
+            {
+                label: 'ทางเลือก 2: ดอกเบี้ย 3.8% (รีไฟแนนซ์)',
+                state: { principal: '2,000,000', interestRate: '3.8', months: '360', extra: '0', rateType: 'fixed', calcMethod: 'reducing' }
+            },
+            {
+                label: 'ทางเลือก 3: ดอกเบี้ย 5.0% + โปะ 2,000 บ./ด.',
+                state: { principal: '2,000,000', interestRate: '5.0', months: '360', extra: '2,000', rateType: 'fixed', calcMethod: 'reducing' }
+            }
+        ],
+        savings: [
+            {
+                label: 'ทางเลือก 1: ออม 3,000 บ./ด. ผลตอบแทน 2.5% (10 ปี)',
+                state: { initial: '20,000', monthly: '3,000', interestRate: '2.5', years: '10', annualIncrease: '0', inflationRate: '2.0', mode: 'growth' }
+            },
+            {
+                label: 'ทางเลือก 2: ออม 5,000 บ./ด. ผลตอบแทน 5.0% (10 ปี)',
+                state: { initial: '20,000', monthly: '5,000', interestRate: '5.0', years: '10', annualIncrease: '0', inflationRate: '2.0', mode: 'growth' }
+            },
+            {
+                label: 'ทางเลือก 3: ออม 7,000 บ./ด. ผลตอบแทน 7.0% (10 ปี)',
+                state: { initial: '20,000', monthly: '7,000', interestRate: '7.0', years: '10', annualIncrease: '0', inflationRate: '2.0', mode: 'growth' }
+            }
+        ],
+        vat_wht: [
+            {
+                label: 'ทางเลือก 1: ยอด 50,000 ไม่หัก ณ ที่จ่าย',
+                state: { amount: '50,000', mode: 'before', vatRate: '7', whtRate: '0' }
+            },
+            {
+                label: 'ทางเลือก 2: ยอด 50,000 หักบริการ 3%',
+                state: { amount: '50,000', mode: 'before', vatRate: '7', whtRate: '3' }
+            },
+            {
+                label: 'ทางเลือก 3: ยอด 50,000 หักค่าจ้าง 1%',
+                state: { amount: '50,000', mode: 'before', vatRate: '7', whtRate: '1' }
+            }
+        ],
+        salary: [
+            {
+                label: 'ทางเลือก 1: แผนมาตรฐาน 50/30/20',
+                state: { income: '35,000', needsPct: '50', wantsPct: '30', savingsPct: '20', emergencyPct: '10', debtPct: '10' }
+            },
+            {
+                label: 'ทางเลือก 2: แผนเน้นเงินออม 40/20/40',
+                state: { income: '35,000', needsPct: '40', wantsPct: '20', savingsPct: '40', emergencyPct: '15', debtPct: '5' }
+            },
+            {
+                label: 'ทางเลือก 3: แผนเร่งปลดหนี้ 50/20/10 (หนี้ 20%)',
+                state: { income: '35,000', needsPct: '50', wantsPct: '20', savingsPct: '10', emergencyPct: '5', debtPct: '20' }
+            }
+        ]
+    };
+    return presets[toolId] || [];
+}
+
+function compareCalculations(toolId, itemsList) {
+    const items = (Array.isArray(itemsList) ? itemsList : []).filter(Boolean);
+    if (items.length < 2) return null;
+
+    const toolMeta = (typeof TOOLS_CATALOG !== 'undefined' ? TOOLS_CATALOG.find(t => t.id === toolId) : null) || { menuTitle: toolId, headerTitle: toolId };
+    const toolTitle = toolMeta.menuTitle || toolMeta.headerTitle;
+
+    const rows = [];
+    let deltaSummary = '';
+    let winnerIndex = -1;
+
+    if (toolId === 'loan') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const P = numberOrDefault(st.principal, 0);
+            const rate = numberOrDefault(st.interestRate, 0);
+            const months = integerOrDefault(st.months, 0);
+            const extra = numberOrDefault(st.extra, 0);
+            const schedule = generateLoanSchedule(st);
+            const monthlyPay = schedule[0]?.payment || 0;
+            const totalPaid = schedule.reduce((sum, r) => sum + r.payment, 0);
+            const totalInterest = schedule.reduce((sum, r) => sum + r.interest, 0);
+            const actualMonths = schedule.length;
+            return { P, rate, months, extra, monthlyPay, totalPaid, totalInterest, actualMonths };
+        });
+
+        rows.push({
+            label: 'วงเงินกู้ (Principal)',
+            values: results.map(r => `${formatMoney(r.P)} ฿`)
+        });
+        rows.push({
+            label: 'อัตราดอกเบี้ยต่อปี',
+            values: results.map(r => `${r.rate}%`)
+        });
+        rows.push({
+            label: 'ระยะเวลาสัญญา',
+            values: results.map(r => `${r.months} เดือน (${(r.months / 12).toFixed(1)} ปี)`)
+        });
+        rows.push({
+            label: 'ยอดโปะเพิ่มรายเดือน',
+            values: results.map(r => r.extra > 0 ? `+${formatMoney(r.extra)} ฿` : 'ไม่มี')
+        });
+        rows.push({
+            label: 'ค่างวดผ่อนต่อเดือน',
+            values: results.map(r => `${formatMoney(r.monthlyPay)} ฿/ด.`),
+            bestIndex: results.indexOf(results.reduce((min, cur) => cur.monthlyPay < min.monthlyPay ? cur : min, results[0]))
+        });
+        const minInterestResult = results.reduce((min, cur) => cur.totalInterest < min.totalInterest ? cur : min, results[0]);
+        const bestInterestIdx = results.indexOf(minInterestResult);
+        rows.push({
+            label: 'ดอกเบี้ยรวมตลอดสัญญา',
+            values: results.map(r => `${formatMoney(r.totalInterest)} ฿`),
+            bestIndex: bestInterestIdx,
+            highlight: true
+        });
+        rows.push({
+            label: 'ยอดผ่อนชำระรวมทั้งหมด',
+            values: results.map(r => `${formatMoney(r.totalPaid)} ฿`),
+            bestIndex: bestInterestIdx
+        });
+        rows.push({
+            label: 'ระยะเวลาผ่อนหมดจริง',
+            values: results.map(r => `${r.actualMonths} งวด (${(r.actualMonths / 12).toFixed(1)} ปี)`),
+            bestIndex: results.indexOf(results.reduce((min, cur) => cur.actualMonths < min.actualMonths ? cur : min, results[0]))
+        });
+
+        winnerIndex = bestInterestIdx;
+        const winnerItem = items[winnerIndex];
+        const worstInterest = Math.max(...results.map(r => r.totalInterest));
+        const savedInterest = worstInterest - minInterestResult.totalInterest;
+
+        deltaSummary = `🏆 ทางเลือกที่คุ้มค่าที่สุดคือ "${winnerItem.label}" ประหยัดดอกเบี้ยได้สูงสุด ${formatMoney(savedInterest)} บาท เมื่อเทียบกับทางเลือกที่ดอกเบี้ยสูงสุด`;
+
+    } else if (toolId === 'savings') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const init = numberOrDefault(st.initial, 0);
+            const monthly = numberOrDefault(st.monthly, 0);
+            const rate = numberOrDefault(st.interestRate, 0);
+            const years = numberOrDefault(st.years, 0);
+            const scheduleData = generateSavingsSchedule(st);
+            const totalBal = scheduleData.totalBalance || 0;
+            const totalPrin = scheduleData.totalPrincipal || 0;
+            const interestEarned = scheduleData.interestEarned || 0;
+            const inflationRate = numberOrDefault(st.inflationRate, 0);
+            const realValue = totalBal / Math.pow(1 + inflationRate / 100, years || 1);
+            return { init, monthly, rate, years, totalBal, totalPrin, interestEarned, realValue };
+        });
+
+        rows.push({
+            label: 'เงินต้นเริ่มต้น',
+            values: results.map(r => `${formatMoney(r.init)} ฿`)
+        });
+        rows.push({
+            label: 'เงินออมต่อเดือน',
+            values: results.map(r => `${formatMoney(r.monthly)} ฿/ด.`)
+        });
+        rows.push({
+            label: 'ผลตอบแทนคาดหวัง',
+            values: results.map(r => `${r.rate}%`)
+        });
+        rows.push({
+            label: 'ระยะเวลาการออม',
+            values: results.map(r => `${r.years} ปี`)
+        });
+        rows.push({
+            label: 'เงินต้นสะสมที่ฝาก',
+            values: results.map(r => `${formatMoney(r.totalPrin)} ฿`)
+        });
+        const maxEarnedResult = results.reduce((max, cur) => cur.interestEarned > max.interestEarned ? cur : max, results[0]);
+        const bestEarnedIdx = results.indexOf(maxEarnedResult);
+        rows.push({
+            label: 'ดอกเบี้ย / กำไรสะสม',
+            values: results.map(r => `+${formatMoney(r.interestEarned)} ฿`),
+            bestIndex: bestEarnedIdx,
+            highlight: true
+        });
+        const maxBalResult = results.reduce((max, cur) => cur.totalBal > max.totalBal ? cur : max, results[0]);
+        const bestBalIdx = results.indexOf(maxBalResult);
+        rows.push({
+            label: 'มูลค่าเงินออมรวมสุทธิ',
+            values: results.map(r => `${formatMoney(r.totalBal)} ฿`),
+            bestIndex: bestBalIdx,
+            highlight: true
+        });
+        rows.push({
+            label: 'มูลค่าจริงหลังหักเงินเฟ้อ',
+            values: results.map(r => `${formatMoney(r.realValue)} ฿`),
+            bestIndex: results.indexOf(results.reduce((max, cur) => cur.realValue > max.realValue ? cur : max, results[0]))
+        });
+
+        winnerIndex = bestBalIdx;
+        const winnerItem = items[winnerIndex];
+        const minBal = Math.min(...results.map(r => r.totalBal));
+        const diffBal = maxBalResult.totalBal - minBal;
+
+        deltaSummary = `🏆 ทางเลือกที่สร้างความมั่งคั่งได้สูงสุดคือ "${winnerItem.label}" ได้รับเงินออมรวมมากกว่าถึง ${formatMoney(diffBal)} บาท`;
+
+    } else if (toolId === 'vat_wht') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const amount = parseNumericInput(String(st.amount ?? '').replace(/,/g, ''));
+            const vat = numberOrDefault(st.vatRate, 0);
+            const wht = numberOrDefault(st.whtRate, 0);
+            const base = Number.isFinite(amount) ? (st.mode === 'after' ? amount / (1 + vat / 100) : amount) : 0;
+            const vatAmount = base * vat / 100;
+            const gross = base + vatAmount;
+            const whtAmount = base * wht / 100;
+            const net = gross - whtAmount;
+            return { amount, vat, wht, base, vatAmount, gross, whtAmount, net };
+        });
+
+        rows.push({
+            label: 'ยอดเงินก่อน VAT',
+            values: results.map(r => `${formatMoney(r.base)} ฿`)
+        });
+        rows.push({
+            label: 'อัตรา VAT',
+            values: results.map(r => `${r.vat}% (+${formatMoney(r.vatAmount)} ฿)`)
+        });
+        rows.push({
+            label: 'หัก ณ ที่จ่าย',
+            values: results.map(r => `${r.wht}% (-${formatMoney(r.whtAmount)} ฿)`)
+        });
+        rows.push({
+            label: 'ยอดโอนสุทธิ (Net Payable)',
+            values: results.map(r => `${formatMoney(r.net)} ฿`),
+            highlight: true
+        });
+
+        winnerIndex = 0;
+        deltaSummary = `สรุปเปรียบเทียบยอดโอนสุทธิระหว่าง ${items.map(i => i.label).join(' vs ')}`;
+
+    } else if (toolId === 'salary') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const income = numberOrDefault(st.income, 0);
+            const needsPct = numberOrDefault(st.needsPct, 0);
+            const wantsPct = numberOrDefault(st.wantsPct, 0);
+            const savingsPct = numberOrDefault(st.savingsPct, 0);
+            const needs = income * needsPct / 100;
+            const wants = income * wantsPct / 100;
+            const savings = income * savingsPct / 100;
+            return { income, needsPct, wantsPct, savingsPct, needs, wants, savings };
+        });
+
+        rows.push({
+            label: 'เงินเดือนสุทธิ',
+            values: results.map(r => `${formatMoney(r.income)} ฿/ด.`)
+        });
+        rows.push({
+            label: 'ค่าใช้จ่ายจำเป็น (Needs)',
+            values: results.map(r => `${r.needsPct}% (${formatMoney(r.needs)} ฿)`)
+        });
+        rows.push({
+            label: 'ความต้องการ (Wants)',
+            values: results.map(r => `${r.wantsPct}% (${formatMoney(r.wants)} ฿)`)
+        });
+        const bestSavingsResult = results.reduce((max, cur) => cur.savings > max.savings ? cur : max, results[0]);
+        const bestSavingsIdx = results.indexOf(bestSavingsResult);
+        rows.push({
+            label: 'เงินออม & ลงทุน (Savings)',
+            values: results.map(r => `${r.savingsPct}% (${formatMoney(r.savings)} ฿)`),
+            bestIndex: bestSavingsIdx,
+            highlight: true
+        });
+
+        winnerIndex = bestSavingsIdx;
+        deltaSummary = `🏆 แผนที่มีสัดส่วนเงินออมและลงทุนสูงสุดคือ "${items[winnerIndex].label}" ออมได้ ${formatMoney(bestSavingsResult.savings)} บาท/เดือน (${formatMoney(bestSavingsResult.savings * 12)} บาท/ปี)`;
+
+    } else {
+        rows.push({
+            label: 'สรุปผลการคำนวณ',
+            values: items.map(item => item.shortSummary || item.label || '-')
+        });
+        deltaSummary = `เปรียบเทียบข้อมูล ${items.length} ทางเลือก`;
+    }
+
+    return {
+        toolId,
+        toolTitle,
+        items,
+        rows,
+        deltaSummary,
+        winnerIndex
+    };
+}
+
+function generateComparePrintHTML(compData) {
+    if (!compData || !compData.items) return '';
+    const now = new Date();
+    const dateStr = formatThaiFormalDate(now);
+    const refCode = 'CMP-' + now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0') + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+
+    const headersHTML = compData.items.map((item, idx) => `
+        <th style="padding: 10px; text-align: right; background: ${idx === compData.winnerIndex ? '#ecfdf5' : '#f8fafc'}; color: ${idx === compData.winnerIndex ? '#065f46' : '#0f172a'}; border-left: 1px solid #cbd5e1;">
+            <div style="font-size: 13px; font-weight: 700;">${escapeHTML(item.label || ('ทางเลือก ' + (idx + 1)))}</div>
+            ${idx === compData.winnerIndex ? '<span style="display:inline-block; font-size:10px; font-weight:700; color:#047857; background:#d1fae5; border-radius:4px; padding:1px 6px; margin-top:3px;">🏆 คุ้มค่าที่สุด</span>' : ''}
+        </th>
+    `).join('');
+
+    const rowsHTML = compData.rows.map((row, rIdx) => `
+        <tr style="border-bottom: 1px solid #e2e8f0; background: ${row.highlight ? (rIdx % 2 === 0 ? '#f0fdf4' : '#ecfdf5') : (rIdx % 2 === 0 ? '#ffffff' : '#f8fafc')};">
+            <td style="padding: 8px 10px; font-weight: ${row.highlight ? '700' : '500'}; color: ${row.highlight ? '#065f46' : '#334155'}; width: 34%;">
+                ${escapeHTML(row.label)}
+            </td>
+            ${row.values.map((val, vIdx) => `
+                <td style="padding: 8px 10px; text-align: right; font-weight: ${vIdx === row.bestIndex ? '800' : '600'}; color: ${vIdx === row.bestIndex ? '#047857' : '#0f172a'}; border-left: 1px solid #e2e8f0;">
+                    ${escapeHTML(val)} ${vIdx === row.bestIndex ? '✓' : ''}
+                </td>
+            `).join('')}
+        </tr>
+    `).join('');
+
+    return `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Sarabun', 'Noto Sans Thai', sans-serif; color: #1e293b; line-height: 1.5; padding: 12px 16px; max-width: 800px; margin: 0 auto; box-sizing: border-box;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 16px;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="display: inline-block; width: 26px; height: 26px; background: #0f172a; color: #fff; font-weight: 800; border-radius: 5px; text-align: center; line-height: 26px; font-size: 14px;">M</span>
+                        <span style="font-size: 18px; font-weight: 800; letter-spacing: -0.5px; color: #0f172a;">MULTITOOLS AIO</span>
+                    </div>
+                    <div style="font-size: 11px; color: #64748b; margin-top: 2px;">ตารางวิเคราะห์และเปรียบเทียบชุดคำนวณ (Side-by-Side Comparison Matrix)</div>
+                </div>
+                <div style="text-align: right; font-size: 11px; color: #475569;">
+                    <div style="font-weight: 700; color: #0f172a; font-size: 12px;">เอกสารเปรียบเทียบทางการ</div>
+                    <div>รหัสเอกสาร: <span style="font-family: monospace; font-weight: 600;">${refCode}</span></div>
+                    <div>วันที่ออกเอกสาร: ${dateStr}</div>
+                </div>
+            </div>
+
+            <div style="text-align: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 16px;">
+                <h1 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">รายงานเปรียบเทียบ: ${escapeHTML(compData.toolTitle)}</h1>
+                <div style="font-size: 11px; color: #64748b; margin-top: 3px;">วิเคราะห์ทางเลือกคู่ขนาน ${compData.items.length} รูปแบบ</div>
+            </div>
+
+            ${compData.deltaSummary ? `
+                <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 12px; color: #065f46; font-weight: 600; line-height: 1.6;">
+                    ${escapeHTML(compData.deltaSummary)}
+                </div>
+            ` : ''}
+
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;">
+                <thead>
+                    <tr style="border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                        <th style="padding: 10px; text-align: left; background: #f1f5f9; color: #334155;">คุณสมบัติ / ค่าตัวเลข</th>
+                        ${headersHTML}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHTML}
+                </tbody>
+            </table>
+
+            <div style="margin-top: 24px; padding-top: 14px; border-top: 1px dashed #cbd5e1; font-size: 10.5px; color: #64748b;" class="print-keep-together">
+                <div style="margin-bottom: 20px; line-height: 1.6;">
+                    <b>หมายเหตุ:</b> ตารางเปรียบเทียบนี้จัดทำขึ้นโดยอัตโนมัติจากโปรแกรม Multitools AIO เพื่อใช้เป็นข้อมูลเบื้องต้นในการเปรียบเทียบทางเลือกทางการเงิน การกู้ยืม การออม หรือการจำแนกภาษี เงื่อนไขจริงอาจเปลี่ยนแปลงตามหลักเกณฑ์ของหน่วยงานที่เกี่ยวข้อง
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; padding-top: 8px;">
+                    <div>
+                        <div>ผู้จัดทำเอกสาร: ...........................................................</div>
+                        <div style="margin-top: 4px; font-size: 10px; color: #94a3b8;">ระบบคำนวณอัตโนมัติ Multitools Web Application</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div>ลายมือชื่อผู้ตรวจสอบ / ผู้อนุมัติ: ...........................................................</div>
+                        <div style="margin-top: 4px; font-size: 10px; color: #94a3b8;">วันที่: ........ / ........ / ................</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function populateCompareSlots() {
+    if (typeof document === 'undefined') return;
+    const toolId = document.getElementById('compareToolSelect')?.value || 'loan';
+    const slotA = document.getElementById('compareSlotA');
+    const slotB = document.getElementById('compareSlotB');
+    const slotC = document.getElementById('compareSlotC');
+    if (!slotA || !slotB || !slotC) return;
+
+    const options = [];
+    if (appState && appState[toolId]) {
+        options.push({
+            value: 'current',
+            label: '📌 ค่าปัจจุบันบนหน้าจอ',
+            state: JSON.parse(JSON.stringify(appState[toolId]))
+        });
+    }
+
+    const history = getCalculationHistory().filter(h => h.toolId === toolId);
+    history.forEach(item => {
+        const prefix = item.isSaved ? '⭐ ' : '🕒 ';
+        const label = prefix + (item.label || item.shortSummary || item.timeDisplay);
+        options.push({
+            value: item.id,
+            label: label,
+            state: item.state
+        });
+    });
+
+    const presets = getComparisonPresets(toolId);
+    presets.forEach((p, idx) => {
+        options.push({
+            value: 'preset_' + idx,
+            label: '💡 ' + p.label,
+            state: p.state
+        });
+    });
+
+    const buildOptionsHTML = () => options.map(opt => `<option value="${opt.value}">${escapeHTML(opt.label)}</option>`).join('');
+
+    slotA.innerHTML = buildOptionsHTML();
+    slotB.innerHTML = buildOptionsHTML();
+    slotC.innerHTML = buildOptionsHTML();
+
+    if (options.length >= 2) {
+        slotA.selectedIndex = 0;
+        slotB.selectedIndex = 1;
+        if (options.length >= 3) {
+            slotC.selectedIndex = 2;
+        }
+    }
+}
+
+function getSelectedSlotItem(slotId) {
+    const toolId = document.getElementById('compareToolSelect')?.value || 'loan';
+    const select = document.getElementById(slotId);
+    if (!select) return null;
+    const val = select.value;
+    const selectedText = select.options[select.selectedIndex]?.text || '';
+
+    if (val === 'current') {
+        return {
+            label: '📌 ค่าปัจจุบันบนหน้าจอ',
+            state: JSON.parse(JSON.stringify(appState[toolId] || {}))
+        };
+    }
+    if (val && val.startsWith('preset_')) {
+        const idx = parseInt(val.replace('preset_', ''), 10);
+        const presets = getComparisonPresets(toolId);
+        const p = presets[idx];
+        return p ? { label: p.label, state: JSON.parse(JSON.stringify(p.state)) } : null;
+    }
+    const history = getCalculationHistory();
+    const item = history.find(h => h.id === val);
+    if (item) {
+        return {
+            label: item.label || item.shortSummary || item.toolTitle,
+            state: JSON.parse(JSON.stringify(item.state))
+        };
+    }
+    return {
+        label: selectedText,
+        state: JSON.parse(JSON.stringify(appState[toolId] || {}))
+    };
+}
+
+function updateSlotCUI() {
+    if (typeof document === 'undefined') return;
+    const slotC = document.getElementById('compareSlotC');
+    const toggleBtn = document.getElementById('btnToggleSlotC');
+    if (!slotC || !toggleBtn) return;
+    if (isCompareSlotCActive) {
+        slotC.removeAttribute('disabled');
+        slotC.classList.remove('opacity-50');
+        toggleBtn.textContent = '✕ ปิด';
+        toggleBtn.className = 'text-[10px] text-red-500 font-semibold cursor-pointer';
+    } else {
+        slotC.setAttribute('disabled', 'true');
+        slotC.classList.add('opacity-50');
+        toggleBtn.textContent = '+ เปิด';
+        toggleBtn.className = 'text-[10px] text-emerald-600 font-semibold cursor-pointer';
+    }
+}
+
+function renderCompareMatrix() {
+    if (typeof document === 'undefined') return;
+    const toolId = document.getElementById('compareToolSelect')?.value || 'loan';
+    const itemA = getSelectedSlotItem('compareSlotA');
+    const itemB = getSelectedSlotItem('compareSlotB');
+    const items = [itemA, itemB];
+
+    if (isCompareSlotCActive) {
+        const itemC = getSelectedSlotItem('compareSlotC');
+        if (itemC) items.push(itemC);
+    }
+
+    const compData = compareCalculations(toolId, items);
+    currentCompareData = compData;
+    const deltaText = document.getElementById('compareDeltaText');
+    const matrixTable = document.getElementById('compareMatrixTable');
+
+    if (!compData) {
+        if (deltaText) deltaText.textContent = 'กรุณาเลือกตัวเลือกที่ต้องการเปรียบเทียบอย่างน้อย 2 ทางเลือก';
+        if (matrixTable) matrixTable.innerHTML = '';
+        return;
+    }
+
+    if (deltaText) deltaText.textContent = compData.deltaSummary;
+
+    let tableHTML = `
+        <thead>
+            <tr class="bg-neutral-100 dark:bg-white/10 border-b border-[var(--app-hairline)]">
+                <th class="p-2.5 font-bold text-neutral-600 dark:text-neutral-300 w-1/3">คุณสมบัติ / ค่าตัวเลข</th>
+                ${compData.items.map((item, idx) => `
+                    <th class="p-2.5 text-right font-bold border-l border-[var(--app-hairline)] ${idx === compData.winnerIndex ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-200' : 'text-[var(--color-ink)]'}">
+                        <div class="truncate max-w-[170px] inline-block font-bold">${escapeHTML(item.label)}</div>
+                        ${idx === compData.winnerIndex ? '<span class="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">🏆 คุ้มค่าที่สุด</span>' : ''}
+                        <div class="mt-1">
+                            <button type="button" class="btn-load-compare-set px-2 py-0.5 text-[10px] font-semibold rounded bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition shadow-sm cursor-pointer" data-idx="${idx}">
+                                📥 ใช้ชุดนี้
+                            </button>
+                        </div>
+                    </th>
+                `).join('')}
+            </tr>
+        </thead>
+        <tbody>
+            ${compData.rows.map((row, rIdx) => `
+                <tr class="border-b border-[var(--app-hairline)] ${row.highlight ? 'bg-emerald-50/50 dark:bg-emerald-950/20 font-bold' : (rIdx % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-neutral-50/70 dark:bg-white/5')}">
+                    <td class="p-2.5 text-neutral-600 dark:text-neutral-400 font-medium">
+                        ${escapeHTML(row.label)}
+                    </td>
+                    ${row.values.map((val, vIdx) => `
+                        <td class="p-2.5 text-right border-l border-[var(--app-hairline)] ${vIdx === row.bestIndex ? 'text-emerald-700 dark:text-emerald-300 font-bold' : 'text-[var(--color-ink)] font-semibold'}">
+                            ${escapeHTML(val)} ${vIdx === row.bestIndex ? '✓' : ''}
+                        </td>
+                    `).join('')}
+                </tr>
+            `).join('')}
+        </tbody>
+    `;
+
+    if (matrixTable) {
+        matrixTable.innerHTML = tableHTML;
+        matrixTable.querySelectorAll('.btn-load-compare-set').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = parseInt(btn.dataset.idx, 10);
+                const selected = compData.items[idx];
+                if (selected && selected.state) {
+                    appState[compData.toolId] = JSON.parse(JSON.stringify(selected.state));
+                    appState.activeToolId = compData.toolId;
+                    persistAppState();
+                    closeCompareModal();
+                    closeSidebar();
+                    selectTool(compData.toolId);
+                    showHistoryToast(`✓ โหลด "${selected.label}" นำมาคำนวณเรียบร้อย`);
+                }
+            });
+        });
+    }
+}
+
+function openCompareModal(preselectedToolId) {
+    if (typeof document === 'undefined') return;
+    const modal = document.getElementById('compareModal');
+    if (!modal) return;
+
+    const toolSelect = document.getElementById('compareToolSelect');
+    const targetToolId = preselectedToolId || appState.activeToolId || 'loan';
+
+    if (toolSelect) {
+        const optExists = Array.from(toolSelect.options).some(o => o.value === targetToolId);
+        toolSelect.value = optExists ? targetToolId : 'loan';
+    }
+
+    modal.classList.remove('hidden');
+    populateCompareSlots();
+    renderCompareMatrix();
+}
+
+function closeCompareModal() {
+    if (typeof document === 'undefined') return;
+    document.getElementById('compareModal')?.classList.add('hidden');
+}
+
+
+(function(root) {
+    const exportsObj = {
+        getComparisonPresets,
+        compareCalculations,
+        generateComparePrintHTML,
+        populateCompareSlots,
+        getSelectedSlotItem,
+        updateSlotCUI,
+        renderCompareMatrix,
+        openCompareModal,
+        closeCompareModal
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
