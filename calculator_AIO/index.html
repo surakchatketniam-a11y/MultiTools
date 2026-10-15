@@ -1208,7 +1208,7 @@
 
             // 12. Ovulation Calculator
             ovulation: {
-                lastPeriodDate: new Date(Date.now() - 10 * 86400000).toISOString().slice(0, 10),
+                lastPeriodDate: formatLocalDate(addCalendarDays(new Date(), -10)),
                 cycleLength: 28,
                 periodDays: 5
             },
@@ -1216,21 +1216,21 @@
             // 13. Date Calculator
             date_calc: {
                 mode: 'diff',
-                startDate: new Date().toISOString().slice(0, 10),
-                endDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+                startDate: formatLocalDate(new Date()),
+                endDate: formatLocalDate(addCalendarDays(new Date(), 30)),
                 op: 'add',
                 daysOffset: 30,
                 inclusive: false,
                 workdays: false,
                 includeThaiHolidays: false,
                 birthDate: '1990-01-01',
-                referenceDate: new Date().toISOString().slice(0, 10),
+                referenceDate: formatLocalDate(new Date()),
                 calendarEra: 'CE'
             },
 
             date_work: {
-                startDate: new Date().toISOString().slice(0, 10),
-                endDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+                startDate: formatLocalDate(new Date()),
+                endDate: formatLocalDate(addCalendarDays(new Date(), 30)),
                 mode: 'between',
                 offset: 45,
                 calendarEra: 'CE',
@@ -1428,9 +1428,68 @@
         /**************************************************************
          * 3. FORMATTING HELPERS
          **************************************************************/
+        function normalizeThaiDigits(value) {
+            return String(value ?? '').replace(/[๐-๙]/g, digit => String(digit.charCodeAt(0) - 0x0E50));
+        }
+
+        // A comma is a thousands separator, never a decimal separator.
+        // Reject partial matches such as 100abc, 1,00 and non-finite values.
+        function parseNumericInput(value) {
+            const text = normalizeThaiDigits(value).trim();
+            if (!/^[+-]?(?:(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d*)?|\.\d+)$/.test(text)) return NaN;
+            const number = Number(text.replace(/,/g, ''));
+            return Number.isFinite(number) ? number : NaN;
+        }
+
+        function numberOrDefault(value, fallback = 0) {
+            return String(value ?? '').trim() === '' ? fallback : parseNumericInput(value);
+        }
+
+        function integerOrDefault(value, fallback = 0) {
+            const number = numberOrDefault(value, fallback);
+            return Number.isSafeInteger(number) ? number : NaN;
+        }
+
+        function hasInvalidNumericInput(toolId = appState.activeToolId) {
+            const fields = {
+                currency: ['amount', 'customRateToTHB'], unit: ['val'], discount: ['price', 'discountPct', 'extraPct'],
+                percent: ['x', 'y', ...(appState.percent.mode === 'compound' ? ['z'] : [])], vat: ['amount', 'rate'],
+                vat_wht: ['amount', 'vatRate', 'whtRate'], fuel_cost: ['distance', 'efficiency', 'oilPrice'],
+                health: ['weight', 'height', 'age', 'activity'], tip: ['bill', 'tipPct', 'people'], fuel_eff: ['distance', 'fuelUsed'],
+                area_cost: ['rai', 'ngan', 'wa', 'rate', 'rounds'],
+                loan: ['principal', 'interestRate', 'months', 'extra', ...(appState.loan.rateType === 'step' ? ['rateAfter', 'promoMonths'] : [])],
+                savings: ['initial', 'monthly', 'interestRate', 'annualIncrease', 'inflationRate',
+                    ...(appState.savings.mode === 'retirement' ? ['currentAge', 'retirementAge', 'retirementMonthly'] : ['years']),
+                    ...(appState.savings.mode === 'goal' ? ['goalTarget'] : []),
+                    ...(appState.savings.mode === 'emergency' ? ['monthlyExpenses', 'emergencyMonths'] : [])],
+                salary: ['income', 'needsPct', 'wantsPct', 'savingsPct', 'emergencyPct', 'debtPct']
+            };
+            const invalid = value => String(value ?? '').trim() !== '' && !Number.isFinite(parseNumericInput(value));
+            if (toolId === 'unit_price') return appState.unit_price.rows.some(row => invalid(row.price) || invalid(row.qty));
+            const integers = { tip: ['people'], loan: ['months', ...(appState.loan.rateType === 'step' ? ['promoMonths'] : [])] };
+            if ((integers[toolId] || []).some(key => !Number.isFinite(integerOrDefault(appState[toolId][key])))) return true;
+            return (fields[toolId] || []).some(key => invalid(appState[toolId][key]));
+        }
+
+        function escapeHTML(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+        }
+
+        function formatLocalDate(date) {
+            if (!Number.isFinite(date.getTime())) return '';
+            return `${String(date.getFullYear()).padStart(4, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        function addCalendarDays(date, days) {
+            const result = new Date(date);
+            result.setDate(result.getDate() + days);
+            return result;
+        }
+
         function formatInputDisplay(valStr) {
             if (valStr === undefined || valStr === null || valStr === '') return '';
-            const str = String(valStr);
+            if (!Number.isFinite(parseNumericInput(valStr))) return escapeHTML(valStr);
+            const str = normalizeThaiDigits(valStr).trim().replace(/,/g, '');
             const parts = str.split('.');
             const intPart = parts[0];
             const decPart = parts.length > 1 ? '.' + parts[1] : '';
@@ -1439,7 +1498,7 @@
         }
 
         function formatNum(num, maxDec = 2) {
-            if (!isFinite(num)) return '0';
+            if (!Number.isFinite(num)) return '—';
             return num.toLocaleString('en-US', {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: maxDec
@@ -1447,7 +1506,7 @@
         }
 
         function formatMoney(num) {
-            if (!isFinite(num)) return '0.00';
+            if (!Number.isFinite(num)) return '—';
             return num.toLocaleString('en-US', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
@@ -1475,14 +1534,16 @@
         }
 
         function parseDateInputThai(value, era = 'CE') {
-            let text = String(value || '').trim();
+            let text = normalizeThaiDigits(value).trim();
             if (/^\d{8}$/.test(text)) text = `${text.slice(0, 2)}/${text.slice(2, 4)}/${text.slice(4)}`;
             const match = text.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
             if (!match) return '';
             const day = Number(match[1]);
             const month = Number(match[2]);
             let year = Number(match[3]);
-            if (year < 100) year += 2000;
+            // Two-digit years mean 20xx CE or 25xx BE (e.g. 69 = 2569).
+            if (match[3].length === 2) year += era === 'BE' ? 2500 : 2000;
+            else if (match[3].length !== 4) return '';
             if (era === 'BE') year -= 543;
             const date = new Date(year, month - 1, day);
             if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return '';
@@ -1630,7 +1691,7 @@
                         { get: () => appState.savings.monthly, set: (v) => { appState.savings.monthly = v; } },
                         { get: () => appState.savings.interestRate, set: (v) => { appState.savings.interestRate = v; } },
                         { get: () => appState.savings.years, set: (v) => { appState.savings.years = v; } }
-                    ];
+                    ].slice(0, appState.savings.mode === 'retirement' ? 3 : 4);
                 case 'salary':
                     return [
                         { get: () => appState.salary.income, set: (v) => { appState.salary.income = v; } },
@@ -1822,6 +1883,11 @@
         }
 
         function setStatusBanner(stateType, htmlContent) {
+            if (hasInvalidNumericInput()) {
+                stateType = 'error';
+                htmlContent = 'รูปแบบตัวเลขไม่ถูกต้อง กรุณาแก้ข้อมูลก่อนใช้ผลคำนวณ เช่น 1,000 หรือ ๑๐๐๐';
+                document.getElementById('sharedStatusBanner').classList.remove('hidden');
+            }
             const banner = document.getElementById('sharedStatusBanner');
             const textEl = document.getElementById('sharedStatusText');
             const isAirbnb = appState.theme === 'airbnb';
@@ -1902,9 +1968,9 @@
 
         function renderVatWhtTool(container) {
             const st = appState.vat_wht;
-            const amount = parseFloat(st.amount);
-            const vat = parseFloat(st.vatRate) || 0;
-            const wht = parseFloat(st.whtRate) || 0;
+            const amount = parseNumericInput(st.amount);
+            const vat = numberOrDefault(st.vatRate, 0);
+            const wht = numberOrDefault(st.whtRate, 0);
             const base = Number.isFinite(amount) ? (st.mode === 'after' ? amount / (1 + vat / 100) : amount) : 0;
             const vatAmount = base * vat / 100;
             const gross = base + vatAmount;
@@ -1923,7 +1989,13 @@
         }
 
         function evaluateArithmeticExpression(value) {
-            const expression = String(value ?? '').replace(/,/g, '').trim();
+            let invalidNumber = false;
+            const expression = normalizeThaiDigits(value).trim().replace(/(?:\d[\d,.]*|\.\d+)/g, token => {
+                const number = parseNumericInput(token);
+                if (!Number.isFinite(number)) invalidNumber = true;
+                return String(number);
+            });
+            if (invalidNumber) return NaN;
             if (!expression || !/^[0-9+\-*/().\s]+$/.test(expression)) return NaN;
             try {
                 const result = Function(`"use strict"; return (${expression})`)();
@@ -1935,10 +2007,10 @@
 
         function renderAreaCostTool(container) {
             const st = appState.area_cost;
-            const rai = parseFloat(st.rai) || 0, ngan = parseFloat(st.ngan) || 0, wa = parseFloat(st.wa) || 0;
-            const rate = parseFloat(st.rate), price = evaluateArithmeticExpression(st.price), rounds = parseFloat(st.rounds) || 1;
+            const rai = numberOrDefault(st.rai, 0), ngan = numberOrDefault(st.ngan, 0), wa = numberOrDefault(st.wa, 0);
+            const rate = parseNumericInput(st.rate), price = evaluateArithmeticExpression(st.price), rounds = numberOrDefault(st.rounds, 1);
             const totalRai = rai + ngan / 4 + wa / 400;
-            const qty = totalRai * (rate || 0) * rounds, total = qty * (price || 0);
+            const qty = totalRai * rate * rounds, total = qty * price;
             container.innerHTML = `<div class="flex flex-col gap-3 p-1"><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)"><div class="text-xs text-[#6a6a6a]">พื้นที่แบบผสม: 1 ไร่ = 4 งาน = 400 ตารางวา</div><div class="grid grid-cols-3 gap-2">${[['areaRai','ไร่',st.rai],['areaNgan','งาน',st.ngan],['areaWa','ตารางวา',st.wa]].map(([id,l,v])=>`<div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">${l}</label><input id="${id}" type="number" min="0" value="${v}" class="airbnb-input w-full"></div>`).join('')}</div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">อัตราใช้ (กก./ไร่)</label><input id="areaRate" type="number" value="${st.rate}" placeholder="เช่น 25" class="airbnb-input w-full"></div><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">ราคา (บาท/กก.)</label><input id="areaPrice" type="text" inputmode="decimal" value="${st.price}" placeholder="เช่น 980/50" class="airbnb-input w-full"><div class="text-[10px] text-[#6a6a6a] mt-1">รองรับ + - * / เช่น 980/50 = ราคาต่อกก.</div></div></div><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">จำนวนรอบ</label><input id="areaRounds" type="number" min="1" value="${st.rounds}" class="airbnb-input w-full"></div></div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2" style="box-shadow:var(--app-elevation)"><div class="flex justify-between"><span>พื้นที่รวม</span><b>${formatNum(totalRai, 4)} ไร่</b></div><div class="flex justify-between"><span>ปริมาณรวม</span><b>${formatNum(qty, 2)} กก.</b></div><div class="flex justify-between"><span>ต้นทุนต่อไร่</span><b>${formatMoney((rate || 0) * (price || 0) * rounds)} บาท</b></div></div></div>`;
             const areaPriceInput = document.getElementById('areaPrice');
             const pricePreview = document.createElement('div');
@@ -1970,16 +2042,16 @@
             };
             const count = (a, b) => { let total = 0, step = a <= b ? 1 : -1, d = new Date(a); while ((step > 0 && d <= b) || (step < 0 && d >= b)) { if (isWorkday(d)) total += step; d.setDate(d.getDate() + step); } return Math.abs(total); };
             let result = count(start, end), target = new Date(start);
-            if (st.mode === 'add' || st.mode === 'sla' || st.mode === 'list') { let left = Math.abs(parseInt(st.offset, 10) || 0), step = (parseInt(st.offset, 10) || 0) >= 0 ? 1 : -1; while (left) { target.setDate(target.getDate() + step); if (isWorkday(target)) left--; } }
-            container.innerHTML = `<div class="flex flex-col gap-3 p-1"><div class="segment-group grid-cols-2 balanced-segment-modes"><button class="segment-btn work-mode ${st.mode === 'between' ? 'active' : ''}" data-mode="between">นับวันทำการ</button><button class="segment-btn work-mode ${st.mode === 'add' ? 'active' : ''}" data-mode="add">เพิ่ม/ลดวันทำการ</button></div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)"><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่เริ่มต้น</label><input id="workStart" type="date" value="${st.startDate}" class="airbnb-input w-full"></div>${st.mode === 'between' ? `<div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่สิ้นสุด</label><input id="workEnd" type="date" value="${st.endDate}" class="airbnb-input w-full"></div>` : `<div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">จำนวนวันทำการ (+/-)</label><input id="workOffset" type="number" value="${st.offset}" class="airbnb-input w-full"></div>`}</div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-5 text-center" style="box-shadow:var(--app-elevation)"><div class="text-xs text-[#6a6a6a]">${st.mode === 'between' ? 'วันทำการทั้งหมด' : 'วันที่ได้ผลลัพธ์'}</div><div class="text-2xl font-bold text-[var(--app-accent)]">${st.mode === 'between' ? result.toLocaleString('th-TH') + ' วัน' : formatThaiDate(target.toISOString().slice(0,10))}</div></div></div>`;
+            if (st.mode === 'add' || st.mode === 'sla' || st.mode === 'list') { let left = Math.abs(integerOrDefault(st.offset, 0)), step = (integerOrDefault(st.offset, 0)) >= 0 ? 1 : -1; while (left) { target.setDate(target.getDate() + step); if (isWorkday(target)) left--; } }
+            container.innerHTML = `<div class="flex flex-col gap-3 p-1"><div class="segment-group grid-cols-2 balanced-segment-modes"><button class="segment-btn work-mode ${st.mode === 'between' ? 'active' : ''}" data-mode="between">นับวันทำการ</button><button class="segment-btn work-mode ${st.mode === 'add' ? 'active' : ''}" data-mode="add">เพิ่ม/ลดวันทำการ</button></div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)"><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่เริ่มต้น</label><input id="workStart" type="date" value="${st.startDate}" class="airbnb-input w-full"></div>${st.mode === 'between' ? `<div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่สิ้นสุด</label><input id="workEnd" type="date" value="${st.endDate}" class="airbnb-input w-full"></div>` : `<div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">จำนวนวันทำการ (+/-)</label><input id="workOffset" type="number" value="${st.offset}" class="airbnb-input w-full"></div>`}</div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-5 text-center" style="box-shadow:var(--app-elevation)"><div class="text-xs text-[#6a6a6a]">${st.mode === 'between' ? 'วันทำการทั้งหมด' : 'วันที่ได้ผลลัพธ์'}</div><div class="text-2xl font-bold text-[var(--app-accent)]">${st.mode === 'between' ? result.toLocaleString('th-TH') + ' วัน' : formatThaiDate(formatLocalDate(target))}</div></div></div>`;
             const workEraBar = document.createElement('div');
             workEraBar.className = 'segment-group grid-cols-2 balanced-segment-modes';
             workEraBar.innerHTML = `<button class="segment-btn work-era ${st.calendarEra === 'BE' ? 'active' : ''}" data-era="BE">พ.ศ.</button><button class="segment-btn work-era ${st.calendarEra === 'CE' ? 'active' : ''}" data-era="CE">ค.ศ.</button>`;
             container.querySelector('.work-mode').parentElement.insertAdjacentElement('afterend', workEraBar);
             container.querySelector('.work-mode').parentElement.insertAdjacentHTML('beforeend', `<button class="segment-btn work-mode ${st.mode === 'sla' ? 'active' : ''}" data-mode="sla">กำหนดวันครบกำหนด / SLA</button><button class="segment-btn work-mode ${st.mode === 'list' ? 'active' : ''}" data-mode="list">แสดงรายการวันทำการ</button>`);
             if (st.mode === 'list') {
-                const listCount = Math.min(Math.abs(parseInt(st.offset, 10) || 0), 100);
-                const direction = (parseInt(st.offset, 10) || 0) >= 0 ? 1 : -1;
+                const listCount = Math.min(Math.abs(integerOrDefault(st.offset, 0)), 100);
+                const direction = (integerOrDefault(st.offset, 0)) >= 0 ? 1 : -1;
                 const dates = [];
                 const cursor = new Date(start);
                 while (dates.length < listCount) {
@@ -2030,8 +2102,8 @@
             const isAirbnb = appState.theme === 'airbnb';
 
             rows.forEach((r, idx) => {
-                const p = parseFloat(r.price);
-                const q = parseFloat(r.qty);
+                const p = parseNumericInput(r.price);
+                const q = parseNumericInput(r.qty);
                 if (!isNaN(p) && !isNaN(q) && p > 0 && q > 0) {
                     validItems.push({ index: idx, id: r.id, price: p, qty: q, unitPrice: p / q });
                 }
@@ -2049,7 +2121,7 @@
             container.innerHTML = `<div class="text-xs text-[var(--app-muted)] px-1 pb-1">💡 เคล็ดลับ: พิมพ์ <b>ราคา เว้นวรรค จำนวน</b> ในช่องราคา เช่น <b>864 50</b> ระบบจะแยกช่องให้อัตโนมัติ</div>`;
 
             function refreshUnitPriceResults() {
-                const liveItems = rows.map((r, index) => ({ index, id: r.id, price: parseFloat(r.price), qty: parseFloat(r.qty) }))
+                const liveItems = rows.map((r, index) => ({ index, id: r.id, price: parseNumericInput(r.price), qty: parseNumericInput(r.qty) }))
                     .filter(item => Number.isFinite(item.price) && Number.isFinite(item.qty) && item.price > 0 && item.qty > 0)
                     .map(item => ({ ...item, unitPrice: item.price / item.qty }));
                 const liveMin = liveItems.length ? Math.min(...liveItems.map(item => item.unitPrice)) : Infinity;
@@ -2084,8 +2156,8 @@
                 const isPriceActive = appState.activeFieldIndex === priceFieldIdx;
                 const isQtyActive = appState.activeFieldIndex === qtyFieldIdx;
 
-                const p = parseFloat(row.price);
-                const q = parseFloat(row.qty);
+                const p = parseNumericInput(row.price);
+                const q = parseNumericInput(row.qty);
                 const hasUnitPrice = !isNaN(p) && !isNaN(q) && p > 0 && q > 0;
                 const unitPriceStr = hasUnitPrice ? formatNum(p / q, 3) : '';
 
@@ -2100,15 +2172,15 @@
                 // Cell 2: Price
                 const priceCell = document.createElement('div');
                 priceCell.className = `cell cell-input ${isPriceActive ? 'active-cell' : ''}`;
-                priceCell.innerHTML = `<input class="unit-quick-input" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="ราคา ${row.id}" placeholder="ราคา" value="${row.price}">`;
+                priceCell.innerHTML = `<input class="unit-quick-input" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="ราคา ${row.id}" placeholder="ราคา" value="${escapeHTML(row.price)}">`;
                 const quickInput = priceCell.querySelector('.unit-quick-input');
                 let quickPairActive = false;
                 quickInput.addEventListener('click', (event) => event.stopPropagation());
                 quickInput.addEventListener('focus', () => { appState.activeFieldIndex = priceFieldIdx; });
                 quickInput.addEventListener('input', (event) => {
                     const raw = event.target.value;
-                    const pair = raw.match(/^(\d*\.?\d+)\s+(\d*\.?\d*)$/);
-                    if (pair) {
+                    const pair = normalizeThaiDigits(raw).match(/^([\d,.]+)\s+([\d,.]*)$/);
+                    if (pair && Number.isFinite(parseNumericInput(pair[1])) && (pair[2] === '' || Number.isFinite(parseNumericInput(pair[2])))) {
                         quickPairActive = true;
                         row.price = pair[1];
                         row.qty = pair[2];
@@ -2116,7 +2188,7 @@
                             ? `<span class="value-text">${formatInputDisplay(row.qty)}</span>`
                             : '<span class="placeholder-text">จำนวน</span>';
                         refreshUnitPriceResults();
-                    } else if (/^\d*\.?\d*$/.test(raw)) {
+                    } else {
                         row.price = raw;
                         if (quickPairActive) {
                             row.qty = '';
@@ -2127,8 +2199,8 @@
                     }
                 });
                 const finishQuickInput = () => {
-                    const pair = quickInput.value.trim().match(/^(\d*\.?\d+)\s+(\d*\.?\d+)$/);
-                    if (pair) {
+                    const pair = normalizeThaiDigits(quickInput.value).trim().match(/^([\d,.]+)\s+([\d,.]+)$/);
+                    if (pair && Number.isFinite(parseNumericInput(pair[1])) && Number.isFinite(parseNumericInput(pair[2]))) {
                         row.price = pair[1];
                         row.qty = pair[2];
                     }
@@ -2315,10 +2387,10 @@
                 const response = await fetch(`https://api.frankfurter.dev/v2/rates?base=THB&quotes=${quotes}`, { cache: 'no-store' });
                 if (!response.ok) throw new Error(`Frankfurter HTTP ${response.status}`);
                 const payload = await response.json();
-                Object.entries(payload.rates || {}).forEach(([code, thbPerUnit]) => {
-                    if (Number.isFinite(Number(thbPerUnit)) && Number(thbPerUnit) > 0) st.ratesInTHB[code] = 1 / Number(thbPerUnit);
-                });
-                st.ratesInTHB.THB = 1;
+                // Commit a complete validated snapshot; never label old rates as fresh.
+                const snapshot = parseFrankfurterRates(payload, quotes.split(','));
+                st.ratesInTHB = snapshot.rates;
+                st.rateDates = snapshot.dates;
                 st.lastUpdated = new Date().toISOString();
                 st.rateSource = 'Frankfurter';
             } catch (error) {
@@ -2328,6 +2400,22 @@
                 persistAppState();
                 if (appState.activeToolId === 'currency') renderActiveTool();
             }
+        }
+
+        function parseFrankfurterRates(payload, requestedQuotes) {
+            if (!Array.isArray(payload) || !payload.length) throw new Error('Invalid Frankfurter response');
+            const rates = { THB: 1 }, dates = {};
+            for (const row of payload) {
+                if (!row || row.base !== 'THB' || !requestedQuotes.includes(row.quote)) continue;
+                const rate = row.rate;
+                if (typeof rate !== 'number' || !Number.isFinite(rate) || rate <= 0 || !Number.isFinite(1 / rate) ||
+                    !/^\d{4}-\d{2}-\d{2}$/.test(row.date) || formatLocalDate(new Date(`${row.date}T00:00:00`)) !== row.date ||
+                    Object.hasOwn(dates, row.quote)) throw new Error('Invalid Frankfurter quote');
+                rates[row.quote] = 1 / rate;
+                dates[row.quote] = row.date;
+            }
+            if (!requestedQuotes.length || requestedQuotes.some(code => !Object.hasOwn(dates, code))) throw new Error('Missing Frankfurter quote');
+            return { rates, dates };
         }
 
         function renderCurrencyTool(container) {
@@ -2343,12 +2431,13 @@
                 { code: 'SGD', name: '🇸🇬 SGD - ดอลลาร์สิงคโปร์' }
             ];
 
-            const amt = parseFloat(st.amount) || 0;
+            const amt = numberOrDefault(st.amount, 0);
             const fromRate = st.ratesInTHB[st.from] || 1;
             const toRate = st.ratesInTHB[st.to] || 1;
-            const customRate = parseFloat(st.customRateToTHB);
+            const customRate = parseNumericInput(st.customRateToTHB);
             const effectiveRate = (!isNaN(customRate) && customRate > 0) ? customRate : (fromRate / toRate);
             const converted = amt * effectiveRate;
+            const rateDateText = [...new Set([st.from, st.to].filter(code => code !== 'THB').map(code => st.rateDates?.[code]).filter(Boolean))].join(', ');
 
             container.innerHTML = `
                 <div class="flex flex-col gap-1.5">
@@ -2372,7 +2461,7 @@
 
                     <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-2.5 space-y-2 text-xs text-[#3f3f3f]">
                         <div class="flex items-center justify-between gap-2"><span>เรทที่ใช้: <b>1 ${st.from} = ${formatNum(effectiveRate, 4)} ${st.to}</b></span><button id="swapCurrBtn" class="px-3 py-1 bg-[#f7f7f7] border border-[#dddddd] rounded-full font-semibold text-[var(--app-accent)]">⇄ สลับ</button></div>
-                        <div class="flex items-center justify-between gap-2 text-[11px] text-[#6a6a6a]"><span>${st.rateSource}${st.lastUpdated ? ` · อัปเดต ${new Date(st.lastUpdated).toLocaleString('th-TH')}` : ''}</span><button id="refreshRatesBtn" class="px-2.5 py-1 border border-[var(--app-hairline)] rounded-full font-semibold text-[var(--app-accent)]">↻ อัปเดตเรท</button></div>
+                        <div class="flex items-center justify-between gap-2 text-[11px] text-[#6a6a6a]"><span>${escapeHTML(st.rateSource)}${rateDateText ? ` · วันที่เรท ${escapeHTML(rateDateText)}` : ''}${st.lastUpdated ? ` · ดึงข้อมูล ${new Date(st.lastUpdated).toLocaleString('th-TH')}` : ''}</span><button id="refreshRatesBtn" class="px-2.5 py-1 border border-[var(--app-hairline)] rounded-full font-semibold text-[var(--app-accent)]">↻ อัปเดตเรท</button></div>
                     </div>
                 </div>
             `;
@@ -2431,7 +2520,7 @@
             if (st.fromIdx >= catObj.units.length) st.fromIdx = 0;
             if (st.targetIdx >= catObj.units.length || st.targetIdx === st.fromIdx || st.targetIdx === undefined) st.targetIdx = catObj.units.length > 1 ? (st.fromIdx === 0 ? 1 : 0) : 0;
 
-            const inputVal = parseFloat(st.val) || 0;
+            const inputVal = numberOrDefault(st.val, 0);
             const fromUnit = catObj.units[st.fromIdx];
             const targetUnit = catObj.units[st.targetIdx];
 
@@ -2545,9 +2634,9 @@
          * ----------------------------------------------------------- */
         function renderDiscountTool(container) {
             const st = appState.discount;
-            const p = parseFloat(st.price) || 0;
-            const d1 = parseFloat(st.discountPct) || 0;
-            const d2 = parseFloat(st.extraPct) || 0;
+            const p = numberOrDefault(st.price, 0);
+            const d1 = numberOrDefault(st.discountPct, 0);
+            const d2 = numberOrDefault(st.extraPct, 0);
 
             const afterFirst = p * (1 - d1 / 100);
             const finalPrice = afterFirst * (1 - d2 / 100);
@@ -2587,9 +2676,9 @@
          * ----------------------------------------------------------- */
         function renderPercentTool(container) {
             const st = appState.percent;
-            const x = parseFloat(st.x);
-            const y = parseFloat(st.y);
-            const z = parseFloat(st.z);
+            const x = parseNumericInput(st.x);
+            const y = parseNumericInput(st.y);
+            const z = parseNumericInput(st.z);
 
             let labelX = 'เปอร์เซ็นต์ (X%)';
             let labelY = 'ของจำนวน (Y)';
@@ -2698,8 +2787,8 @@
          * ----------------------------------------------------------- */
         function renderVatTool(container) {
             const st = appState.vat;
-            const amt = parseFloat(st.amount) || 0;
-            const rate = parseFloat(st.rate) || 0;
+            const amt = numberOrDefault(st.amount, 0);
+            const rate = numberOrDefault(st.rate, 0);
 
             let netPrice = 0, vatAmt = 0, grossPrice = 0;
             if (st.mode === 'exclude') {
@@ -2744,9 +2833,9 @@
          * ----------------------------------------------------------- */
         function renderFuelCostTool(container) {
             const st = appState.fuel_cost;
-            const dist = parseFloat(st.distance) || 0;
-            const eff = parseFloat(st.efficiency) || 0;
-            const price = parseFloat(st.oilPrice) || 0;
+            const dist = numberOrDefault(st.distance, 0);
+            const eff = numberOrDefault(st.efficiency, 0);
+            const price = numberOrDefault(st.oilPrice, 0);
 
             const litersNeeded = eff > 0 ? dist / eff : 0;
             const totalCost = litersNeeded * price;
@@ -2774,10 +2863,10 @@
          * ----------------------------------------------------------- */
         function renderHealthTool(container) {
             const st = appState.health;
-            const w = parseFloat(st.weight) || 0;
-            const hCm = parseFloat(st.height) || 0;
-            const age = parseFloat(st.age) || 0;
-            const activity = parseFloat(st.activity) || 1.2;
+            const w = numberOrDefault(st.weight, 0);
+            const hCm = numberOrDefault(st.height, 0);
+            const age = numberOrDefault(st.age, 0);
+            const activity = numberOrDefault(st.activity, 1.2);
 
             const hM = hCm / 100;
             const bmi = (w > 0 && hM > 0) ? (w / (hM * hM)) : 0;
@@ -2844,9 +2933,9 @@
          * ----------------------------------------------------------- */
         function renderTipTool(container) {
             const st = appState.tip;
-            const bill = parseFloat(st.bill) || 0;
-            const tipPct = parseFloat(st.tipPct) || 0;
-            const people = Math.max(1, parseInt(st.people, 10) || 1);
+            const bill = numberOrDefault(st.bill, 0);
+            const tipPct = numberOrDefault(st.tipPct, 0);
+            const people = Math.max(1, integerOrDefault(st.people, 1));
 
             const tipAmt = bill * (tipPct / 100);
             const totalBill = bill + tipAmt;
@@ -2874,8 +2963,8 @@
          * ----------------------------------------------------------- */
         function renderFuelEffTool(container) {
             const st = appState.fuel_eff;
-            const dist = parseFloat(st.distance) || 0;
-            const fuel = parseFloat(st.fuelUsed) || 0;
+            const dist = numberOrDefault(st.distance, 0);
+            const fuel = numberOrDefault(st.fuelUsed, 0);
 
             const kmPerLiter = (dist > 0 && fuel > 0) ? (dist / fuel) : 0;
             const literPer100Km = (dist > 0 && fuel > 0) ? ((fuel / dist) * 100) : 0;
@@ -2902,14 +2991,14 @@
         function renderOvulationTool(container) {
             const st = appState.ovulation;
             const lmp = new Date(st.lastPeriodDate + 'T00:00:00');
-            const cycle = parseInt(st.cycleLength, 10) || 28;
+            const cycle = integerOrDefault(st.cycleLength, 28);
 
-            const nextPeriod = new Date(lmp.getTime() + cycle * 86400000);
-            const ovulationDate = new Date(nextPeriod.getTime() - 14 * 86400000);
-            const fertileStart = new Date(ovulationDate.getTime() - 5 * 86400000);
-            const fertileEnd = new Date(ovulationDate.getTime() + 1 * 86400000);
+            const nextPeriod = addCalendarDays(lmp, cycle);
+            const ovulationDate = addCalendarDays(nextPeriod, -14);
+            const fertileStart = addCalendarDays(ovulationDate, -5);
+            const fertileEnd = addCalendarDays(ovulationDate, 1);
 
-            const toISO = (d) => d.toISOString().slice(0, 10);
+            const toISO = formatLocalDate;
 
             container.innerHTML = `
                 <div class="flex flex-col gap-3 p-1">
@@ -2965,8 +3054,8 @@
             const weeks = Math.floor(diffDays / 7);
             const remDays = diffDays % 7;
 
-            const offset = parseInt(st.daysOffset, 10) || 0;
-            const targetDate = new Date(d1.getTime() + (st.op === 'add' ? offset : -offset) * 86400000);
+            const offset = integerOrDefault(st.daysOffset, 0);
+            const targetDate = addCalendarDays(d1, st.op === 'add' ? offset : -offset);
             const thaiHolidays = new Set(['01-01', '04-06', '05-01', '06-03', '07-28', '08-12', '10-13', '10-23', '12-05', '12-10', '12-31']);
             const isBusinessDay = (date) => {
                 const day = date.getDay();
@@ -2984,7 +3073,7 @@
                 return Math.abs(count) + (st.inclusive ? 0 : (isBusinessDay(from) ? -1 : 0));
             };
             const addDateOffset = (from, amount) => {
-                if (!st.workdays) return new Date(from.getTime() + amount * 86400000);
+                if (!st.workdays) return addCalendarDays(from, amount);
                 const direction = amount >= 0 ? 1 : -1;
                 let left = Math.abs(amount);
                 const result = new Date(from);
@@ -3070,7 +3159,7 @@
                         </div>
                         <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-5 text-center space-y-1" style="box-shadow: var(--app-elevation);">
                             <div class="text-xs text-[#6a6a6a]">ตรงกับวันที่</div>
-                            <div class="text-xl font-bold text-[var(--app-accent)]">${formatThaiDate(adjustedTargetDate.toISOString().slice(0, 10))}</div>
+                            <div class="text-xl font-bold text-[var(--app-accent)]">${formatThaiDate(formatLocalDate(adjustedTargetDate))}</div>
                         </div>
                     `}
                 </div>
@@ -3100,7 +3189,7 @@
                 st.op = e.target.value; renderActiveTool();
             });
             document.getElementById('dateOffsetInp')?.addEventListener('change', (e) => {
-                st.daysOffset = parseInt(e.target.value, 10) || 0;
+                st.daysOffset = e.target.value;
             });
             document.getElementById('dateInclusive')?.addEventListener('change', (e) => { st.inclusive = e.target.checked; renderActiveTool(); });
             document.getElementById('dateWorkdays')?.addEventListener('change', (e) => { st.workdays = e.target.checked; renderActiveTool(); });
@@ -3153,8 +3242,8 @@
             let totalCredits = 0;
             let totalPoints = 0;
             st.courses.forEach(c => {
-                const cr = parseFloat(c.credit) || 0;
-                const gr = parseFloat(c.grade) || 0;
+                const cr = numberOrDefault(c.credit, 0);
+                const gr = numberOrDefault(c.grade, 0);
                 totalCredits += cr;
                 totalPoints += (cr * gr);
             });
@@ -3198,7 +3287,7 @@
             container.querySelectorAll('.gpa-credit').forEach(sel => {
                 sel.addEventListener('change', (e) => {
                     const i = parseInt(sel.getAttribute('data-idx'), 10);
-                    st.courses[i].credit = parseFloat(e.target.value);
+                    st.courses[i].credit = parseNumericInput(e.target.value);
                     renderActiveTool();
                 });
             });
@@ -3224,13 +3313,13 @@
          * ----------------------------------------------------------- */
         function renderLoanTool(container) {
             const st = appState.loan;
-            const P = parseFloat(st.principal) || 0;
-            const annualRate = parseFloat(st.interestRate) || 0;
-            const n = parseInt(st.months, 10) || 0;
-            const extra = parseFloat(st.extra) || 0;
+            const P = numberOrDefault(st.principal, 0);
+            const annualRate = numberOrDefault(st.interestRate, 0);
+            const n = integerOrDefault(st.months, 0);
+            const extra = numberOrDefault(st.extra, 0);
 
-            const rateAfter = parseFloat(st.rateAfter) || annualRate;
-            const promoMonths = Math.max(0, parseInt(st.promoMonths, 10) || 0);
+            const rateAfter = numberOrDefault(st.rateAfter, annualRate);
+            const promoMonths = Math.max(0, integerOrDefault(st.promoMonths, 0));
             let monthlyPay = 0, totalPay = 0, totalInterest = 0, extraInterest = 0, extraMonths = n;
             const schedule = [];
             if (P > 0 && n > 0) {
@@ -3317,12 +3406,13 @@
          * ----------------------------------------------------------- */
         function renderSavingsTool(container) {
             const st = appState.savings;
-            const init = parseFloat(st.initial) || 0;
-            const monthly = parseFloat(st.monthly) || 0;
-            const rate = parseFloat(st.interestRate) || 0;
-            const years = parseFloat(st.years) || 0;
-            const annualIncrease = parseFloat(st.annualIncrease) || 0;
-            const inflationRate = parseFloat(st.inflationRate) || 0;
+            const init = numberOrDefault(st.initial, 0);
+            const monthly = numberOrDefault(st.monthly, 0);
+            const rate = numberOrDefault(st.interestRate, 0);
+            const retirementYears = Math.max(0, numberOrDefault(st.retirementAge, 0) - numberOrDefault(st.currentAge, 0));
+            const years = st.mode === 'retirement' ? retirementYears : numberOrDefault(st.years, 0);
+            const annualIncrease = numberOrDefault(st.annualIncrease, 0);
+            const inflationRate = numberOrDefault(st.inflationRate, 0);
 
             const months = Math.round(years * 12);
             const r = (rate / 100) / 12;
@@ -3338,10 +3428,9 @@
             }
             const interestEarned = Math.max(0, totalBalance - totalPrincipal);
             const realValue = totalBalance / Math.pow(1 + inflationRate / 100, years);
-            const goalTarget = parseFloat(st.goalTarget) || 0;
-            const emergencyTarget = (parseFloat(st.monthlyExpenses) || 0) * (parseFloat(st.emergencyMonths) || 0);
-            const retirementYears = Math.max(0, (parseFloat(st.retirementAge) || 0) - (parseFloat(st.currentAge) || 0));
-            const retirementTarget = (parseFloat(st.retirementMonthly) || 0) * 12 * Math.max(1, 25);
+            const goalTarget = numberOrDefault(st.goalTarget, 0);
+            const emergencyTarget = (numberOrDefault(st.monthlyExpenses, 0)) * (numberOrDefault(st.emergencyMonths, 0));
+            const retirementTarget = numberOrDefault(st.retirementMonthly, 0) * 12 * 25;
             const modeTarget = st.mode === 'goal' ? goalTarget : (st.mode === 'emergency' ? emergencyTarget : (st.mode === 'retirement' ? retirementTarget : 0));
             const balanceForMonthly = (deposit) => {
                 let balance = init;
@@ -3351,6 +3440,8 @@
             let requiredMonthly = 0;
             if (modeTarget > 0 && months > 0 && balanceForMonthly(0) < modeTarget) {
                 let low = 0, high = modeTarget / Math.max(1, months);
+                // Falling returns/deposits may require more than target / months.
+                for (let i = 0; i < 64 && balanceForMonthly(high) < modeTarget; i++) high *= 2;
                 for (let i = 0; i < 40; i++) { const mid = (low + high) / 2; if (balanceForMonthly(mid) >= modeTarget) high = mid; else low = mid; }
                 requiredMonthly = high;
             }
@@ -3360,7 +3451,9 @@
                     ${createKeypadFieldHTML(0, 'เงินออมเริ่มต้น', st.initial, 'บาท', 'เช่น 10,000')}
                     ${createKeypadFieldHTML(1, 'ฝากเพิ่มรายเดือน', st.monthly, 'บาท/เดือน', 'เช่น 3,000')}
                     ${createKeypadFieldHTML(2, 'อัตราดอกเบี้ยต่อปี', st.interestRate, '% ต่อปี', 'เช่น 2.5')}
-                    ${createKeypadFieldHTML(3, 'ระยะเวลาออม', st.years, 'ปี', 'เช่น 5')}
+                    ${st.mode === 'retirement'
+                        ? `<div class="p-3 text-sm">ระยะสะสมเงินก่อนเกษียณ: <b>${formatNum(retirementYears)} ปี</b><div class="text-xs text-[#6a6a6a] mt-1">เป้าหมายครอบคลุมค่าใช้จ่ายหลังเกษียณ 25 ปี ตามค่าใช้จ่ายรายเดือนที่กรอก ยังไม่รวมเงินเฟ้อและผลตอบแทนหลังเกษียณ</div></div>`
+                        : createKeypadFieldHTML(3, 'ระยะเวลาออม', st.years, 'ปี', 'เช่น 5')}
                 </div>
             `;
 
@@ -3391,7 +3484,9 @@
 
             attachFieldClickListeners(container);
 
-            if (totalPrincipal <= 0 || years <= 0) {
+            if (st.mode === 'retirement' && retirementYears <= 0) {
+                setStatusBanner('error', 'อายุเกษียณต้องมากกว่าอายุปัจจุบัน เพื่อคำนวณระยะสะสมเงินและเงินออมรายเดือน');
+            } else if (totalPrincipal <= 0 || years <= 0) {
                 setStatusBanner('empty', 'ป้อนเงินออมเริ่มต้นหรือเงินฝากรายเดือนเพื่อคำนวณผลตอบแทน');
             } else {
                 const targetText = modeTarget > 0 ? ` | เป้าหมาย: ${formatMoney(modeTarget)} ฿ | ${totalBalance >= modeTarget ? 'ถึงเป้าหมายแล้ว' : 'ยังขาด ' + formatMoney(modeTarget - totalBalance) + ' ฿' + (requiredMonthly ? ' · ควรออมประมาณ ' + formatMoney(requiredMonthly) + ' ฿/เดือน' : '')}` : '';
@@ -3401,12 +3496,12 @@
 
         function renderSalaryTool(container) {
             const st = appState.salary;
-            const income = parseFloat(st.income) || 0;
-            const needsPct = parseFloat(st.needsPct) || 0;
-            const wantsPct = parseFloat(st.wantsPct) || 0;
-            const savingsPct = parseFloat(st.savingsPct) || 0;
-            const emergencyPct = parseFloat(st.emergencyPct) || 0;
-            const debtPct = parseFloat(st.debtPct) || 0;
+            const income = numberOrDefault(st.income, 0);
+            const needsPct = numberOrDefault(st.needsPct, 0);
+            const wantsPct = numberOrDefault(st.wantsPct, 0);
+            const savingsPct = numberOrDefault(st.savingsPct, 0);
+            const emergencyPct = numberOrDefault(st.emergencyPct, 0);
+            const debtPct = numberOrDefault(st.debtPct, 0);
             const totalPct = needsPct + wantsPct + savingsPct;
             const needs = income * needsPct / 100;
             const wants = income * wantsPct / 100;
