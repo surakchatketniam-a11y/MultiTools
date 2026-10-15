@@ -1,6 +1,7 @@
 'use strict';
 
 const GLO_BASE_URL = 'https://www.glo.or.th/api/lottery';
+const GLO_TIMEOUT_MS = 20000;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const PRIZE_SHAPES = {
     first: 1,
@@ -69,7 +70,7 @@ function normalizeDetailedResult(payload) {
 
 async function postGlo(path, body, fetcher) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 12000);
+    const timer = setTimeout(() => controller.abort(), GLO_TIMEOUT_MS);
     try {
         const response = await fetcher(`${GLO_BASE_URL}/${path}`, {
             method: 'POST',
