@@ -17,7 +17,7 @@ function context(extra = {}) {
     const ctx = vm.createContext({ persistAppState() {}, ...extra });
     for (const name of ['normalizeThaiDigits', 'parseNumericInput', 'numberOrDefault', 'integerOrDefault',
         'formatLocalDate', 'addCalendarDays', 'parseDateInputThai', 'parseFrankfurterRates',
-        'evaluateArithmeticExpression', 'escapeHTML', 'formatInputDisplay', 'formatNum', 'formatMoney',
+        'evaluateArithmeticExpression', 'escapeHTML', 'formatInputDisplay', 'formatNum', 'formatUnitPrice', 'formatMoney',
         'validateCalendarDate', 'countWorkingDays', 'offsetWorkingDays', 'normalizeWorkDays', 'formatDateInTimezone']) {
         vm.runInContext(source(name), ctx);
     }
@@ -49,6 +49,10 @@ test('numbers: grouping, Thai digits, decimals, signs and invalid/empty input', 
     assert.ok(Number.isNaN(ctx.integerOrDefault('12.5')));
     assert.equal(ctx.formatInputDisplay('๑,๐๐๐.50'), '1,000.50');
     assert.equal(ctx.formatMoney(NaN), '—');
+    assert.equal(ctx.formatUnitPrice(18), '18.00');
+    assert.equal(ctx.formatUnitPrice(17.28), '17.28');
+    assert.equal(ctx.formatUnitPrice(17.285), '17.285');
+    assert.equal(ctx.formatUnitPrice(NaN), '—');
     assert.equal(ctx.evaluateArithmeticExpression('๑,๐๐๐/๕๐'), 20);
     assert.ok(Number.isNaN(ctx.evaluateArithmeticExpression('1,00/50')));
 });
@@ -271,6 +275,7 @@ test('getToolSummaryText formats context-rich summary for key tools, and discoun
     const unitPriceText = ctx.getToolSummaryText('unit_price');
     assert.match(unitPriceText, /เปรียบเทียบราคาต่อหน่วย/);
     assert.match(unitPriceText, /17\.28 บาท\/หน่วย/);
+    assert.match(unitPriceText, /18\.00 บาท\/หน่วย/);
     assert.match(unitPriceText, /ตัวเลือก A/);
 
     // 3. Discount capping

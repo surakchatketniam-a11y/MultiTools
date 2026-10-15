@@ -1109,7 +1109,7 @@
             { id: 'salary',     group: 'biz', category: 'all', menuTitle: 'จัดการเงินเดือน 50/30/20', headerTitle: 'เครื่องมือจัดการเงินเดือน', usesSharedKeypad: true, keywords: 'salary เงินเดือน 50 30 20 รายจ่าย เงินเก็บ ออมเงิน หนี้' },
 
             // หมวดหมู่ที่ 3: การเงิน & วางแผน
-            { id: 'loan',       group: 'finance', category: 'all', menuTitle: 'เงินกู้ & ผ่อนชำระ', headerTitle: 'เครื่องคำนวณเงินกู้', usesSharedKeypad: true, keywords: 'loan เงินกู้ ผ่อนบ้าน ผ่อนรถ ดอกเบี้ย ค่างวด ดอกเบี้ยคงที่ ลดต้นลดดอก' },
+            { id: 'loan',       group: 'finance', category: 'all', menuTitle: 'เงินกู้ & ผ่อนชำระ', headerTitle: 'เครื่องคำนวณเงินกู้', usesSharedKeypad: true, keywords: 'loan เงินกู้ ผ่อนบ้าน ผ่อนรถ ดอกเบี้ย ค่างวด ดอกเบี้ยคงที่ ค่างวดผ่อน' },
             { id: 'savings',    group: 'finance', category: 'all', menuTitle: 'เงินออม & เกษียณ', headerTitle: 'เครื่องคำนวณเงินออม', usesSharedKeypad: true, keywords: 'savings เงินออม เกษียณ ดอกเบี้ยทบต้น เงินเฟ้อ ออมทรัพย์' },
             { id: 'currency',   group: 'finance', category: 'fav', menuTitle: 'แปลงสกุลเงิน', headerTitle: 'ตัวแปลงสกุลเงิน', usesSharedKeypad: true, keywords: 'currency สกุลเงิน แลกเงิน ดอลลาร์ บาท เยน ยูโร exchange rate forex' },
 
@@ -1555,6 +1555,15 @@
             });
         }
 
+        function formatUnitPrice(num) {
+            if (!Number.isFinite(num)) return '—';
+            const hasThreeDec = Math.abs(Math.round(num * 100) - num * 100) > 1e-4;
+            return num.toLocaleString('en-US', {
+                minimumFractionDigits: hasThreeDec ? 3 : 2,
+                maximumFractionDigits: 3
+            });
+        }
+
         function formatThaiDate(dateStr) {
             if (!dateStr) return '-';
             const d = new Date(dateStr + 'T00:00:00');
@@ -1766,8 +1775,8 @@
                     if (!valid.length) return '🛒 สรุปราคาต่อหน่วย\n(กรุณากรอกราคาและจำนวนเพื่อเปรียบเทียบ)';
                     const minPrice = Math.min(...valid.map(v => v.unitPrice));
                     const best = valid.find(v => Math.abs(v.unitPrice - minPrice) < 1e-7);
-                    const rowTexts = valid.map(v => `• ตัวเลือก ${v.id}: ${formatMoney(v.p)} บาท / ${formatMoney(v.q)} หน่วย = ${formatNum(v.unitPrice, 3)} บาท/หน่วย`);
-                    let comparison = `⭐ ตัวเลือกที่คุ้มที่สุด: ตัวเลือก ${best.id} (${formatNum(best.unitPrice, 3)} บาท/หน่วย)`;
+                    const rowTexts = valid.map(v => `• ตัวเลือก ${v.id}: ${formatMoney(v.p)} บาท / ${formatMoney(v.q)} หน่วย = ${formatUnitPrice(v.unitPrice)} บาท/หน่วย`);
+                    let comparison = `⭐ ตัวเลือกที่คุ้มที่สุด: ตัวเลือก ${best.id} (${formatUnitPrice(best.unitPrice)} บาท/หน่วย)`;
                     const second = [...valid].sort((a,b) => a.unitPrice - b.unitPrice).find(v => v.unitPrice > minPrice + 1e-7);
                     if (second) {
                         const pct = (((second.unitPrice - best.unitPrice) / second.unitPrice) * 100).toFixed(1);
@@ -2225,7 +2234,7 @@
                     <div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">ยอดที่กรอกคือ</label><select id="whtMode" class="airbnb-input w-full"><option value="before" ${st.mode === 'before' ? 'selected' : ''}>ยอดก่อน VAT</option><option value="after" ${st.mode === 'after' ? 'selected' : ''}>ยอดรวม VAT แล้ว</option></select></div><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">VAT (%)</label><input id="whtVat" type="number" value="${st.vatRate}" class="airbnb-input w-full"></div></div>
                     <div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">หัก ณ ที่จ่าย (%)</label><select id="whtRate" class="airbnb-input w-full"><option value="0" ${wht === 0 ? 'selected' : ''}>ไม่หัก</option><option value="1" ${wht === 1 ? 'selected' : ''}>1%</option><option value="3" ${wht === 3 ? 'selected' : ''}>3%</option><option value="5" ${wht === 5 ? 'selected' : ''}>5%</option></select></div>
                 </div>
-                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2" style="box-shadow:var(--app-elevation)"><div class="flex justify-between"><span>ยอดก่อน VAT</span><b>${Number.isFinite(amount) ? formatMoney(base) : '-'} บาท</b></div><div class="flex justify-between"><span>VAT ${vat}%</span><b>${Number.isFinite(amount) ? formatMoney(vatAmount) : '-'} บาท</b></div><div class="flex justify-between"><span>ยอดรวม VAT</span><b>${Number.isFinite(amount) ? formatMoney(gross) : '-'} บาท</b></div><div class="flex justify-between"><span>หัก ณ ที่จ่าย ${wht}%</span><b>- ${Number.isFinite(amount) ? formatMoney(whtAmount) : '-'} บาท</b></div><div class="mt-2 p-3 rounded-xl border border-[#16a34a] bg-[#f0fdf4] text-[#15803d] theme-result-highlight flex justify-between"><span class="font-semibold">ยอดโอนสุทธิ</span><b>${Number.isFinite(amount) ? formatMoney(net) : '-'} บาท</b></div></div>`;
+                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2" style="box-shadow:var(--app-elevation)"><div class="flex justify-between"><span>ยอดก่อน VAT</span><b>${Number.isFinite(amount) ? formatMoney(base) : '-'} บาท</b></div><div class="flex justify-between"><span>VAT ${vat}%</span><b>${Number.isFinite(amount) ? formatMoney(vatAmount) : '-'} บาท</b></div><div class="flex justify-between"><span>ยอดรวม VAT</span><b>${Number.isFinite(amount) ? formatMoney(gross) : '-'} บาท</b></div><div class="flex justify-between"><span>หัก ณ ที่จ่าย ${wht}%</span><b>${Number.isFinite(amount) ? `- ${formatMoney(whtAmount)}` : '-'} บาท</b></div><div class="mt-2 p-3 rounded-xl border border-[#16a34a] bg-[#f0fdf4] text-[#15803d] theme-result-highlight flex justify-between"><span class="font-semibold">ยอดโอนสุทธิ</span><b>${Number.isFinite(amount) ? formatMoney(net) : '-'} บาท</b></div></div>`;
             const rerender = () => { st.amount = document.getElementById('whtAmount').value; st.mode = document.getElementById('whtMode').value; st.vatRate = document.getElementById('whtVat').value; st.whtRate = document.getElementById('whtRate').value; renderActiveTool(); };
             ['whtAmount','whtMode','whtVat','whtRate'].forEach(id => document.getElementById(id).addEventListener('change', rerender));
             setStatusBanner(Number.isFinite(amount) ? 'success' : 'empty', Number.isFinite(amount) ? `ยอดโอนสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(net)} บาท</span>` : 'กรุณาป้อนยอดเงินเพื่อคำนวณ VAT และหัก ณ ที่จ่าย');
@@ -2439,20 +2448,20 @@
                     const calcRow = cell.closest('.calc-row');
                     calcRow.classList.toggle('cheapest-row', isBest);
                     calcRow.querySelector('.cell-label span').textContent = `${rows[index].id}${isBest ? ' ★' : ''}`;
-                    cell.innerHTML = item ? `<span class="text-[1.08rem] ${isBest ? (isAirbnb ? 'text-[#ff385c] font-bold' : appState.theme === 'together' ? 'text-[var(--app-accent)] font-bold' : 'text-green-700 font-bold') : 'text-[#222222] font-semibold'}">${formatNum(item.unitPrice, 3)}</span>` : `<span class="placeholder-text">ราคาต่อหน่วย</span>`;
+                    cell.innerHTML = item ? `<span class="text-[1.08rem] ${isBest ? (isAirbnb ? 'text-[#ff385c] font-bold' : appState.theme === 'together' ? 'text-[var(--app-accent)] font-bold' : 'text-green-700 font-bold') : 'text-[#222222] font-semibold'}">${formatUnitPrice(item.unitPrice)}</span>` : `<span class="placeholder-text">ราคาต่อหน่วย</span>`;
                 });
                 if (invalidCount) setStatusBanner('error', 'กรุณาแก้ช่องที่มีข้อผิดพลาดก่อนเปรียบเทียบราคา');
                 else if (!liveItems.length) setStatusBanner('empty', 'กรุณาป้อนข้อมูลของคุณ');
-                else if (liveItems.length === 1) setStatusBanner('info', `ตัวเลือก <b>${liveItems[0].id}</b>: ${formatNum(liveItems[0].unitPrice, 3)} บาท/หน่วย <span class="text-xs font-normal text-[#6a6a6a] block">ป้อนแถวอื่นเพิ่มเพื่อเปรียบเทียบความคุ้มค่า</span>`);
+                else if (liveItems.length === 1) setStatusBanner('info', `ตัวเลือก <b>${liveItems[0].id}</b>: ${formatUnitPrice(liveItems[0].unitPrice)} บาท/หน่วย <span class="text-xs font-normal text-[#6a6a6a] block">ป้อนแถวอื่นเพิ่มเพื่อเปรียบเทียบความคุ้มค่า</span>`);
                 else {
                     const best = liveItems.find(item => Math.abs(item.unitPrice - liveMin) < 1e-7);
                     const bestLabels = liveItems.filter(item => Math.abs(item.unitPrice - liveMin) < 1e-7).map(item => item.id).join(', ');
                     const next = [...liveItems].sort((a, b) => a.unitPrice - b.unitPrice).find(item => item.unitPrice > liveMin + 1e-7);
                     if (next) {
                         const pct = (((next.unitPrice - best.unitPrice) / next.unitPrice) * 100).toFixed(1);
-                        setStatusBanner('success', `<span class="text-[var(--app-accent)]">★ ตัวเลือก ${bestLabels} คุ้มที่สุด</span> (${formatNum(best.unitPrice, 3)} / หน่วย)<span class="text-xs font-medium block text-[#3f3f3f]">ถูกกว่าตัวเลือก ${next.id} ${pct}% หรือประหยัด ${formatNum(next.unitPrice - best.unitPrice, 3)} บาท/หน่วย</span>`);
+                        setStatusBanner('success', `<span class="text-[var(--app-accent)]">★ ตัวเลือก ${bestLabels} คุ้มที่สุด</span> (${formatUnitPrice(best.unitPrice)} / หน่วย)<span class="text-xs font-medium block text-[#3f3f3f]">ถูกกว่าตัวเลือก ${next.id} ${pct}% หรือประหยัด ${formatUnitPrice(next.unitPrice - best.unitPrice)} บาท/หน่วย</span>`);
                     } else {
-                        setStatusBanner('success', `⚖️ ตัวเลือก <b>${bestLabels}</b> ราคาต่อหน่วยเท่ากัน (${formatNum(liveMin, 3)} / หน่วย)`);
+                        setStatusBanner('success', `⚖️ ตัวเลือก <b>${bestLabels}</b> ราคาต่อหน่วยเท่ากัน (${formatUnitPrice(liveMin)} / หน่วย)`);
                     }
                 }
             }
@@ -2467,7 +2476,7 @@
                 const p = parseNumericInput(row.price);
                 const q = parseNumericInput(row.qty);
                 const hasUnitPrice = !isNaN(p) && !isNaN(q) && p > 0 && q > 0;
-                const unitPriceStr = hasUnitPrice ? formatNum(p / q, 3) : '';
+                const unitPriceStr = hasUnitPrice ? formatUnitPrice(p / q) : '';
 
                 const rowEl = document.createElement('div');
                 rowEl.className = `calc-row ${isCheapest ? 'cheapest-row' : ''}`;
