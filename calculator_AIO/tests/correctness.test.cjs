@@ -21,7 +21,9 @@ const moduleFiles = [
     'src/tools/biz.js',
     'src/tools/finance.js',
     'src/tools/work.js',
-    'src/tools/special.js'
+    'src/tools/special.js',
+    'src/ui/actions.js',
+    'src/ui/modals.js'
 ];
 const moduleContents = moduleFiles.map(file => fs.readFileSync(path.join(__dirname, '../', file), 'utf8'));
 
@@ -257,7 +259,7 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
         unit_price: { rows: [{ id: 'A', price: '864', qty: '50' }, { id: 'B', price: '900', qty: '50' }] },
         currency: { amount: '100' } }, document: { getElementById: () => undoButton },
         renderSidebarMenu() {}, renderActiveTool() { renders++; } });
-    vm.runInContext('let lastClearSnapshot = null;\n' + ['captureToolSnapshot', 'rememberToolClear', 'undoLastClear'].map(source).join('\n'), ctx);
+    vm.runInContext(['captureToolSnapshot', 'rememberToolClear', 'undoLastClear'].map(source).join('\n'), ctx);
     const snapshot = ctx.captureToolSnapshot();
     ctx.appState.unit_price.rows[0].qty = '';
     ctx.rememberToolClear(snapshot);
@@ -413,7 +415,6 @@ test('all 22 tools have complete and valid clear and demo data mappings', () => 
     const ctx = context();
     vm.runInContext(rawAppStateMatch[0].replace(/const /g, 'var '), ctx);
     vm.runInContext(`
-        var lastClearSnapshot = null;
         function captureToolSnapshot() {
             return { toolId: appState.activeToolId, fieldIndex: appState.activeFieldIndex,
                 state: JSON.parse(JSON.stringify(appState[appState.activeToolId])) };
@@ -805,6 +806,39 @@ test('all 22 tool renderers are modularized and exported across the 5 tool group
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
+    }
+});
+
+test('actions and modals modules export all expected functions', () => {
+    const ctx = context();
+    const actionFns = [
+        'captureToolSnapshot',
+        'rememberToolClear',
+        'undoLastClear',
+        'clearCurrentTool',
+        'loadDemoForCurrentTool',
+        'triggerPrintReceipt',
+        'setStatusBanner',
+        'sanitizeSavedNumericValues'
+    ];
+    for (const fn of actionFns) {
+        assert.equal(typeof ctx[fn], 'function', `Action function ${fn} must be exported and callable`);
+    }
+
+    const modalFns = [
+        'openModal',
+        'closeModal',
+        'createAppIconDataURL',
+        'setupPWA',
+        'triggerInstallFlow',
+        'initDropdownListeners',
+        'initModalListeners',
+        'initCompareModalListeners',
+        'initPwaListeners',
+        'initAppListeners'
+    ];
+    for (const fn of modalFns) {
+        assert.equal(typeof ctx[fn], 'function', `Modal function ${fn} must be exported and callable`);
     }
 });
 
