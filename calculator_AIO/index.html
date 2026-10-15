@@ -657,6 +657,7 @@
 
         /* Status / Result Summary Banner */
         .status-banner {
+            position: relative;
             background-color: var(--color-canvas);
             border: 1px solid var(--app-hairline);
             border-radius: var(--app-card-radius);
@@ -672,6 +673,10 @@
         html[data-theme="airbnb"] .status-banner {
             box-shadow: var(--airbnb-shadow);
             border-radius: var(--radius-full);
+        }
+
+        #sharedKeypadSection.keypad-collapsed {
+            display: none !important;
         }
 
         /* Shared Keypad Button Styling */
@@ -1000,7 +1005,13 @@
 
             <!-- Shared Status / Result Summary Pill Banner -->
             <section id="sharedStatusBanner" class="status-banner">
-                <div id="sharedStatusText" class="text-[var(--app-muted)] text-[1rem] leading-snug">กรุณาป้อนข้อมูลของคุณ</div>
+                <div id="sharedStatusText" class="text-[var(--app-muted)] text-[1rem] leading-snug w-full px-7">กรุณาป้อนข้อมูลของคุณ</div>
+                <button id="toggleKeypadBtn" type="button" class="absolute right-2.5 top-1/2 -translate-y-1/2 px-2 py-1 rounded-[6px] border border-[var(--color-hairline-soft)] text-xs flex items-center gap-1 text-[var(--app-muted)] hover:text-[var(--color-ink)] active:scale-95 transition bg-white/70 dark:bg-white/10" aria-label="ย่อหรือขยายแป้นพิมพ์" title="ย่อ/ขยายแป้นพิมพ์">
+                    <svg id="toggleKeypadIcon" class="w-3.5 h-3.5 transition-transform duration-200" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                    <span id="toggleKeypadLabel">ย่อ</span>
+                </button>
             </section>
 
             <!-- Shared Custom 4x4 On-Screen Keypad -->
@@ -1873,12 +1884,11 @@
                     const st = appState.date_work;
                     const start = new Date(st.startDate + 'T00:00:00');
                     const end = new Date(st.endDate + 'T00:00:00');
-                    const thaiHolidays = new Set(['01-01', '04-06', '05-01', '06-03', '07-28', '08-12', '10-13', '10-23', '12-05', '12-10', '12-31']);
                     const customHolidays = new Set(String(st.customHolidays || '').split(',').map(v => parseDateInputThai(v.trim(), st.calendarEra)).filter(Boolean));
                     const isWorkday = (d) => {
-                        const monthDay = `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                         const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                        return (st.workDays || [1,2,3,4,5]).includes(d.getDay()) && !(st.includeThaiHolidays && thaiHolidays.has(monthDay)) && !customHolidays.has(iso);
+                        const isHoliday = (typeof isThaiOfficialHoliday === 'function') ? isThaiOfficialHoliday(d) : ['01-01', '04-06', '05-01', '06-03', '07-28', '08-12', '10-13', '10-23', '12-05', '12-10', '12-31'].includes(iso.slice(5));
+                        return (st.workDays || [1,2,3,4,5]).includes(d.getDay()) && !(st.includeThaiHolidays && isHoliday) && !customHolidays.has(iso);
                     };
                     let resultText = '';
                     if (st.mode === 'between') {
@@ -2179,6 +2189,38 @@
             });
         });
 
+        function updateKeypadCollapseUI(collapsed) {
+            const keypad = document.getElementById('sharedKeypadSection');
+            const icon = document.getElementById('toggleKeypadIcon');
+            const label = document.getElementById('toggleKeypadLabel');
+            if (collapsed) {
+                keypad?.classList.add('keypad-collapsed');
+                icon?.classList.add('rotate-180');
+                if (label) label.textContent = 'ขยาย';
+            } else {
+                keypad?.classList.remove('keypad-collapsed');
+                icon?.classList.remove('rotate-180');
+                if (label) label.textContent = 'ย่อ';
+            }
+        }
+
+        document.getElementById('toggleKeypadBtn')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const keypad = document.getElementById('sharedKeypadSection');
+            const isNowCollapsed = !keypad?.classList.contains('keypad-collapsed');
+            updateKeypadCollapseUI(isNowCollapsed);
+        });
+
+        // Auto-expand keypad when user taps any input in the top panel
+        document.getElementById('toolTopPanel')?.addEventListener('focusin', (e) => {
+            if (e.target && e.target.matches('input, select')) {
+                const keypad = document.getElementById('sharedKeypadSection');
+                if (keypad?.classList.contains('keypad-collapsed')) {
+                    updateKeypadCollapseUI(false);
+                }
+            }
+        });
+
         // Physical Keyboard Support
         window.addEventListener('keydown', (e) => {
             const toolMeta = TOOLS_CATALOG.find(t => t.id === appState.activeToolId);
@@ -2353,6 +2395,7 @@
             if (toolMeta.usesSharedKeypad) {
                 statusBanner.classList.remove('hidden');
                 keypadSection.classList.remove('hidden');
+                updateKeypadCollapseUI(false);
             } else {
                 statusBanner.classList.add('hidden');
                 keypadSection.classList.add('hidden');
@@ -2477,6 +2520,40 @@
             setStatusBanner(Number.isFinite(rate) && Number.isFinite(price) ? 'success' : 'empty', Number.isFinite(rate) && Number.isFinite(price) ? `ต้นทุนรวม: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(total)} บาท</span>` : 'กรอกอัตราการใช้และราคาเพื่อคำนวณต้นทุน');
         }
 
+        const THAI_FIXED_PUBLIC_HOLIDAYS = new Set([
+            '01-01', // วันขึ้นปีใหม่
+            '04-06', // วันจักรี
+            '04-13', '04-14', '04-15', // วันสงกรานต์
+            '05-01', // วันแรงงานแห่งชาติ
+            '05-04', // วันฉัตรมงคล
+            '06-03', // วันเฉลิมพระชนมพรรษาพระราชินี
+            '07-28', // วันเฉลิมพระชนมพรรษา ร.10
+            '08-12', // วันแม่แห่งชาติ
+            '10-13', // วันนวมินทรมหาราช
+            '10-23', // วันปิยมหาราช
+            '12-05', // วันพ่อแห่งชาติ
+            '12-10', // วันรัฐธรรมนูญ
+            '12-31'  // วันสิ้นปี
+        ]);
+
+        const THAI_LUNAR_AND_SUBSTITUTE_HOLIDAYS = new Set([
+            // 2024 (2567)
+            '2024-02-26', '2024-05-22', '2024-07-22',
+            // 2025 (2568)
+            '2025-02-12', '2025-05-12', '2025-07-10', '2025-07-11',
+            // 2026 (2569)
+            '2026-03-03', '2026-06-01', '2026-07-29', '2026-07-30',
+            // 2027 (2570)
+            '2027-02-22', '2027-05-20', '2027-07-19'
+        ]);
+
+        function isThaiOfficialHoliday(date) {
+            if (!date || typeof date.getTime !== 'function' || !Number.isFinite(date.getTime())) return false;
+            const mmdd = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            const iso = `${date.getFullYear()}-${mmdd}`;
+            return THAI_FIXED_PUBLIC_HOLIDAYS.has(mmdd) || THAI_LUNAR_AND_SUBSTITUTE_HOLIDAYS.has(iso);
+        }
+
         function validateCalendarDate(date) {
             if (!Number.isFinite(date.getTime())) throw new RangeError('วันที่ไม่ถูกต้อง');
         }
@@ -2523,12 +2600,10 @@
             if (typeof st.includeThaiHolidays !== 'boolean') st.includeThaiHolidays = true;
             const start = new Date(st.startDate + 'T00:00:00');
             const end = new Date(st.endDate + 'T00:00:00');
-            const thaiHolidayDays = new Set(['01-01', '04-06', '05-01', '06-03', '07-28', '08-12', '10-13', '10-23', '12-05', '12-10', '12-31']);
             const customHolidayDays = new Set(String(st.customHolidays || '').split(',').map(value => parseDateInputThai(value.trim(), st.calendarEra)).filter(Boolean));
             const isWorkday = (date) => {
-                const monthDay = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
                 const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-                return st.workDays.includes(date.getDay()) && !(st.includeThaiHolidays && thaiHolidayDays.has(monthDay)) && !customHolidayDays.has(iso);
+                return st.workDays.includes(date.getDay()) && !(st.includeThaiHolidays && isThaiOfficialHoliday(date)) && !customHolidayDays.has(iso);
             };
             let result = 0, target = new Date(NaN), calculationError = '';
             try {
@@ -3608,11 +3683,9 @@
 
             const offset = integerOrDefault(st.daysOffset, 0);
             const targetDate = addCalendarDays(d1, st.op === 'add' ? offset : -offset);
-            const thaiHolidays = new Set(['01-01', '04-06', '05-01', '06-03', '07-28', '08-12', '10-13', '10-23', '12-05', '12-10', '12-31']);
             const isBusinessDay = (date) => {
                 const day = date.getDay();
-                const key = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-                return day !== 0 && day !== 6 && (!st.includeThaiHolidays || !thaiHolidays.has(key));
+                return day !== 0 && day !== 6 && (!st.includeThaiHolidays || !isThaiOfficialHoliday(date));
             };
             let countedDiffDays = NaN, adjustedTargetDate = new Date(NaN), calculationError = '';
             try {
@@ -4296,22 +4369,44 @@
                 appState.percent.z = '';
             } else if (id === 'vat') {
                 appState.vat.amount = '';
-            } else if (id === 'fuel_cost') {
-                appState.fuel_cost.distance = '';
+            } else if (id === 'vat_wht') {
+                appState.vat_wht.amount = '';
+            } else if (id === 'salary') {
+                appState.salary.income = '';
+            } else if (id === 'loan') {
+                appState.loan.principal = '';
+                appState.loan.extra = '0';
+            } else if (id === 'savings') {
+                appState.savings.initial = '';
+                appState.savings.monthly = '';
+            } else if (id === 'date_work') {
+                appState.date_work.customHolidays = '';
+                appState.date_work.offset = '0';
+            } else if (id === 'date_calc') {
+                appState.date_calc.daysOffset = 0;
+            } else if (id === 'world_time') {
+                appState.world_time.search = '';
+            } else if (id === 'gpa') {
+                appState.gpa.courses = [{ name: 'วิชาที่ 1', credit: 3, grade: '4.0' }];
             } else if (id === 'health') {
                 appState.health.weight = '';
                 appState.health.height = '';
                 appState.health.age = '';
-            } else if (id === 'tip') {
-                appState.tip.bill = '';
+            } else if (id === 'ovulation') {
+                appState.ovulation.lastPeriodDate = formatLocalDate(new Date());
+            } else if (id === 'fuel_cost') {
+                appState.fuel_cost.distance = '';
             } else if (id === 'fuel_eff') {
                 appState.fuel_eff.distance = '';
                 appState.fuel_eff.fuelUsed = '';
-            } else if (id === 'loan') {
-                appState.loan.principal = '';
-            } else if (id === 'savings') {
-                appState.savings.initial = '';
-                appState.savings.monthly = '';
+            } else if (id === 'area_cost') {
+                appState.area_cost.rai = '0';
+                appState.area_cost.ngan = '0';
+                appState.area_cost.wa = '0';
+                appState.area_cost.rate = '';
+                appState.area_cost.price = '';
+            } else if (id === 'tip') {
+                appState.tip.bill = '';
             } else if (id === 'hex') {
                 appState.hex.decValue = 0;
             }
@@ -4331,12 +4426,13 @@
             } else if (id === 'discount') {
                 appState.discount = { price: '1590', discountPct: '25', extraPct: '10' };
             } else if (id === 'percent') {
-                appState.percent.x = '15';
-                appState.percent.y = '2400';
-                appState.percent.z = '5';
+                appState.percent = { mode: 'pct_of', x: '15', y: '2400', z: '5' };
             } else if (id === 'vat') {
-                appState.vat.amount = '1000';
-                appState.vat.rate = '7';
+                appState.vat = { amount: '1000', rate: '7', mode: 'exclude' };
+            } else if (id === 'vat_wht') {
+                appState.vat_wht = { amount: '10000', vatRate: '7', whtRate: '3', mode: 'before' };
+            } else if (id === 'salary') {
+                appState.salary = { income: '35000', needsPct: '50', wantsPct: '30', savingsPct: '20', emergencyPct: '10', debtPct: '10' };
             } else if (id === 'fuel_cost') {
                 appState.fuel_cost = { distance: '320', efficiency: '16', oilPrice: '35.50' };
             } else if (id === 'tip') {
@@ -4344,13 +4440,39 @@
             } else if (id === 'fuel_eff') {
                 appState.fuel_eff = { distance: '480', fuelUsed: '32' };
             } else if (id === 'loan') {
-                appState.loan = { principal: '600000', interestRate: '3.85', months: '48' };
+                appState.loan = { principal: '600000', interestRate: '3.85', months: '48', extra: '0', rateType: 'fixed', promoMonths: '12', rateAfter: '6.5', calcMethod: 'reducing' };
             } else if (id === 'savings') {
-                appState.savings = { initial: '50000', monthly: '5000', interestRate: '2.5', years: '5', compound: true };
+                appState.savings = { initial: '50000', monthly: '5000', interestRate: '2.5', years: '5', compound: true, mode: 'growth', goalTarget: '500000', annualIncrease: '0', inflationRate: '2.5', monthlyExpenses: '15000', emergencyMonths: '6', currentAge: '30', retirementAge: '60', retirementMonthly: '30000' };
             } else if (id === 'currency') {
                 appState.currency.amount = '250';
+                appState.currency.from = 'USD';
+                appState.currency.to = 'THB';
             } else if (id === 'unit') {
-                appState.unit.val = '2.5';
+                appState.unit = { cat: 'area', val: '2.5', fromIdx: 0, targetIdx: 1 };
+            } else if (id === 'date_work') {
+                appState.date_work = { startDate: formatLocalDate(new Date()), endDate: formatLocalDate(addCalendarDays(new Date(), 45)), mode: 'between', offset: 30, calendarEra: 'CE', workDays: [1, 2, 3, 4, 5], includeThaiHolidays: true, customHolidays: '' };
+            } else if (id === 'date_calc') {
+                appState.date_calc = { mode: 'diff', startDate: formatLocalDate(new Date()), endDate: formatLocalDate(addCalendarDays(new Date(), 90)), op: 'add', daysOffset: 30, inclusive: false, workdays: false, includeThaiHolidays: false, birthDate: '1995-08-12', referenceDate: formatLocalDate(new Date()), calendarEra: 'CE' };
+            } else if (id === 'world_time') {
+                appState.world_time = { search: '', use24h: true, favoriteCities: ['Asia/Bangkok', 'Asia/Tokyo', 'Europe/London', 'America/New_York'], meetingTime: '14:00', meetingDate: formatLocalDate(new Date()) };
+            } else if (id === 'gpa') {
+                appState.gpa.courses = [
+                    { name: 'คณิตศาสตร์พื้นฐาน', credit: 3, grade: '4.0' },
+                    { name: 'ภาษาอังกฤษเพื่อการสื่อสาร', credit: 3, grade: '3.5' },
+                    { name: 'การเขียนโปรแกรมคอมพิวเตอร์', credit: 3, grade: '3.5' },
+                    { name: 'ฟิสิกส์ทั่วไป', credit: 3, grade: '3.0' }
+                ];
+            } else if (id === 'health') {
+                appState.health = { gender: 'male', age: '28', height: '172', weight: '68', activity: '1.375' };
+            } else if (id === 'ovulation') {
+                appState.ovulation = { lastPeriodDate: formatLocalDate(addCalendarDays(new Date(), -12)), cycleLength: 28, periodDays: 5 };
+            } else if (id === 'area_cost') {
+                appState.area_cost = { rai: '2', ngan: '1', wa: '50', rate: '1500', price: '3450000', rounds: '1' };
+            } else if (id === 'hex') {
+                appState.hex = { activeBase: 10, decValue: 2026 };
+            } else if (id === 'calc') {
+                appState.calc.expr = '1,250 × 12 + 3,500';
+                appState.calc.result = '18,500';
             }
             renderActiveTool();
         }
@@ -4437,7 +4559,7 @@
                 const manifest = {
                     name: 'เครื่องคำนวณครบวงจร (All-in-One Calculator)',
                     short_name: 'เครื่องคำนวณ',
-                    description: 'รวม 18 เครื่องคำนวณในแอปเดียว พร้อมดีไซน์ Airbnb Rausch และ Classic',
+                    description: 'รวม 22 เครื่องคำนวณในแอปเดียว พร้อมดีไซน์ Airbnb Rausch และ Classic',
                     start_url: window.location.href,
                     display: 'standalone',
                     orientation: 'portrait',
@@ -4456,17 +4578,12 @@
                 manifestLink.href = manifestURL;
                 document.head.appendChild(manifestLink);
 
-                if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-                    const swCode = `
-                        const CACHE_NAME = 'all-in-one-calc-pwa-v3';
-                        self.addEventListener('install', (e) => self.skipWaiting());
-                        self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
-                        self.addEventListener('fetch', (e) => {
-                            e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-                        });
-                    `;
-                    const swBlob = new Blob([swCode], { type: 'application/javascript' });
-                    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+                if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+                    navigator.serviceWorker.register('./sw.js').then(reg => {
+                        console.log('PWA ServiceWorker registered with scope:', reg.scope);
+                    }).catch(err => {
+                        console.warn('PWA ServiceWorker registration failed:', err);
+                    });
                 }
             } catch (e) {
                 console.warn('PWA setup skipped:', e);

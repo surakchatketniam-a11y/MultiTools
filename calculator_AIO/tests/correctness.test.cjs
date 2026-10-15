@@ -14,11 +14,14 @@ function source(name) {
 }
 
 function context(extra = {}) {
-    const ctx = vm.createContext({ persistAppState() {}, ...extra });
+    const mockStorage = { getItem() { return null; }, setItem() {}, removeItem() {} };
+    const ctx = vm.createContext({ persistAppState() {}, localStorage: mockStorage, ...extra });
     const unitDefMatch = html.match(/const UNIT_DEFINITIONS = \{[\s\S]*?\n        \};/);
     if (unitDefMatch) vm.runInContext(unitDefMatch[0].replace(/const /g, 'var '), ctx);
     const catalogMatch = html.match(/const TOOL_GROUPS = \[[\s\S]*?const TOOLS_CATALOG = \[[\s\S]*?\];/);
     if (catalogMatch) vm.runInContext(catalogMatch[0].replace(/const /g, 'var '), ctx);
+    const holidaysMatch = html.match(/const THAI_FIXED_PUBLIC_HOLIDAYS = [\s\S]*?function isThaiOfficialHoliday\([\s\S]*?\n        \}/);
+    if (holidaysMatch) vm.runInContext(holidaysMatch[0].replace(/const /g, 'var '), ctx);
     for (const name of ['normalizeThaiDigits', 'parseNumericInput', 'numberOrDefault', 'integerOrDefault',
         'formatLocalDate', 'addCalendarDays', 'parseDateInputThai', 'parseFrankfurterRates',
         'evaluateArithmeticExpression', 'escapeHTML', 'formatInputDisplay', 'formatCalcExpr', 'formatNum', 'formatUnitPrice', 'formatMoney',
@@ -362,4 +365,57 @@ test('unit price: cross-unit normalization, cheapest selection, and incompatible
     const summaryMismatch = ctx.getToolSummaryText('unit_price');
     assert.match(summaryMismatch, /ไม่สามารถเปรียบเทียบข้ามชนิดหน่วยได้/);
 });
+
+test('thai official holidays: Songkran, fixed holidays and lunar Buddhist observations (2025-2027)', () => {
+    const ctx = context();
+    // Songkran 13-15 April
+    assert.equal(ctx.isThaiOfficialHoliday(new Date('2026-04-13T00:00:00')), true);
+    assert.equal(ctx.isThaiOfficialHoliday(new Date('2026-04-14T00:00:00')), true);
+    assert.equal(ctx.isThaiOfficialHoliday(new Date('2026-04-15T00:00:00')), true);
+
+    // Chatramongkol 4 May
+    assert.equal(ctx.isThaiOfficialHoliday(new Date('2026-05-04T00:00:00')), true);
+
+    // Lunar Buddhist holidays & Substitutions
+    assert.equal(ctx.isThaiOfficialHoliday(new Date('2026-03-03T00:00:00')), true); // Makha Bucha 2026
+    assert.equal(ctx.isThaiOfficialHoliday(new Date('2026-06-01T00:00:00')), true); // Visakha Bucha sub 2026
+    assert.equal(ctx.isThaiOfficialHoliday(new Date('2025-02-12T00:00:00')), true); // Makha Bucha 2025
+
+    // Regular working day
+    assert.equal(ctx.isThaiOfficialHoliday(new Date('2026-10-14T00:00:00')), false);
+});
+
+test('all 22 tools have complete and valid clear and demo data mappings', () => {
+    const rawAppStateMatch = html.match(/const appState = \{[\s\S]*?\n        \};/);
+    assert.ok(rawAppStateMatch, 'appState must be defined');
+
+    // Run in a mock context that provides clearCurrentTool, loadDemoForCurrentTool, and renderActiveTool
+    const ctx = context();
+    vm.runInContext(rawAppStateMatch[0].replace(/const /g, 'var '), ctx);
+    vm.runInContext(`
+        var lastClearSnapshot = null;
+        function captureToolSnapshot() {
+            return { toolId: appState.activeToolId, fieldIndex: appState.activeFieldIndex,
+                state: JSON.parse(JSON.stringify(appState[appState.activeToolId])) };
+        }
+        function rememberToolClear() {}
+        function renderActiveTool() {}
+    ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
+
+    assert.equal(ctx.TOOLS_CATALOG.length, 22);
+
+    for (const tool of ctx.TOOLS_CATALOG) {
+        ctx.appState.activeToolId = tool.id;
+        // 1. Verify demo loads without throwing
+        ctx.loadDemoForCurrentTool();
+        const demoState = ctx.appState[tool.id];
+        assert.ok(demoState, `Tool ${tool.id} should have populated state after loadDemo`);
+
+        // 2. Verify clear runs without throwing
+        ctx.clearCurrentTool();
+        const clearedState = ctx.appState[tool.id];
+        assert.ok(clearedState, `Tool ${tool.id} should have state after clear`);
+    }
+});
+
 
