@@ -13,14 +13,21 @@ const moduleFiles = [
     'src/core/rates.js',
     'src/core/export.js',
     'src/core/history.js',
-    'src/core/compare.js'
+    'src/core/compare.js',
+    'src/ui/theme.js',
+    'src/ui/drawer.js',
+    'src/ui/keypad.js'
 ];
 const moduleContents = moduleFiles.map(file => fs.readFileSync(path.join(__dirname, '../', file), 'utf8'));
 
 function source(name) {
     const match = html.match(new RegExp(`        (?:async )?function ${name}\\([^]*?\\n        }`));
-    assert.ok(match, `Missing shipped function: ${name}`);
-    return match[0];
+    if (match) return match[0];
+    for (const code of moduleContents) {
+        const m = code.match(new RegExp(`(?:async )?function ${name}\\([^]*?\\n\\}`));
+        if (m) return m[0];
+    }
+    assert.fail(`Missing shipped function: ${name}`);
 }
 
 function context(extra = {}) {

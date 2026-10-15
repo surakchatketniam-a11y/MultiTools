@@ -1,4 +1,4 @@
-const CACHE_NAME = 'multitools-calculator-v7';
+const CACHE_NAME = 'multitools-calculator-v8';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -9,7 +9,10 @@ const STATIC_ASSETS = [
     './src/core/rates.js',
     './src/core/export.js',
     './src/core/history.js',
-    './src/core/compare.js'
+    './src/core/compare.js',
+    './src/ui/theme.js',
+    './src/ui/drawer.js',
+    './src/ui/keypad.js'
 ];
 
 self.addEventListener('install', (event) => {
