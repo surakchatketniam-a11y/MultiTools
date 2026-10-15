@@ -478,7 +478,7 @@
         /* Unit Price Table Row Styling */
         .calc-row {
             display: grid;
-            grid-template-columns: 12% 33% 20% 35%;
+            grid-template-columns: 34px minmax(70px, 1.1fr) minmax(105px, 1.6fr) minmax(80px, 1.2fr);
             background-color: var(--color-canvas);
             border: 1px solid var(--app-hairline);
             border-radius: var(--app-card-radius);
@@ -486,6 +486,30 @@
             transition: all 0.15s ease;
             flex: 1;
             min-height: 48px;
+        }
+        .unit-select {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6' viewBox='0 0 8 6'%3E%3Cpath fill='%23666' d='M0 0l4 5 4-5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 4px center;
+            padding: 0 14px 0 4px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--color-ink);
+            background-color: transparent;
+            border-left: 1px solid var(--color-hairline-soft);
+            cursor: pointer;
+            outline: none;
+            flex-shrink: 0;
+            height: 100%;
+        }
+        .unit-select option, .unit-select optgroup {
+            background-color: var(--color-canvas);
+            color: var(--color-ink);
+        }
+        html:is([data-theme="dark"], [data-theme="ferrari"]) .unit-select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6' viewBox='0 0 8 6'%3E%3Cpath fill='%23bbb' d='M0 0l4 5 4-5z'/%3E%3C/svg%3E");
         }
         html[data-theme="airbnb"] .calc-row {
             box-shadow: var(--airbnb-shadow);
@@ -1087,6 +1111,16 @@
     </div>
 
     <script>
+        const UNIT_DEFINITIONS = {
+            unit: { key: 'unit', label: 'หน่วย', family: 'general', factor: 1,     baseUnit: 'หน่วย' },
+            pcs:  { key: 'pcs',  label: 'ชิ้น',  family: 'count',   factor: 1,     baseUnit: 'ชิ้น' },
+            doz:  { key: 'doz',  label: 'โหล',  family: 'count',   factor: 12,    baseUnit: 'ชิ้น' },
+            g:    { key: 'g',    label: 'g',    family: 'weight',  factor: 0.001, baseUnit: 'กก.' },
+            kg:   { key: 'kg',   label: 'kg',   family: 'weight',  factor: 1,     baseUnit: 'กก.' },
+            ml:   { key: 'ml',   label: 'ml',   family: 'volume',  factor: 0.001, baseUnit: 'ลิตร' },
+            L:    { key: 'L',    label: 'L',    family: 'volume',  factor: 1,     baseUnit: 'ลิตร' }
+        };
+
         const TOOL_GROUPS = [
             { id: 'shop', name: '🛒 ซื้อของ & ทั่วไป' },
             { id: 'biz', name: '💼 ธุรกิจ & ค้าขาย' },
@@ -1237,10 +1271,10 @@
             // 11. Unit Price Calculator (A, B, C, D)
             unit_price: {
                 rows: [
-                    { id: 'A', price: '', qty: '' },
-                    { id: 'B', price: '', qty: '' },
-                    { id: 'C', price: '', qty: '' },
-                    { id: 'D', price: '', qty: '' }
+                    { id: 'A', price: '', qty: '', unit: 'unit' },
+                    { id: 'B', price: '', qty: '', unit: 'unit' },
+                    { id: 'C', price: '', qty: '', unit: 'unit' },
+                    { id: 'D', price: '', qty: '', unit: 'unit' }
                 ]
             },
 
@@ -1791,15 +1825,43 @@
                 }
                 case 'unit_price': {
                     const rows = appState.unit_price.rows;
+                    const defs = (typeof UNIT_DEFINITIONS !== 'undefined') ? UNIT_DEFINITIONS : {
+                        unit: { key: 'unit', label: 'หน่วย', family: 'general', factor: 1,     baseUnit: 'หน่วย' },
+                        pcs:  { key: 'pcs',  label: 'ชิ้น',  family: 'count',   factor: 1,     baseUnit: 'ชิ้น' },
+                        doz:  { key: 'doz',  label: 'โหล',  family: 'count',   factor: 12,    baseUnit: 'ชิ้น' },
+                        g:    { key: 'g',    label: 'g',    family: 'weight',  factor: 0.001, baseUnit: 'กก.' },
+                        kg:   { key: 'kg',   label: 'kg',   family: 'weight',  factor: 1,     baseUnit: 'กก.' },
+                        ml:   { key: 'ml',   label: 'ml',   family: 'volume',  factor: 0.001, baseUnit: 'ลิตร' },
+                        L:    { key: 'L',    label: 'L',    family: 'volume',  factor: 1,     baseUnit: 'ลิตร' }
+                    };
                     const valid = rows
-                        .map(r => ({ id: r.id, p: parseNumericInput(r.price), q: parseNumericInput(r.qty) }))
-                        .filter(r => Number.isFinite(r.p) && Number.isFinite(r.q) && r.p > 0 && r.q > 0)
-                        .map(r => ({ ...r, unitPrice: r.p / r.q }));
+                        .map(r => {
+                            const p = parseNumericInput(r.price);
+                            const q = parseNumericInput(r.qty);
+                            const uKey = r.unit || 'unit';
+                            const uDef = defs[uKey] || defs.unit;
+                            const baseQty = (Number.isFinite(q) && q > 0) ? q * uDef.factor : NaN;
+                            const unitPrice = (Number.isFinite(p) && Number.isFinite(baseQty) && baseQty > 0) ? p / baseQty : NaN;
+                            return { id: r.id, p, q, unit: uKey, uDef, baseQty, unitPrice };
+                        })
+                        .filter(r => Number.isFinite(r.p) && Number.isFinite(r.q) && r.p > 0 && r.q > 0 && Number.isFinite(r.unitPrice));
                     if (!valid.length) return '🛒 สรุปราคาต่อหน่วย\n(กรุณากรอกราคาและจำนวนเพื่อเปรียบเทียบ)';
+
+                    const families = new Set(valid.map(v => v.uDef.family));
+                    if (families.size > 1) {
+                        const rowTexts = valid.map(v => `• ตัวเลือก ${v.id}: ${formatMoney(v.p)} บาท / ${formatMoney(v.q)} ${v.uDef.label}`);
+                        return `🛒 สรุปเปรียบเทียบราคาต่อหน่วย\n${divider}\n${rowTexts.join('\n')}\n${divider}\n⚠️ ไม่สามารถเปรียบเทียบข้ามชนิดหน่วยได้ (เช่น น้ำหนัก กับ ปริมาตร)\n(คำนวณโดย Multitools Calculator)`;
+                    }
+
                     const minPrice = Math.min(...valid.map(v => v.unitPrice));
                     const best = valid.find(v => Math.abs(v.unitPrice - minPrice) < 1e-7);
-                    const rowTexts = valid.map(v => `• ตัวเลือก ${v.id}: ${formatMoney(v.p)} บาท / ${formatMoney(v.q)} หน่วย = ${formatUnitPrice(v.unitPrice)} บาท/หน่วย`);
-                    let comparison = `⭐ ตัวเลือกที่คุ้มที่สุด: ตัวเลือก ${best.id} (${formatUnitPrice(best.unitPrice)} บาท/หน่วย)`;
+                    const baseUnit = valid[0].uDef.baseUnit;
+                    const rowTexts = valid.map(v => {
+                        const unitLabel = v.uDef.label;
+                        const origStr = `${formatMoney(v.p)} บาท / ${formatMoney(v.q)} ${unitLabel}`;
+                        return `• ตัวเลือก ${v.id}: ${origStr} = ${formatUnitPrice(v.unitPrice)} บาท/${baseUnit}`;
+                    });
+                    let comparison = `⭐ ตัวเลือกที่คุ้มที่สุด: ตัวเลือก ${best.id} (${formatUnitPrice(best.unitPrice)} บาท/${baseUnit})`;
                     const second = [...valid].sort((a,b) => a.unitPrice - b.unitPrice).find(v => v.unitPrice > minPrice + 1e-7);
                     if (second) {
                         const pct = (((second.unitPrice - best.unitPrice) / second.unitPrice) * 100).toFixed(1);
@@ -2537,25 +2599,16 @@
          * ----------------------------------------------------------- */
         function renderUnitPriceTool(container) {
             const rows = appState.unit_price.rows;
-            const validItems = [];
             const isAirbnb = appState.theme === 'airbnb';
-
-            rows.forEach((r, idx) => {
-                const p = parseNumericInput(r.price);
-                const q = parseNumericInput(r.qty);
-                if (!isNaN(p) && !isNaN(q) && p > 0 && q > 0) {
-                    validItems.push({ index: idx, id: r.id, price: p, qty: q, unitPrice: p / q });
-                }
-            });
-
-            let minUnitPrice = Infinity;
-            validItems.forEach(item => {
-                if (item.unitPrice < minUnitPrice) minUnitPrice = item.unitPrice;
-            });
-
-            const cheapestIndices = validItems
-                .filter(item => Math.abs(item.unitPrice - minUnitPrice) < 1e-7)
-                .map(item => item.index);
+            const defs = (typeof UNIT_DEFINITIONS !== 'undefined') ? UNIT_DEFINITIONS : {
+                unit: { key: 'unit', label: 'หน่วย', family: 'general', factor: 1,     baseUnit: 'หน่วย' },
+                pcs:  { key: 'pcs',  label: 'ชิ้น',  family: 'count',   factor: 1,     baseUnit: 'ชิ้น' },
+                doz:  { key: 'doz',  label: 'โหล',  family: 'count',   factor: 12,    baseUnit: 'ชิ้น' },
+                g:    { key: 'g',    label: 'g',    family: 'weight',  factor: 0.001, baseUnit: 'กก.' },
+                kg:   { key: 'kg',   label: 'kg',   family: 'weight',  factor: 1,     baseUnit: 'กก.' },
+                ml:   { key: 'ml',   label: 'ml',   family: 'volume',  factor: 0.001, baseUnit: 'ลิตร' },
+                L:    { key: 'L',    label: 'L',    family: 'volume',  factor: 1,     baseUnit: 'ลิตร' }
+            };
 
             container.innerHTML = `<div class="text-xs text-[var(--app-muted)] px-1 pb-1">💡 เคล็ดลับ: พิมพ์ <b>ราคา เว้นวรรค จำนวน</b> ในช่องราคา เช่น <b>864 50</b> ระบบจะแยกช่องให้อัตโนมัติ</div>`;
 
@@ -2567,60 +2620,100 @@
                     const value = rows[Math.floor(fieldIndex / 2)][fieldIndex % 2 ? 'qty' : 'price'];
                     const number = parseNumericInput(value);
                     const invalid = String(value).trim() !== '' && (!Number.isFinite(number) || number <= 0);
-                    const error = input.parentElement.querySelector('.field-error');
+                    const cellEl = input.closest('.cell-input');
+                    const error = cellEl ? cellEl.querySelector('.field-error') : null;
                     input.setAttribute('aria-invalid', String(invalid));
-                    error.hidden = !invalid;
-                    error.textContent = invalid ? (Number.isFinite(number) ? 'ต้องมากกว่า 0' : 'รูปแบบตัวเลขไม่ถูกต้อง') : '';
+                    if (error) {
+                        error.hidden = !invalid;
+                        error.textContent = invalid ? (Number.isFinite(number) ? 'ต้องมากกว่า 0' : 'รูปแบบตัวเลขไม่ถูกต้อง') : '';
+                    }
                     if (invalid) invalidCount++;
                 });
-                const liveItems = rows.map((r, index) => ({ index, id: r.id, price: parseNumericInput(r.price), qty: parseNumericInput(r.qty) }))
-                    .filter(item => Number.isFinite(item.price) && Number.isFinite(item.qty) && item.price > 0 && item.qty > 0)
-                    .map(item => ({ ...item, unitPrice: item.price / item.qty }));
-                const liveMin = liveItems.length ? Math.min(...liveItems.map(item => item.unitPrice)) : Infinity;
-                const liveBest = liveItems.filter(item => Math.abs(item.unitPrice - liveMin) < 1e-7).map(item => item.index);
+
+                const liveItems = rows.map((r, index) => {
+                    const price = parseNumericInput(r.price);
+                    const qty = parseNumericInput(r.qty);
+                    const uKey = r.unit || 'unit';
+                    const uDef = defs[uKey] || defs.unit;
+                    const baseQty = (Number.isFinite(qty) && qty > 0) ? qty * uDef.factor : NaN;
+                    const normalizedPrice = (Number.isFinite(price) && Number.isFinite(baseQty) && baseQty > 0) ? price / baseQty : NaN;
+                    return {
+                        index,
+                        id: r.id,
+                        price,
+                        qty,
+                        unit: uKey,
+                        uDef,
+                        baseQty,
+                        baseUnit: uDef.baseUnit,
+                        family: uDef.family,
+                        normalizedPrice
+                    };
+                }).filter(item => Number.isFinite(item.price) && Number.isFinite(item.qty) && item.price > 0 && item.qty > 0 && Number.isFinite(item.normalizedPrice));
+
+                const distinctFamilies = new Set(liveItems.map(item => item.family));
+                const hasMismatchedFamilies = distinctFamilies.size > 1;
+
+                const liveMin = (liveItems.length && !hasMismatchedFamilies) ? Math.min(...liveItems.map(item => item.normalizedPrice)) : Infinity;
+                const liveBest = (liveItems.length && !hasMismatchedFamilies)
+                    ? liveItems.filter(item => Math.abs(item.normalizedPrice - liveMin) < 1e-7).map(item => item.index)
+                    : [];
+
                 container.querySelectorAll('.unit-price-output').forEach((cell, index) => {
                     const item = liveItems.find(entry => entry.index === index);
-                    const isBest = liveBest.includes(index) && liveItems.length >= 2;
+                    const isBest = liveBest.includes(index) && liveItems.length >= 2 && !hasMismatchedFamilies;
                     const calcRow = cell.closest('.calc-row');
                     calcRow.classList.toggle('cheapest-row', isBest);
                     calcRow.querySelector('.cell-label span').textContent = `${rows[index].id}${isBest ? ' ★' : ''}`;
-                    cell.innerHTML = item ? `<span class="text-[1.08rem] ${isBest ? (isAirbnb ? 'text-[#ff385c] font-bold' : appState.theme === 'together' ? 'text-[var(--app-accent)] font-bold' : 'text-green-700 font-bold') : 'text-[#222222] font-semibold'}">${formatUnitPrice(item.unitPrice)}</span>` : `<span class="placeholder-text">ราคาต่อหน่วย</span>`;
-                });
-                if (invalidCount) setStatusBanner('error', 'กรุณาแก้ช่องที่มีข้อผิดพลาดก่อนเปรียบเทียบราคา');
-                else if (!liveItems.length) setStatusBanner('empty', 'กรุณาป้อนข้อมูลของคุณ');
-                else if (liveItems.length === 1) setStatusBanner('info', `ตัวเลือก <b>${liveItems[0].id}</b>: ${formatUnitPrice(liveItems[0].unitPrice)} บาท/หน่วย <span class="text-xs font-normal text-[#6a6a6a] block">ป้อนแถวอื่นเพิ่มเพื่อเปรียบเทียบความคุ้มค่า</span>`);
-                else {
-                    const best = liveItems.find(item => Math.abs(item.unitPrice - liveMin) < 1e-7);
-                    const bestLabels = liveItems.filter(item => Math.abs(item.unitPrice - liveMin) < 1e-7).map(item => item.id).join(', ');
-                    const next = [...liveItems].sort((a, b) => a.unitPrice - b.unitPrice).find(item => item.unitPrice > liveMin + 1e-7);
-                    if (next) {
-                        const pct = (((next.unitPrice - best.unitPrice) / next.unitPrice) * 100).toFixed(1);
-                        setStatusBanner('success', `<span class="text-[var(--app-accent)]">★ ตัวเลือก ${bestLabels} คุ้มที่สุด</span> (${formatUnitPrice(best.unitPrice)} / หน่วย)<span class="text-xs font-medium block text-[#3f3f3f]">ถูกกว่าตัวเลือก ${next.id} ${pct}% หรือประหยัด ${formatUnitPrice(next.unitPrice - best.unitPrice)} บาท/หน่วย</span>`);
+                    if (item) {
+                        const highlightClass = isBest
+                            ? (isAirbnb ? 'text-[#ff385c] font-bold' : appState.theme === 'together' ? 'text-[var(--app-accent)] font-bold' : 'text-green-700 font-bold')
+                            : 'text-[#222222] font-semibold';
+                        const unitLabelClass = isBest
+                            ? (isAirbnb ? 'text-[#ff385c]' : appState.theme === 'together' ? 'text-[var(--app-accent)]' : 'text-green-700')
+                            : 'text-[#717171]';
+                        cell.innerHTML = `<div class="flex flex-col items-center justify-center leading-tight py-0.5"><span class="text-[1.02rem] ${highlightClass}">${formatUnitPrice(item.normalizedPrice)}</span><span class="text-[10px] ${unitLabelClass} font-medium">บาท/${item.baseUnit}</span></div>`;
                     } else {
-                        setStatusBanner('success', `⚖️ ตัวเลือก <b>${bestLabels}</b> ราคาต่อหน่วยเท่ากัน (${formatUnitPrice(liveMin)} / หน่วย)`);
+                        cell.innerHTML = `<span class="placeholder-text text-xs">ราคาต่อหน่วย</span>`;
+                    }
+                });
+
+                if (invalidCount) {
+                    setStatusBanner('error', 'กรุณาแก้ช่องที่มีข้อผิดพลาดก่อนเปรียบเทียบราคา');
+                } else if (!liveItems.length) {
+                    setStatusBanner('empty', 'กรุณาป้อนข้อมูลของคุณ');
+                } else if (hasMismatchedFamilies) {
+                    setStatusBanner('error', '⚠️ ชนิดหน่วยไม่ตรงกัน (กรุณาเลือกหน่วยกลุ่มเดียวกัน เช่น กรัม กับ กิโลกรัม)');
+                } else if (liveItems.length === 1) {
+                    setStatusBanner('info', `ตัวเลือก <b>${liveItems[0].id}</b>: ${formatUnitPrice(liveItems[0].normalizedPrice)} บาท/${liveItems[0].baseUnit} <span class="text-xs font-normal text-[#6a6a6a] block">ป้อนแถวอื่นเพิ่มเพื่อเปรียบเทียบความคุ้มค่า</span>`);
+                } else {
+                    const best = liveItems.find(item => Math.abs(item.normalizedPrice - liveMin) < 1e-7);
+                    const bestLabels = liveItems.filter(item => Math.abs(item.normalizedPrice - liveMin) < 1e-7).map(item => item.id).join(', ');
+                    const next = [...liveItems].sort((a, b) => a.normalizedPrice - b.normalizedPrice).find(item => item.normalizedPrice > liveMin + 1e-7);
+                    if (next) {
+                        const pct = (((next.normalizedPrice - best.normalizedPrice) / next.normalizedPrice) * 100).toFixed(1);
+                        const diff = next.normalizedPrice - best.normalizedPrice;
+                        setStatusBanner('success', `<span class="text-[var(--app-accent)]">★ ตัวเลือก ${bestLabels} คุ้มที่สุด</span> (${formatUnitPrice(best.normalizedPrice)} บาท/${best.baseUnit})<span class="text-xs font-medium block text-[#3f3f3f]">ถูกกว่าตัวเลือก ${next.id} ${pct}% หรือประหยัด ${formatUnitPrice(diff)} บาท/${best.baseUnit}</span>`);
+                    } else {
+                        setStatusBanner('success', `⚖️ ตัวเลือก <b>${bestLabels}</b> ราคาต่อหน่วยเท่ากัน (${formatUnitPrice(liveMin)} บาท/${best.baseUnit})`);
                     }
                 }
             }
 
             rows.forEach((row, rIdx) => {
-                const isCheapest = validItems.length >= 2 && cheapestIndices.includes(rIdx);
                 const priceFieldIdx = rIdx * 2;
                 const qtyFieldIdx = rIdx * 2 + 1;
                 const isPriceActive = appState.activeFieldIndex === priceFieldIdx;
                 const isQtyActive = appState.activeFieldIndex === qtyFieldIdx;
-
-                const p = parseNumericInput(String(row.price ?? '').replace(/,/g, ''));
-                const q = parseNumericInput(String(row.qty ?? '').replace(/,/g, ''));
-                const hasUnitPrice = !isNaN(p) && !isNaN(q) && p > 0 && q > 0;
-                const unitPriceStr = hasUnitPrice ? formatUnitPrice(p / q) : '';
+                const rowUnit = row.unit || 'unit';
 
                 const rowEl = document.createElement('div');
-                rowEl.className = `calc-row ${isCheapest ? 'cheapest-row' : ''}`;
+                rowEl.className = 'calc-row';
 
                 // Cell 1: Label A, B, C, D
                 const labelCell = document.createElement('div');
                 labelCell.className = 'cell cell-label';
-                labelCell.innerHTML = isCheapest ? `<span>${row.id} ★</span>` : `<span>${row.id}</span>`;
+                labelCell.innerHTML = `<span>${row.id}</span>`;
 
                 // Cell 2: Price
                 const priceCell = document.createElement('div');
@@ -2680,12 +2773,40 @@
                     quickInput.focus();
                 });
 
-                // Cell 3: Quantity — a native editor with the same keyboard/paste behavior.
+                // Cell 3: Quantity & Unit
                 const qtyCell = document.createElement('div');
                 qtyCell.dataset.fieldIndex = qtyFieldIdx;
-                qtyCell.className = `cell cell-input flex-col ${isQtyActive ? 'active-cell' : ''}`;
-                qtyCell.innerHTML = `<input id="numeric-field-${qtyFieldIdx}" data-shared-field="${qtyFieldIdx}" class="unit-quick-input unit-qty-input" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="จำนวน ${row.id}" placeholder="จำนวน" value="${escapeHTML(formatInputDisplay(row.qty))}" aria-describedby="numeric-error-${qtyFieldIdx}"><span id="numeric-error-${qtyFieldIdx}" class="field-error text-[10px]" role="alert" hidden></span>`;
-                const qtyInput = qtyCell.querySelector('input');
+                qtyCell.className = `cell cell-input !p-0 flex-col ${isQtyActive ? 'active-cell' : ''}`;
+                qtyCell.innerHTML = `
+                    <div class="flex items-center w-full h-full relative">
+                        <input id="numeric-field-${qtyFieldIdx}" data-shared-field="${qtyFieldIdx}" class="unit-quick-input unit-qty-input min-w-0 flex-1 h-full px-1.5 text-center bg-transparent focus:outline-none" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="จำนวน ${row.id}" placeholder="จำนวน" value="${escapeHTML(formatInputDisplay(row.qty))}" aria-describedby="numeric-error-${qtyFieldIdx}">
+                        <select class="unit-select" aria-label="หน่วย ${row.id}">
+                            <option value="unit"${rowUnit === 'unit' ? ' selected' : ''}>หน่วย</option>
+                            <optgroup label="นับชิ้น">
+                                <option value="pcs"${rowUnit === 'pcs' ? ' selected' : ''}>ชิ้น</option>
+                                <option value="doz"${rowUnit === 'doz' ? ' selected' : ''}>โหล</option>
+                            </optgroup>
+                            <optgroup label="น้ำหนัก">
+                                <option value="g"${rowUnit === 'g' ? ' selected' : ''}>g</option>
+                                <option value="kg"${rowUnit === 'kg' ? ' selected' : ''}>kg</option>
+                            </optgroup>
+                            <optgroup label="ปริมาตร">
+                                <option value="ml"${rowUnit === 'ml' ? ' selected' : ''}>ml</option>
+                                <option value="L"${rowUnit === 'L' ? ' selected' : ''}>L</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <span id="numeric-error-${qtyFieldIdx}" class="field-error text-[10px]" role="alert" hidden></span>
+                `;
+                const qtyInput = qtyCell.querySelector('.unit-qty-input');
+                const unitSelect = qtyCell.querySelector('.unit-select');
+
+                unitSelect.addEventListener('click', (event) => event.stopPropagation());
+                unitSelect.addEventListener('change', (event) => {
+                    row.unit = event.target.value;
+                    refreshUnitPriceResults();
+                });
+
                 qtyInput.addEventListener('focus', () => setActiveNumericField(qtyFieldIdx));
                 qtyInput.addEventListener('input', () => { row.qty = qtyInput.value; refreshUnitPriceResults(); });
                 qtyInput.addEventListener('blur', () => {
@@ -2701,15 +2822,10 @@
                 });
                 qtyCell.addEventListener('click', () => qtyInput.focus());
 
-                // Cell 4: Unit Price
+                // Cell 4: Unit Price Output
                 const unitCell = document.createElement('div');
                 unitCell.className = 'cell unit-price-output';
-                const highlightTextClass = isCheapest
-                    ? (isAirbnb ? 'text-[#ff385c] font-bold' : appState.theme === 'together' ? 'text-[var(--app-accent)] font-bold' : 'text-green-700 font-bold')
-                    : 'text-[#222222] font-semibold';
-                unitCell.innerHTML = hasUnitPrice
-                    ? `<span class="text-[1.08rem] ${highlightTextClass}">${unitPriceStr}</span>`
-                    : `<span class="placeholder-text">ราคาต่อหน่วย</span>`;
+                unitCell.innerHTML = `<span class="placeholder-text text-xs">ราคาต่อหน่วย</span>`;
 
                 rowEl.appendChild(labelCell);
                 rowEl.appendChild(priceCell);
@@ -4161,7 +4277,7 @@
             appState.activeFieldIndex = 0;
 
             if (id === 'unit_price') {
-                appState.unit_price.rows.forEach(r => { r.price = ''; r.qty = ''; });
+                appState.unit_price.rows.forEach(r => { r.price = ''; r.qty = ''; r.unit = 'unit'; });
             } else if (id === 'calc') {
                 appState.calc.expr = '';
                 appState.calc.result = '0';
@@ -4207,10 +4323,10 @@
             const id = appState.activeToolId;
             if (id === 'unit_price') {
                 appState.unit_price.rows = [
-                    { id: 'A', price: '129', qty: '500' },
-                    { id: 'B', price: '215', qty: '900' },
-                    { id: 'C', price: '89', qty: '300' },
-                    { id: 'D', price: '', qty: '' }
+                    { id: 'A', price: '80', qty: '500', unit: 'g' },
+                    { id: 'B', price: '150', qty: '1', unit: 'kg' },
+                    { id: 'C', price: '320', qty: '2', unit: 'kg' },
+                    { id: 'D', price: '', qty: '', unit: 'g' }
                 ];
             } else if (id === 'discount') {
                 appState.discount = { price: '1590', discountPct: '25', extraPct: '10' };

@@ -15,6 +15,10 @@ function source(name) {
 
 function context(extra = {}) {
     const ctx = vm.createContext({ persistAppState() {}, ...extra });
+    const unitDefMatch = html.match(/const UNIT_DEFINITIONS = \{[\s\S]*?\n        \};/);
+    if (unitDefMatch) vm.runInContext(unitDefMatch[0].replace(/const /g, 'var '), ctx);
+    const catalogMatch = html.match(/const TOOL_GROUPS = \[[\s\S]*?const TOOLS_CATALOG = \[[\s\S]*?\];/);
+    if (catalogMatch) vm.runInContext(catalogMatch[0].replace(/const /g, 'var '), ctx);
     for (const name of ['normalizeThaiDigits', 'parseNumericInput', 'numberOrDefault', 'integerOrDefault',
         'formatLocalDate', 'addCalendarDays', 'parseDateInputThai', 'parseFrankfurterRates',
         'evaluateArithmeticExpression', 'escapeHTML', 'formatInputDisplay', 'formatCalcExpr', 'formatNum', 'formatUnitPrice', 'formatMoney',
@@ -305,5 +309,57 @@ test('getToolSummaryText formats context-rich summary for key tools, and discoun
     assert.equal(discountRes.finalPrice, 0);
     assert.equal(discountRes.saved, 1000);
     assert.equal(discountRes.isOver100, true);
+});
+
+test('unit price: cross-unit normalization, cheapest selection, and incompatible families', () => {
+    const ctx = context({
+        appState: {
+            activeToolId: 'unit_price',
+            unit_price: {
+                rows: [
+                    { id: 'A', price: '80', qty: '500', unit: 'g' },
+                    { id: 'B', price: '150', qty: '1', unit: 'kg' }
+                ]
+            }
+        }
+    });
+    vm.runInContext(source('getToolSummaryText'), ctx);
+
+    // 1. Cross-unit weight comparison: 500g @ 80 THB (= 160 THB/kg) vs 1kg @ 150 THB (= 150 THB/kg)
+    const summaryWeight = ctx.getToolSummaryText('unit_price');
+    assert.match(summaryWeight, /80\.00 บาท \/ 500\.00 g = 160\.00 บาท\/กก\./);
+    assert.match(summaryWeight, /150\.00 บาท \/ 1\.00 kg = 150\.00 บาท\/กก\./);
+    assert.match(summaryWeight, /⭐ ตัวเลือกที่คุ้มที่สุด: ตัวเลือก B \(150\.00 บาท\/กก\.\)/);
+    assert.match(summaryWeight, /ประหยัดกว่าตัวเลือก A 6\.3%/);
+
+    // 2. Count comparison: 120 THB / 1 doz (= 10 THB/pcs) vs 11 THB / 1 pcs
+    ctx.appState.unit_price.rows = [
+        { id: 'A', price: '120', qty: '1', unit: 'doz' },
+        { id: 'B', price: '11', qty: '1', unit: 'pcs' }
+    ];
+    const summaryCount = ctx.getToolSummaryText('unit_price');
+    assert.match(summaryCount, /120\.00 บาท \/ 1\.00 โหล = 10\.00 บาท\/ชิ้น/);
+    assert.match(summaryCount, /11\.00 บาท \/ 1\.00 ชิ้น = 11\.00 บาท\/ชิ้น/);
+    assert.match(summaryCount, /⭐ ตัวเลือกที่คุ้มที่สุด: ตัวเลือก A \(10\.00 บาท\/ชิ้น\)/);
+    assert.match(summaryCount, /ประหยัดกว่าตัวเลือก B 9\.1%/);
+
+    // 3. Volume comparison: 30 THB / 250 ml (= 120 THB/L) vs 100 THB / 1 L
+    ctx.appState.unit_price.rows = [
+        { id: 'A', price: '30', qty: '250', unit: 'ml' },
+        { id: 'B', price: '100', qty: '1', unit: 'L' }
+    ];
+    const summaryVolume = ctx.getToolSummaryText('unit_price');
+    assert.match(summaryVolume, /30\.00 บาท \/ 250\.00 ml = 120\.00 บาท\/ลิตร/);
+    assert.match(summaryVolume, /100\.00 บาท \/ 1\.00 L = 100\.00 บาท\/ลิตร/);
+    assert.match(summaryVolume, /⭐ ตัวเลือกที่คุ้มที่สุด: ตัวเลือก B \(100\.00 บาท\/ลิตร\)/);
+    assert.match(summaryVolume, /ประหยัดกว่าตัวเลือก A 16\.7%/);
+
+    // 4. Incompatible families warning: weight vs volume
+    ctx.appState.unit_price.rows = [
+        { id: 'A', price: '80', qty: '500', unit: 'g' },
+        { id: 'B', price: '100', qty: '1', unit: 'L' }
+    ];
+    const summaryMismatch = ctx.getToolSummaryText('unit_price');
+    assert.match(summaryMismatch, /ไม่สามารถเปรียบเทียบข้ามชนิดหน่วยได้/);
 });
 
