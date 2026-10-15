@@ -1,8 +1,9 @@
-const CACHE_NAME = 'multitools-calculator-v11';
+const CACHE_NAME = 'multitools-calculator-v12';
 const STATIC_ASSETS = [
     './',
     './index.html',
     './manifest.json',
+    './src/bundle.js',
     './src/catalog.js',
     './src/core/formatters.js',
     './src/core/dates.js',

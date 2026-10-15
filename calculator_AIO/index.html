@@ -4,10 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta id="metaThemeColor" name="theme-color" content="#ffffff">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="เครื่องคำนวณ">
     <title>เครื่องคำนวณครบวงจร (All-in-One Calculator PWA)</title>
+    
+    <!-- URL Trailing Slash & Base Canonicalizer -->
+    <script>
+        (function() {
+            var loc = window.location;
+            var path = loc.pathname || '';
+            // If accessed without trailing slash and without an extension like .html
+            if (path && !path.endsWith('/') && !/\.[a-zA-Z0-9]+$/.test(path)) {
+                loc.replace(path + '/' + loc.search + loc.hash);
+            }
+        })();
+    </script>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -1348,34 +1361,23 @@
     <!-- Dedicated Print/PDF Receipt Container (Rendered exclusively in @media print) -->
     <div id="printFormalReceipt" class="hidden"></div>
 
-    <!-- Core Modules (Phase 1 Refactoring) -->
-    <script src="src/catalog.js"></script>
-    <script src="src/core/formatters.js"></script>
-    <script src="src/core/dates.js"></script>
-    <script src="src/core/rates.js"></script>
-    <script src="src/core/export.js"></script>
-    <script src="src/core/history.js"></script>
-    <script src="src/core/compare.js"></script>
-    <script src="src/core/lotto.js"></script>
-
-    <!-- UI Modules (Phase 2 Refactoring) -->
-    <script src="src/ui/theme.js"></script>
-    <script src="src/ui/drawer.js"></script>
-    <script src="src/ui/keypad.js"></script>
-
-    <!-- Tool Modules (Phase 3 Refactoring) -->
-    <script src="src/tools/shop.js"></script>
-    <script src="src/tools/biz.js"></script>
-    <script src="src/tools/finance.js"></script>
-    <script src="src/tools/work.js"></script>
-    <script src="src/tools/special.js"></script>
-    <script src="src/tools/lotto.js"></script>
-
-    <!-- Actions & Modals (Phase 4 Refactoring) -->
-    <script src="src/ui/actions.js"></script>
-    <script src="src/ui/modals.js"></script>
+    <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
+    <script src="src/bundle.js"></script>
 
     <script>
+        function getSafeDateStr(offsetDays = 0) {
+            try {
+                if (typeof formatLocalDate === 'function') {
+                    if (offsetDays === 0) return formatLocalDate(new Date());
+                    if (typeof addCalendarDays === 'function') return formatLocalDate(addCalendarDays(new Date(), offsetDays));
+                }
+            } catch (e) {}
+            const d = new Date();
+            if (offsetDays !== 0) d.setDate(d.getDate() + offsetDays);
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${d.getFullYear()}-${m}-${day}`;
+        }
 
         /**************************************************************
          * 2. UNIFIED APPLICATION STATE & THEME MANAGEMENT
@@ -1498,7 +1500,7 @@
 
             // 12. Ovulation Calculator
             ovulation: {
-                lastPeriodDate: formatLocalDate(addCalendarDays(new Date(), -10)),
+                lastPeriodDate: getSafeDateStr(-10),
                 cycleLength: 28,
                 periodDays: 5
             },
@@ -1506,21 +1508,21 @@
             // 13. Date Calculator
             date_calc: {
                 mode: 'diff',
-                startDate: formatLocalDate(new Date()),
-                endDate: formatLocalDate(addCalendarDays(new Date(), 30)),
+                startDate: getSafeDateStr(0),
+                endDate: getSafeDateStr(30),
                 op: 'add',
                 daysOffset: 30,
                 inclusive: false,
                 workdays: false,
                 includeThaiHolidays: false,
                 birthDate: '1990-01-01',
-                referenceDate: formatLocalDate(new Date()),
+                referenceDate: getSafeDateStr(0),
                 calendarEra: 'CE'
             },
 
             date_work: {
-                startDate: formatLocalDate(new Date()),
-                endDate: formatLocalDate(addCalendarDays(new Date(), 30)),
+                startDate: getSafeDateStr(0),
+                endDate: getSafeDateStr(30),
                 mode: 'between',
                 offset: 45,
                 calendarEra: 'CE',

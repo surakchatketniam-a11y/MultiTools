@@ -184,6 +184,20 @@ function evaluateArithmeticExpression(value) {
     }
 }
 
+function getSafeDateStr(offsetDays = 0) {
+    try {
+        if (typeof formatLocalDate === 'function') {
+            if (offsetDays === 0) return formatLocalDate(new Date());
+            if (typeof addCalendarDays === 'function') return formatLocalDate(addCalendarDays(new Date(), offsetDays));
+        }
+    } catch (e) {}
+    const d = new Date();
+    if (offsetDays !== 0) d.setDate(d.getDate() + offsetDays);
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${m}-${day}`;
+}
+
 (function(root) {
     const exportsObj = {
         normalizeThaiDigits,
@@ -194,6 +208,7 @@ function evaluateArithmeticExpression(value) {
         escapeHTML,
         formatLocalDate,
         addCalendarDays,
+        getSafeDateStr,
         formatInputDisplay,
         formatCalcExpr,
         formatNum,

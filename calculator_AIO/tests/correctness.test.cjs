@@ -936,6 +936,24 @@ test('thai lottery engine: permutations, payouts, GLO prize claim, stats and sav
     assert.match(summaryClaim, /5,910,000\.00 บาท/);
 });
 
+test('bundle: src/bundle.js is up to date with modular source files and getSafeDateStr works safely', () => {
+    const bundlePath = path.join(__dirname, '../src/bundle.js');
+    assert.ok(fs.existsSync(bundlePath), 'src/bundle.js must exist');
+    const bundleContent = fs.readFileSync(bundlePath, 'utf8');
+
+    for (const relPath of moduleFiles) {
+        assert.ok(bundleContent.includes('// >>> ' + relPath + ' >>>'), `bundle.js must contain ${relPath}`);
+    }
+
+    const ctx = context();
+    const todayStr = ctx.getSafeDateStr(0);
+    assert.match(todayStr, /^\d{4}-\d{2}-\d{2}$/);
+    const futureStr = ctx.getSafeDateStr(30);
+    assert.match(futureStr, /^\d{4}-\d{2}-\d{2}$/);
+    assert.notEqual(todayStr, futureStr);
+});
+
+
 
 
 

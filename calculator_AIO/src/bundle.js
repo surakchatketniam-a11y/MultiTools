@@ -1,0 +1,6790 @@
+// ==============================================================
+// Multitools Calculator - Unified Application Bundle
+// Generated automatically by scripts/build.cjs
+// ==============================================================
+
+// >>> src/catalog.js >>>
+// ==============================================================
+// Multitools Calculator - Catalog & Group Definitions
+// ==============================================================
+
+var UNIT_DEFINITIONS = {
+    unit: { key: 'unit', label: 'หน่วย', family: 'general', factor: 1,     baseUnit: 'หน่วย' },
+    pcs:  { key: 'pcs',  label: 'ชิ้น',  family: 'count',   factor: 1,     baseUnit: 'ชิ้น' },
+    doz:  { key: 'doz',  label: 'โหล',  family: 'count',   factor: 12,    baseUnit: 'ชิ้น' },
+    g:    { key: 'g',    label: 'g',    family: 'weight',  factor: 0.001, baseUnit: 'กก.' },
+    kg:   { key: 'kg',   label: 'kg',   family: 'weight',  factor: 1,     baseUnit: 'กก.' },
+    ml:   { key: 'ml',   label: 'ml',   family: 'volume',  factor: 0.001, baseUnit: 'ลิตร' },
+    L:    { key: 'L',    label: 'L',    family: 'volume',  factor: 1,     baseUnit: 'ลิตร' }
+};
+
+var TOOL_GROUPS = [
+    { id: 'shop', name: '🛒 ซื้อของ & ทั่วไป' },
+    { id: 'biz', name: '💼 ธุรกิจ & ค้าขาย' },
+    { id: 'finance', name: '🏦 การเงิน & วางแผน' },
+    { id: 'work', name: '📅 เวลา & สำนักงาน' },
+    { id: 'special', name: '🩺 สุขภาพ & พิเศษ' }
+];
+
+var TOOLS_CATALOG = [
+    // หมวดหมู่ที่ 1: ซื้อของ & ทั่วไป
+    { id: 'unit_price', group: 'shop', category: 'fav', menuTitle: 'ราคาต่อหน่วย', headerTitle: 'เครื่องคำนวณราคาต่อหน่วย', usesSharedKeypad: true, keywords: 'unit price ราคา ต่อหน่วย คุ้ม เปรียบเทียบ ซื้อของ ถูกกว่า' },
+    { id: 'discount',   group: 'shop', category: 'fav', menuTitle: 'ส่วนลด', headerTitle: 'เครื่องคำนวณส่วนลด', usesSharedKeypad: true, keywords: 'discount ส่วนลด sale โปรโมชั่น ontop ลดราคา' },
+    { id: 'tip',        group: 'shop', category: 'all', menuTitle: 'ทิป & หารบิล', headerTitle: 'เครื่องคำนวณทิป & หารค่าอาหาร', usesSharedKeypad: true, keywords: 'tip ทิป หารค่าข้าว บิล หารคน split bill ร้านอาหาร' },
+    { id: 'unit',       group: 'shop', category: 'fav', menuTitle: 'แปลงหน่วย', headerTitle: 'ตัวแปลงหน่วย', usesSharedKeypad: true, keywords: 'unit แปลงหน่วย ตารางวา ไร่ เมตร กิโลกรัม ลิตร นิ้ว ฟุต' },
+
+    // หมวดหมู่ที่ 2: ธุรกิจ & ค้าขาย
+    { id: 'vat',        group: 'biz', category: 'fav', menuTitle: 'ภาษีมูลค่าเพิ่ม (VAT)', headerTitle: 'เครื่องคำนวณภาษีมูลค่าเพิ่ม', usesSharedKeypad: true, keywords: 'vat ภาษี 7% มูลค่าเพิ่ม ถอด vat รวม vat' },
+    { id: 'vat_wht',    group: 'biz', category: 'fav', menuTitle: 'VAT + หัก ณ ที่จ่าย', headerTitle: 'VAT + หัก ณ ที่จ่าย', usesSharedKeypad: false, keywords: 'vat wht หัก ณ ที่จ่าย 1% 2% 3% 5% ภาษีหัก ณ ที่จ่าย วางบิล' },
+    { id: 'percent',    group: 'biz', category: 'fav', menuTitle: 'เปอร์เซ็นต์ & กำไร', headerTitle: 'เครื่องคำนวณเปอร์เซ็นต์', usesSharedKeypad: true, keywords: 'percent เปอร์เซ็นต์ กำไร margin markup ร้อยละ สัดส่วน' },
+    { id: 'salary',     group: 'biz', category: 'all', menuTitle: 'จัดการเงินเดือน 50/30/20', headerTitle: 'เครื่องมือจัดการเงินเดือน', usesSharedKeypad: true, keywords: 'salary เงินเดือน 50 30 20 รายจ่าย เงินเก็บ ออมเงิน หนี้' },
+
+    // หมวดหมู่ที่ 3: การเงิน & วางแผน
+    { id: 'loan',       group: 'finance', category: 'all', menuTitle: 'เงินกู้ & ผ่อนชำระ', headerTitle: 'เครื่องคำนวณเงินกู้', usesSharedKeypad: true, keywords: 'loan เงินกู้ ผ่อนบ้าน ผ่อนรถ ดอกเบี้ย ค่างวด ดอกเบี้ยคงที่ ค่างวดผ่อน' },
+    { id: 'savings',    group: 'finance', category: 'all', menuTitle: 'เงินออม & เกษียณ', headerTitle: 'เครื่องคำนวณเงินออม', usesSharedKeypad: true, keywords: 'savings เงินออม เกษียณ ดอกเบี้ยทบต้น เงินเฟ้อ ออมทรัพย์' },
+    { id: 'currency',   group: 'finance', category: 'fav', menuTitle: 'แปลงสกุลเงิน', headerTitle: 'ตัวแปลงสกุลเงิน', usesSharedKeypad: true, keywords: 'currency สกุลเงิน แลกเงิน ดอลลาร์ บาท เยน ยูโร exchange rate forex' },
+    { id: 'lotto_calc', group: 'finance', category: 'fav', menuTitle: 'หวย & สลากไทย', headerTitle: 'เครื่องคำนวณหวย & สลากไทย', usesSharedKeypad: false, keywords: 'lotto หวย สลากกินแบ่งรัฐบาล สลากออมสิน สลาก n3 เลขเด็ด 6 ประตู 19 ประตู 2 ตัว 3 ตัว รางวัลที่ 1 โต๊ด ขึ้นเงินรางวัล ภาษีสลาก' },
+
+    // หมวดหมู่ที่ 4: เวลา & สำนักงาน
+    { id: 'date_work',  group: 'work', category: 'all', menuTitle: 'นับวันทำการ (Workdays)', headerTitle: 'นับวันทำการ', usesSharedKeypad: false, keywords: 'date work วันทำการ วันทำงาน sla วันหยุด ส่งงาน วันครบกำหนด' },
+    { id: 'date_calc',  group: 'work', category: 'all', menuTitle: 'คำนวณวันที่ & อายุ', headerTitle: 'เครื่องคำนวณวันที่', usesSharedKeypad: false, keywords: 'date calc วันที่ บวกวัน ลบวัน คำนวณอายุ ระยะห่างวัน' },
+    { id: 'world_time', group: 'work', category: 'all', menuTitle: 'เวลาโลก & นัดหมาย', headerTitle: 'นาฬิกาเวลาโลก', usesSharedKeypad: false, keywords: 'world time เวลาโลก timezone ข้ามเขตเวลา โตเกียว นิวยอร์ก ลอนดอน นัดประชุม' },
+    { id: 'gpa',        group: 'work', category: 'all', menuTitle: 'เกรดเฉลี่ย (GPA)', headerTitle: 'คำนวณเกรดเฉลี่ย (GPA)', usesSharedKeypad: false, keywords: 'gpa เกรด เฉลี่ย หน่วยกิต ผลการเรียน ตัดเกรด' },
+
+    // หมวดหมู่ที่ 5: สุขภาพ & พิเศษ
+    { id: 'health',     group: 'special', category: 'all', menuTitle: 'ตัวชี้วัดร่างกาย (BMI/BMR)', headerTitle: 'คำนวณตัวชี้วัดร่างกาย (BMI/BMR)', usesSharedKeypad: true, keywords: 'health สุขภาพ bmi bmr ส่วนสูง น้ำหนัก แคลอรี่ อ้วน ผอม' },
+    { id: 'ovulation',  group: 'special', category: 'all', menuTitle: 'วันตกไข่ & รอบเดือน', headerTitle: 'คำนวณวันตกไข่และรอบเดือน', usesSharedKeypad: false, keywords: 'ovulation ตกไข่ ประจำเดือน รอบเดือน ภาวะเจริญพันธุ์ มีลูก' },
+    { id: 'fuel_cost',  group: 'special', category: 'all', menuTitle: 'ค่าใช้จ่ายเชื้อเพลิง', headerTitle: 'คำนวณค่าใช้จ่ายเชื้อเพลิง', usesSharedKeypad: true, keywords: 'fuel cost น้ำมัน ค่าน้ำมัน ระยะทาง ทริป เที่ยว ค่าน้ำมันไปกลับ' },
+    { id: 'fuel_eff',   group: 'special', category: 'all', menuTitle: 'ประสิทธิภาพเชื้อเพลิง', headerTitle: 'คำนวณประสิทธิภาพเชื้อเพลิง', usesSharedKeypad: true, keywords: 'fuel efficiency ประสิทธิภาพน้ำมัน อัตราสิ้นเปลือง กิโลเมตรต่อลิตร l/100km' },
+    { id: 'area_cost',  group: 'special', category: 'all', menuTitle: 'ต้นทุนต่อพื้นที่ (ที่ดิน)', headerTitle: 'คำนวณต้นทุนต่อพื้นที่', usesSharedKeypad: false, keywords: 'area cost ต้นทุน ที่ดิน ไร่ งาน ตารางวา เกษตร ค่าปุ๋ย ค่าไถ' },
+    { id: 'hex',        group: 'special', category: 'all', menuTitle: 'แปลงเลขฐาน (HEX/BIN)', headerTitle: 'แปลงเลขฐาน (DEC/HEX/BIN/OCT)', usesSharedKeypad: false, keywords: 'hex bin oct dec เลขฐาน ฐานสิบ ฐานสิบหก ฐานสอง ไบนารี โปรแกรมเมอร์' },
+    { id: 'calc',       group: 'special', category: 'fav', menuTitle: 'เครื่องคิดเลขทั่วไป', headerTitle: 'เครื่องคิดเลข', usesSharedKeypad: false, keywords: 'calc เครื่องคิดเลข คิดเลข บวก ลบ คูณ หาร' }
+];
+
+(function(root) {
+    const exportsObj = {
+        UNIT_DEFINITIONS,
+        TOOL_GROUPS,
+        TOOLS_CATALOG
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/catalog.js <<<
+
+// >>> src/core/formatters.js >>>
+// ==============================================================
+// Multitools Calculator - Formatters & Numeric Core Helpers
+// ==============================================================
+
+function normalizeThaiDigits(value) {
+    return String(value ?? '').replace(/[๐-๙]/g, digit => String(digit.charCodeAt(0) - 0x0E50));
+}
+
+// A comma is a thousands separator, never a decimal separator.
+// Reject partial matches such as 100abc, 1,00 and non-finite values.
+function parseNumericInput(value) {
+    const text = normalizeThaiDigits(value).trim();
+    if (!/^[+-]?(?:(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d*)?|\.\d+)$/.test(text)) return NaN;
+    const number = Number(text.replace(/,/g, ''));
+    return Number.isFinite(number) ? number : NaN;
+}
+
+function numberOrDefault(value, fallback = 0) {
+    return String(value ?? '').trim() === '' ? fallback : parseNumericInput(value);
+}
+
+function integerOrDefault(value, fallback = 0) {
+    const number = numberOrDefault(value, fallback);
+    return Number.isSafeInteger(number) ? number : NaN;
+}
+
+function hasInvalidNumericInput(toolId, stateObj) {
+    const state = stateObj || (typeof appState !== 'undefined' ? appState : null);
+    if (!state) return false;
+    const curToolId = toolId || state.activeToolId;
+    if (!curToolId || !state[curToolId]) return false;
+
+    const fields = {
+        currency: ['amount', 'customRateToTHB'], unit: ['val'], discount: ['price', 'discountPct', 'extraPct'],
+        percent: ['x', 'y', ...(state.percent && state.percent.mode === 'compound' ? ['z'] : [])], vat: ['amount', 'rate'],
+        vat_wht: ['amount', 'vatRate', 'whtRate'], fuel_cost: ['distance', 'efficiency', 'oilPrice'],
+        health: ['weight', 'height', 'age', 'activity'], tip: ['bill', 'tipPct', 'people'], fuel_eff: ['distance', 'fuelUsed'],
+        area_cost: ['rai', 'ngan', 'wa', 'rate', 'rounds'],
+        loan: ['principal', 'interestRate', 'months', 'extra', ...(state.loan && state.loan.rateType === 'step' ? ['rateAfter', 'promoMonths'] : [])],
+        savings: ['initial', 'monthly', 'interestRate', 'annualIncrease', 'inflationRate',
+            ...(state.savings && state.savings.mode === 'retirement' ? ['currentAge', 'retirementAge', 'retirementMonthly'] : ['years']),
+            ...(state.savings && state.savings.mode === 'goal' ? ['goalTarget'] : []),
+            ...(state.savings && state.savings.mode === 'emergency' ? ['monthlyExpenses', 'emergencyMonths'] : [])],
+        salary: ['income', 'needsPct', 'wantsPct', 'savingsPct', 'emergencyPct', 'debtPct']
+    };
+    const invalid = value => {
+        const text = normalizeThaiDigits(String(value ?? '')).trim().replace(/,/g, '');
+        if (text === '' || text === '.' || text === '-' || text === '-.') return false;
+        return !Number.isFinite(parseNumericInput(text));
+    };
+    if (curToolId === 'unit_price') return state.unit_price.rows.some(row => invalid(row.price) || invalid(row.qty));
+    const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
+    if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
+    return (fields[curToolId] || []).some(key => invalid(state[curToolId][key]));
+}
+
+function escapeHTML(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+}
+
+function formatLocalDate(date) {
+    if (!date || typeof date.getTime !== 'function' || !Number.isFinite(date.getTime())) return '';
+    return `${String(date.getFullYear()).padStart(4, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function addCalendarDays(date, days) {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+}
+
+function formatInputDisplay(valStr) {
+    if (valStr === undefined || valStr === null || valStr === '') return '';
+    const clean = normalizeThaiDigits(String(valStr)).trim().replace(/,/g, '');
+    if (clean === '-' || clean === '.' || clean === '-.') return clean;
+    if (!Number.isFinite(parseNumericInput(clean))) return escapeHTML(String(valStr));
+    const parts = clean.split('.');
+    const intPart = parts[0];
+    const decPart = parts.length > 1 ? '.' + parts[1] : '';
+    if (intPart === '' && decPart !== '') return '0' + decPart;
+    if (intPart === '-' && decPart !== '') return '-0' + decPart;
+    const sign = intPart.startsWith('-') ? '-' : '';
+    let digits = intPart.replace(/^-/, '');
+    if (digits.length > 1) digits = digits.replace(/^0+(?=\d)/, '');
+    const formattedInt = digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '0';
+    return sign + formattedInt + decPart;
+}
+
+function formatCalcExpr(expr) {
+    if (!expr) return '';
+    return String(expr).replace(/(?:\d[\d,.]*|\.\d+)/g, token => {
+        const clean = token.replace(/,/g, '');
+        const parts = clean.split('.');
+        if (!/^\d+$/.test(parts[0])) return token;
+        let digits = parts[0];
+        if (digits.length > 1) digits = digits.replace(/^0+(?=\d)/, '');
+        const formatted = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return parts.length > 1 ? formatted + '.' + parts[1] : formatted;
+    });
+}
+
+function formatNum(num, maxDec = 2) {
+    if (!Number.isFinite(num)) return '—';
+    return num.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: maxDec
+    });
+}
+
+function formatMoney(num) {
+    if (!Number.isFinite(num)) return '—';
+    return num.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function formatUnitPrice(num) {
+    if (!Number.isFinite(num)) return '—';
+    const hasThreeDec = Math.abs(Math.round(num * 100) - num * 100) > 1e-4;
+    return num.toLocaleString('en-US', {
+        minimumFractionDigits: hasThreeDec ? 3 : 2,
+        maximumFractionDigits: 3
+    });
+}
+
+function formatThaiDate(dateStr) {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return '-';
+    const thaiDate = d.toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        weekday: 'short'
+    });
+    return `${thaiDate} (${dateStr})`;
+}
+
+function formatDateInputThai(dateStr, era = 'CE') {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-');
+    const displayYear = Number(year) + (era === 'BE' ? 543 : 0);
+    return `${day}/${month}/${displayYear}`;
+}
+
+function parseDateInputThai(value, era = 'CE') {
+    let text = normalizeThaiDigits(value).trim();
+    if (/^\d{8}$/.test(text)) text = `${text.slice(0, 2)}/${text.slice(2, 4)}/${text.slice(4)}`;
+    const match = text.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+    if (!match) return '';
+    const day = Number(match[1]);
+    const month = Number(match[2]);
+    let year = Number(match[3]);
+    // Two-digit years mean 20xx CE or 25xx BE (e.g. 69 = 2569).
+    if (match[3].length === 2) year += era === 'BE' ? 2500 : 2000;
+    else if (match[3].length !== 4) return '';
+    if (era === 'BE') year -= 543;
+    const date = new Date(year, month - 1, day);
+    if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return '';
+    return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function formatDateInTimezone(date, timeZone) {
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
+    const get = type => parts.find(part => part.type === type).value;
+    return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
+function evaluateArithmeticExpression(value) {
+    let invalidNumber = false;
+    const expression = normalizeThaiDigits(value).trim().replace(/(?:\d[\d,.]*|\.\d+)/g, token => {
+        const number = parseNumericInput(token);
+        if (!Number.isFinite(number)) invalidNumber = true;
+        return String(number);
+    });
+    if (invalidNumber) return NaN;
+    if (!expression || !/^[0-9+\-*/().\s]+$/.test(expression)) return NaN;
+    try {
+        const result = Function(`"use strict"; return (${expression})`)();
+        return Number.isFinite(result) ? result : NaN;
+    } catch (error) {
+        return NaN;
+    }
+}
+
+function getSafeDateStr(offsetDays = 0) {
+    try {
+        if (typeof formatLocalDate === 'function') {
+            if (offsetDays === 0) return formatLocalDate(new Date());
+            if (typeof addCalendarDays === 'function') return formatLocalDate(addCalendarDays(new Date(), offsetDays));
+        }
+    } catch (e) {}
+    const d = new Date();
+    if (offsetDays !== 0) d.setDate(d.getDate() + offsetDays);
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${m}-${day}`;
+}
+
+(function(root) {
+    const exportsObj = {
+        normalizeThaiDigits,
+        parseNumericInput,
+        numberOrDefault,
+        integerOrDefault,
+        hasInvalidNumericInput,
+        escapeHTML,
+        formatLocalDate,
+        addCalendarDays,
+        getSafeDateStr,
+        formatInputDisplay,
+        formatCalcExpr,
+        formatNum,
+        formatMoney,
+        formatUnitPrice,
+        formatThaiDate,
+        formatDateInputThai,
+        parseDateInputThai,
+        formatDateInTimezone,
+        evaluateArithmeticExpression
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/core/formatters.js <<<
+
+// >>> src/core/dates.js >>>
+// ==============================================================
+// Multitools Calculator - Thai Calendar & Workday Core Helpers
+// ==============================================================
+
+const THAI_FIXED_PUBLIC_HOLIDAYS = new Set([
+    '01-01', // วันขึ้นปีใหม่
+    '04-06', // วันจักรี
+    '04-13', '04-14', '04-15', // วันสงกรานต์
+    '05-01', // วันแรงงานแห่งชาติ
+    '05-04', // วันฉัตรมงคล
+    '06-03', // วันเฉลิมพระชนมพรรษาพระราชินี
+    '07-28', // วันเฉลิมพระชนมพรรษา ร.10
+    '08-12', // วันแม่แห่งชาติ
+    '10-13', // วันนวมินทรมหาราช
+    '10-23', // วันปิยมหาราช
+    '12-05', // วันพ่อแห่งชาติ
+    '12-10', // วันรัฐธรรมนูญ
+    '12-31'  // วันสิ้นปี
+]);
+
+const THAI_LUNAR_AND_SUBSTITUTE_HOLIDAYS = new Set([
+    // 2024 (2567)
+    '2024-02-26', '2024-05-22', '2024-07-22',
+    // 2025 (2568)
+    '2025-02-12', '2025-05-12', '2025-07-10', '2025-07-11',
+    // 2026 (2569)
+    '2026-03-03', '2026-06-01', '2026-07-29', '2026-07-30',
+    // 2027 (2570)
+    '2027-02-22', '2027-05-20', '2027-07-19'
+]);
+
+function isThaiOfficialHoliday(date) {
+    if (!date || typeof date.getTime !== 'function' || !Number.isFinite(date.getTime())) return false;
+    const mmdd = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const iso = `${date.getFullYear()}-${mmdd}`;
+    return THAI_FIXED_PUBLIC_HOLIDAYS.has(mmdd) || THAI_LUNAR_AND_SUBSTITUTE_HOLIDAYS.has(iso);
+}
+
+function validateCalendarDate(date) {
+    if (!date || typeof date.getTime !== 'function' || !Number.isFinite(date.getTime())) {
+        throw new RangeError('วันที่ไม่ถูกต้อง');
+    }
+}
+
+function countWorkingDays(start, end, isWorkday, limit = 36600) {
+    validateCalendarDate(start);
+    validateCalendarDate(end);
+    const direction = start <= end ? 1 : -1;
+    const cursor = new Date(start);
+    let count = 0, searched = 0;
+    while (direction > 0 ? cursor <= end : cursor >= end) {
+        if (++searched > limit) throw new RangeError('ช่วงวันที่ต้องไม่เกิน 36,600 วันปฏิทิน');
+        if (isWorkday(cursor)) count++;
+        cursor.setDate(cursor.getDate() + direction);
+    }
+    return count;
+}
+
+function offsetWorkingDays(start, amount, isWorkday, limit = 36600) {
+    validateCalendarDate(start);
+    if (!Number.isSafeInteger(amount) || Math.abs(amount) > limit) throw new RangeError('จำนวนวันต้องเป็นจำนวนเต็มไม่เกิน 36,600 วัน');
+    const cursor = new Date(start), direction = amount < 0 ? -1 : 1;
+    let remaining = Math.abs(amount), searched = 0;
+    while (remaining > 0) {
+        if (++searched > limit) throw new RangeError('ไม่พบวันทำการภายใน 36,600 วันปฏิทิน กรุณาตรวจวันทำงานและวันหยุด');
+        cursor.setDate(cursor.getDate() + direction);
+        validateCalendarDate(cursor);
+        if (isWorkday(cursor)) remaining--;
+    }
+    return cursor;
+}
+
+function normalizeWorkDays(days) {
+    const valid = Array.isArray(days) ? [...new Set(days.filter(day => Number.isInteger(day) && day >= 0 && day <= 6))] : [];
+    return valid.length ? valid : [1, 2, 3, 4, 5];
+}
+
+(function(root) {
+    const exportsObj = {
+        THAI_FIXED_PUBLIC_HOLIDAYS,
+        THAI_LUNAR_AND_SUBSTITUTE_HOLIDAYS,
+        isThaiOfficialHoliday,
+        validateCalendarDate,
+        countWorkingDays,
+        offsetWorkingDays,
+        normalizeWorkDays
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/core/dates.js <<<
+
+// >>> src/core/rates.js >>>
+// ==============================================================
+// Multitools Calculator - Exchange Rates Parser
+// ==============================================================
+
+function parseFrankfurterRates(payload, requestedQuotes) {
+    if (!Array.isArray(payload) || !payload.length) throw new Error('Invalid Frankfurter response');
+    const getLocalDate = typeof formatLocalDate === 'function'
+        ? formatLocalDate
+        : (d => `${String(d.getFullYear()).padStart(4, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+
+    const rates = { THB: 1 }, dates = {};
+    for (const row of payload) {
+        if (!row || row.base !== 'THB' || !requestedQuotes.includes(row.quote)) continue;
+        const rate = row.rate;
+        if (typeof rate !== 'number' || !Number.isFinite(rate) || rate <= 0 || !Number.isFinite(1 / rate) ||
+            !/^\d{4}-\d{2}-\d{2}$/.test(row.date) || getLocalDate(new Date(`${row.date}T00:00:00`)) !== row.date ||
+            Object.hasOwn(dates, row.quote)) throw new Error('Invalid Frankfurter quote');
+        rates[row.quote] = 1 / rate;
+        dates[row.quote] = row.date;
+    }
+    if (!requestedQuotes.length || requestedQuotes.some(code => !Object.hasOwn(dates, code))) throw new Error('Missing Frankfurter quote');
+    return { rates, dates };
+}
+
+(function(root) {
+    const exportsObj = {
+        parseFrankfurterRates
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/core/rates.js <<<
+
+// >>> src/core/export.js >>>
+// ==============================================================
+// Multitools Calculator - CSV Export & Print-to-PDF Core Helpers
+// ==============================================================
+
+function generateLoanSchedule(params) {
+    const P = numberOrDefault(params.principal, 0);
+    const annualRate = numberOrDefault(params.interestRate, 0);
+    const n = integerOrDefault(params.months, 0);
+    const extra = numberOrDefault(params.extra, 0);
+    const rateType = params.rateType || 'fixed';
+    const rateAfter = numberOrDefault(params.rateAfter, annualRate);
+    const promoMonths = Math.max(0, integerOrDefault(params.promoMonths, 0));
+    const calcMethod = params.calcMethod || 'reducing';
+
+    const schedule = [];
+    if (P <= 0 || n <= 0) return schedule;
+
+    let bal = P, m = 0, payment = 0, previousRate = null;
+    while (bal > 0.01 && m < 1200 && m < n + 120) {
+        const currentRate = rateType === 'step' && m >= promoMonths ? rateAfter : annualRate;
+        const r = (currentRate / 100) / 12;
+        const remaining = Math.max(1, n - m);
+        if (payment === 0 || previousRate !== currentRate) {
+            payment = calcMethod === 'flat' 
+                ? (P / n) + (P * currentRate / 100 / 12) 
+                : (r === 0 ? bal / remaining : bal * (r * Math.pow(1 + r, remaining)) / (Math.pow(1 + r, remaining) - 1));
+            previousRate = currentRate;
+        }
+        const interest = calcMethod === 'flat' ? (P * currentRate / 100 / 12) : (bal * r);
+        const principalPart = Math.min(bal, Math.max(0, payment + extra - interest));
+        if (principalPart <= 0) break;
+        const actualPayment = interest + principalPart;
+        bal -= principalPart;
+        schedule.push({
+            month: m + 1,
+            year: Math.ceil((m + 1) / 12),
+            payment: actualPayment,
+            interest: interest,
+            principal: principalPart,
+            balance: Math.max(0, bal),
+            rate: currentRate
+        });
+        m++;
+    }
+    return schedule;
+}
+
+function aggregateLoanScheduleByYear(schedule) {
+    const yearlyMap = new Map();
+    for (const row of schedule) {
+        const y = row.year;
+        if (!yearlyMap.has(y)) {
+            yearlyMap.set(y, {
+                year: y,
+                paymentsCount: 0,
+                payment: 0,
+                interest: 0,
+                principal: 0,
+                balance: row.balance
+            });
+        }
+        const yr = yearlyMap.get(y);
+        yr.paymentsCount++;
+        yr.payment += row.payment;
+        yr.interest += row.interest;
+        yr.principal += row.principal;
+        yr.balance = row.balance;
+    }
+    return Array.from(yearlyMap.values());
+}
+
+function rowsToCSV(rows) {
+    return rows.map(row =>
+        row.map(cell => {
+            const str = (cell === null || cell === undefined) ? '' : String(cell);
+            if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+                return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
+        }).join(',')
+    ).join('\r\n');
+}
+
+function buildLoanAmortizationCSV(schedule, type = 'monthly') {
+    const rows = [];
+    if (!Array.isArray(schedule) || schedule.length === 0) {
+        return '\uFEFF';
+    }
+    if (type === 'yearly') {
+        const yearly = aggregateLoanScheduleByYear(schedule);
+        rows.push(['ปีที่', 'จำนวนงวดในปี', 'ยอดผ่อนทั้งปี (บาท)', 'ดอกเบี้ยทั้งปี (บาท)', 'ตัดเงินต้นทั้งปี (บาท)', 'หนี้คงเหลือปลายปี (บาท)']);
+        let totalPay = 0, totalInt = 0, totalPrin = 0;
+        for (const yr of yearly) {
+            rows.push([
+                yr.year,
+                yr.paymentsCount,
+                yr.payment.toFixed(2),
+                yr.interest.toFixed(2),
+                yr.principal.toFixed(2),
+                yr.balance.toFixed(2)
+            ]);
+            totalPay += yr.payment;
+            totalInt += yr.interest;
+            totalPrin += yr.principal;
+        }
+        const finalBal = yearly[yearly.length - 1]?.balance || 0;
+        rows.push(['รวมทั้งหมด', schedule.length, totalPay.toFixed(2), totalInt.toFixed(2), totalPrin.toFixed(2), finalBal.toFixed(2)]);
+    } else {
+        rows.push(['งวดที่', 'ปีที่', 'ค่างวด (บาท)', 'ดอกเบี้ย (บาท)', 'ตัดเงินต้น (บาท)', 'หนี้คงเหลือ (บาท)', 'อัตราดอกเบี้ย (% ต่อปี)']);
+        let totalPay = 0, totalInt = 0, totalPrin = 0;
+        for (const row of schedule) {
+            rows.push([
+                row.month,
+                row.year,
+                row.payment.toFixed(2),
+                row.interest.toFixed(2),
+                row.principal.toFixed(2),
+                row.balance.toFixed(2),
+                row.rate.toFixed(2)
+            ]);
+            totalPay += row.payment;
+            totalInt += row.interest;
+            totalPrin += row.principal;
+        }
+        const finalBal = schedule[schedule.length - 1]?.balance || 0;
+        rows.push(['รวมทั้งหมด', '', totalPay.toFixed(2), totalInt.toFixed(2), totalPrin.toFixed(2), finalBal.toFixed(2), '']);
+    }
+    return '\uFEFF' + rowsToCSV(rows);
+}
+
+function generateSavingsSchedule(params) {
+    const init = numberOrDefault(params.initial, 0);
+    const monthly = numberOrDefault(params.monthly, 0);
+    const rate = numberOrDefault(params.interestRate, 0);
+    const retirementYears = Math.max(0, numberOrDefault(params.retirementAge, 0) - numberOrDefault(params.currentAge, 0));
+    const years = params.mode === 'retirement' ? retirementYears : numberOrDefault(params.years, 0);
+    const annualIncrease = numberOrDefault(params.annualIncrease, 0);
+    const inflationRate = numberOrDefault(params.inflationRate, 0);
+
+    const months = Math.round(years * 12);
+    const r = (rate / 100) / 12;
+    let totalBalance = init;
+    let totalPrincipal = init;
+    const monthlyRows = [];
+    const yearlyRows = [];
+
+    if (months <= 0 || (init <= 0 && monthly <= 0)) {
+        return { monthlyRows, yearlyRows, totalBalance, totalPrincipal, interestEarned: 0 };
+    }
+
+    let yearlyDepositAcc = init;
+    let yearlyInterestAcc = 0;
+
+    for (let m = 0; m < months; m++) {
+        const prevBal = totalBalance;
+        const currentMonthly = monthly * Math.pow(1 + annualIncrease / 100, Math.floor(m / 12));
+        const monthInterest = (prevBal + currentMonthly) * r;
+        totalBalance = (prevBal + currentMonthly) + monthInterest;
+        totalPrincipal += currentMonthly;
+
+        yearlyDepositAcc += currentMonthly;
+        yearlyInterestAcc += monthInterest;
+
+        monthlyRows.push({
+            month: m + 1,
+            year: Math.ceil((m + 1) / 12),
+            deposit: currentMonthly,
+            interest: monthInterest,
+            principal: totalPrincipal,
+            cumulativeInterest: totalBalance - totalPrincipal,
+            balance: totalBalance
+        });
+
+        if ((m + 1) % 12 === 0 || m === months - 1) {
+            const y = Math.ceil((m + 1) / 12);
+            yearlyRows.push({
+                year: y,
+                depositThisYear: yearlyDepositAcc,
+                interestThisYear: yearlyInterestAcc,
+                principal: totalPrincipal,
+                interest: totalBalance - totalPrincipal,
+                cumulativeInterest: totalBalance - totalPrincipal,
+                balance: totalBalance,
+                realValue: totalBalance / Math.pow(1 + inflationRate / 100, y)
+            });
+            yearlyDepositAcc = 0;
+            yearlyInterestAcc = 0;
+        }
+    }
+    return {
+        monthlyRows,
+        yearlyRows,
+        totalBalance,
+        totalPrincipal,
+        interestEarned: Math.max(0, totalBalance - totalPrincipal)
+    };
+}
+
+function buildSavingsScheduleCSV(scheduleData, type = 'yearly') {
+    const rows = [];
+    const data = scheduleData || {};
+    const monthlyRows = Array.isArray(data.monthlyRows) ? data.monthlyRows : [];
+    const yearlyRows = Array.isArray(data.yearlyRows) ? data.yearlyRows : [];
+    if (!monthlyRows.length && !yearlyRows.length) {
+        return '\uFEFF';
+    }
+    if (type === 'monthly') {
+        rows.push(['งวดที่', 'ปีที่', 'เงินฝากในงวด (บาท)', 'ดอกเบี้ยในงวด (บาท)', 'เงินต้นสะสม (บาท)', 'ดอกเบี้ยสะสม (บาท)', 'ยอดเงินรวมสะสม (บาท)']);
+        let totalDeposits = 0, totalInterest = 0;
+        for (const row of monthlyRows) {
+            rows.push([
+                row.month,
+                row.year,
+                row.deposit.toFixed(2),
+                row.interest.toFixed(2),
+                row.principal.toFixed(2),
+                row.cumulativeInterest.toFixed(2),
+                row.balance.toFixed(2)
+            ]);
+            totalDeposits += row.deposit;
+            totalInterest += row.interest;
+        }
+        const lastRow = monthlyRows[monthlyRows.length - 1];
+        rows.push(['รวมทั้งหมด', '', totalDeposits.toFixed(2), totalInterest.toFixed(2), lastRow ? lastRow.principal.toFixed(2) : '0.00', lastRow ? lastRow.cumulativeInterest.toFixed(2) : '0.00', lastRow ? lastRow.balance.toFixed(2) : '0.00']);
+    } else {
+        rows.push(['ปีที่', 'เงินฝากในปี (บาท)', 'ดอกเบี้ยในปี (บาท)', 'เงินต้นสะสม (บาท)', 'ดอกเบี้ยสะสม (บาท)', 'ยอดเงินรวมสะสม (บาท)', 'มูลค่าหลังเงินเฟ้อ (บาท)']);
+        let totalDeposits = 0, totalInterest = 0;
+        for (const row of yearlyRows) {
+            const depInYear = row.depositThisYear !== undefined ? row.depositThisYear : 0;
+            const intInYear = row.interestThisYear !== undefined ? row.interestThisYear : 0;
+            const cumInt = row.cumulativeInterest !== undefined ? row.cumulativeInterest : (row.interest || 0);
+            rows.push([
+                row.year,
+                depInYear.toFixed(2),
+                intInYear.toFixed(2),
+                row.principal.toFixed(2),
+                cumInt.toFixed(2),
+                row.balance.toFixed(2),
+                (row.realValue !== undefined ? row.realValue : row.balance).toFixed(2)
+            ]);
+            totalDeposits += depInYear;
+            totalInterest += intInYear;
+        }
+        const lastRow = yearlyRows[yearlyRows.length - 1];
+        const finalCumInt = lastRow ? (lastRow.cumulativeInterest !== undefined ? lastRow.cumulativeInterest : (lastRow.interest || 0)) : 0;
+        const finalReal = lastRow ? (lastRow.realValue !== undefined ? lastRow.realValue : lastRow.balance) : 0;
+        rows.push(['รวมทั้งหมด', totalDeposits.toFixed(2), totalInterest.toFixed(2), lastRow ? lastRow.principal.toFixed(2) : '0.00', finalCumInt.toFixed(2), lastRow ? lastRow.balance.toFixed(2) : '0.00', finalReal.toFixed(2)]);
+    }
+    return '\uFEFF' + rowsToCSV(rows);
+}
+
+function getCSVFilename(prefix, type) {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${prefix}_${type}_${y}${m}${d}.csv`;
+}
+
+function downloadCSV(filename, csvContent) {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    const contentWithBom = csvContent.startsWith('\uFEFF') ? csvContent : ('\uFEFF' + csvContent);
+    const blob = new Blob([contentWithBom], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 300);
+}
+
+function triggerButtonFeedback(btn, successText = '✓ โหลดแล้ว') {
+    if (!btn) return;
+    const origHtml = btn.innerHTML;
+    btn.innerHTML = successText;
+    const hadBgAccent = btn.classList.contains('bg-[var(--app-accent)]');
+    if (hadBgAccent) {
+        btn.classList.remove('bg-[var(--app-accent)]');
+        btn.classList.add('bg-emerald-600');
+    } else {
+        btn.classList.add('!bg-emerald-100', '!text-emerald-800', '!border-emerald-400');
+    }
+    setTimeout(() => {
+        btn.innerHTML = origHtml;
+        if (hadBgAccent) {
+            btn.classList.remove('bg-emerald-600');
+            btn.classList.add('bg-[var(--app-accent)]');
+        } else {
+            btn.classList.remove('!bg-emerald-100', '!text-emerald-800', '!border-emerald-400');
+        }
+    }, 1800);
+}
+
+/* -----------------------------------------------------------
+ * PRINT-TO-PDF & FORMAL SUMMARY RECEIPT (Phase 3.3)
+ * ----------------------------------------------------------- */
+function formatThaiFormalDate(date) {
+    const d = (date instanceof Date) ? date : new Date(date || Date.now());
+    if (isNaN(d.getTime())) return '';
+    const day = d.getDate();
+    const thaiMonths = [
+        'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+        'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+    ];
+    const month = thaiMonths[d.getMonth()];
+    const yearThai = d.getFullYear() + 543;
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${day} ${month} พ.ศ. ${yearThai} เวลา ${hours}:${minutes} น.`;
+}
+
+function generateFormalPrintHTML(toolId, stateObj) {
+    const state = stateObj || (typeof appState !== 'undefined' ? appState : {});
+    const curToolId = toolId || state.activeToolId || 'loan';
+    const toolMeta = (typeof TOOLS_CATALOG !== 'undefined' ? TOOLS_CATALOG.find(t => t.id === curToolId) : null) || { menuTitle: curToolId, headerTitle: curToolId };
+    const now = new Date();
+    const dateStr = formatThaiFormalDate(now);
+    const refCode = 'REF-' + now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0') + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+
+    let docTitle = `เอกสารสรุปผลการคำนวณ: ${toolMeta.menuTitle || toolMeta.headerTitle}`;
+    let docSubtitle = 'Official Calculation Summary & Analysis Report';
+    let paramsRows = [];
+    let resultCards = [];
+    let breakdownHTML = '';
+
+    if (curToolId === 'loan') {
+        docTitle = 'เอกสารสรุปผลการคำนวณสินเชื่อและตารางผ่อนชำระ';
+        docSubtitle = 'Loan Amortization & Repayment Schedule Report';
+        const st = state.loan || {};
+        const P = numberOrDefault(st.principal, 0);
+        const annualRate = numberOrDefault(st.interestRate, 0);
+        const n = integerOrDefault(st.months, 0);
+        const extra = numberOrDefault(st.extra, 0);
+        const rateType = st.rateType || 'fixed';
+        const rateAfter = numberOrDefault(st.rateAfter, annualRate);
+        const promoMonths = integerOrDefault(st.promoMonths, 0);
+        const calcMethod = st.calcMethod || 'reducing';
+
+        paramsRows = [
+            ['วงเงินกู้ (Principal)', `${formatMoney(P)} บาท`],
+            ['อัตราดอกเบี้ยเริ่มต้น', `${annualRate}% ต่อปี`],
+            ['รูปแบบอัตราดอกเบี้ย', rateType === 'step' ? `ขั้นบันได (${promoMonths} เดือนแรก จากนั้น ${rateAfter}%)` : 'อัตราคงที่ตลอดสัญญา'],
+            ['ระยะเวลาผ่อนชำระ', `${n} เดือน (${(n / 12).toFixed(1)} ปี)`],
+            ['วิธีการคำนวณดอกเบี้ย', calcMethod === 'flat' ? 'เงินกู้คงที่ (Flat Rate)' : 'ลดต้นลดดอก (Effective Rate)'],
+            ['ยอดโปะเงินต้นเพิ่ม', extra > 0 ? `${formatMoney(extra)} บาท/เดือน` : 'ไม่มี (ผ่อนตามเกณฑ์ปกติ)']
+        ];
+
+        const schedule = generateLoanSchedule(st);
+        const baseSchedule = generateLoanSchedule({ ...st, extra: 0 });
+        const normalTotalPaid = baseSchedule.reduce((acc, row) => acc + row.payment, 0);
+        const normalTotalInterest = baseSchedule.reduce((acc, row) => acc + row.interest, 0);
+        const actualTotalPaid = schedule.reduce((acc, row) => acc + row.payment, 0);
+        const actualTotalInterest = schedule.reduce((acc, row) => acc + row.interest, 0);
+        const interestSaved = Math.max(0, normalTotalInterest - actualTotalInterest);
+        const monthsSaved = Math.max(0, baseSchedule.length - schedule.length);
+        const monthlyPay = schedule[0]?.payment || (baseSchedule[0]?.payment || 0);
+
+        resultCards = [
+            { label: 'ยอดผ่อนชำระต่อเดือน', value: `${formatMoney(monthlyPay)} บาท`, highlight: true },
+            { label: 'ยอดผ่อนชำระรวมตลอดสัญญา', value: `${formatMoney(actualTotalPaid)} บาท` },
+            { label: 'ดอกเบี้ยจ่ายรวมทั้งหมด', value: `${formatMoney(actualTotalInterest)} บาท` }
+        ];
+        if (extra > 0) {
+            resultCards.push({ label: 'ประหยัดดอกเบี้ยได้จากการโปะ', value: `${formatMoney(interestSaved)} บาท`, highlight: true });
+            resultCards.push({ label: 'ระยะเวลาผ่อนหมดเร็วขึ้น', value: `${monthsSaved} เดือน (ประมาณ ${(monthsSaved / 12).toFixed(1)} ปี)` });
+        }
+
+        if (schedule.length > 0) {
+            const yearly = aggregateLoanScheduleByYear(schedule);
+            let tableRowsHTML = yearly.map(yr => `
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 6px 8px; text-align: center;">ปีที่ ${yr.year}</td>
+                    <td style="padding: 6px 8px; text-align: right;">${formatMoney(yr.payment)}</td>
+                    <td style="padding: 6px 8px; text-align: right; color: #b91c1c;">${formatMoney(yr.interest)}</td>
+                    <td style="padding: 6px 8px; text-align: right; color: #15803d;">${formatMoney(yr.principal)}</td>
+                    <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(yr.balance)}</td>
+                </tr>
+            `).join('');
+
+            tableRowsHTML += `
+                <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                    <td style="padding: 8px; text-align: center;">รวมทั้งหมด</td>
+                    <td style="padding: 8px; text-align: right;">${formatMoney(actualTotalPaid)}</td>
+                    <td style="padding: 8px; text-align: right; color: #b91c1c;">${formatMoney(actualTotalInterest)}</td>
+                    <td style="padding: 8px; text-align: right; color: #15803d;">${formatMoney(P)}</td>
+                    <td style="padding: 8px; text-align: right;">0.00</td>
+                </tr>
+            `;
+
+            breakdownHTML = `
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        ตารางแจกแจงสรุปยอดผ่อนและลดหนี้รายปี (Yearly Amortization Schedule)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                                <th style="padding: 8px; text-align: center;">ปี</th>
+                                <th style="padding: 8px; text-align: right;">ยอดผ่อนทั้งปี (บาท)</th>
+                                <th style="padding: 8px; text-align: right;">ดอกเบี้ยทั้งปี (บาท)</th>
+                                <th style="padding: 8px; text-align: right;">เงินต้นที่ลดได้ (บาท)</th>
+                                <th style="padding: 8px; text-align: right;">เงินต้นคงเหลือ (บาท)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRowsHTML}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+    } else if (curToolId === 'savings') {
+        docTitle = 'รายงานแผนการออมเงินและดอกเบี้ยทบต้น';
+        docSubtitle = 'Savings & Compound Growth Projection Report';
+        const st = state.savings || {};
+        const init = numberOrDefault(st.initial, 0);
+        const monthly = numberOrDefault(st.monthly, 0);
+        const rate = numberOrDefault(st.interestRate, 0);
+        const retirementYears = Math.max(0, numberOrDefault(st.retirementAge, 0) - numberOrDefault(st.currentAge, 0));
+        const years = st.mode === 'retirement' ? retirementYears : numberOrDefault(st.years, 0);
+        const annualIncrease = numberOrDefault(st.annualIncrease, 0);
+        const inflationRate = numberOrDefault(st.inflationRate, 0);
+
+        let modeLabel = 'สะสมความมั่งคั่ง (Wealth Growth)';
+        if (st.mode === 'retirement') modeLabel = `แผนเกษียณอายุ (ปัจจุบัน ${st.currentAge} ปี เกษียณ ${st.retirementAge} ปี)`;
+        else if (st.mode === 'goal') modeLabel = `เป้าหมายเงินออม (เป้าหมาย: ${formatMoney(st.goalTarget)} บาท)`;
+        else if (st.mode === 'emergency') modeLabel = `เงินสำรองฉุกเฉิน (${st.emergencyMonths} เดือน)`;
+
+        paramsRows = [
+            ['แผนการออม', modeLabel],
+            ['เงินต้นเริ่มต้น', `${formatMoney(init)} บาท`],
+            ['เงินออมต่อเดือน', `${formatMoney(monthly)} บาท/เดือน`],
+            ['อัตราผลตอบแทนคาดหวัง', `${rate}% ต่อปี`],
+            ['ระยะเวลาการออม', `${years} ปี (${Math.round(years * 12)} เดือน)`],
+            ['อัตราเพิ่มเงินออมต่อปี', `${annualIncrease}% ต่อปี`],
+            ['อัตราเงินเฟ้อที่คาดการณ์', `${inflationRate}% ต่อปี`]
+        ];
+
+        const scheduleData = generateSavingsSchedule(st);
+        const totalBalance = scheduleData.totalBalance || 0;
+        const totalPrincipal = scheduleData.totalPrincipal || 0;
+        const interestEarned = scheduleData.interestEarned || 0;
+        const realValue = totalBalance / Math.pow(1 + inflationRate / 100, years || 1);
+
+        resultCards = [
+            { label: 'มูลค่าเงินออมรวมในอนาคต', value: `${formatMoney(totalBalance)} บาท`, highlight: true },
+            { label: 'เงินต้นสะสมที่ฝากทั้งหมด', value: `${formatMoney(totalPrincipal)} บาท` },
+            { label: 'ดอกเบี้ย / ผลตอบแทนสะสม', value: `+${formatMoney(interestEarned)} บาท`, highlight: true },
+            { label: 'มูลค่าที่แท้จริงหลังหักเงินเฟ้อ', value: `${formatMoney(realValue)} บาท` }
+        ];
+
+        if (scheduleData.yearlyRows && scheduleData.yearlyRows.length > 0) {
+            let tableRowsHTML = scheduleData.yearlyRows.map(yr => `
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 6px 8px; text-align: center;">ปีที่ ${yr.year}</td>
+                    <td style="padding: 6px 8px; text-align: right;">${formatMoney(yr.depositThisYear)}</td>
+                    <td style="padding: 6px 8px; text-align: right; color: #15803d;">+${formatMoney(yr.interestThisYear)}</td>
+                    <td style="padding: 6px 8px; text-align: right;">${formatMoney(yr.principal)}</td>
+                    <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(yr.balance)}</td>
+                    <td style="padding: 6px 8px; text-align: right; color: #475569;">${formatMoney(yr.realValue)}</td>
+                </tr>
+            `).join('');
+
+            tableRowsHTML += `
+                <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                    <td style="padding: 8px; text-align: center;">รวมสะสม</td>
+                    <td style="padding: 8px; text-align: right;">${formatMoney(totalPrincipal - init)}</td>
+                    <td style="padding: 8px; text-align: right; color: #15803d;">+${formatMoney(interestEarned)}</td>
+                    <td style="padding: 8px; text-align: right;">${formatMoney(totalPrincipal)}</td>
+                    <td style="padding: 8px; text-align: right;">${formatMoney(totalBalance)}</td>
+                    <td style="padding: 8px; text-align: right; color: #475569;">${formatMoney(realValue)}</td>
+                </tr>
+            `;
+
+            breakdownHTML = `
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        ตารางการเติบโตของเงินออมรายปี (Yearly Growth Breakdown)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                                <th style="padding: 8px; text-align: center;">ปี</th>
+                                <th style="padding: 8px; text-align: right;">เงินฝากในรอบปี (บาท)</th>
+                                <th style="padding: 8px; text-align: right;">ดอกเบี้ยในรอบปี (บาท)</th>
+                                <th style="padding: 8px; text-align: right;">เงินต้นสะสม (บาท)</th>
+                                <th style="padding: 8px; text-align: right;">ยอดรวมสะสม (บาท)</th>
+                                <th style="padding: 8px; text-align: right;">มูลค่าแท้จริง (บาท)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRowsHTML}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+    } else if (curToolId === 'vat_wht') {
+        docTitle = 'ใบสรุปรายการภาษีมูลค่าเพิ่มและภาษีหัก ณ ที่จ่าย';
+        docSubtitle = 'VAT & Withholding Tax Settlement Summary';
+        const st = state.vat_wht || {};
+        const amount = parseNumericInput(String(st.amount ?? '').replace(/,/g, ''));
+        const vat = numberOrDefault(st.vatRate, 0);
+        const wht = numberOrDefault(st.whtRate, 0);
+        const base = Number.isFinite(amount) ? (st.mode === 'after' ? amount / (1 + vat / 100) : amount) : 0;
+        const vatAmount = base * vat / 100;
+        const gross = base + vatAmount;
+        const whtAmount = base * wht / 100;
+        const net = gross - whtAmount;
+
+        paramsRows = [
+            ['ยอดเงินที่ระบุ', `${Number.isFinite(amount) ? formatMoney(amount) : '-'} บาท`],
+            ['ลักษณะยอดเงินที่ป้อน', st.mode === 'after' ? 'ยอดรวมภาษีมูลค่าเพิ่มแล้ว (Gross Incl. VAT)' : 'ยอดก่อนภาษีมูลค่าเพิ่ม (Base Excl. VAT)'],
+            ['อัตราภาษีมูลค่าเพิ่ม (VAT)', `${vat}%`],
+            ['อัตราภาษีเงินได้หัก ณ ที่จ่าย (WHT)', `${wht}%`]
+        ];
+
+        resultCards = [
+            { label: 'ยอดเงินก่อน VAT (Base Amount)', value: `${formatMoney(base)} บาท` },
+            { label: `ภาษีมูลค่าเพิ่ม (${vat}%)`, value: `${formatMoney(vatAmount)} บาท` },
+            { label: 'ยอดรวมภาษีมูลค่าเพิ่ม (Gross Amount)', value: `${formatMoney(gross)} บาท` },
+            { label: `ภาษีหัก ณ ที่จ่าย (${wht}%)`, value: `-${formatMoney(whtAmount)} บาท` },
+            { label: 'ยอดเงินโอนสุทธิที่ต้องชำระ (Net Payable)', value: `${formatMoney(net)} บาท`, highlight: true }
+        ];
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    ตารางแจกแจงรายการหักภาษี (Tax Calculation Statement)
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">1. มูลค่าสินค้า/บริการก่อนภาษีมูลค่าเพิ่ม (Base Price)</td><td style="padding: 8px; text-align: right; font-weight: 600;">${formatMoney(base)} บาท</td></tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">2. ภาษีมูลค่าเพิ่ม VAT ${vat}%</td><td style="padding: 8px; text-align: right; font-weight: 600;">+${formatMoney(vatAmount)} บาท</td></tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;"><td style="padding: 8px; font-weight: 600;">3. ราคารวมภาษีมูลค่าเพิ่ม (Total Inclusive)</td><td style="padding: 8px; text-align: right; font-weight: 700;">${formatMoney(gross)} บาท</td></tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; color: #b91c1c;"><td style="padding: 8px;">4. หัก: ภาษีเงินได้ ณ ที่จ่าย ${wht}% (คำนวณจากยอดก่อน VAT)</td><td style="padding: 8px; text-align: right; font-weight: 600;">-${formatMoney(whtAmount)} บาท</td></tr>
+                        <tr style="background: #ecfdf5; border-top: 2px solid #059669; border-bottom: 2px solid #059669; color: #065f46;"><td style="padding: 10px 8px; font-size: 14px; font-weight: 700;">5. ยอดเงินโอนสุทธิที่ต้องชำระ (Net Amount to Pay)</td><td style="padding: 10px 8px; text-align: right; font-size: 16px; font-weight: 800;">${formatMoney(net)} บาท</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+    } else if (curToolId === 'salary') {
+        docTitle = 'แผนการจัดสรรเงินเดือนและงบประมาณการเงิน (50/30/20)';
+        docSubtitle = 'Salary Budgeting & Allocation Plan';
+        const st = state.salary || {};
+        const income = numberOrDefault(st.income, 0);
+        const needsPct = numberOrDefault(st.needsPct, 0);
+        const wantsPct = numberOrDefault(st.wantsPct, 0);
+        const savingsPct = numberOrDefault(st.savingsPct, 0);
+        const emergencyPct = numberOrDefault(st.emergencyPct, 0);
+        const debtPct = numberOrDefault(st.debtPct, 0);
+
+        const needs = income * needsPct / 100;
+        const wants = income * wantsPct / 100;
+        const savings = income * savingsPct / 100;
+        const emergency = income * emergencyPct / 100;
+        const debt = income * debtPct / 100;
+
+        paramsRows = [
+            ['เงินเดือนสุทธิที่ได้รับ', `${formatMoney(income)} บาท/เดือน (${formatMoney(income * 12)} บาท/ปี)`],
+            ['สัดส่วนค่าใช้จ่ายจำเป็น (Needs)', `${needsPct}%`],
+            ['สัดส่วนความต้องการ/ไลฟ์สไตล์ (Wants)', `${wantsPct}%`],
+            ['สัดส่วนเงินออมและลงทุน (Savings)', `${savingsPct}%`],
+            ['สัดส่วนสำรองฉุกเฉินเป้าหมาย', `${emergencyPct}%`],
+            ['สัดส่วนชำระหนี้เพิ่มเติม', `${debtPct}%`]
+        ];
+
+        resultCards = [
+            { label: 'ค่าใช้จ่ายจำเป็น (Needs 50%)', value: `${formatMoney(needs)} บาท/เดือน` },
+            { label: 'ความต้องการ / ไลฟ์สไตล์ (Wants 30%)', value: `${formatMoney(wants)} บาท/เดือน` },
+            { label: 'เงินออมและลงทุน (Savings 20%)', value: `${formatMoney(savings)} บาท/เดือน`, highlight: true },
+            { label: 'เงินสำรองฉุกเฉินเป้าหมาย', value: `${formatMoney(emergency)} บาท/เดือน` }
+        ];
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    ตารางจำแนกการจัดสรรงบประมาณรายเดือนและรายปี (Budget Breakdown)
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 8px; text-align: left;">หมวดหมู่งบประมาณ</th>
+                            <th style="padding: 8px; text-align: center;">สัดส่วน</th>
+                            <th style="padding: 8px; text-align: right;">ยอดต่อเดือน (บาท)</th>
+                            <th style="padding: 8px; text-align: right;">ยอดต่อปี (บาท)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">1. ค่าใช้จ่ายจำเป็น (Needs) เช่น ค่าที่พัก อาหาร ค่าเดินทาง</td><td style="padding: 8px; text-align: center;">${needsPct}%</td><td style="padding: 8px; text-align: right; font-weight: 600;">${formatMoney(needs)}</td><td style="padding: 8px; text-align: right;">${formatMoney(needs * 12)}</td></tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">2. ความต้องการส่วนตัว (Wants) เช่น ท่องเที่ยว ช้อปปิ้ง บันเทิง</td><td style="padding: 8px; text-align: center;">${wantsPct}%</td><td style="padding: 8px; text-align: right; font-weight: 600;">${formatMoney(wants)}</td><td style="padding: 8px; text-align: right;">${formatMoney(wants * 12)}</td></tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">3. เงินออมและการลงทุน (Savings & Investments)</td><td style="padding: 8px; text-align: center;">${savingsPct}%</td><td style="padding: 8px; text-align: right; font-weight: 600; color: #15803d;">${formatMoney(savings)}</td><td style="padding: 8px; text-align: right; color: #15803d;">${formatMoney(savings * 12)}</td></tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; color: #2563eb;"><td style="padding: 8px;">• เป้าหมายเงินสำรองฉุกเฉิน (Emergency Fund)</td><td style="padding: 8px; text-align: center;">${emergencyPct}%</td><td style="padding: 8px; text-align: right;">${formatMoney(emergency)}</td><td style="padding: 8px; text-align: right;">${formatMoney(emergency * 12)}</td></tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; color: #7c3aed;"><td style="padding: 8px;">• แผนชำระหนี้เพิ่มเติม (Debt Acceleration)</td><td style="padding: 8px; text-align: center;">${debtPct}%</td><td style="padding: 8px; text-align: right;">${formatMoney(debt)}</td><td style="padding: 8px; text-align: right;">${formatMoney(debt * 12)}</td></tr>
+                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;"><td style="padding: 8px;">รวมทั้งสิ้น</td><td style="padding: 8px; text-align: center;">${needsPct + wantsPct + savingsPct}%</td><td style="padding: 8px; text-align: right;">${formatMoney(income)}</td><td style="padding: 8px; text-align: right;">${formatMoney(income * 12)}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+    } else {
+        // Generic Fallback for other calculators
+        const summary = (typeof getToolSummaryText === 'function') ? getToolSummaryText(curToolId) : '';
+        const lines = summary.split('\n').map(l => l.trim()).filter(Boolean);
+        const bullets = lines.filter(l => l.startsWith('•')).map(l => l.replace(/^•\s*/, ''));
+        const highlight = lines.find(l => !l.startsWith('•') && !l.startsWith('---') && !l.includes('Multitools')) || lines[0] || 'ผลลัพธ์การคำนวณ';
+
+        paramsRows = [
+            ['เครื่องมือคำนวณ', toolMeta.menuTitle || toolMeta.headerTitle],
+            ['หมวดหมู่', toolMeta.group || 'การคำนวณทั่วไป']
+        ];
+
+        resultCards = [
+            { label: 'ผลการคำนวณหลัก', value: highlight, highlight: true }
+        ];
+
+        if (bullets.length > 0) {
+            breakdownHTML = `
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        รายละเอียดผลลัพธ์ (Calculation Details)
+                    </h3>
+                    <ul style="font-size: 12px; line-height: 1.8; color: #334155; padding-left: 20px;">
+                        ${bullets.map(b => `<li>${b}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+    }
+
+    const paramsTableHTML = `
+        <div style="margin-bottom: 18px;">
+            <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                ข้อมูลและเงื่อนไขการคำนวณ (Parameters & Inputs)
+            </h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                <tbody>
+                    ${paramsRows.map(([label, val], idx) => `
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+                            <td style="padding: 6px 10px; color: #475569; width: 40%; font-weight: 500;">${label}</td>
+                            <td style="padding: 6px 10px; color: #0f172a; font-weight: 600; text-align: right;">${val}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    const resultsBoxesHTML = `
+        <div style="margin-bottom: 18px;">
+            <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                สรุปผลการคำนวณ (Calculation Results)
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                ${resultCards.map(c => `
+                    <div style="padding: 10px 12px; border-radius: 6px; border: 1px solid ${c.highlight ? '#10b981' : '#cbd5e1'}; background: ${c.highlight ? '#ecfdf5' : '#f8fafc'};">
+                        <div style="font-size: 11px; color: ${c.highlight ? '#065f46' : '#64748b'}; font-weight: 600;">${c.label}</div>
+                        <div style="font-size: 15px; font-weight: 800; color: ${c.highlight ? '#047857' : '#0f172a'}; margin-top: 4px;">${c.value}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+
+    return `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Sarabun', 'Noto Sans Thai', sans-serif; color: #1e293b; line-height: 1.5; padding: 12px 16px; max-width: 800px; margin: 0 auto; box-sizing: border-box;">
+            <!-- Top Branding & Doc Meta Header -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 16px;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="display: inline-block; width: 26px; height: 26px; background: #0f172a; color: #fff; font-weight: 800; border-radius: 5px; text-align: center; line-height: 26px; font-size: 14px;">M</span>
+                        <span style="font-size: 18px; font-weight: 800; letter-spacing: -0.5px; color: #0f172a;">MULTITOOLS AIO</span>
+                    </div>
+                    <div style="font-size: 11px; color: #64748b; margin-top: 2px;">เครื่องมือคำนวณและวางแผนทางการเงินครบวงจร (Financial & Utility Toolkit)</div>
+                </div>
+                <div style="text-align: right; font-size: 11px; color: #475569;">
+                    <div style="font-weight: 700; color: #0f172a; font-size: 12px;">เอกสารสรุปผลการคำนวณทางการ</div>
+                    <div>รหัสเอกสาร: <span style="font-family: monospace; font-weight: 600;">${refCode}</span></div>
+                    <div>วันที่ออกเอกสาร: ${dateStr}</div>
+                </div>
+            </div>
+
+            <!-- Title Banner -->
+            <div style="text-align: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 16px;">
+                <h1 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">${docTitle}</h1>
+                <div style="font-size: 11px; color: #64748b; margin-top: 3px;">${docSubtitle}</div>
+            </div>
+
+            <!-- Section 1: Parameters -->
+            ${paramsTableHTML}
+
+            <!-- Section 2: Results -->
+            ${resultsBoxesHTML}
+
+            <!-- Section 3: Breakdown (if any) -->
+            ${breakdownHTML}
+
+            <!-- Footer & Disclaimer & Signature -->
+            <div style="margin-top: 24px; padding-top: 14px; border-top: 1px dashed #cbd5e1; font-size: 10.5px; color: #64748b;" class="print-keep-together">
+                <div style="margin-bottom: 20px; line-height: 1.6;">
+                    <b>หมายเหตุ:</b> ข้อมูลและผลลัพธ์ในเอกสารนี้จัดทำขึ้นโดยโปรแกรม Multitools AIO เพื่อใช้เป็นข้อมูลเบื้องต้นในการวางแผนและตัดสินใจเท่านั้น มิใช่หนังสือรับรองทางการเงินหรือข้อเสนอสัญญาอย่างเป็นทางการจากสถาบันการเงินหรือหน่วยงานภาครัฐ
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; padding-top: 8px;">
+                    <div>
+                        <div>ผู้จัดทำเอกสาร: ...........................................................</div>
+                        <div style="margin-top: 4px; font-size: 10px; color: #94a3b8;">ระบบคำนวณอัตโนมัติ Multitools Web Application</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div>ลายมือชื่อผู้ตรวจสอบ / ผู้อนุมัติ: ...........................................................</div>
+                        <div style="margin-top: 4px; font-size: 10px; color: #94a3b8;">วันที่: ........ / ........ / ................</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+
+(function(root) {
+    const exportsObj = {
+        generateLoanSchedule,
+        aggregateLoanScheduleByYear,
+        rowsToCSV,
+        buildLoanAmortizationCSV,
+        generateSavingsSchedule,
+        buildSavingsScheduleCSV,
+        getCSVFilename,
+        downloadCSV,
+        triggerButtonFeedback,
+        formatThaiFormalDate,
+        generateFormalPrintHTML
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/core/export.js <<<
+
+// >>> src/core/history.js >>>
+// ==============================================================
+// Multitools Calculator - Calculation History & Saved Sets
+// ==============================================================
+
+const HISTORY_STORAGE_KEY = 'calc_aio_history';
+const MAX_HISTORY_UNPINNED = 20;
+
+function getCalculationHistory() {
+    try {
+        if (typeof localStorage === 'undefined') return [];
+        const storageKey = typeof HISTORY_STORAGE_KEY !== 'undefined' ? HISTORY_STORAGE_KEY : 'calc_aio_history';
+        const raw = localStorage.getItem(storageKey);
+        return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveCalculationHistory(list) {
+    try {
+        if (typeof localStorage === 'undefined') return;
+        const storageKey = typeof HISTORY_STORAGE_KEY !== 'undefined' ? HISTORY_STORAGE_KEY : 'calc_aio_history';
+        localStorage.setItem(storageKey, JSON.stringify(list));
+    } catch (e) {
+        console.error('Failed to save calculation history:', e);
+    }
+}
+
+function formatHistoryTime(date) {
+    const d = (date instanceof Date) ? date : new Date(date);
+    if (isNaN(d.getTime())) return '';
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+    const timeStr = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
+    if (isToday) return `วันนี้ ${timeStr} น.`;
+    const day = d.getDate();
+    const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    return `${day} ${months[d.getMonth()]} ${timeStr} น.`;
+}
+
+function extractShortSummary(summaryText) {
+    if (!summaryText) return '';
+    const lines = summaryText.split('\n').map(l => l.trim()).filter(Boolean);
+    const highlight = lines.find(l => /^(?:💰|⭐|🐷|🍽️|💱|💼|🏷️|⛽|💳|🏦)\s*(?:ยอด|ค่า|ราคา|ผล|ตัวเลือก|เงิน)/.test(l))
+        || lines.find(l => l.startsWith('💰') || l.startsWith('⭐'))
+        || lines.find(l => !l.startsWith('---') && !l.startsWith('📋') && !l.startsWith('•') && !l.startsWith('('));
+    if (highlight) {
+        return highlight.replace(/^[^\wก-๙]+/, '').trim();
+    }
+    const fallback = lines.find(l => !l.startsWith('---') && !l.includes('สรุป') && !l.includes('Multitools'));
+    return fallback ? fallback.replace(/^[•\-\*]\s*/, '').trim() : lines[0] || '';
+}
+
+function extractDetailText(summaryText) {
+    if (!summaryText) return '';
+    const bullets = summaryText.split('\n')
+        .map(l => l.trim())
+        .filter(l => l.startsWith('•') && !l.includes('กติกา'))
+        .map(l => l.replace(/^•\s*/, ''));
+    return bullets.slice(0, 2).join(' · ');
+}
+
+function recordCalculationHistory(stateObj, toolId, isSaved = false, customLabel = '', summaryOverride = '') {
+    if (!stateObj || !toolId || !stateObj[toolId]) return null;
+    const history = getCalculationHistory();
+    const toolMeta = (typeof TOOLS_CATALOG !== 'undefined' ? TOOLS_CATALOG.find(t => t.id === toolId) : null) || { menuTitle: toolId, headerTitle: toolId };
+    const toolTitle = toolMeta.menuTitle || toolMeta.headerTitle;
+    const summary = summaryOverride || (typeof getToolSummaryText === 'function' ? getToolSummaryText(toolId) : '');
+    const shortSum = extractShortSummary(summary);
+    const detail = extractDetailText(summary);
+
+    const entry = {
+        id: 'hist_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        toolId,
+        toolTitle,
+        timestamp: Date.now(),
+        timeDisplay: formatHistoryTime(new Date()),
+        shortSummary: shortSum,
+        fullSummary: summary,
+        detailText: detail,
+        state: JSON.parse(JSON.stringify(stateObj[toolId])),
+        isSaved: Boolean(isSaved),
+        label: String(customLabel || '').trim()
+    };
+
+    const unpinned = [];
+    const pinned = [];
+    const nextList = [entry, ...history];
+
+    const maxCap = typeof MAX_HISTORY_UNPINNED !== 'undefined' ? MAX_HISTORY_UNPINNED : 20;
+
+    for (const item of nextList) {
+        if (item.isSaved) {
+            pinned.push(item);
+        } else {
+            if (unpinned.length < maxCap) {
+                unpinned.push(item);
+            }
+        }
+    }
+    const finalList = [...pinned, ...unpinned];
+    saveCalculationHistory(finalList);
+    return entry;
+}
+
+function pinCalculationHistory(id, customLabel = '') {
+    const history = getCalculationHistory();
+    const target = history.find(h => h.id === id);
+    if (!target) return null;
+    target.isSaved = true;
+    if (customLabel) target.label = customLabel.trim();
+    saveCalculationHistory(history);
+    return target;
+}
+
+function unpinCalculationHistory(id) {
+    const history = getCalculationHistory();
+    const target = history.find(h => h.id === id);
+    if (!target) return null;
+    target.isSaved = false;
+    saveCalculationHistory(history);
+    return target;
+}
+
+function renameCalculationHistory(id, newLabel) {
+    const history = getCalculationHistory();
+    const target = history.find(h => h.id === id);
+    if (!target) return null;
+    target.label = String(newLabel || '').trim();
+    saveCalculationHistory(history);
+    return target;
+}
+
+function deleteCalculationHistory(id) {
+    const history = getCalculationHistory();
+    const next = history.filter(h => h.id !== id);
+    saveCalculationHistory(next);
+    return next;
+}
+
+function clearCalculationHistory(onlyUnsaved = true) {
+    const history = getCalculationHistory();
+    const next = onlyUnsaved ? history.filter(h => h.isSaved) : [];
+    saveCalculationHistory(next);
+    return next;
+}
+
+function restoreCalculationHistory(id, stateObj) {
+    const history = getCalculationHistory();
+    const target = history.find(h => h.id === id);
+    if (!target || !stateObj) return null;
+    stateObj[target.toolId] = JSON.parse(JSON.stringify(target.state));
+    stateObj.activeToolId = target.toolId;
+    stateObj.activeFieldIndex = 0;
+    return target;
+}
+
+let historyDebounceTimer = null;
+const lastRecordedSignatures = {};
+
+function scheduleRecordHistory(toolId) {
+    if (typeof window === 'undefined') return;
+    if (historyDebounceTimer) clearTimeout(historyDebounceTimer);
+    historyDebounceTimer = setTimeout(() => {
+        try {
+            if (!appState || appState.activeToolId !== toolId) return;
+            const curState = appState[toolId];
+            if (!curState) return;
+            const stateStr = JSON.stringify(curState);
+            if (lastRecordedSignatures[toolId] === stateStr) return;
+
+            const summary = (typeof getToolSummaryText === 'function') ? getToolSummaryText(toolId) : '';
+            const shortSum = extractShortSummary(summary);
+            if (!shortSum || shortSum.includes('กรุณา') || shortSum.includes('ป้อนข้อมูล')) return;
+
+            recordCalculationHistory(appState, toolId, false);
+            lastRecordedSignatures[toolId] = stateStr;
+            updateHistoryBadge();
+            if (activeDrawerTab === 'history') {
+                renderHistoryPanel();
+            }
+        } catch (e) {
+            console.warn('Auto record history error:', e);
+        }
+    }, 1200);
+}
+
+function showHistoryToast(message, isSuccess = true) {
+    if (typeof document === 'undefined') return;
+    let toast = document.getElementById('historyFloatingToast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'historyFloatingToast';
+        toast.className = 'fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-xs font-semibold shadow-lg transition-all duration-300 pointer-events-none opacity-0 translate-y-2';
+        document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.className = `fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-xs font-semibold shadow-lg transition-all duration-300 pointer-events-none ${isSuccess ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900' : 'bg-red-600 text-white'} opacity-100 translate-y-0`;
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'translate-y-2');
+    }, 2200);
+}
+
+let activeDrawerTab = 'tools';
+
+function switchDrawerTab(tab) {
+    if (typeof document === 'undefined') return;
+    activeDrawerTab = tab;
+    const tabTools = document.getElementById('sidebarTabTools');
+    const tabHistory = document.getElementById('sidebarTabHistory');
+    const searchContainer = document.getElementById('sidebarSearchContainer');
+    const contentArea = document.getElementById('sidebarContentArea');
+    const historyArea = document.getElementById('sidebarHistoryArea');
+
+    if (tab === 'history') {
+        if (tabHistory) tabHistory.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 bg-white text-[#222222] shadow-sm cursor-pointer';
+        if (tabTools) tabTools.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 text-[#6a6a6a] hover:text-[#222222] cursor-pointer';
+        searchContainer?.classList.add('hidden');
+        contentArea?.classList.add('hidden');
+        historyArea?.classList.remove('hidden');
+        renderHistoryPanel();
+    } else {
+        if (tabTools) tabTools.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 bg-white text-[#222222] shadow-sm cursor-pointer';
+        if (tabHistory) tabHistory.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 text-[#6a6a6a] hover:text-[#222222] cursor-pointer';
+        searchContainer?.classList.remove('hidden');
+        contentArea?.classList.remove('hidden');
+        historyArea?.classList.add('hidden');
+        renderSidebarMenu();
+    }
+    updateHistoryBadge();
+}
+
+function updateHistoryBadge() {
+    if (typeof document === 'undefined') return;
+    const list = getCalculationHistory();
+    const badge = document.getElementById('sidebarHistoryBadge');
+    if (badge) {
+        badge.textContent = list.length;
+        badge.style.display = list.length > 0 ? 'inline-block' : 'none';
+    }
+}
+
+function createHistoryCardHTML(item) {
+    return `
+        <div class="history-item-card bg-white dark:bg-[#262626] border border-[var(--app-hairline)] rounded-xl p-2.5 shadow-sm hover:border-[var(--app-accent)] transition cursor-pointer group" data-id="${item.id}">
+            <div class="flex items-start justify-between gap-1.5">
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--app-accent)]/10 text-[var(--app-accent)]">
+                            ${escapeHTML(item.toolTitle)}
+                        </span>
+                        ${item.label ? `<span class="text-xs font-bold text-[#222] dark:text-white truncate max-w-[160px]">${escapeHTML(item.label)}</span>` : ''}
+                    </div>
+                    <div class="text-xs font-semibold text-[#1a1a1a] dark:text-[#eee] mt-1 truncate">
+                        ${escapeHTML(item.shortSummary || 'ผลการคำนวณ')}
+                    </div>
+                    ${item.detailText ? `<div class="text-[11px] text-[#666] dark:text-[#999] mt-0.5 truncate">${escapeHTML(item.detailText)}</div>` : ''}
+                </div>
+                <div class="flex items-center gap-0.5 shrink-0 ml-1">
+                    <button type="button" class="btn-pin-history p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm" title="${item.isSaved ? 'เลิกบันทึก' : 'บันทึกเป็นชุดเปรียบเทียบ'}" data-id="${item.id}">
+                        ${item.isSaved ? '⭐' : '☆'}
+                    </button>
+                    ${item.isSaved ? `<button type="button" class="btn-rename-history p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs" title="เปลี่ยนชื่อ" data-id="${item.id}">✏️</button>` : ''}
+                    <button type="button" class="btn-del-history p-1.5 rounded-full hover:bg-red-50 text-neutral-400 hover:text-red-500 text-xs" title="ลบรายการนี้" data-id="${item.id}">✕</button>
+                </div>
+            </div>
+            <div class="flex items-center justify-between mt-2 pt-1.5 border-t border-[var(--color-hairline-soft)] text-[10px] text-[#888]">
+                <span>${escapeHTML(item.timeDisplay)}</span>
+                <span class="text-[var(--app-accent)] font-semibold group-hover:underline">แตะเพื่อโหลด ↗</span>
+            </div>
+        </div>
+    `;
+}
+
+function renderHistoryPanel() {
+    if (typeof document === 'undefined') return;
+    const list = getCalculationHistory();
+    const savedList = list.filter(item => item.isSaved);
+    const recentList = list.filter(item => !item.isSaved);
+
+    const savedContainer = document.getElementById('historySavedList');
+    const recentContainer = document.getElementById('historyRecentList');
+    const savedSection = document.getElementById('historySavedSection');
+    const recentSection = document.getElementById('historyRecentSection');
+    const emptyState = document.getElementById('historyEmptyState');
+    const savedCountEl = document.getElementById('historySavedCount');
+    const recentCountEl = document.getElementById('historyRecentCount');
+
+    if (savedCountEl) savedCountEl.textContent = `${savedList.length} ชุด`;
+    if (recentCountEl) recentCountEl.textContent = `${recentList.length} รายการ`;
+
+    if (!list.length) {
+        if (savedSection) savedSection.classList.add('hidden');
+        if (recentSection) recentSection.classList.add('hidden');
+        if (emptyState) emptyState.classList.remove('hidden');
+        return;
+    }
+
+    if (emptyState) emptyState.classList.add('hidden');
+    if (savedSection) savedSection.classList.toggle('hidden', savedList.length === 0);
+    if (recentSection) recentSection.classList.toggle('hidden', recentList.length === 0);
+
+
+
+    if (savedContainer) {
+        savedContainer.innerHTML = savedList.map(createHistoryCardHTML).join('');
+    }
+    if (recentContainer) {
+        recentContainer.innerHTML = recentList.map(createHistoryCardHTML).join('');
+    }
+
+    document.querySelectorAll('.history-item-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('button')) return;
+            const id = card.dataset.id;
+            const restored = restoreCalculationHistory(id, appState);
+            if (restored) {
+                closeSidebar();
+                selectTool(restored.toolId);
+                showHistoryToast(`✓ โหลด "${restored.label || restored.toolTitle}" สำเร็จ`);
+            }
+        });
+    });
+
+    document.querySelectorAll('.btn-pin-history').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            const history = getCalculationHistory();
+            const item = history.find(h => h.id === id);
+            if (!item) return;
+            if (item.isSaved) {
+                unpinCalculationHistory(id);
+                showHistoryToast('ยกเลิกการบันทึกชุดคำนวณแล้ว');
+            } else {
+                const label = prompt('ตั้งชื่อชุดคำนวณนี้ (เช่น บ้านโครงการ A):', item.label || item.toolTitle);
+                if (label !== null) {
+                    pinCalculationHistory(id, label);
+                    showHistoryToast(`✓ บันทึก "${label || item.toolTitle}" เรียบร้อย`);
+                }
+            }
+            renderHistoryPanel();
+            updateHistoryBadge();
+        });
+    });
+
+    document.querySelectorAll('.btn-rename-history').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            const history = getCalculationHistory();
+            const item = history.find(h => h.id === id);
+            if (!item) return;
+            const newLabel = prompt('เปลี่ยนชื่อชุดคำนวณ:', item.label || item.toolTitle);
+            if (newLabel !== null && newLabel.trim()) {
+                renameCalculationHistory(id, newLabel.trim());
+                renderHistoryPanel();
+            }
+        });
+    });
+
+    document.querySelectorAll('.btn-del-history').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            deleteCalculationHistory(id);
+            renderHistoryPanel();
+            updateHistoryBadge();
+        });
+    });
+}
+
+function promptSaveCurrentSet() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    const toolId = appState.activeToolId;
+    const toolMeta = (typeof TOOLS_CATALOG !== 'undefined' ? TOOLS_CATALOG.find(t => t.id === toolId) : null) || { menuTitle: toolId };
+    const timeStr = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const defaultName = `${toolMeta.menuTitle || toolId} (${timeStr})`;
+    const label = prompt('ตั้งชื่อชุดคำนวณนี้สำหรับเปรียบเทียบ (เช่น บ้านโครงการ A):', defaultName);
+    if (label === null) return;
+    const finalLabel = label.trim() || defaultName;
+    const entry = recordCalculationHistory(appState, toolId, true, finalLabel);
+    if (entry) {
+        showHistoryToast(`⭐ บันทึกชุดคำนวณ "${finalLabel}" แล้ว`);
+        updateHistoryBadge();
+        if (activeDrawerTab === 'history') {
+            renderHistoryPanel();
+        }
+    }
+}
+
+(function(root) {
+    const exportsObj = {
+        HISTORY_STORAGE_KEY,
+        MAX_HISTORY_UNPINNED,
+        getCalculationHistory,
+        saveCalculationHistory,
+        formatHistoryTime,
+        extractShortSummary,
+        extractDetailText,
+        recordCalculationHistory,
+        pinCalculationHistory,
+        unpinCalculationHistory,
+        renameCalculationHistory,
+        deleteCalculationHistory,
+        clearCalculationHistory,
+        restoreCalculationHistory,
+        scheduleRecordHistory,
+        showHistoryToast,
+        switchDrawerTab,
+        updateHistoryBadge,
+        renderHistoryPanel,
+        createHistoryCardHTML,
+        promptSaveCurrentSet
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/core/history.js <<<
+
+// >>> src/core/compare.js >>>
+// ==============================================================
+// Multitools Calculator - Quick Compare Engine (Phase 3.4)
+// ==============================================================
+
+let isCompareSlotCActive = false;
+let currentCompareData = null;
+
+function getComparisonPresets(toolId) {
+    const presets = {
+        loan: [
+            {
+                label: 'ทางเลือก 1: ดอกเบี้ย 5.0% (30 ปี)',
+                state: { principal: '2,000,000', interestRate: '5.0', months: '360', extra: '0', rateType: 'fixed', calcMethod: 'reducing' }
+            },
+            {
+                label: 'ทางเลือก 2: ดอกเบี้ย 3.8% (รีไฟแนนซ์)',
+                state: { principal: '2,000,000', interestRate: '3.8', months: '360', extra: '0', rateType: 'fixed', calcMethod: 'reducing' }
+            },
+            {
+                label: 'ทางเลือก 3: ดอกเบี้ย 5.0% + โปะ 2,000 บ./ด.',
+                state: { principal: '2,000,000', interestRate: '5.0', months: '360', extra: '2,000', rateType: 'fixed', calcMethod: 'reducing' }
+            }
+        ],
+        savings: [
+            {
+                label: 'ทางเลือก 1: ออม 3,000 บ./ด. ผลตอบแทน 2.5% (10 ปี)',
+                state: { initial: '20,000', monthly: '3,000', interestRate: '2.5', years: '10', annualIncrease: '0', inflationRate: '2.0', mode: 'growth' }
+            },
+            {
+                label: 'ทางเลือก 2: ออม 5,000 บ./ด. ผลตอบแทน 5.0% (10 ปี)',
+                state: { initial: '20,000', monthly: '5,000', interestRate: '5.0', years: '10', annualIncrease: '0', inflationRate: '2.0', mode: 'growth' }
+            },
+            {
+                label: 'ทางเลือก 3: ออม 7,000 บ./ด. ผลตอบแทน 7.0% (10 ปี)',
+                state: { initial: '20,000', monthly: '7,000', interestRate: '7.0', years: '10', annualIncrease: '0', inflationRate: '2.0', mode: 'growth' }
+            }
+        ],
+        vat_wht: [
+            {
+                label: 'ทางเลือก 1: ยอด 50,000 ไม่หัก ณ ที่จ่าย',
+                state: { amount: '50,000', mode: 'before', vatRate: '7', whtRate: '0' }
+            },
+            {
+                label: 'ทางเลือก 2: ยอด 50,000 หักบริการ 3%',
+                state: { amount: '50,000', mode: 'before', vatRate: '7', whtRate: '3' }
+            },
+            {
+                label: 'ทางเลือก 3: ยอด 50,000 หักค่าจ้าง 1%',
+                state: { amount: '50,000', mode: 'before', vatRate: '7', whtRate: '1' }
+            }
+        ],
+        salary: [
+            {
+                label: 'ทางเลือก 1: แผนมาตรฐาน 50/30/20',
+                state: { income: '35,000', needsPct: '50', wantsPct: '30', savingsPct: '20', emergencyPct: '10', debtPct: '10' }
+            },
+            {
+                label: 'ทางเลือก 2: แผนเน้นเงินออม 40/20/40',
+                state: { income: '35,000', needsPct: '40', wantsPct: '20', savingsPct: '40', emergencyPct: '15', debtPct: '5' }
+            },
+            {
+                label: 'ทางเลือก 3: แผนเร่งปลดหนี้ 50/20/10 (หนี้ 20%)',
+                state: { income: '35,000', needsPct: '50', wantsPct: '20', savingsPct: '10', emergencyPct: '5', debtPct: '20' }
+            }
+        ]
+    };
+    return presets[toolId] || [];
+}
+
+function compareCalculations(toolId, itemsList) {
+    const items = (Array.isArray(itemsList) ? itemsList : []).filter(Boolean);
+    if (items.length < 2) return null;
+
+    const toolMeta = (typeof TOOLS_CATALOG !== 'undefined' ? TOOLS_CATALOG.find(t => t.id === toolId) : null) || { menuTitle: toolId, headerTitle: toolId };
+    const toolTitle = toolMeta.menuTitle || toolMeta.headerTitle;
+
+    const rows = [];
+    let deltaSummary = '';
+    let winnerIndex = -1;
+
+    if (toolId === 'loan') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const P = numberOrDefault(st.principal, 0);
+            const rate = numberOrDefault(st.interestRate, 0);
+            const months = integerOrDefault(st.months, 0);
+            const extra = numberOrDefault(st.extra, 0);
+            const schedule = generateLoanSchedule(st);
+            const monthlyPay = schedule[0]?.payment || 0;
+            const totalPaid = schedule.reduce((sum, r) => sum + r.payment, 0);
+            const totalInterest = schedule.reduce((sum, r) => sum + r.interest, 0);
+            const actualMonths = schedule.length;
+            return { P, rate, months, extra, monthlyPay, totalPaid, totalInterest, actualMonths };
+        });
+
+        rows.push({
+            label: 'วงเงินกู้ (Principal)',
+            values: results.map(r => `${formatMoney(r.P)} ฿`)
+        });
+        rows.push({
+            label: 'อัตราดอกเบี้ยต่อปี',
+            values: results.map(r => `${r.rate}%`)
+        });
+        rows.push({
+            label: 'ระยะเวลาสัญญา',
+            values: results.map(r => `${r.months} เดือน (${(r.months / 12).toFixed(1)} ปี)`)
+        });
+        rows.push({
+            label: 'ยอดโปะเพิ่มรายเดือน',
+            values: results.map(r => r.extra > 0 ? `+${formatMoney(r.extra)} ฿` : 'ไม่มี')
+        });
+        rows.push({
+            label: 'ค่างวดผ่อนต่อเดือน',
+            values: results.map(r => `${formatMoney(r.monthlyPay)} ฿/ด.`),
+            bestIndex: results.indexOf(results.reduce((min, cur) => cur.monthlyPay < min.monthlyPay ? cur : min, results[0]))
+        });
+        const minInterestResult = results.reduce((min, cur) => cur.totalInterest < min.totalInterest ? cur : min, results[0]);
+        const bestInterestIdx = results.indexOf(minInterestResult);
+        rows.push({
+            label: 'ดอกเบี้ยรวมตลอดสัญญา',
+            values: results.map(r => `${formatMoney(r.totalInterest)} ฿`),
+            bestIndex: bestInterestIdx,
+            highlight: true
+        });
+        rows.push({
+            label: 'ยอดผ่อนชำระรวมทั้งหมด',
+            values: results.map(r => `${formatMoney(r.totalPaid)} ฿`),
+            bestIndex: bestInterestIdx
+        });
+        rows.push({
+            label: 'ระยะเวลาผ่อนหมดจริง',
+            values: results.map(r => `${r.actualMonths} งวด (${(r.actualMonths / 12).toFixed(1)} ปี)`),
+            bestIndex: results.indexOf(results.reduce((min, cur) => cur.actualMonths < min.actualMonths ? cur : min, results[0]))
+        });
+
+        winnerIndex = bestInterestIdx;
+        const winnerItem = items[winnerIndex];
+        const worstInterest = Math.max(...results.map(r => r.totalInterest));
+        const savedInterest = worstInterest - minInterestResult.totalInterest;
+
+        deltaSummary = `🏆 ทางเลือกที่คุ้มค่าที่สุดคือ "${winnerItem.label}" ประหยัดดอกเบี้ยได้สูงสุด ${formatMoney(savedInterest)} บาท เมื่อเทียบกับทางเลือกที่ดอกเบี้ยสูงสุด`;
+
+    } else if (toolId === 'savings') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const init = numberOrDefault(st.initial, 0);
+            const monthly = numberOrDefault(st.monthly, 0);
+            const rate = numberOrDefault(st.interestRate, 0);
+            const years = numberOrDefault(st.years, 0);
+            const scheduleData = generateSavingsSchedule(st);
+            const totalBal = scheduleData.totalBalance || 0;
+            const totalPrin = scheduleData.totalPrincipal || 0;
+            const interestEarned = scheduleData.interestEarned || 0;
+            const inflationRate = numberOrDefault(st.inflationRate, 0);
+            const realValue = totalBal / Math.pow(1 + inflationRate / 100, years || 1);
+            return { init, monthly, rate, years, totalBal, totalPrin, interestEarned, realValue };
+        });
+
+        rows.push({
+            label: 'เงินต้นเริ่มต้น',
+            values: results.map(r => `${formatMoney(r.init)} ฿`)
+        });
+        rows.push({
+            label: 'เงินออมต่อเดือน',
+            values: results.map(r => `${formatMoney(r.monthly)} ฿/ด.`)
+        });
+        rows.push({
+            label: 'ผลตอบแทนคาดหวัง',
+            values: results.map(r => `${r.rate}%`)
+        });
+        rows.push({
+            label: 'ระยะเวลาการออม',
+            values: results.map(r => `${r.years} ปี`)
+        });
+        rows.push({
+            label: 'เงินต้นสะสมที่ฝาก',
+            values: results.map(r => `${formatMoney(r.totalPrin)} ฿`)
+        });
+        const maxEarnedResult = results.reduce((max, cur) => cur.interestEarned > max.interestEarned ? cur : max, results[0]);
+        const bestEarnedIdx = results.indexOf(maxEarnedResult);
+        rows.push({
+            label: 'ดอกเบี้ย / กำไรสะสม',
+            values: results.map(r => `+${formatMoney(r.interestEarned)} ฿`),
+            bestIndex: bestEarnedIdx,
+            highlight: true
+        });
+        const maxBalResult = results.reduce((max, cur) => cur.totalBal > max.totalBal ? cur : max, results[0]);
+        const bestBalIdx = results.indexOf(maxBalResult);
+        rows.push({
+            label: 'มูลค่าเงินออมรวมสุทธิ',
+            values: results.map(r => `${formatMoney(r.totalBal)} ฿`),
+            bestIndex: bestBalIdx,
+            highlight: true
+        });
+        rows.push({
+            label: 'มูลค่าจริงหลังหักเงินเฟ้อ',
+            values: results.map(r => `${formatMoney(r.realValue)} ฿`),
+            bestIndex: results.indexOf(results.reduce((max, cur) => cur.realValue > max.realValue ? cur : max, results[0]))
+        });
+
+        winnerIndex = bestBalIdx;
+        const winnerItem = items[winnerIndex];
+        const minBal = Math.min(...results.map(r => r.totalBal));
+        const diffBal = maxBalResult.totalBal - minBal;
+
+        deltaSummary = `🏆 ทางเลือกที่สร้างความมั่งคั่งได้สูงสุดคือ "${winnerItem.label}" ได้รับเงินออมรวมมากกว่าถึง ${formatMoney(diffBal)} บาท`;
+
+    } else if (toolId === 'vat_wht') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const amount = parseNumericInput(String(st.amount ?? '').replace(/,/g, ''));
+            const vat = numberOrDefault(st.vatRate, 0);
+            const wht = numberOrDefault(st.whtRate, 0);
+            const base = Number.isFinite(amount) ? (st.mode === 'after' ? amount / (1 + vat / 100) : amount) : 0;
+            const vatAmount = base * vat / 100;
+            const gross = base + vatAmount;
+            const whtAmount = base * wht / 100;
+            const net = gross - whtAmount;
+            return { amount, vat, wht, base, vatAmount, gross, whtAmount, net };
+        });
+
+        rows.push({
+            label: 'ยอดเงินก่อน VAT',
+            values: results.map(r => `${formatMoney(r.base)} ฿`)
+        });
+        rows.push({
+            label: 'อัตรา VAT',
+            values: results.map(r => `${r.vat}% (+${formatMoney(r.vatAmount)} ฿)`)
+        });
+        rows.push({
+            label: 'หัก ณ ที่จ่าย',
+            values: results.map(r => `${r.wht}% (-${formatMoney(r.whtAmount)} ฿)`)
+        });
+        rows.push({
+            label: 'ยอดโอนสุทธิ (Net Payable)',
+            values: results.map(r => `${formatMoney(r.net)} ฿`),
+            highlight: true
+        });
+
+        winnerIndex = 0;
+        deltaSummary = `สรุปเปรียบเทียบยอดโอนสุทธิระหว่าง ${items.map(i => i.label).join(' vs ')}`;
+
+    } else if (toolId === 'salary') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const income = numberOrDefault(st.income, 0);
+            const needsPct = numberOrDefault(st.needsPct, 0);
+            const wantsPct = numberOrDefault(st.wantsPct, 0);
+            const savingsPct = numberOrDefault(st.savingsPct, 0);
+            const needs = income * needsPct / 100;
+            const wants = income * wantsPct / 100;
+            const savings = income * savingsPct / 100;
+            return { income, needsPct, wantsPct, savingsPct, needs, wants, savings };
+        });
+
+        rows.push({
+            label: 'เงินเดือนสุทธิ',
+            values: results.map(r => `${formatMoney(r.income)} ฿/ด.`)
+        });
+        rows.push({
+            label: 'ค่าใช้จ่ายจำเป็น (Needs)',
+            values: results.map(r => `${r.needsPct}% (${formatMoney(r.needs)} ฿)`)
+        });
+        rows.push({
+            label: 'ความต้องการ (Wants)',
+            values: results.map(r => `${r.wantsPct}% (${formatMoney(r.wants)} ฿)`)
+        });
+        const bestSavingsResult = results.reduce((max, cur) => cur.savings > max.savings ? cur : max, results[0]);
+        const bestSavingsIdx = results.indexOf(bestSavingsResult);
+        rows.push({
+            label: 'เงินออม & ลงทุน (Savings)',
+            values: results.map(r => `${r.savingsPct}% (${formatMoney(r.savings)} ฿)`),
+            bestIndex: bestSavingsIdx,
+            highlight: true
+        });
+
+        winnerIndex = bestSavingsIdx;
+        deltaSummary = `🏆 แผนที่มีสัดส่วนเงินออมและลงทุนสูงสุดคือ "${items[winnerIndex].label}" ออมได้ ${formatMoney(bestSavingsResult.savings)} บาท/เดือน (${formatMoney(bestSavingsResult.savings * 12)} บาท/ปี)`;
+
+    } else {
+        rows.push({
+            label: 'สรุปผลการคำนวณ',
+            values: items.map(item => item.shortSummary || item.label || '-')
+        });
+        deltaSummary = `เปรียบเทียบข้อมูล ${items.length} ทางเลือก`;
+    }
+
+    return {
+        toolId,
+        toolTitle,
+        items,
+        rows,
+        deltaSummary,
+        winnerIndex
+    };
+}
+
+function generateComparePrintHTML(compData) {
+    if (!compData || !compData.items) return '';
+    const now = new Date();
+    const dateStr = formatThaiFormalDate(now);
+    const refCode = 'CMP-' + now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0') + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+
+    const headersHTML = compData.items.map((item, idx) => `
+        <th style="padding: 10px; text-align: right; background: ${idx === compData.winnerIndex ? '#ecfdf5' : '#f8fafc'}; color: ${idx === compData.winnerIndex ? '#065f46' : '#0f172a'}; border-left: 1px solid #cbd5e1;">
+            <div style="font-size: 13px; font-weight: 700;">${escapeHTML(item.label || ('ทางเลือก ' + (idx + 1)))}</div>
+            ${idx === compData.winnerIndex ? '<span style="display:inline-block; font-size:10px; font-weight:700; color:#047857; background:#d1fae5; border-radius:4px; padding:1px 6px; margin-top:3px;">🏆 คุ้มค่าที่สุด</span>' : ''}
+        </th>
+    `).join('');
+
+    const rowsHTML = compData.rows.map((row, rIdx) => `
+        <tr style="border-bottom: 1px solid #e2e8f0; background: ${row.highlight ? (rIdx % 2 === 0 ? '#f0fdf4' : '#ecfdf5') : (rIdx % 2 === 0 ? '#ffffff' : '#f8fafc')};">
+            <td style="padding: 8px 10px; font-weight: ${row.highlight ? '700' : '500'}; color: ${row.highlight ? '#065f46' : '#334155'}; width: 34%;">
+                ${escapeHTML(row.label)}
+            </td>
+            ${row.values.map((val, vIdx) => `
+                <td style="padding: 8px 10px; text-align: right; font-weight: ${vIdx === row.bestIndex ? '800' : '600'}; color: ${vIdx === row.bestIndex ? '#047857' : '#0f172a'}; border-left: 1px solid #e2e8f0;">
+                    ${escapeHTML(val)} ${vIdx === row.bestIndex ? '✓' : ''}
+                </td>
+            `).join('')}
+        </tr>
+    `).join('');
+
+    return `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Sarabun', 'Noto Sans Thai', sans-serif; color: #1e293b; line-height: 1.5; padding: 12px 16px; max-width: 800px; margin: 0 auto; box-sizing: border-box;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 16px;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="display: inline-block; width: 26px; height: 26px; background: #0f172a; color: #fff; font-weight: 800; border-radius: 5px; text-align: center; line-height: 26px; font-size: 14px;">M</span>
+                        <span style="font-size: 18px; font-weight: 800; letter-spacing: -0.5px; color: #0f172a;">MULTITOOLS AIO</span>
+                    </div>
+                    <div style="font-size: 11px; color: #64748b; margin-top: 2px;">ตารางวิเคราะห์และเปรียบเทียบชุดคำนวณ (Side-by-Side Comparison Matrix)</div>
+                </div>
+                <div style="text-align: right; font-size: 11px; color: #475569;">
+                    <div style="font-weight: 700; color: #0f172a; font-size: 12px;">เอกสารเปรียบเทียบทางการ</div>
+                    <div>รหัสเอกสาร: <span style="font-family: monospace; font-weight: 600;">${refCode}</span></div>
+                    <div>วันที่ออกเอกสาร: ${dateStr}</div>
+                </div>
+            </div>
+
+            <div style="text-align: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 16px;">
+                <h1 style="margin: 0; font-size: 16px; font-weight: 700; color: #0f172a;">รายงานเปรียบเทียบ: ${escapeHTML(compData.toolTitle)}</h1>
+                <div style="font-size: 11px; color: #64748b; margin-top: 3px;">วิเคราะห์ทางเลือกคู่ขนาน ${compData.items.length} รูปแบบ</div>
+            </div>
+
+            ${compData.deltaSummary ? `
+                <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 12px; color: #065f46; font-weight: 600; line-height: 1.6;">
+                    ${escapeHTML(compData.deltaSummary)}
+                </div>
+            ` : ''}
+
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;">
+                <thead>
+                    <tr style="border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                        <th style="padding: 10px; text-align: left; background: #f1f5f9; color: #334155;">คุณสมบัติ / ค่าตัวเลข</th>
+                        ${headersHTML}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHTML}
+                </tbody>
+            </table>
+
+            <div style="margin-top: 24px; padding-top: 14px; border-top: 1px dashed #cbd5e1; font-size: 10.5px; color: #64748b;" class="print-keep-together">
+                <div style="margin-bottom: 20px; line-height: 1.6;">
+                    <b>หมายเหตุ:</b> ตารางเปรียบเทียบนี้จัดทำขึ้นโดยอัตโนมัติจากโปรแกรม Multitools AIO เพื่อใช้เป็นข้อมูลเบื้องต้นในการเปรียบเทียบทางเลือกทางการเงิน การกู้ยืม การออม หรือการจำแนกภาษี เงื่อนไขจริงอาจเปลี่ยนแปลงตามหลักเกณฑ์ของหน่วยงานที่เกี่ยวข้อง
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; padding-top: 8px;">
+                    <div>
+                        <div>ผู้จัดทำเอกสาร: ...........................................................</div>
+                        <div style="margin-top: 4px; font-size: 10px; color: #94a3b8;">ระบบคำนวณอัตโนมัติ Multitools Web Application</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div>ลายมือชื่อผู้ตรวจสอบ / ผู้อนุมัติ: ...........................................................</div>
+                        <div style="margin-top: 4px; font-size: 10px; color: #94a3b8;">วันที่: ........ / ........ / ................</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function populateCompareSlots() {
+    if (typeof document === 'undefined') return;
+    const toolId = document.getElementById('compareToolSelect')?.value || 'loan';
+    const slotA = document.getElementById('compareSlotA');
+    const slotB = document.getElementById('compareSlotB');
+    const slotC = document.getElementById('compareSlotC');
+    if (!slotA || !slotB || !slotC) return;
+
+    const options = [];
+    if (appState && appState[toolId]) {
+        options.push({
+            value: 'current',
+            label: '📌 ค่าปัจจุบันบนหน้าจอ',
+            state: JSON.parse(JSON.stringify(appState[toolId]))
+        });
+    }
+
+    const history = getCalculationHistory().filter(h => h.toolId === toolId);
+    history.forEach(item => {
+        const prefix = item.isSaved ? '⭐ ' : '🕒 ';
+        const label = prefix + (item.label || item.shortSummary || item.timeDisplay);
+        options.push({
+            value: item.id,
+            label: label,
+            state: item.state
+        });
+    });
+
+    const presets = getComparisonPresets(toolId);
+    presets.forEach((p, idx) => {
+        options.push({
+            value: 'preset_' + idx,
+            label: '💡 ' + p.label,
+            state: p.state
+        });
+    });
+
+    const buildOptionsHTML = () => options.map(opt => `<option value="${opt.value}">${escapeHTML(opt.label)}</option>`).join('');
+
+    slotA.innerHTML = buildOptionsHTML();
+    slotB.innerHTML = buildOptionsHTML();
+    slotC.innerHTML = buildOptionsHTML();
+
+    if (options.length >= 2) {
+        slotA.selectedIndex = 0;
+        slotB.selectedIndex = 1;
+        if (options.length >= 3) {
+            slotC.selectedIndex = 2;
+        }
+    }
+}
+
+function getSelectedSlotItem(slotId) {
+    const toolId = document.getElementById('compareToolSelect')?.value || 'loan';
+    const select = document.getElementById(slotId);
+    if (!select) return null;
+    const val = select.value;
+    const selectedText = select.options[select.selectedIndex]?.text || '';
+
+    if (val === 'current') {
+        return {
+            label: '📌 ค่าปัจจุบันบนหน้าจอ',
+            state: JSON.parse(JSON.stringify(appState[toolId] || {}))
+        };
+    }
+    if (val && val.startsWith('preset_')) {
+        const idx = parseInt(val.replace('preset_', ''), 10);
+        const presets = getComparisonPresets(toolId);
+        const p = presets[idx];
+        return p ? { label: p.label, state: JSON.parse(JSON.stringify(p.state)) } : null;
+    }
+    const history = getCalculationHistory();
+    const item = history.find(h => h.id === val);
+    if (item) {
+        return {
+            label: item.label || item.shortSummary || item.toolTitle,
+            state: JSON.parse(JSON.stringify(item.state))
+        };
+    }
+    return {
+        label: selectedText,
+        state: JSON.parse(JSON.stringify(appState[toolId] || {}))
+    };
+}
+
+function updateSlotCUI() {
+    if (typeof document === 'undefined') return;
+    const slotC = document.getElementById('compareSlotC');
+    const toggleBtn = document.getElementById('btnToggleSlotC');
+    if (!slotC || !toggleBtn) return;
+    if (isCompareSlotCActive) {
+        slotC.removeAttribute('disabled');
+        slotC.classList.remove('opacity-50');
+        toggleBtn.textContent = '✕ ปิด';
+        toggleBtn.className = 'text-[10px] text-red-500 font-semibold cursor-pointer';
+    } else {
+        slotC.setAttribute('disabled', 'true');
+        slotC.classList.add('opacity-50');
+        toggleBtn.textContent = '+ เปิด';
+        toggleBtn.className = 'text-[10px] text-emerald-600 font-semibold cursor-pointer';
+    }
+}
+
+function renderCompareMatrix() {
+    if (typeof document === 'undefined') return;
+    const toolId = document.getElementById('compareToolSelect')?.value || 'loan';
+    const itemA = getSelectedSlotItem('compareSlotA');
+    const itemB = getSelectedSlotItem('compareSlotB');
+    const items = [itemA, itemB];
+
+    if (isCompareSlotCActive) {
+        const itemC = getSelectedSlotItem('compareSlotC');
+        if (itemC) items.push(itemC);
+    }
+
+    const compData = compareCalculations(toolId, items);
+    currentCompareData = compData;
+    const deltaText = document.getElementById('compareDeltaText');
+    const matrixTable = document.getElementById('compareMatrixTable');
+
+    if (!compData) {
+        if (deltaText) deltaText.textContent = 'กรุณาเลือกตัวเลือกที่ต้องการเปรียบเทียบอย่างน้อย 2 ทางเลือก';
+        if (matrixTable) matrixTable.innerHTML = '';
+        return;
+    }
+
+    if (deltaText) deltaText.textContent = compData.deltaSummary;
+
+    let tableHTML = `
+        <thead>
+            <tr class="bg-neutral-100 dark:bg-white/10 border-b border-[var(--app-hairline)]">
+                <th class="p-2.5 font-bold text-neutral-600 dark:text-neutral-300 w-1/3">คุณสมบัติ / ค่าตัวเลข</th>
+                ${compData.items.map((item, idx) => `
+                    <th class="p-2.5 text-right font-bold border-l border-[var(--app-hairline)] ${idx === compData.winnerIndex ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-200' : 'text-[var(--color-ink)]'}">
+                        <div class="truncate max-w-[170px] inline-block font-bold">${escapeHTML(item.label)}</div>
+                        ${idx === compData.winnerIndex ? '<span class="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">🏆 คุ้มค่าที่สุด</span>' : ''}
+                        <div class="mt-1">
+                            <button type="button" class="btn-load-compare-set px-2 py-0.5 text-[10px] font-semibold rounded bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition shadow-sm cursor-pointer" data-idx="${idx}">
+                                📥 ใช้ชุดนี้
+                            </button>
+                        </div>
+                    </th>
+                `).join('')}
+            </tr>
+        </thead>
+        <tbody>
+            ${compData.rows.map((row, rIdx) => `
+                <tr class="border-b border-[var(--app-hairline)] ${row.highlight ? 'bg-emerald-50/50 dark:bg-emerald-950/20 font-bold' : (rIdx % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-neutral-50/70 dark:bg-white/5')}">
+                    <td class="p-2.5 text-neutral-600 dark:text-neutral-400 font-medium">
+                        ${escapeHTML(row.label)}
+                    </td>
+                    ${row.values.map((val, vIdx) => `
+                        <td class="p-2.5 text-right border-l border-[var(--app-hairline)] ${vIdx === row.bestIndex ? 'text-emerald-700 dark:text-emerald-300 font-bold' : 'text-[var(--color-ink)] font-semibold'}">
+                            ${escapeHTML(val)} ${vIdx === row.bestIndex ? '✓' : ''}
+                        </td>
+                    `).join('')}
+                </tr>
+            `).join('')}
+        </tbody>
+    `;
+
+    if (matrixTable) {
+        matrixTable.innerHTML = tableHTML;
+        matrixTable.querySelectorAll('.btn-load-compare-set').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = parseInt(btn.dataset.idx, 10);
+                const selected = compData.items[idx];
+                if (selected && selected.state) {
+                    appState[compData.toolId] = JSON.parse(JSON.stringify(selected.state));
+                    appState.activeToolId = compData.toolId;
+                    persistAppState();
+                    closeCompareModal();
+                    closeSidebar();
+                    selectTool(compData.toolId);
+                    showHistoryToast(`✓ โหลด "${selected.label}" นำมาคำนวณเรียบร้อย`);
+                }
+            });
+        });
+    }
+}
+
+function openCompareModal(preselectedToolId) {
+    if (typeof document === 'undefined') return;
+    const modal = document.getElementById('compareModal');
+    if (!modal) return;
+
+    const toolSelect = document.getElementById('compareToolSelect');
+    const targetToolId = preselectedToolId || appState.activeToolId || 'loan';
+
+    if (toolSelect) {
+        const optExists = Array.from(toolSelect.options).some(o => o.value === targetToolId);
+        toolSelect.value = optExists ? targetToolId : 'loan';
+    }
+
+    modal.classList.remove('hidden');
+    populateCompareSlots();
+    renderCompareMatrix();
+}
+
+function closeCompareModal() {
+    if (typeof document === 'undefined') return;
+    document.getElementById('compareModal')?.classList.add('hidden');
+}
+
+
+(function(root) {
+    const exportsObj = {
+        getComparisonPresets,
+        compareCalculations,
+        generateComparePrintHTML,
+        populateCompareSlots,
+        getSelectedSlotItem,
+        updateSlotCUI,
+        renderCompareMatrix,
+        openCompareModal,
+        closeCompareModal
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/core/compare.js <<<
+
+// >>> src/core/lotto.js >>>
+// ==============================================================
+// Multitools Calculator - Thai Lottery & GLO Core Engine
+// ==============================================================
+
+(function(root) {
+    /**
+     * Permutes a 3-digit string into all unique permutations (6 ประตู / 3 ตัวกลับ)
+     * e.g. '789' -> ['789', '798', '879', '897', '978', '987'] (6 items)
+     *      '787' -> ['778', '787', '877'] (3 items)
+     *      '777' -> ['777'] (1 item)
+     * @param {string} digitsStr
+     * @returns {string[]} sorted array of unique 3-digit strings
+     */
+    function expand6Doors(digitsStr) {
+        const clean = String(digitsStr || '').replace(/\D/g, '').slice(0, 3);
+        if (clean.length < 3) return clean ? [clean] : [];
+
+        const chars = clean.split('');
+        const results = new Set();
+
+        function permute(arr, m = []) {
+            if (arr.length === 0) {
+                results.add(m.join(''));
+            } else {
+                for (let i = 0; i < arr.length; i++) {
+                    const curr = arr.slice();
+                    const next = curr.splice(i, 1);
+                    permute(curr, m.concat(next));
+                }
+            }
+        }
+        permute(chars);
+        return Array.from(results).sort();
+    }
+
+    /**
+     * Expands a single digit into 19 numbers (19 ประตู / รูด 1 ตัว)
+     * Returns all 2-digit numbers containing this digit in either tens or units place.
+     * @param {string|number} digit
+     * @returns {string[]} 19 two-digit strings
+     */
+    function expand19Doors(digit) {
+        const d = String(digit).replace(/\D/g, '').slice(-1);
+        if (d === '') return [];
+        const set = new Set();
+        // Tens place: d0 to d9
+        for (let i = 0; i <= 9; i++) {
+            set.add(`${d}${i}`);
+        }
+        // Units place: 0d to 9d
+        for (let i = 0; i <= 9; i++) {
+            set.add(`${i}${d}`);
+        }
+        return Array.from(set).sort();
+    }
+
+    /**
+     * Expands front-run (รูดหน้า / หลักสิบ) for a single digit: d0 to d9
+     * @param {string|number} digit
+     * @returns {string[]} 10 two-digit strings
+     */
+    function expandFrontRun(digit) {
+        const d = String(digit).replace(/\D/g, '').slice(-1);
+        if (d === '') return [];
+        const res = [];
+        for (let i = 0; i <= 9; i++) {
+            res.push(`${d}${i}`);
+        }
+        return res;
+    }
+
+    /**
+     * Expands back-run (รูดหลัง / หลักหน่วย) for a single digit: 0d to 9d
+     * @param {string|number} digit
+     * @returns {string[]} 10 two-digit strings
+     */
+    function expandBackRun(digit) {
+        const d = String(digit).replace(/\D/g, '').slice(-1);
+        if (d === '') return [];
+        const res = [];
+        for (let i = 0; i <= 9; i++) {
+            res.push(`${i}${d}`);
+        }
+        return res;
+    }
+
+    /**
+     * Returns all 10 two-digit double numbers (เลขเบิ้ล 00, 11, ..., 99)
+     * @returns {string[]}
+     */
+    function expandDoubleNumbers() {
+        const res = [];
+        for (let i = 0; i <= 9; i++) {
+            res.push(`${i}${i}`);
+        }
+        return res;
+    }
+
+    /**
+     * Expands a 2-digit number with its reverse (2 ตัวกลับ เช่น '28' -> ['28', '82'])
+     * @param {string} digitsStr
+     * @returns {string[]}
+     */
+    function expandTwoDigitReverse(digitsStr) {
+        const clean = String(digitsStr || '').replace(/\D/g, '').slice(0, 2);
+        if (clean.length < 2) return clean ? [clean] : [];
+        const rev = clean[1] + clean[0];
+        return clean === rev ? [clean] : [clean, rev].sort();
+    }
+
+    /**
+     * Calculates bet costs, payout, and net profit
+     * @param {string[]|number} numbersListOrCount 
+     * @param {number} pricePerNumber 
+     * @param {number} payoutRate 
+     * @returns {Object}
+     */
+    function calculateLottoBet(numbersListOrCount, pricePerNumber, payoutRate) {
+        const count = Array.isArray(numbersListOrCount) ? numbersListOrCount.length : Math.max(0, parseInt(numbersListOrCount, 10) || 0);
+        const price = Math.max(0, parseFloat(pricePerNumber) || 0);
+        const rate = Math.max(0, parseFloat(payoutRate) || 0);
+
+        const totalCost = count * price;
+        const winningPayout = price * rate;
+        const netProfit = count > 0 && price > 0 ? winningPayout - totalCost : 0;
+        const roiPercent = totalCost > 0 ? (netProfit / totalCost) * 100 : 0;
+
+        return {
+            count,
+            pricePerNumber: price,
+            payoutRate: rate,
+            totalCost,
+            winningPayout,
+            netProfit,
+            roiPercent
+        };
+    }
+
+    /**
+     * GLO Prize Definitions (สำนักงานสลากกินแบ่งรัฐบาล)
+     */
+    const GLO_PRIZES = {
+        first:     { key: 'first',     label: 'รางวัลที่ 1',              amount: 6000000, desc: '6,000,000 บาท / ใบ', defaultCount: 1 },
+        adjacent:  { key: 'adjacent',  label: 'ข้างเคียงรางวัลที่ 1',       amount: 100000,  desc: '100,000 บาท / ใบ',   defaultCount: 2 },
+        second:    { key: 'second',    label: 'รางวัลที่ 2',              amount: 200000,  desc: '200,000 บาท / ใบ',   defaultCount: 5 },
+        third:     { key: 'third',     label: 'รางวัลที่ 3',              amount: 80000,   desc: '80,000 บาท / ใบ',    defaultCount: 10 },
+        fourth:    { key: 'fourth',    label: 'รางวัลที่ 4',              amount: 40000,   desc: '40,000 บาท / ใบ',    defaultCount: 50 },
+        fifth:     { key: 'fifth',     label: 'รางวัลที่ 5',              amount: 20000,   desc: '20,000 บาท / ใบ',    defaultCount: 100 },
+        front3:    { key: 'front3',    label: 'รางวัลเลขหน้า 3 ตัว (2 รางวัล)', amount: 4000,    desc: '4,000 บาท / ใบ',     defaultCount: 2000 },
+        back3:     { key: 'back3',     label: 'รางวัลเลขท้าย 3 ตัว (2 รางวัล)', amount: 4000,    desc: '4,000 บาท / ใบ',     defaultCount: 2000 },
+        back2:     { key: 'back2',     label: 'รางวัลเลขท้าย 2 ตัว (1 รางวัล)', amount: 2000,    desc: '2,000 บาท / ใบ',     defaultCount: 10000 }
+    };
+
+    /**
+     * Claim channels and deductions
+     */
+    const CLAIM_CHANNELS = {
+        glo_regular: { key: 'glo_regular', label: 'สำนักงานสลากฯ (สลากทั่วไป)', rate: 0.5, feeNote: 'หักค่าอากรแสตมป์ 0.5% (ได้รับการยกเว้นภาษีเงินได้บุคคลธรรมดา)' },
+        glo_charity: { key: 'glo_charity', label: 'สำนักงานสลากฯ (สลากการกุศล)', rate: 1.0, feeNote: 'หักภาษีเงินได้ ณ ที่จ่าย 1.0% (ไม่ต้องนำไปคำนวณภาษีสิ้นปี)' },
+        bank:        { key: 'bank',        label: 'ธนาคารรัฐ/พาณิชย์ (กรุงไทย/ออมสิน/ธ.ก.ส.)', rate: 1.5, feeNote: 'หักค่าธรรมเนียมธนาคาร 1.0% + อากรแสตมป์ 0.5% = รวม 1.5%' },
+        shop:        { key: 'shop',        label: 'แผงรับซื้อรางวัลเอกชน', rate: 2.0, feeNote: 'หักค่าบริการร้านรับซื้อตามตกลง (ปกติ 2.0% - 3.0%)' }
+    };
+
+    /**
+     * Calculates ticket prize claims with deduction and net money
+     * @param {string} prizeKey 
+     * @param {number|string} ticketCount 
+     * @param {string} channelKey 
+     * @param {number|string} customDeductionRate 
+     * @returns {Object}
+     */
+    function calculatePrizeClaim(prizeKey, ticketCount, channelKey = 'bank', customDeductionRate = 0) {
+        const prizeInfo = GLO_PRIZES[prizeKey] || GLO_PRIZES.back2;
+        const count = Math.max(1, parseInt(ticketCount, 10) || 1);
+        const channel = CLAIM_CHANNELS[channelKey] || CLAIM_CHANNELS.bank;
+
+        let rate = channel.rate;
+        if (channelKey === 'shop' && customDeductionRate !== undefined && customDeductionRate !== '') {
+            const customRate = parseFloat(customDeductionRate);
+            if (Number.isFinite(customRate) && customRate >= 0) {
+                rate = customRate;
+            }
+        }
+
+        const unitPrize = prizeInfo.amount;
+        const totalGrossPrize = unitPrize * count;
+        const deductionAmount = Math.round((totalGrossPrize * (rate / 100)) * 100) / 100;
+        const netPrize = totalGrossPrize - deductionAmount;
+
+        return {
+            prizeKey: prizeInfo.key,
+            prizeLabel: prizeInfo.label,
+            unitPrize,
+            ticketCount: count,
+            totalGrossPrize,
+            channelKey: channel.key,
+            channelLabel: channel.label,
+            deductionRate: rate,
+            deductionAmount,
+            netPrize,
+            feeNote: channel.feeNote
+        };
+    }
+
+    /**
+     * Returns statistical probabilities and expected value for Thai GLO tickets
+     * @param {number|string} ticketCost - actual purchase price (default 80 or 100)
+     * @returns {Object}
+     */
+    function calculateLottoStats(ticketCost = 80) {
+        const cost = Math.max(1, parseFloat(ticketCost) || 80);
+        const totalTickets = 1000000;
+        const totalPrizeMoney = 48000000; // 48 million baht per series of 1M tickets
+        const expectedValue = totalPrizeMoney / totalTickets; // 48 baht
+
+        const totalWinningTickets = 14168; // 1 + 2 + 5 + 10 + 50 + 100 + 2000 + 2000 + 10000
+        const winChancePercent = (totalWinningTickets / totalTickets) * 100; // 1.4168%
+        const loseChancePercent = 100 - winChancePercent; // 98.5832%
+
+        const netExpectedLoss = cost - expectedValue;
+        const houseEdgePercent = (netExpectedLoss / cost) * 100;
+
+        return {
+            totalTickets,
+            totalPrizeMoney,
+            expectedValue,
+            ticketCost: cost,
+            totalWinningTickets,
+            winChancePercent,
+            loseChancePercent,
+            netExpectedLoss,
+            houseEdgePercent,
+            prizes: [
+                { name: 'รางวัลที่ 1 (6,000,000 บ.)', chance: '1 ใน 1,000,000', pct: 0.0001 },
+                { name: 'ข้างเคียงรางวัลที่ 1 (100,000 บ.)', chance: '2 ใน 1,000,000', pct: 0.0002 },
+                { name: 'รางวัลที่ 2 (200,000 บ.)', chance: '5 ใน 1,000,000', pct: 0.0005 },
+                { name: 'รางวัลที่ 3 (80,000 บ.)', chance: '10 ใน 1,000,000', pct: 0.0010 },
+                { name: 'รางวัลที่ 4 (40,000 บ.)', chance: '50 ใน 1,000,000', pct: 0.0050 },
+                { name: 'รางวัลที่ 5 (20,000 บ.)', chance: '100 ใน 1,000,000', pct: 0.0100 },
+                { name: 'เลขหน้า 3 ตัว (4,000 บ.)', chance: '2 ใน 1,000', pct: 0.2000 },
+                { name: 'เลขท้าย 3 ตัว (4,000 บ.)', chance: '2 ใน 1,000', pct: 0.2000 },
+                { name: 'เลขท้าย 2 ตัว (2,000 บ.)', chance: '1 ใน 100', pct: 1.0000 }
+            ]
+        };
+    }
+
+    /**
+     * Calculates "Lotto to Wealth" compound savings simulation
+     * (2 draws per month = 24 draws/year)
+     * @param {number|string} spendPerDraw 
+     * @param {number|string} years 
+     * @param {number|string} annualReturnPct 
+     * @returns {Object}
+     */
+    function calculateLottoSavingsSimulation(spendPerDraw, years = 10, annualReturnPct = 7) {
+        const spend = Math.max(0, parseFloat(spendPerDraw) || 0);
+        const y = Math.max(1, parseInt(years, 10) || 10);
+        const r = Math.max(0, parseFloat(annualReturnPct) || 0) / 100;
+
+        const monthlyDeposit = spend * 2; // 2 draws per month
+        const totalMonths = y * 12;
+        const totalPrincipal = monthlyDeposit * totalMonths;
+
+        let futureValue = 0;
+        const monthlyRate = r / 12;
+
+        if (monthlyRate === 0) {
+            futureValue = totalPrincipal;
+        } else {
+            // Future value of regular annuity: FV = PMT * [((1 + i)^n - 1) / i]
+            futureValue = monthlyDeposit * ((Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate);
+        }
+
+        const totalInterest = Math.max(0, futureValue - totalPrincipal);
+
+        return {
+            spendPerDraw: spend,
+            monthlyDeposit,
+            years: y,
+            totalMonths,
+            annualReturnPct: r * 100,
+            totalPrincipal,
+            futureValue,
+            totalInterest
+        };
+    }
+
+    /**
+     * Generates lucky numbers
+     * @param {string} type - '2digit' | '3digit' | '6digit'
+     * @returns {string}
+     */
+    function generateLuckyNumber(type = '3digit') {
+        if (type === '2digit') {
+            return String(Math.floor(Math.random() * 100)).padStart(2, '0');
+        }
+        if (type === '6digit') {
+            return String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+        }
+        // default 3digit
+        return String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+    }
+
+    const exportsObj = {
+        expand6Doors,
+        expand19Doors,
+        expandFrontRun,
+        expandBackRun,
+        expandDoubleNumbers,
+        expandTwoDigitReverse,
+        calculateLottoBet,
+        GLO_PRIZES,
+        CLAIM_CHANNELS,
+        calculatePrizeClaim,
+        calculateLottoStats,
+        calculateLottoSavingsSimulation,
+        generateLuckyNumber
+    };
+
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+// <<< src/core/lotto.js <<<
+
+// >>> src/ui/theme.js >>>
+// ==============================================================
+// Multitools Calculator - Theme Management (Airbnb, Classic, Dark, Together, Ferrari)
+// ==============================================================
+
+const THEME_CONFIG = {
+    airbnb: { label: 'Airbnb', sidebar: 'ธีม: Airbnb Rausch', color: '#ffffff', dot: 'bg-[#ff385c]' },
+    classic: { label: 'Classic', sidebar: 'ธีม: Classic ต้นฉบับ', color: '#333333', dot: 'bg-[#60a5fa]' },
+    dark: { label: 'Dark Luxe', sidebar: 'ธีม: Dark Luxe', color: '#211c25', dot: 'bg-[#d98cff]' },
+    together: { label: 'Together', sidebar: 'ธีม: Together AI', color: '#010120', dot: 'bg-[#fc4c02]' },
+    ferrari: { label: 'Ferrari', sidebar: 'ธีม: Ferrari', color: '#181818', dot: 'bg-[#da291c]' }
+};
+
+function applyTheme(themeName) {
+    if (typeof document === 'undefined') return;
+    const state = typeof appState !== 'undefined' ? appState : null;
+    const selected = THEME_CONFIG[themeName] ? themeName : 'airbnb';
+    if (state) state.theme = selected;
+    document.documentElement.setAttribute('data-theme', selected);
+    try {
+        localStorage.setItem('calc_pwa_theme', selected);
+    } catch (e) {}
+
+    const isAirbnb = selected === 'airbnb';
+    const isDark = selected === 'dark';
+    const isTogether = selected === 'together';
+    const isFerrari = selected === 'ferrari';
+    const details = THEME_CONFIG[selected];
+
+    const metaThemeColor = document.getElementById('metaThemeColor');
+    if (metaThemeColor) metaThemeColor.setAttribute('content', details.color);
+
+    const headerThemeBtnText = document.getElementById('headerThemeBtnText');
+    if (headerThemeBtnText) headerThemeBtnText.textContent = details.label;
+
+    const themeDotIndicator = document.getElementById('themeDotIndicator');
+    if (themeDotIndicator) themeDotIndicator.className = `w-2.5 h-2.5 rounded-full inline-block ${details.dot}`;
+
+    const sidebarThemeLabel = document.getElementById('sidebarThemeLabel');
+    if (sidebarThemeLabel) sidebarThemeLabel.textContent = details.sidebar;
+
+    // Highlight active theme button inside 3-dots menu
+    const btnAirbnb = document.getElementById('menuThemeAirbnb');
+    const btnClassic = document.getElementById('menuThemeClassic');
+    const btnDark = document.getElementById('menuThemeDark');
+    const btnTogether = document.getElementById('menuThemeTogether');
+    const btnFerrari = document.getElementById('menuThemeFerrari');
+    if (btnAirbnb && btnClassic && btnDark && btnTogether && btnFerrari) {
+        btnAirbnb.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isAirbnb ? 'border-[#222222] bg-[#f7f7f7] text-[#222222]' : 'border-[#dddddd] text-[#6a6a6a]'}`;
+        btnClassic.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${selected === 'classic' ? 'border-[#2b3990] bg-[#eef1ff] text-[#2b3990]' : 'border-[#dddddd] text-[#6a6a6a]'}`;
+        btnDark.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isDark ? 'border-[#d98cff] bg-[#3a2348] text-[#d98cff]' : 'border-[#dddddd] text-[#6a6a6a]'}`;
+        btnTogether.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isTogether ? 'border-[#fc4c02] bg-[#313641] text-white' : 'border-[#dddddd] text-[#6a6a6a]'}`;
+        btnFerrari.className = `col-span-2 py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isFerrari ? 'border-[#da291c] bg-[#303030] text-white' : 'border-[#dddddd] text-[#6a6a6a]'}`;
+    }
+
+    if (typeof renderActiveTool === 'function') {
+        renderActiveTool();
+    }
+}
+
+function toggleTheme() {
+    const themes = Object.keys(THEME_CONFIG);
+    const currentTheme = (typeof appState !== 'undefined' && appState.theme) ? appState.theme : 'airbnb';
+    const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
+    applyTheme(nextTheme);
+}
+
+function initThemeListeners() {
+    if (typeof document === 'undefined') return;
+    document.getElementById('headerThemeBtn')?.addEventListener('click', toggleTheme);
+    document.getElementById('sidebarThemeToggleBtn')?.addEventListener('click', toggleTheme);
+    document.getElementById('menuThemeAirbnb')?.addEventListener('click', () => applyTheme('airbnb'));
+    document.getElementById('menuThemeClassic')?.addEventListener('click', () => applyTheme('classic'));
+    document.getElementById('menuThemeDark')?.addEventListener('click', () => applyTheme('dark'));
+    document.getElementById('menuThemeTogether')?.addEventListener('click', () => applyTheme('together'));
+    document.getElementById('menuThemeFerrari')?.addEventListener('click', () => applyTheme('ferrari'));
+}
+
+(function(root) {
+    const exportsObj = {
+        THEME_CONFIG,
+        applyTheme,
+        toggleTheme,
+        initThemeListeners
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/ui/theme.js <<<
+
+// >>> src/ui/drawer.js >>>
+// ==============================================================
+// Multitools Calculator - Drawer, Tool Menu & Search
+// ==============================================================
+
+
+/**************************************************************
+ * 4. SIDEBAR MENU RENDERING & NAVIGATION
+ * ----------------------------------------------------------- */
+function openSidebar() {
+    if (typeof document === 'undefined') return;
+    document.getElementById('sidebarDrawer')?.classList.add('open');
+    document.getElementById('sidebarBackdrop')?.classList.add('open');
+}
+
+function closeSidebar() {
+    if (typeof document === 'undefined') return;
+    document.getElementById('sidebarDrawer')?.classList.remove('open');
+    document.getElementById('sidebarBackdrop')?.classList.remove('open');
+}
+
+function renderSidebarMenu() {
+    if (typeof document === 'undefined' || typeof document.createElement !== 'function') return;
+    const favSection = document.getElementById('sidebarFavSection');
+    const favContainer = document.getElementById('sidebarFavList');
+    const categoriesContainer = document.getElementById('sidebarCategoriesContainer');
+    const searchResults = document.getElementById('sidebarSearchResults');
+    const searchResultList = document.getElementById('sidebarSearchResultList');
+    const searchResultHeader = document.getElementById('sidebarSearchResultHeader');
+    const searchInput = document.getElementById('sidebarSearchInput');
+    const searchClearBtn = document.getElementById('sidebarSearchClearBtn');
+    const allContainer = document.getElementById('sidebarAllList');
+
+    const query = (searchInput?.value || '').trim().toLowerCase();
+    const stored = JSON.parse(localStorage.getItem('calc_pwa_favorites') || '[]');
+    const pinned = stored.length ? stored : TOOLS_CATALOG.filter(item => item.category === 'fav').map(item => item.id);
+
+    // Update Dynamic Count in Drawer & Footer
+    const brandCountEl = document.getElementById('sidebarBrandCount');
+    if (brandCountEl) brandCountEl.textContent = TOOLS_CATALOG.length;
+    const footerCountEl = document.getElementById('footerCatalogCount');
+    if (footerCountEl) footerCountEl.textContent = `${TOOLS_CATALOG.length} in 1`;
+
+    function createToolButton(tool) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const isActive = appState.activeToolId === tool.id;
+        btn.className = `sidebar-item ${isActive ? 'active-tool' : ''}`;
+        const isPinned = pinned.includes(tool.id);
+        btn.innerHTML = `<span>${escapeHTML(tool.menuTitle)}</span><button type="button" class="ml-auto p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center text-sm opacity-70 hover:opacity-100 transition rounded-full hover:bg-black/5" data-pin="${tool.id}" title="${isPinned ? 'เลิกปักหมุด' : 'ปักหมุด'}" aria-label="${isPinned ? 'เลิกปักหมุด' : 'ปักหมุด'} ${escapeHTML(tool.menuTitle)}">${isPinned ? '♥' : '♡'}</button>`;
+        btn.addEventListener('click', () => {
+            selectTool(tool.id);
+            closeSidebar();
+        });
+        btn.querySelector('[data-pin]').addEventListener('click', (event) => {
+            event.stopPropagation();
+            const next = pinned.includes(tool.id) ? pinned.filter(id => id !== tool.id) : [...pinned, tool.id];
+            localStorage.setItem('calc_pwa_favorites', JSON.stringify(next));
+            renderSidebarMenu();
+        });
+        return btn;
+    }
+
+    if (favContainer) favContainer.innerHTML = '';
+    if (allContainer) allContainer.innerHTML = '';
+    if (categoriesContainer) categoriesContainer.innerHTML = '';
+    if (searchResultList) searchResultList.innerHTML = '';
+
+    if (query) {
+        // Search Mode
+        if (searchClearBtn) searchClearBtn?.classList?.remove('hidden');
+        if (favSection) favSection?.classList?.add('hidden');
+        if (categoriesContainer) categoriesContainer?.classList?.add('hidden');
+        if (searchResults) searchResults?.classList?.remove('hidden');
+
+        const matches = TOOLS_CATALOG.filter(tool => {
+            const text = `${tool.menuTitle} ${tool.headerTitle} ${tool.id} ${tool.keywords || ''}`.toLowerCase();
+            return text.includes(query);
+        });
+
+        if (searchResultHeader) searchResultHeader.textContent = `ผลการค้นหา (${matches.length})`;
+
+        if (matches.length > 0) {
+            matches.forEach(tool => searchResultList?.appendChild(createToolButton(tool)));
+        } else if (searchResultList) {
+            searchResultList.innerHTML = `<div class="px-4 py-6 text-center text-xs text-[var(--color-muted)]">ไม่พบเครื่องมือที่ตรงกับ "${escapeHTML(query)}"</div>`;
+        }
+    } else {
+        // Normal Categorized Mode
+        if (searchClearBtn) searchClearBtn?.classList?.add('hidden');
+        if (favSection) favSection?.classList?.remove('hidden');
+        if (categoriesContainer) categoriesContainer?.classList?.remove('hidden');
+        if (searchResults) searchResults?.classList?.add('hidden');
+
+        // 1. Render Pinned Favorites
+        const favTools = TOOLS_CATALOG.filter(tool => pinned.includes(tool.id));
+        if (favTools.length > 0) {
+            favTools.forEach(tool => favContainer?.appendChild(createToolButton(tool)));
+            if (favSection) favSection?.classList?.remove('hidden');
+        } else if (favSection) {
+            favSection?.classList?.add('hidden');
+        }
+
+        // 2. Render 5 Job-based Categories
+        if (categoriesContainer) {
+            TOOL_GROUPS.forEach(group => {
+                const groupTools = TOOLS_CATALOG.filter(tool => tool.group === group.id);
+                if (!groupTools.length) return;
+
+                const header = document.createElement('div');
+                header.className = 'sidebar-category-header mt-2';
+                header.textContent = group.name;
+                categoriesContainer.appendChild(header);
+
+                const list = document.createElement('div');
+                groupTools.forEach(tool => {
+                    const btn = createToolButton(tool);
+                    list.appendChild(btn);
+                });
+                categoriesContainer.appendChild(list);
+            });
+        }
+    }
+}
+
+function selectTool(toolId) {
+    appState.activeToolId = toolId;
+    appState.activeFieldIndex = 0;
+    renderSidebarMenu();
+    renderActiveTool();
+}
+
+function getToolSummaryText(toolId, stateObj) {
+    const state = stateObj || (typeof appState !== 'undefined' ? appState : {});
+    const tool = TOOLS_CATALOG.find(t => t.id === toolId) || { menuTitle: toolId };
+    const title = tool.headerTitle || tool.menuTitle;
+    const divider = '----------------------------------';
+
+    switch (toolId) {
+        case 'vat_wht': {
+            const st = state.vat_wht || {};
+            const amt = parseNumericInput(st.amount) || 0;
+            const rate = parseNumericInput(st.vatRate) || 7;
+            const wht = parseNumericInput(st.whtRate) || 3;
+            const vatAmt = amt * (rate / 100);
+            const whtAmt = amt * (wht / 100);
+            const net = amt + vatAmt - whtAmt;
+            return `📄 สรุปยอด VAT + หัก ณ ที่จ่าย\n${divider}\n• ยอดค่าบริการ/สินค้า: ${formatMoney(amt)} บาท\n• ภาษีมูลค่าเพิ่ม (VAT ${rate}%): +${formatMoney(vatAmt)} บาท\n• หักภาษี ณ ที่จ่าย (${wht}%): -${formatMoney(whtAmt)} บาท\n${divider}\n💰 ยอดโอนสุทธิ: ${formatMoney(net)} บาท\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'vat': {
+            const st = state.vat || {};
+            const amt = parseNumericInput(st.amount) || 0;
+            const rate = parseNumericInput(st.rate) || 7;
+            const isInclude = st.mode === 'include';
+            const baseAmt = isInclude ? amt / (1 + rate / 100) : amt;
+            const vatAmt = isInclude ? amt - baseAmt : amt * (rate / 100);
+            const totalAmt = isInclude ? amt : amt + vatAmt;
+            return `📄 สรุปภาษีมูลค่าเพิ่ม (VAT)\n${divider}\n• โหมด: ${isInclude ? 'ถอด VAT จากยอดรวม' : 'บวก VAT เพิ่ม'}\n• ยอดก่อน VAT: ${formatMoney(baseAmt)} บาท\n• ภาษี VAT (${rate}%): ${formatMoney(vatAmt)} บาท\n${divider}\n💰 ยอดรวมสุทธิ: ${formatMoney(totalAmt)} บาท\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'discount': {
+            const st = state.discount || {};
+            const p = numberOrDefault(st.price, 0);
+            const d1 = numberOrDefault(st.discountPct, 0);
+            const d2 = numberOrDefault(st.extraPct, 0);
+            const safeD1 = Math.min(Math.max(d1, 0), 100);
+            const safeD2 = Math.min(Math.max(d2, 0), 100);
+            const afterFirst = p * (1 - safeD1 / 100);
+            const finalPrice = afterFirst * (1 - safeD2 / 100);
+            const saved = p - finalPrice;
+            const extraStr = d2 > 0 ? ` + On-top ${d2}%` : '';
+            return `🏷️ สรุปส่วนลดสินค้า\n${divider}\n• ราคาปกติ: ${formatMoney(p)} บาท\n• ส่วนลด: ${d1}%${extraStr}\n• ประหยัดไป: ${formatMoney(saved)} บาท\n${divider}\n💰 ราคาสุทธิ: ${formatMoney(finalPrice)} บาท\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'unit_price': {
+            const rows = (state.unit_price && state.unit_price.rows) ? state.unit_price.rows : [];
+            const defs = (typeof UNIT_DEFINITIONS !== 'undefined') ? UNIT_DEFINITIONS : {
+                unit: { key: 'unit', label: 'หน่วย', family: 'general', factor: 1,     baseUnit: 'หน่วย' },
+                pcs:  { key: 'pcs',  label: 'ชิ้น',  family: 'count',   factor: 1,     baseUnit: 'ชิ้น' },
+                doz:  { key: 'doz',  label: 'โหล',  family: 'count',   factor: 12,    baseUnit: 'ชิ้น' },
+                g:    { key: 'g',    label: 'g',    family: 'weight',  factor: 0.001, baseUnit: 'กก.' },
+                kg:   { key: 'kg',   label: 'kg',   family: 'weight',  factor: 1,     baseUnit: 'กก.' },
+                ml:   { key: 'ml',   label: 'ml',   family: 'volume',  factor: 0.001, baseUnit: 'ลิตร' },
+                L:    { key: 'L',    label: 'L',    family: 'volume',  factor: 1,     baseUnit: 'ลิตร' }
+            };
+            const valid = rows
+                .map(r => {
+                    const p = parseNumericInput(r.price);
+                    const q = parseNumericInput(r.qty);
+                    const uKey = r.unit || 'unit';
+                    const uDef = defs[uKey] || defs.unit;
+                    const baseQty = (Number.isFinite(q) && q > 0) ? q * uDef.factor : NaN;
+                    const unitPrice = (Number.isFinite(p) && Number.isFinite(baseQty) && baseQty > 0) ? p / baseQty : NaN;
+                    return { id: r.id, p, q, unit: uKey, uDef, baseQty, unitPrice };
+                })
+                .filter(r => Number.isFinite(r.p) && Number.isFinite(r.q) && r.p > 0 && r.q > 0 && Number.isFinite(r.unitPrice));
+            if (!valid.length) return '🛒 สรุปราคาต่อหน่วย\n(กรุณากรอกราคาและจำนวนเพื่อเปรียบเทียบ)';
+
+            const families = new Set(valid.map(v => v.uDef.family));
+            if (families.size > 1) {
+                const rowTexts = valid.map(v => `• ตัวเลือก ${v.id}: ${formatMoney(v.p)} บาท / ${formatMoney(v.q)} ${v.uDef.label}`);
+                return `🛒 สรุปเปรียบเทียบราคาต่อหน่วย\n${divider}\n${rowTexts.join('\n')}\n${divider}\n⚠️ ไม่สามารถเปรียบเทียบข้ามชนิดหน่วยได้ (เช่น น้ำหนัก กับ ปริมาตร)\n(คำนวณโดย Multitools Calculator)`;
+            }
+
+            const minPrice = Math.min(...valid.map(v => v.unitPrice));
+            const best = valid.find(v => Math.abs(v.unitPrice - minPrice) < 1e-7);
+            const baseUnit = valid[0].uDef.baseUnit;
+            const rowTexts = valid.map(v => {
+                const unitLabel = v.uDef.label;
+                const origStr = `${formatMoney(v.p)} บาท / ${formatMoney(v.q)} ${unitLabel}`;
+                return `• ตัวเลือก ${v.id}: ${origStr} = ${formatUnitPrice(v.unitPrice)} บาท/${baseUnit}`;
+            });
+            let comparison = `⭐ ตัวเลือกที่คุ้มที่สุด: ตัวเลือก ${best.id} (${formatUnitPrice(best.unitPrice)} บาท/${baseUnit})`;
+            const second = [...valid].sort((a,b) => a.unitPrice - b.unitPrice).find(v => v.unitPrice > minPrice + 1e-7);
+            if (second) {
+                const pct = (((second.unitPrice - best.unitPrice) / second.unitPrice) * 100).toFixed(1);
+                comparison += `\n(ประหยัดกว่าตัวเลือก ${second.id} ${pct}%)`;
+            }
+            return `🛒 สรุปเปรียบเทียบราคาต่อหน่วย\n${divider}\n${rowTexts.join('\n')}\n${divider}\n${comparison}\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'date_work': {
+            const st = state.date_work || {};
+            const start = new Date(st.startDate + 'T00:00:00');
+            const end = new Date(st.endDate + 'T00:00:00');
+            const customHolidays = new Set(String(st.customHolidays || '').split(',').map(v => parseDateInputThai(v.trim(), st.calendarEra)).filter(Boolean));
+            const isWorkday = (d) => {
+                const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                const isHoliday = (typeof isThaiOfficialHoliday === 'function') ? isThaiOfficialHoliday(d) : ['01-01', '04-06', '05-01', '06-03', '07-28', '08-12', '10-13', '10-23', '12-05', '12-10', '12-31'].includes(iso.slice(5));
+                return (st.workDays || [1,2,3,4,5]).includes(d.getDay()) && !(st.includeThaiHolidays && isHoliday) && !customHolidays.has(iso);
+            };
+            let resultText = '';
+            if (st.mode === 'between') {
+                const count = countWorkingDays(start, end, isWorkday);
+                resultText = `• จำนวนวันทำการจริง: ${count.toLocaleString('th-TH')} วัน`;
+            } else {
+                const target = offsetWorkingDays(start, integerOrDefault(st.offset, 0), isWorkday);
+                resultText = `• วันที่เป้าหมาย (${st.offset >= 0 ? '+' : ''}${st.offset} วันทำการ): ${formatThaiDate(formatLocalDate(target))}`;
+            }
+            return `📅 สรุปวันทำการ (Workdays)\n${divider}\n• วันเริ่มต้น: ${st.startDate}\n${st.mode === 'between' ? `• วันสิ้นสุด: ${st.endDate}\n` : ''}${resultText}\n• กติกา: ตัดเสาร์-อาทิตย์และวันหยุดราชการไทย\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'date_calc': {
+            const st = state.date_calc || {};
+            const d1 = new Date(st.startDate + 'T00:00:00');
+            const d2 = new Date(st.endDate + 'T00:00:00');
+            const diffDays = Math.round(Math.abs(d2 - d1) / 86400000);
+            return `📅 สรุปคำนวณวันที่ & อายุ\n${divider}\n• วันที่เริ่มต้น: ${st.startDate}\n• วันที่สิ้นสุด: ${st.endDate}\n${divider}\n• ระยะห่าง: ${diffDays.toLocaleString('th-TH')} วัน\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'loan': {
+            const st = state.loan || {};
+            const P = numberOrDefault(st.principal, 0);
+            const annualRate = numberOrDefault(st.interestRate, 0);
+            const n = integerOrDefault(st.months, 0);
+            const extra = numberOrDefault(st.extra, 0);
+            const rateAfter = numberOrDefault(st.rateAfter, annualRate);
+            const promoMonths = Math.max(0, integerOrDefault(st.promoMonths, 0));
+            let monthlyPay = 0, totalPay = 0, totalInterest = 0;
+            if (P > 0 && n > 0) {
+                let bal = P, m = 0, payment = 0, previousRate = null;
+                while (bal > 0.01 && m < 1200 && m < n + 120) {
+                    const currentRate = st.rateType === 'step' && m >= promoMonths ? rateAfter : annualRate;
+                    const r = (currentRate / 100) / 12;
+                    const remaining = Math.max(1, n - m);
+                    if (payment === 0 || previousRate !== currentRate) {
+                        payment = st.calcMethod === 'flat' ? (P / n) + (P * currentRate / 100 / 12) : (r === 0 ? bal / remaining : bal * (r * Math.pow(1 + r, remaining)) / (Math.pow(1 + r, remaining) - 1));
+                        previousRate = currentRate;
+                    }
+                    const interest = st.calcMethod === 'flat' ? (P * currentRate / 100 / 12) : (bal * r);
+                    const principalPart = Math.min(bal, Math.max(0, payment + extra - interest));
+                    if (principalPart <= 0) break;
+                    const actualPayment = interest + principalPart;
+                    if (m === 0) monthlyPay = actualPayment;
+                    totalPay += actualPayment;
+                    totalInterest += interest;
+                    bal -= principalPart;
+                    m++;
+                }
+            }
+            const methodLabel = st.calcMethod === 'flat' ? 'เงินงวดคงที่' : 'ลดต้นลดดอก';
+            return `🏦 สรุปยอดผ่อนเงินกู้ & ผ่อนชำระ\n${divider}\n• วงเงินกู้: ${formatMoney(P)} บาท\n• ดอกเบี้ย: ${annualRate}% ต่อปี (${methodLabel})\n• ระยะเวลา: ${n} เดือน\n${divider}\n💰 ค่างวด: ${formatMoney(monthlyPay)} บาท/เดือน\n• ดอกเบี้ยรวม: +${formatMoney(totalInterest)} บาท\n• ยอดชำระรวม: ${formatMoney(totalPay)} บาท\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'savings': {
+            const st = state.savings || {};
+            const init = numberOrDefault(st.initial, 0);
+            const monthly = numberOrDefault(st.monthly, 0);
+            const rate = numberOrDefault(st.interestRate, 0);
+            const retirementYears = Math.max(0, numberOrDefault(st.retirementAge, 0) - numberOrDefault(st.currentAge, 0));
+            const years = st.mode === 'retirement' ? retirementYears : numberOrDefault(st.years, 0);
+            const annualIncrease = numberOrDefault(st.annualIncrease, 0);
+            const months = Math.round(years * 12);
+            const r = (rate / 100) / 12;
+            let totalBalance = init, totalPrincipal = init;
+            for (let m = 0; m < months; m++) {
+                const currentMonthly = monthly * Math.pow(1 + annualIncrease / 100, Math.floor(m / 12));
+                totalBalance = (totalBalance + currentMonthly) * (1 + r);
+                totalPrincipal += currentMonthly;
+            }
+            const interestEarned = Math.max(0, totalBalance - totalPrincipal);
+            return `💰 สรุปการวางแผนเงินออม\n${divider}\n• เงินก้อนเริ่มต้น: ${formatMoney(init)} บาท\n• ฝากเพิ่มรายเดือน: ${formatMoney(monthly)} บาท/เดือน\n• ระยะเวลา: ${years} ปี (${rate}% ต่อปี)\n${divider}\n• เงินต้นสะสม: ${formatMoney(totalPrincipal)} บาท\n• ดอกเบี้ยสะสม: +${formatMoney(interestEarned)} บาท\n💰 ยอดเงินออมสุทธิ: ${formatMoney(totalBalance)} บาท\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'currency': {
+            const st = state.currency || { ratesInTHB: {} };
+            const amt = parseNumericInput(st.amount) || 0;
+            const fromRate = st.ratesInTHB[st.from] || 1;
+            const toRate = st.ratesInTHB[st.to] || 1;
+            const customRate = parseNumericInput(st.customRateToTHB);
+            const effectiveRate = (!isNaN(customRate) && customRate > 0) ? customRate : (fromRate / toRate);
+            const converted = amt * effectiveRate;
+            return `💱 สรุปอัตราแลกเปลี่ยนสกุลเงิน\n${divider}\n• ${formatNum(amt, 2)} ${st.from} = ${formatMoney(converted)} ${st.to}\n• เรทที่ใช้: 1 ${st.from} = ${formatNum(effectiveRate, 4)} ${st.to}\n• แหล่งข้อมูล: ${st.rateSource || 'Frankfurter'}\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'tip': {
+            const st = state.tip || {};
+            const bill = parseNumericInput(st.bill) || 0;
+            const tipPct = parseNumericInput(st.tipPct) || 0;
+            const people = Math.max(1, integerOrDefault(st.people, 1));
+            const tipAmt = bill * (tipPct / 100);
+            const total = bill + tipAmt;
+            const perPerson = total / people;
+            return `🍽️ สรุปหารค่าอาหาร / ทิป\n${divider}\n• ยอดบิล: ${formatMoney(bill)} บาท\n• ทิป (${tipPct}%): ${formatMoney(tipAmt)} บาท\n• ยอดรวมทั้งสิ้น: ${formatMoney(total)} บาท\n• จำนวนคน: ${people} คน\n${divider}\n💰 จ่ายคนละ: ${formatMoney(perPerson)} บาท\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'salary': {
+            const st = state.salary || {};
+            const income = parseNumericInput(st.income) || 0;
+            const needs = income * (numberOrDefault(st.needsPct, 50) / 100);
+            const wants = income * (numberOrDefault(st.wantsPct, 30) / 100);
+            const savings = income * (numberOrDefault(st.savingsPct, 20) / 100);
+            return `💼 สรุปจัดสรรเงินเดือน (50/30/20)\n${divider}\n• เงินเดือนสุทธิ: ${formatMoney(income)} บาท\n• รายจ่ายจำเป็น (50%): ${formatMoney(needs)} บาท\n• เพื่อความสุข/ไลฟ์สไตล์ (30%): ${formatMoney(wants)} บาท\n• เงินออม/ลงทุน (20%): ${formatMoney(savings)} บาท\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'fuel_cost': {
+            const st = state.fuel_cost || {};
+            const dist = parseNumericInput(st.distance) || 0;
+            const eff = parseNumericInput(st.efficiency) || 15;
+            const price = parseNumericInput(st.oilPrice) || 35.5;
+            const liters = eff > 0 ? dist / eff : 0;
+            const totalCost = liters * price;
+            return `⛽ สรุปค่าน้ำมันเดินทาง\n${divider}\n• ระยะทาง: ${formatNum(dist, 1)} กม.\n• อัตราสิ้นเปลือง: ${formatNum(eff, 1)} กม./ลิตร\n• ราคาน้ำมัน: ${formatMoney(price)} บาท/ลิตร\n• ปริมาณน้ำมัน: ${formatNum(liters, 2)} ลิตร\n${divider}\n💰 ค่าน้ำมันรวม: ${formatMoney(totalCost)} บาท\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'lotto_calc': {
+            const st = state.lotto_calc || {};
+            const activeTab = st.activeTab || 'bet';
+            if (activeTab === 'claim') {
+                const claim = (typeof calculatePrizeClaim === 'function')
+                    ? calculatePrizeClaim(st.claimPrize, st.claimTicketCount, st.claimChannel, st.claimCustomRate)
+                    : { prizeLabel: 'สลากกินแบ่ง', ticketCount: 1, totalGrossPrize: 2000, deductionRate: 1.5, deductionAmount: 30, netPrize: 1970, channelLabel: 'ธนาคาร' };
+                return `🏆 สรุปขึ้นเงินรางวัลสลากกินแบ่ง\n${divider}\n• รางวัล: ${claim.prizeLabel}\n• จำนวน: ${claim.ticketCount} ใบ\n• ยอดรางวัลรวม: ${formatMoney(claim.totalGrossPrize)} บาท\n• หักภาษี/ค่าธรรมเนียม (${claim.deductionRate}%): -${formatMoney(claim.deductionAmount)} บาท\n${divider}\n💰 เงินสดสุทธิที่ได้รับจริง: ${formatMoney(claim.netPrize)} บาท\n• ช่องทาง: ${claim.channelLabel}\n(คำนวณโดย Multitools Calculator)`;
+            } else if (activeTab === 'reality') {
+                const sim = (typeof calculateLottoSavingsSimulation === 'function')
+                    ? calculateLottoSavingsSimulation(st.lottoSpendPerDraw, st.savingsYears, st.savingsRate)
+                    : { spendPerDraw: 500, monthlyDeposit: 1000, years: 10, annualReturnPct: 7, totalPrincipal: 120000, totalInterest: 53094, futureValue: 173094 };
+                return `💡 สรุปจำลองเปลี่ยนค่าหวยเป็นเงินล้าน\n${divider}\n• ซื้อหวยงวดละ: ${formatMoney(sim.spendPerDraw)} บาท (เดือนละ ${formatMoney(sim.monthlyDeposit)} บาท)\n• ระยะเวลา: ${sim.years} ปี (ผลตอบแทน ${sim.annualReturnPct}%)\n${divider}\n• เงินต้นสะสม: ${formatMoney(sim.totalPrincipal)} บาท\n• ดอกเบี้ยทบต้น: +${formatMoney(sim.totalInterest)} บาท\n💰 ยอดเงินออมรวม: ${formatMoney(sim.futureValue)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            } else {
+                const count = Array.isArray(st.numbersList) ? st.numbersList.length : 0;
+                const bet = (typeof calculateLottoBet === 'function')
+                    ? calculateLottoBet(count, st.pricePerNumber, st.payoutRate)
+                    : { count: 6, pricePerNumber: 20, payoutRate: 900, totalCost: 120, winningPayout: 18000, netProfit: 17880, roiPercent: 14900 };
+                return `🎯 สรุปคำนวณต้นทุน & หวยชุด\n${divider}\n• จำนวนเลขในชุด: ${bet.count} หาง\n• ราคาซื้อต่อหาง: ${formatMoney(bet.pricePerNumber)} บาท\n• อัตราจ่าย: บาทละ ${formatMoney(bet.payoutRate)}\n${divider}\n• ต้นทุนรวม: ${formatMoney(bet.totalCost)} บาท\n• เงินรางวัล (ถ้าถูก 1 หาง): ${formatMoney(bet.winningPayout)} บาท\n💰 กำไรสุทธิ: ${bet.netProfit >= 0 ? '+' : ''}${formatMoney(bet.netProfit)} บาท (ROI ${bet.roiPercent.toFixed(1)}%)\n(คำนวณโดย Multitools Calculator)`;
+            }
+        }
+        default: {
+            const statusText = document.getElementById('sharedStatusText')?.innerText?.trim();
+            return `📋 สรุปผล: ${title}\n${divider}\n${statusText || 'คำนวณเรียบร้อยแล้ว'}\n(คำนวณโดย Multitools Calculator)`;
+        }
+    }
+}
+
+async function copyCurrentToolSummary() {
+    const curId = (typeof appState !== "undefined" ? appState.activeToolId : "");
+    const text = getToolSummaryText(curId, typeof appState !== "undefined" ? appState : undefined);
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+        } else {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+        const btn = document.getElementById('headerCopyBtn');
+        const btnText = document.getElementById('headerCopyText');
+        if (btnText && btn) {
+            btnText.textContent = '✓ คัดลอกแล้ว';
+            btn.classList.add('!bg-green-100', '!border-green-500', '!text-green-700');
+            setTimeout(() => {
+                btnText.textContent = 'คัดลอกสรุป';
+                btn.classList.remove('!bg-green-100', '!border-green-500', '!text-green-700');
+            }, 2000);
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+if (typeof document !== 'undefined') {
+    const addSafe = (id, event, handler) => {
+        const el = document.getElementById(id);
+        if (el && typeof el.addEventListener === 'function') {
+            el.addEventListener(event, handler);
+        }
+    };
+    addSafe('headerCopyBtn', 'click', copyCurrentToolSummary);
+    addSafe('hamburgerBtn', 'click', openSidebar);
+    addSafe('sidebarBackdrop', 'click', closeSidebar);
+
+    const sidebarSearchInput = document.getElementById('sidebarSearchInput');
+    if (sidebarSearchInput && typeof sidebarSearchInput.addEventListener === 'function') {
+        sidebarSearchInput.addEventListener('input', () => renderSidebarMenu());
+        sidebarSearchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                sidebarSearchInput.value = '';
+                renderSidebarMenu();
+                if (typeof sidebarSearchInput.blur === 'function') sidebarSearchInput.blur();
+            }
+        });
+    }
+    const clearBtn = document.getElementById('sidebarSearchClearBtn');
+    if (clearBtn && typeof clearBtn.addEventListener === 'function') {
+        clearBtn.addEventListener('click', () => {
+            if (sidebarSearchInput) {
+                sidebarSearchInput.value = '';
+                renderSidebarMenu();
+                if (typeof sidebarSearchInput.focus === 'function') sidebarSearchInput.focus();
+            }
+        });
+    }
+}
+
+(function(root) {
+    const exportsObj = {
+        openSidebar,
+        closeSidebar,
+        renderSidebarMenu,
+        selectTool,
+        getToolSummaryText,
+        copyCurrentToolSummary
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/ui/drawer.js <<<
+
+// >>> src/ui/keypad.js >>>
+// ==============================================================
+// Multitools Calculator - Virtual 4x4 Keypad & Physical Keyboard Mapping
+// ==============================================================
+
+function getToolFieldBindings(toolId) {
+    switch (toolId) {
+        case 'unit_price': {
+            const list = [];
+            appState.unit_price.rows.forEach((row, idx) => {
+                list.push({
+                    get: () => appState.unit_price.rows[idx].price,
+                    set: (v) => { appState.unit_price.rows[idx].price = v; }
+                });
+                list.push({
+                    get: () => appState.unit_price.rows[idx].qty,
+                    set: (v) => { appState.unit_price.rows[idx].qty = v; }
+                });
+            });
+            return list;
+        }
+        case 'currency':
+            return [
+                { get: () => appState.currency.amount, set: (v) => { appState.currency.amount = v; } },
+                { get: () => appState.currency.customRateToTHB, set: (v) => { appState.currency.customRateToTHB = v; } }
+            ];
+        case 'unit':
+            return [
+                { get: () => appState.unit.val, set: (v) => { appState.unit.val = v; } }
+            ];
+        case 'discount':
+            return [
+                { get: () => appState.discount.price, set: (v) => { appState.discount.price = v; } },
+                { get: () => appState.discount.discountPct, set: (v) => { appState.discount.discountPct = v; } },
+                { get: () => appState.discount.extraPct, set: (v) => { appState.discount.extraPct = v; } }
+            ];
+        case 'percent':
+            return [
+                { get: () => appState.percent.x, set: (v) => { appState.percent.x = v; } },
+                { get: () => appState.percent.y, set: (v) => { appState.percent.y = v; } },
+                { get: () => appState.percent.z, set: (v) => { appState.percent.z = v; } }
+            ];
+        case 'vat':
+            return [
+                { get: () => appState.vat.amount, set: (v) => { appState.vat.amount = v; } },
+                { get: () => appState.vat.rate, set: (v) => { appState.vat.rate = v; } }
+            ];
+        case 'fuel_cost':
+            return [
+                { get: () => appState.fuel_cost.distance, set: (v) => { appState.fuel_cost.distance = v; } },
+                { get: () => appState.fuel_cost.efficiency, set: (v) => { appState.fuel_cost.efficiency = v; } },
+                { get: () => appState.fuel_cost.oilPrice, set: (v) => { appState.fuel_cost.oilPrice = v; } }
+            ];
+        case 'health':
+            return [
+                { get: () => appState.health.weight, set: (v) => { appState.health.weight = v; } },
+                { get: () => appState.health.height, set: (v) => { appState.health.height = v; } },
+                { get: () => appState.health.age, set: (v) => { appState.health.age = v; } }
+            ];
+        case 'tip':
+            return [
+                { get: () => appState.tip.bill, set: (v) => { appState.tip.bill = v; } },
+                { get: () => appState.tip.tipPct, set: (v) => { appState.tip.tipPct = v; } },
+                { get: () => appState.tip.people, set: (v) => { appState.tip.people = v; } }
+            ];
+        case 'fuel_eff':
+            return [
+                { get: () => appState.fuel_eff.distance, set: (v) => { appState.fuel_eff.distance = v; } },
+                { get: () => appState.fuel_eff.fuelUsed, set: (v) => { appState.fuel_eff.fuelUsed = v; } }
+            ];
+        case 'loan':
+            return [
+                { get: () => appState.loan.principal, set: (v) => { appState.loan.principal = v; } },
+                { get: () => appState.loan.interestRate, set: (v) => { appState.loan.interestRate = v; } },
+                { get: () => appState.loan.months, set: (v) => { appState.loan.months = v; } },
+                { get: () => appState.loan.extra, set: (v) => { appState.loan.extra = v; } }
+            ];
+        case 'savings':
+            return [
+                { get: () => appState.savings.initial, set: (v) => { appState.savings.initial = v; } },
+                { get: () => appState.savings.monthly, set: (v) => { appState.savings.monthly = v; } },
+                { get: () => appState.savings.interestRate, set: (v) => { appState.savings.interestRate = v; } },
+                { get: () => appState.savings.years, set: (v) => { appState.savings.years = v; } }
+            ].slice(0, appState.savings.mode === 'retirement' ? 3 : 4);
+        case 'salary':
+            return [
+                { get: () => appState.salary.income, set: (v) => { appState.salary.income = v; } },
+                { get: () => appState.salary.needsPct, set: (v) => { appState.salary.needsPct = v; } },
+                { get: () => appState.salary.wantsPct, set: (v) => { appState.salary.wantsPct = v; } },
+                { get: () => appState.salary.savingsPct, set: (v) => { appState.salary.savingsPct = v; } }
+            ];
+        default:
+            return [];
+    }
+}
+
+function handleSharedKeyInput(key) {
+    const inputs = [...document.querySelectorAll('#toolTopPanel input[data-shared-field]')];
+    if (!inputs.length) return;
+    const input = inputs.find(field => Number(field.dataset.sharedField) === appState.activeFieldIndex) || inputs[0];
+    const clearSnapshot = key === 'CLEAR' ? captureToolSnapshot() : null;
+    if (key === 'PREV' || key === 'NEXT') {
+        const direction = key === 'NEXT' ? 1 : -1;
+        inputs[(inputs.indexOf(input) + direction + inputs.length) % inputs.length].focus();
+        return;
+    }
+    const selection = input.dataset.visited ? [input.selectionStart, input.selectionEnd] : [input.value.length, input.value.length];
+    input.focus();
+    input.setSelectionRange(...selection);
+    let start = input.selectionStart, end = input.selectionEnd;
+    if (key === 'CLEAR') {
+        start = 0; end = input.value.length;
+    } else if (key === 'BACKSPACE' && start === end) {
+        if (start > 1 && input.value[start - 1] === ',') {
+            start = Math.max(0, start - 2);
+        } else {
+            start = Math.max(0, start - 1);
+        }
+    }
+    const replacement = key === 'CLEAR' || key === 'BACKSPACE' ? '' : key;
+    if (!/^(?:CLEAR|BACKSPACE|[0-9.]|00)$/.test(key)) return;
+    input.setRangeText(replacement, start, end, 'end');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    if (clearSnapshot) rememberToolClear(clearSnapshot);
+}
+
+function updateKeypadCollapseUI(collapsed) {
+    if (typeof document === 'undefined') return;
+    const keypad = document.getElementById('sharedKeypadSection');
+    const icon = document.getElementById('toggleKeypadIcon');
+    const label = document.getElementById('toggleKeypadLabel');
+    if (collapsed) {
+        keypad?.classList.add('keypad-collapsed');
+        icon?.classList.add('rotate-180');
+        if (label) label.textContent = 'ขยาย';
+    } else {
+        keypad?.classList.remove('keypad-collapsed');
+        icon?.classList.remove('rotate-180');
+        if (label) label.textContent = 'ย่อ';
+    }
+}
+
+// Keypad & Keyboard Event Listeners Initialization
+function initKeypadListeners() {
+    if (typeof document === "undefined" || typeof document.querySelectorAll !== "function") return;
+    document.querySelectorAll("#sharedKeypadSection .key-btn").forEach(btn => {
+        btn.addEventListener("mousedown", event => event.preventDefault());
+        btn.addEventListener("click", () => {
+            const key = btn.getAttribute("data-key");
+            handleSharedKeyInput(key);
+        });
+    });
+
+    document.getElementById("toggleKeypadBtn")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const keypad = document.getElementById("sharedKeypadSection");
+        const isNowCollapsed = !keypad?.classList.contains("keypad-collapsed");
+        updateKeypadCollapseUI(isNowCollapsed);
+    });
+
+    document.getElementById("toolTopPanel")?.addEventListener("focusin", (e) => {
+        if (e.target && e.target.matches("input, select")) {
+            const keypad = document.getElementById("sharedKeypadSection");
+            if (keypad?.classList.contains("keypad-collapsed")) {
+                updateKeypadCollapseUI(false);
+            }
+        }
+    });
+
+    if (typeof window !== "undefined") {
+        window.addEventListener("keydown", (e) => {
+            const toolMeta = typeof TOOLS_CATALOG !== "undefined" ? TOOLS_CATALOG.find(t => t.id === appState.activeToolId) : null;
+            if (!toolMeta) return;
+            if (e.target?.matches?.("input, select, textarea, [contenteditable=\"true\"]")) {
+                if (e.key === "Escape") { e.preventDefault(); e.target.blur(); }
+                return;
+            }
+            if (appState.activeToolId === "calc" && !["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement?.tagName)) {
+                const stdKey = e.key === "*" ? "×" : e.key === "/" ? "÷" : e.key === "Enter" ? "=" : e.key === "Backspace" ? "BS" : e.key === "Escape" ? "C" : e.key;
+                const stdButton = document.querySelector(`#toolTopPanel [data-std="${CSS.escape(stdKey)}"]`);
+                if (stdButton) { e.preventDefault(); stdButton.click(); }
+                return;
+            }
+            if (e.key === "Escape") { e.preventDefault(); return; }
+            if (!toolMeta.usesSharedKeypad) return;
+            if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement?.tagName)) return;
+            if (e.target?.closest?.("button, a, [role=\"button\"]")) return;
+            if (e.key >= "0" && e.key <= "9") {
+                e.preventDefault();
+                handleSharedKeyInput(e.key);
+            } else if (e.key === ".") {
+                e.preventDefault();
+                handleSharedKeyInput(".");
+            } else if (e.key === "Backspace") {
+                e.preventDefault();
+                handleSharedKeyInput("BACKSPACE");
+            } else if (e.key === "Escape" || e.key === "Delete") {
+                e.preventDefault();
+                handleSharedKeyInput("CLEAR");
+            }
+        });
+    }
+}
+
+if (typeof document !== "undefined") {
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initKeypadListeners);
+    } else {
+        initKeypadListeners();
+    }
+}
+
+/**************************************************************
+ * 6. HELPER TO CREATE INTERACTIVE FIELD ROW FOR SHARED KEYPAD
+ **************************************************************/
+function createKeypadFieldHTML(fieldIndex, label, value, unitSuffix = '', placeholder = '0') {
+    const isActive = appState.activeFieldIndex === fieldIndex;
+    const clean = normalizeThaiDigits(String(value ?? '')).trim().replace(/,/g, '');
+    const isIntermediate = clean === '' || clean === '.' || clean === '-' || clean === '-.';
+    const invalid = !isIntermediate && !Number.isFinite(parseNumericInput(clean));
+    const displayVal = formatInputDisplay(value);
+    return `<div><div class="clev-field-box ${isActive ? 'active-field' : ''}" data-field-index="${fieldIndex}">
+        <label for="numeric-field-${fieldIndex}" class="text-sm font-medium text-[#222222]">${label}</label>
+        <div class="flex items-center gap-1.5 min-w-0" style="max-width:55%">
+            <input id="numeric-field-${fieldIndex}" data-shared-field="${fieldIndex}" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" class="shared-number-input" aria-invalid="${invalid}" ${invalid ? `aria-describedby="numeric-error-${fieldIndex}"` : ''} value="${escapeHTML(displayVal)}" placeholder="${escapeHTML(placeholder)}">
+            ${unitSuffix ? `<span class="text-xs font-medium text-[#6a6a6a]">${unitSuffix}</span>` : ''}
+        </div>
+    </div>${invalid ? `<p id="numeric-error-${fieldIndex}" role="alert" class="text-xs px-3 py-1">กรุณากรอกตัวเลข เช่น 1,000 หรือ ๑๐๐๐</p>` : ''}</div>`;
+}
+
+function setActiveNumericField(index) {
+    appState.activeFieldIndex = index;
+    const input = document.querySelector(`#toolTopPanel input[data-shared-field="${index}"]`);
+    if (input) input.dataset.visited = 'true';
+    document.querySelectorAll('#toolTopPanel [data-field-index]').forEach(box => {
+        const active = Number(box.dataset.fieldIndex) === index;
+        box.classList.toggle(box.classList.contains('clev-field-box') ? 'active-field' : 'active-cell', active);
+    });
+}
+
+function attachFieldClickListeners(container) {
+    container.querySelectorAll('.shared-number-input').forEach(input => {
+        const index = Number(input.dataset.sharedField);
+        const binding = getToolFieldBindings(appState.activeToolId)[index];
+        input.addEventListener('focus', () => setActiveNumericField(index));
+        input.addEventListener('input', event => {
+            const formatted = formatInputDisplay(input.value);
+            if (binding) binding.set(formatted);
+            persistAppState();
+            if (!event.isComposing) renderActiveTool();
+        });
+        input.addEventListener('compositionend', () => renderActiveTool());
+        input.addEventListener('keydown', event => {
+            if (event.key === 'Backspace' && input.selectionStart === input.selectionEnd && input.selectionStart > 1) {
+                if (input.value[input.selectionStart - 1] === ',') {
+                    event.preventDefault();
+                    const pos = input.selectionStart;
+                    input.setRangeText('', pos - 2, pos, 'end');
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    return;
+                }
+            }
+            if (event.key === 'Enter' && !event.isComposing) {
+                event.preventDefault();
+                input.blur();
+            }
+        });
+        input.addEventListener('blur', () => {
+            if (binding) {
+                const formatted = formatInputDisplay(input.value);
+                binding.set(formatted);
+                input.value = formatted;
+                persistAppState();
+            }
+        });
+        input.closest('[data-field-index]').addEventListener('click', () => input.focus());
+    });
+
+}
+
+(function(root) {
+    const exportsObj = {
+        getToolFieldBindings,
+        handleSharedKeyInput,
+        updateKeypadCollapseUI,
+        createKeypadFieldHTML,
+        setActiveNumericField,
+        attachFieldClickListeners
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/ui/keypad.js <<<
+
+// >>> src/tools/shop.js >>>
+// ==============================================================
+// Multitools Calculator - Shop & General Tools
+// (unit_price, discount, tip, unit)
+// ==============================================================
+
+// Unit conversion definitions (including Thai Area units: ไร่, งาน, ตารางวา)
+const UNIT_CATEGORIES = {
+    area: {
+        label: 'พื้นที่ (ไร่-งาน-ตร.วา)',
+        units: [
+            { name: 'ไร่ (Rai)', factor: 1600 },
+            { name: 'งาน (Ngan)', factor: 400 },
+            { name: 'ตารางวา (Sq.Wa)', factor: 4 },
+            { name: 'ตารางเมตร (Sq.m)', factor: 1 },
+            { name: 'ตารางฟุต (Sq.ft)', factor: 0.092903 },
+            { name: 'เอเคอร์ (Acre)', factor: 4046.856 }
+        ]
+    },
+    length: {
+        label: 'ความยาว',
+        units: [
+            { name: 'กิโลเมตร (km)', factor: 1000 },
+            { name: 'เมตร (m)', factor: 1 },
+            { name: 'เซนติเมตร (cm)', factor: 0.01 },
+            { name: 'มิลลิเมตร (mm)', factor: 0.001 },
+            { name: 'นิ้ว (inch)', factor: 0.0254 },
+            { name: 'หุน (1/8 นิ้ว)', factor: 0.003175 },
+            { name: 'ฟุต (ft)', factor: 0.3048 },
+            { name: 'หลา (yd)', factor: 0.9144 },
+            { name: 'ไมล์ (mile)', factor: 1609.344 }
+        ]
+    },
+    weight: {
+        label: 'น้ำหนัก',
+        units: [
+            { name: 'กิโลกรัม (kg)', factor: 1 },
+            { name: 'กรัม (g)', factor: 0.001 },
+            { name: 'ขีด (100g)', factor: 0.1 },
+            { name: 'ปอนด์ (lb)', factor: 0.45359237 },
+            { name: 'ออนซ์ (oz)', factor: 0.0283495 },
+            { name: 'บาททองคำ (15.244g)', factor: 0.015244 }
+        ]
+    },
+    volume: {
+        label: 'ปริมาตร',
+        units: [
+            { name: 'ลิตร (L)', factor: 1 },
+            { name: 'มิลลิลิตร (mL / cc)', factor: 0.001 },
+            { name: 'แกลลอน (US Gal)', factor: 3.78541 },
+            { name: 'ถ้วยตวง (Cup)', factor: 0.24 },
+            { name: 'ช้อนโต๊ะ (Tbsp)', factor: 0.015 },
+            { name: 'ช้อนชา (Tsp)', factor: 0.005 }
+        ]
+    },
+    temp: {
+        label: 'อุณหภูมิ',
+        units: [
+            { name: 'เซลเซียส (°C)', code: 'C' },
+            { name: 'ฟาเรนไฮต์ (°F)', code: 'F' },
+            { name: 'เคลวิน (K)', code: 'K' }
+        ]
+    }
+};
+
+/* -----------------------------------------------------------
+ * TOOL 11: ราคาต่อหน่วย (Unit Price Comparison A, B, C, D)
+ * ----------------------------------------------------------- */
+function renderUnitPriceTool(container) {
+    const rows = appState.unit_price.rows;
+    const isAirbnb = appState.theme === 'airbnb';
+    const defs = (typeof UNIT_DEFINITIONS !== 'undefined') ? UNIT_DEFINITIONS : {
+        unit: { key: 'unit', label: 'หน่วย', family: 'general', factor: 1,     baseUnit: 'หน่วย' },
+        pcs:  { key: 'pcs',  label: 'ชิ้น',  family: 'count',   factor: 1,     baseUnit: 'ชิ้น' },
+        doz:  { key: 'doz',  label: 'โหล',  family: 'count',   factor: 12,    baseUnit: 'ชิ้น' },
+        g:    { key: 'g',    label: 'g',    family: 'weight',  factor: 0.001, baseUnit: 'กก.' },
+        kg:   { key: 'kg',   label: 'kg',   family: 'weight',  factor: 1,     baseUnit: 'กก.' },
+        ml:   { key: 'ml',   label: 'ml',   family: 'volume',  factor: 0.001, baseUnit: 'ลิตร' },
+        L:    { key: 'L',    label: 'L',    family: 'volume',  factor: 1,     baseUnit: 'ลิตร' }
+    };
+
+    container.innerHTML = `<div class="text-xs text-[var(--app-muted)] px-1 pb-1">💡 เคล็ดลับ: พิมพ์ <b>ราคา เว้นวรรค จำนวน</b> ในช่องราคา เช่น <b>864 50</b> ระบบจะแยกช่องให้อัตโนมัติ</div>`;
+
+    function refreshUnitPriceResults() {
+        persistAppState();
+        let invalidCount = 0;
+        container.querySelectorAll('input[data-shared-field]').forEach(input => {
+            const fieldIndex = Number(input.dataset.sharedField);
+            const value = rows[Math.floor(fieldIndex / 2)][fieldIndex % 2 ? 'qty' : 'price'];
+            const number = parseNumericInput(value);
+            const invalid = String(value).trim() !== '' && (!Number.isFinite(number) || number <= 0);
+            const cellEl = input.closest('.cell-input');
+            const error = cellEl ? cellEl.querySelector('.field-error') : null;
+            input.setAttribute('aria-invalid', String(invalid));
+            if (error) {
+                error.hidden = !invalid;
+                error.textContent = invalid ? (Number.isFinite(number) ? 'ต้องมากกว่า 0' : 'รูปแบบตัวเลขไม่ถูกต้อง') : '';
+            }
+            if (invalid) invalidCount++;
+        });
+
+        const liveItems = rows.map((r, index) => {
+            const price = parseNumericInput(r.price);
+            const qty = parseNumericInput(r.qty);
+            const uKey = r.unit || 'unit';
+            const uDef = defs[uKey] || defs.unit;
+            const baseQty = (Number.isFinite(qty) && qty > 0) ? qty * uDef.factor : NaN;
+            const normalizedPrice = (Number.isFinite(price) && Number.isFinite(baseQty) && baseQty > 0) ? price / baseQty : NaN;
+            return {
+                index,
+                id: r.id,
+                price,
+                qty,
+                unit: uKey,
+                uDef,
+                baseQty,
+                baseUnit: uDef.baseUnit,
+                family: uDef.family,
+                normalizedPrice
+            };
+        }).filter(item => Number.isFinite(item.price) && Number.isFinite(item.qty) && item.price > 0 && item.qty > 0 && Number.isFinite(item.normalizedPrice));
+
+        const distinctFamilies = new Set(liveItems.map(item => item.family));
+        const hasMismatchedFamilies = distinctFamilies.size > 1;
+
+        let bestItem = null;
+        if (!hasMismatchedFamilies && liveItems.length > 0) {
+            bestItem = [...liveItems].sort((a, b) => a.normalizedPrice - b.normalizedPrice)[0];
+        }
+
+        const rowNodes = container.querySelectorAll('.comparison-row');
+        rows.forEach((r, idx) => {
+            const rowNode = rowNodes[idx];
+            if (!rowNode) return;
+            const outputCell = rowNode.querySelector('.unit-price-output');
+            const liveMatch = liveItems.find(item => item.index === idx);
+
+            rowNode.classList.remove('is-cheapest', 'border-[var(--app-accent)]');
+            if (!liveMatch) {
+                outputCell.innerHTML = `<span class="placeholder-text text-xs">ราคาต่อหน่วย</span>`;
+                return;
+            }
+
+            const isBest = bestItem && bestItem.id === liveMatch.id && liveItems.length > 1;
+            if (isBest) {
+                rowNode.classList.add('is-cheapest');
+                if (isAirbnb) rowNode.classList.add('border-[var(--app-accent)]');
+            }
+
+            const diffBadge = (isBest && liveItems.length > 1)
+                ? `<span class="cheapest-badge mt-0.5">ถูกที่สุด</span>`
+                : (bestItem && bestItem.id !== liveMatch.id && !hasMismatchedFamilies)
+                    ? `<span class="text-[10px] text-[var(--app-muted)] mt-0.5 block">+${formatNum(((liveMatch.normalizedPrice - bestItem.normalizedPrice) / bestItem.normalizedPrice) * 100, 1)}%</span>`
+                    : '';
+
+            outputCell.innerHTML = `
+                <span class="unit-price-val font-mono font-bold text-sm ${isBest ? 'text-[var(--app-accent)] font-extrabold' : 'text-[#222222]'}">${formatMoney(liveMatch.normalizedPrice)}</span>
+                <span class="unit-price-sub text-[10px] text-[#6a6a6a]">฿/${escapeHTML(liveMatch.baseUnit)}</span>
+                ${diffBadge}
+            `;
+        });
+
+        if (invalidCount > 0) {
+            setStatusBanner('error', '⚠️ ตรวจพบช่องที่ข้อมูลไม่ถูกต้อง กรุณากรอกตัวเลขที่มากกว่า 0');
+        } else if (hasMismatchedFamilies) {
+            setStatusBanner('error', '⚠️ หน่วยสินค้าต่างประเภทกัน (เช่น น้ำหนัก vs ปริมาตร) ไม่สามารถเปรียบเทียบข้ามประเภทได้โดยตรง');
+        } else if (liveItems.length >= 2 && bestItem) {
+            const runnerUp = [...liveItems].filter(i => i.id !== bestItem.id).sort((a, b) => a.normalizedPrice - b.normalizedPrice)[0];
+            const savedPct = runnerUp ? ((runnerUp.normalizedPrice - bestItem.normalizedPrice) / runnerUp.normalizedPrice) * 100 : 0;
+            const contextText = bestItem.baseUnit !== 'หน่วย' ? ` (${formatMoney(bestItem.normalizedPrice)} บาท/${bestItem.baseUnit})` : '';
+            setStatusBanner('success', `⭐ <b>ตัวเลือก ${bestItem.id}</b> คุ้มค่าที่สุด!${contextText} <span class="text-xs font-normal block text-[#4a4a4a] mt-0.5">ประหยัดกว่าตัวเลือก ${runnerUp.id} ถึง <b>${formatNum(savedPct, 1)}%</b></span>`);
+        } else if (liveItems.length === 1) {
+            setStatusBanner('info', `กรอกราคาและจำนวนของ <b>ตัวเลือกอื่น</b> เพื่อเริ่มการเปรียบเทียบความคุ้มค่า`);
+        } else {
+            setStatusBanner('empty', 'กรอกราคาและจำนวนเพื่อคำนวณและเปรียบเทียบราคาต่อหน่วย');
+        }
+    }
+
+    const rowColors = ['border-blue-400', 'border-rose-400', 'border-emerald-400', 'border-amber-400'];
+
+    rows.forEach((r, idx) => {
+        const rowEl = document.createElement('div');
+        rowEl.className = `comparison-row flex items-center gap-1.5 p-2 bg-white rounded-[var(--app-card-radius)] border border-[var(--app-hairline)] ${rowColors[idx]} border-l-4 transition-all`;
+        rowEl.style.boxShadow = 'var(--app-elevation)';
+
+        // Cell 1: Label Badge
+        const labelCell = document.createElement('div');
+        labelCell.className = 'w-7 h-7 flex items-center justify-center font-bold text-xs rounded-full bg-[#f2f2f2] text-[#222222] shrink-0';
+        labelCell.textContent = r.id;
+
+        // Cell 2: Price Input
+        const priceCell = document.createElement('div');
+        priceCell.className = 'cell-input flex-1 min-w-0';
+        const priceFieldIdx = idx * 2;
+        const priceIsActive = appState.activeFieldIndex === priceFieldIdx;
+        priceCell.innerHTML = `
+            <div class="clev-field-box ${priceIsActive ? 'active-field' : ''} !p-1.5" data-field-index="${priceFieldIdx}">
+                <span class="field-label text-[10px] text-[#6a6a6a]">ราคา (${r.id})</span>
+                <input type="text" inputmode="decimal" data-shared-field="${priceFieldIdx}" value="${escapeHTML(formatInputDisplay(r.price))}" placeholder="0.00" class="field-input font-bold text-sm text-[#222222]">
+            </div>
+            <p class="field-error text-[10px] text-red-500 mt-0.5" hidden></p>
+        `;
+
+        // Cell 3: Quantity + Unit Selection
+        const qtyCell = document.createElement('div');
+        qtyCell.className = 'cell-input flex-1 min-w-0';
+        const qtyFieldIdx = idx * 2 + 1;
+        const qtyIsActive = appState.activeFieldIndex === qtyFieldIdx;
+        const activeUnit = r.unit || 'unit';
+        qtyCell.innerHTML = `
+            <div class="clev-field-box ${qtyIsActive ? 'active-field' : ''} !p-1.5" data-field-index="${qtyFieldIdx}">
+                <div class="flex items-center justify-between">
+                    <span class="field-label text-[10px] text-[#6a6a6a]">จำนวน</span>
+                    <select class="unit-select text-[10px] font-semibold bg-transparent text-[var(--app-accent)] border-none outline-none cursor-pointer p-0" data-row-idx="${idx}">
+                        ${Object.values(defs).map(u => `<option value="${u.key}" ${u.key === activeUnit ? 'selected' : ''}>${u.label}</option>`).join('')}
+                    </select>
+                </div>
+                <input type="text" inputmode="decimal" data-shared-field="${qtyFieldIdx}" value="${escapeHTML(formatInputDisplay(r.qty))}" placeholder="1" class="field-input font-bold text-sm text-[#222222]">
+            </div>
+            <p class="field-error text-[10px] text-red-500 mt-0.5" hidden></p>
+        `;
+
+        // Interactivity
+        const priceBox = priceCell.querySelector('[data-field-index]');
+        const priceInput = priceCell.querySelector('input');
+        const qtyBox = qtyCell.querySelector('[data-field-index]');
+        const qtyInput = qtyCell.querySelector('input');
+        const unitSelect = qtyCell.querySelector('.unit-select');
+
+        priceBox.addEventListener('click', (e) => {
+            if (e.target !== priceInput) priceInput.focus();
+            setActiveNumericField(priceFieldIdx);
+        });
+        qtyBox.addEventListener('click', (e) => {
+            if (e.target !== qtyInput && e.target !== unitSelect) qtyInput.focus();
+            setActiveNumericField(qtyFieldIdx);
+        });
+
+        priceInput.addEventListener('focus', () => setActiveNumericField(priceFieldIdx));
+        qtyInput.addEventListener('focus', () => setActiveNumericField(qtyFieldIdx));
+
+        priceInput.addEventListener('input', (e) => {
+            const rawVal = e.target.value;
+            // Smart input space separation: typing "864 50" automatically splits into Price=864 and Qty=50
+            if (/\s+/.test(rawVal)) {
+                const parts = rawVal.trim().split(/\s+/);
+                if (parts.length >= 2) {
+                    r.price = parts[0];
+                    r.qty = parts[1];
+                    priceInput.value = formatInputDisplay(parts[0]);
+                    qtyInput.value = formatInputDisplay(parts[1]);
+                    refreshUnitPriceResults();
+                    qtyInput.focus();
+                    return;
+                }
+            }
+            r.price = rawVal;
+            refreshUnitPriceResults();
+        });
+
+        priceInput.addEventListener('blur', () => {
+            const formatted = formatInputDisplay(r.price);
+            r.price = formatted;
+            priceInput.value = formatted;
+            refreshUnitPriceResults();
+        });
+
+        qtyInput.addEventListener('input', (e) => {
+            r.qty = e.target.value;
+            refreshUnitPriceResults();
+        });
+
+        qtyInput.addEventListener('blur', () => {
+            const formatted = formatInputDisplay(r.qty);
+            r.qty = formatted;
+            qtyInput.value = formatted;
+            refreshUnitPriceResults();
+        });
+
+        unitSelect.addEventListener('change', (e) => {
+            r.unit = e.target.value;
+            refreshUnitPriceResults();
+        });
+
+        // Cell 4: Unit Price Output
+        const unitCell = document.createElement('div');
+        unitCell.className = 'cell unit-price-output';
+        unitCell.innerHTML = `<span class="placeholder-text text-xs">ราคาต่อหน่วย</span>`;
+
+        rowEl.appendChild(labelCell);
+        rowEl.appendChild(priceCell);
+        rowEl.appendChild(qtyCell);
+        rowEl.appendChild(unitCell);
+        container.appendChild(rowEl);
+    });
+
+    refreshUnitPriceResults();
+}
+
+/* -----------------------------------------------------------
+ * TOOL 4: ส่วนลด (Discount Calculator)
+ * ----------------------------------------------------------- */
+function renderDiscountTool(container) {
+    const st = appState.discount;
+    const p = numberOrDefault(st.price, 0);
+    const d1 = numberOrDefault(st.discountPct, 0);
+    const d2 = numberOrDefault(st.extraPct, 0);
+    const isOver100 = d1 > 100 || d2 > 100;
+    const safeD1 = Math.min(Math.max(d1, 0), 100);
+    const safeD2 = Math.min(Math.max(d2, 0), 100);
+
+    const afterFirst = p * (1 - safeD1 / 100);
+    const finalPrice = afterFirst * (1 - safeD2 / 100);
+    const saved = p - finalPrice;
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-1.5">
+            ${createKeypadFieldHTML(0, 'ราคาปกติ', st.price, 'บาท', 'ราคาเต็ม')}
+            ${createKeypadFieldHTML(1, 'ส่วนลดหลัก (%)', st.discountPct, '%', 'เช่น 20')}
+            ${createKeypadFieldHTML(2, 'ส่วนลดเพิ่ม On-Top (%)', st.extraPct, '%', 'ถ้ามี เช่น 10')}
+
+            <div class="flex gap-1.5 pt-0.5">
+                ${[10, 15, 20, 25, 30, 50, 70].map(pct => `
+                    <button class="quick-disc flex-1 bg-white border border-[var(--app-hairline)] rounded-full py-1 text-xs font-semibold text-[var(--app-accent)] hover:bg-[var(--app-accent-soft)] transition" data-pct="${pct}">-${pct}%</button>
+                `).join('')}
+            </div>
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+    container.querySelectorAll('.quick-disc').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.discountPct = btn.getAttribute('data-pct');
+            renderActiveTool();
+        });
+    });
+
+    if (p <= 0) {
+        setStatusBanner('empty', 'กรุณาป้อนราคาสินค้าและเปอร์เซ็นต์ส่วนลด');
+    } else if (isOver100) {
+        setStatusBanner('error', `⚠️ ส่วนลดไม่ควรเกิน 100% (คำนวณสูงสุดที่ 100%) | ราคาสุทธิ: ${formatMoney(finalPrice)} บาท`);
+    } else {
+        setStatusBanner('success', `🏷️ ราคาสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(finalPrice)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">ประหยัดไป ${formatMoney(saved)} บาท</span>`);
+    }
+}
+
+/* -----------------------------------------------------------
+ * TOOL 9: ทิป (Tip & Split Bill Calculator)
+ * ----------------------------------------------------------- */
+function renderTipTool(container) {
+    const st = appState.tip;
+    const bill = numberOrDefault(st.bill, 0);
+    const tipPct = numberOrDefault(st.tipPct, 0);
+    const people = Math.max(1, integerOrDefault(st.people, 1));
+
+    const tipAmt = bill * (tipPct / 100);
+    const totalBill = bill + tipAmt;
+    const perPerson = totalBill / people;
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-1.5">
+            ${createKeypadFieldHTML(0, 'ยอดค่าอาหาร / บริการ', st.bill, 'บาท', 'ป้อนยอดบิล')}
+            ${createKeypadFieldHTML(1, 'เปอร์เซ็นต์ทิป (%)', st.tipPct, '%', '10')}
+            ${createKeypadFieldHTML(2, 'จำนวนคนหาร', st.people, 'คน', '1')}
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    if (bill <= 0) {
+        setStatusBanner('empty', 'กรุณาป้อนยอดค่าอาหารเพื่อคำนวณทิปและหารจำนวนคน');
+    } else {
+        setStatusBanner('success', `🍽️ ยอดรวมสุทธิ: <b>${formatMoney(totalBill)} ฿</b> (ทิป ${formatMoney(tipAmt)} ฿)<span class="text-sm font-bold block underline text-[var(--app-accent)]">หารเฉลี่ยคนละ: ${formatMoney(perPerson)} บาท (${people} คน)</span>`);
+    }
+}
+
+/* -----------------------------------------------------------
+ * TOOL 3: หน่วย (Unit Converter including Rai-Ngan-Sq.Wa)
+ * ----------------------------------------------------------- */
+function renderUnitConverterTool(container) {
+    const st = appState.unit;
+    const catObj = UNIT_CATEGORIES[st.cat];
+    if (st.fromIdx >= catObj.units.length) st.fromIdx = 0;
+    if (st.targetIdx >= catObj.units.length || st.targetIdx === st.fromIdx || st.targetIdx === undefined) st.targetIdx = catObj.units.length > 1 ? (st.fromIdx === 0 ? 1 : 0) : 0;
+
+    const inputVal = numberOrDefault(st.val, 0);
+    const fromUnit = catObj.units[st.fromIdx];
+    const targetUnit = catObj.units[st.targetIdx];
+
+    function convertValue(value, source, target) {
+        if (st.cat === 'temp') {
+            let celsius = value;
+            if (source.code === 'F') celsius = (value - 32) * 5 / 9;
+            if (source.code === 'K') celsius = value - 273.15;
+            if (target.code === 'C') return celsius;
+            if (target.code === 'F') return (celsius * 9 / 5) + 32;
+            return celsius + 273.15;
+        }
+        return (value * source.factor) / target.factor;
+    }
+
+    // Show only units that are useful for the current conversion.
+    // The list is selected from the current value and both selected units,
+    // so it does not fall back to a fixed km/m/cm set.
+    const relatedIndices = new Set([st.fromIdx, st.targetIdx]);
+    const rankedUnits = catObj.units
+        .map((unit, index) => {
+            const converted = Math.abs(convertValue(inputVal, fromUnit, unit));
+            const scale = converted > 0 ? Math.abs(Math.log10(converted) - 1) : Math.abs(Math.log10(Math.max(unit.factor || 1, 1e-12) / Math.max(fromUnit.factor || 1, 1e-12)));
+            return { index, scale };
+        })
+        .sort((a, b) => a.scale - b.scale);
+    rankedUnits.slice(0, Math.min(6, rankedUnits.length)).forEach(item => relatedIndices.add(item.index));
+
+    const resultsHTML = [...relatedIndices].sort((a, b) => a - b).map(idx => {
+        const u = catObj.units[idx];
+        let res = 0;
+        res = convertValue(inputVal, fromUnit, u);
+        const isSelected = idx === st.fromIdx;
+        const isTarget = idx === st.targetIdx;
+        return `
+            <div class="flex justify-between items-center py-1.5 px-3 border-b border-[#ebebeb] last:border-none ${isSelected ? 'bg-[var(--app-accent-soft)] font-bold text-[var(--app-accent)]' : ''} ${isTarget ? 'ring-1 ring-inset ring-[var(--app-accent)]' : ''}">
+                <span class="text-xs text-[#222222]">${u.name}</span>
+                <span class="text-sm font-mono">${formatNum(res, 4)}</span>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-1.5">
+            <div class="grid grid-cols-3 gap-1.5">
+                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-1.5">
+                    <label class="text-[10px] text-[#6a6a6a] block">หมวดหมู่หน่วย</label>
+                    <select id="unitCatSel" class="w-full font-semibold text-xs bg-transparent outline-none text-[#222222]">
+                        ${Object.entries(UNIT_CATEGORIES).map(([k, v]) => `<option value="${k}" ${st.cat === k ? 'selected' : ''}>${v.label}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-1.5">
+                    <label class="text-[10px] text-[#6a6a6a] block">หน่วยตั้งต้น</label>
+                    <select id="unitFromSel" class="w-full font-semibold text-xs bg-transparent outline-none text-[#222222]">
+                        ${catObj.units.map((u, i) => `<option value="${i}" ${st.fromIdx === i ? 'selected' : ''}>${u.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-1.5">
+                    <label class="text-[10px] text-[#6a6a6a] block">หน่วยปลายทาง</label>
+                    <select id="unitToSel" class="w-full font-semibold text-xs bg-transparent outline-none text-[#222222]">
+                        ${catObj.units.map((u, i) => `<option value="${i}" ${st.targetIdx === i ? 'selected' : ''}>${u.name}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+
+            ${createKeypadFieldHTML(0, `ค่าที่ต้องการแปลง`, st.val, fromUnit.name.split(' ')[0], 'ป้อนตัวเลข')}
+
+            <div class="bg-white border-2 border-[var(--app-accent)] rounded-[var(--app-btn-radius)] p-3 flex justify-between items-center">
+                <span class="text-xs font-semibold">ผลลัพธ์ปลายทาง<br><span class="font-normal text-[#6a6a6a]">${targetUnit.name}</span></span>
+                <span class="text-xl font-bold text-[var(--app-accent)]">${formatNum(convertValue(inputVal, fromUnit, targetUnit), 6)}</span>
+            </div>
+
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] overflow-y-auto max-h-[180px] thin-scroll">
+                ${resultsHTML}
+            </div>
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    document.getElementById('unitCatSel').addEventListener('change', (e) => {
+        st.cat = e.target.value;
+        st.fromIdx = 0;
+        st.targetIdx = 1;
+        renderActiveTool();
+    });
+    document.getElementById('unitFromSel').addEventListener('change', (e) => {
+        st.fromIdx = parseInt(e.target.value, 10);
+        if (st.targetIdx === st.fromIdx) st.targetIdx = st.fromIdx === 0 ? 1 : 0;
+        renderActiveTool();
+    });
+    document.getElementById('unitToSel').addEventListener('change', (e) => {
+        st.targetIdx = parseInt(e.target.value, 10);
+        renderActiveTool();
+    });
+
+    if (st.cat === 'area' && inputVal > 0) {
+        const totalSqm = inputVal * fromUnit.factor;
+        const rai = Math.floor(totalSqm / 1600);
+        const remAfterRai = totalSqm % 1600;
+        const ngan = Math.floor(remAfterRai / 400);
+        const sqWa = (remAfterRai % 400) / 4;
+        setStatusBanner('success', `📐 เท่ากับ <b>${rai} ไร่ ${ngan} งาน ${formatNum(sqWa, 2)} ตารางวา</b> (${formatNum(totalSqm, 2)} ตร.ม.)`);
+    } else {
+        setStatusBanner('info', `แปลงค่าจาก <b>${formatNum(inputVal, 4)} ${fromUnit.name}</b>`);
+    }
+}
+
+(function(root) {
+    const exportsObj = {
+        UNIT_CATEGORIES,
+        renderUnitPriceTool,
+        renderDiscountTool,
+        renderTipTool,
+        renderUnitConverterTool
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/tools/shop.js <<<
+
+// >>> src/tools/biz.js >>>
+// ==============================================================
+// Multitools Calculator - Business & Commerce Tools
+// (vat, vat_wht, percent, salary)
+// ==============================================================
+
+/* -----------------------------------------------------------
+ * TOOL 6: ภาษีมูลค่าเพิ่ม (VAT Calculator)
+ * ----------------------------------------------------------- */
+function renderVatTool(container) {
+    const st = appState.vat;
+    const amt = numberOrDefault(st.amount, 0);
+    const rate = numberOrDefault(st.rate, 0);
+
+    let netPrice = 0, vatAmt = 0, grossPrice = 0;
+    if (st.mode === 'exclude') {
+        netPrice = amt;
+        vatAmt = amt * (rate / 100);
+        grossPrice = netPrice + vatAmt;
+    } else {
+        grossPrice = amt;
+        netPrice = amt / (1 + rate / 100);
+        vatAmt = grossPrice - netPrice;
+    }
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-2">
+            <div class="segment-group grid-cols-2">
+                <button class="segment-btn vat-mode ${st.mode === 'exclude' ? 'active' : ''}" data-m="exclude">บวกภาษีเพิ่ม (Add VAT)</button>
+                <button class="segment-btn vat-mode ${st.mode === 'include' ? 'active' : ''}" data-m="include">ถอดภาษีจากราคารวม (Excl. VAT)</button>
+            </div>
+
+            ${createKeypadFieldHTML(0, 'จำนวนเงิน', st.amount, 'บาท', 'ป้อนจำนวนเงิน')}
+            ${createKeypadFieldHTML(1, 'อัตราภาษีมูลค่าเพิ่ม (VAT)', st.rate, '%', '7')}
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+    container.querySelectorAll('.vat-mode').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.mode = btn.getAttribute('data-m');
+            renderActiveTool();
+        });
+    });
+
+    if (amt <= 0) {
+        setStatusBanner('empty', 'กรุณาป้อนจำนวนเงินเพื่อคำนวณภาษีมูลค่าเพิ่ม');
+    } else {
+        setStatusBanner('success', `ก่อนภาษี: <b>${formatMoney(netPrice)}</b> | ภาษี (${rate}%): <b>${formatMoney(vatAmt)}</b><span class="block text-base text-[var(--app-accent)] underline mt-0.5">รวมภาษีสุทธิ: ${formatMoney(grossPrice)} บาท</span>`);
+    }
+}
+
+/* -----------------------------------------------------------
+ * TOOL: VAT + หัก ณ ที่จ่าย (Withholding Tax Calculator)
+ * ----------------------------------------------------------- */
+function renderVatWhtTool(container) {
+    const st = appState.vat_wht;
+    const amount = parseNumericInput(String(st.amount ?? '').replace(/,/g, ''));
+    const vat = numberOrDefault(st.vatRate, 0);
+    const wht = numberOrDefault(st.whtRate, 0);
+    const base = Number.isFinite(amount) ? (st.mode === 'after' ? amount / (1 + vat / 100) : amount) : 0;
+    const vatAmount = base * vat / 100;
+    const gross = base + vatAmount;
+    const whtAmount = base * wht / 100;
+    const net = gross - whtAmount;
+    container.innerHTML = `<div class="flex flex-col gap-3 p-1">
+        <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
+            <div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">ยอดเงิน</label><input id="whtAmount" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.amount))}" placeholder="เช่น 10,000" class="airbnb-input w-full"></div>
+            <div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">ยอดที่กรอกคือ</label><select id="whtMode" class="airbnb-input w-full"><option value="before" ${st.mode === 'before' ? 'selected' : ''}>ยอดก่อน VAT</option><option value="after" ${st.mode === 'after' ? 'selected' : ''}>ยอดรวม VAT แล้ว</option></select></div><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">VAT (%)</label><input id="whtVat" type="number" value="${st.vatRate}" class="airbnb-input w-full"></div></div>
+            <div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">หัก ณ ที่จ่าย (%)</label><select id="whtRate" class="airbnb-input w-full"><option value="0" ${wht === 0 ? 'selected' : ''}>ไม่หัก</option><option value="1" ${wht === 1 ? 'selected' : ''}>1%</option><option value="3" ${wht === 3 ? 'selected' : ''}>3%</option><option value="5" ${wht === 5 ? 'selected' : ''}>5%</option></select></div>
+        </div>
+        <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2" style="box-shadow:var(--app-elevation)"><div class="flex justify-between"><span>ยอดก่อน VAT</span><b>${Number.isFinite(amount) ? formatMoney(base) : '-'} บาท</b></div><div class="flex justify-between"><span>VAT ${vat}%</span><b>${Number.isFinite(amount) ? formatMoney(vatAmount) : '-'} บาท</b></div><div class="flex justify-between"><span>ยอดรวม VAT</span><b>${Number.isFinite(amount) ? formatMoney(gross) : '-'} บาท</b></div><div class="flex justify-between"><span>หัก ณ ที่จ่าย ${wht}%</span><b>${Number.isFinite(amount) ? `- ${formatMoney(whtAmount)}` : '-'} บาท</b></div><div class="mt-2 p-3 rounded-xl border border-[#16a34a] bg-[#f0fdf4] text-[#15803d] theme-result-highlight flex justify-between"><span class="font-semibold">ยอดโอนสุทธิ</span><b>${Number.isFinite(amount) ? formatMoney(net) : '-'} บาท</b></div>${Number.isFinite(amount) ? `<div class="flex justify-end pt-1"><button id="btnPrintVatWhtSummary" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">🖨️ พิมพ์ใบสรุปภาษี / PDF</button></div>` : ''}</div></div>`;
+    const whtInput = document.getElementById('whtAmount');
+    whtInput.addEventListener('blur', () => {
+        const formatted = formatInputDisplay(whtInput.value);
+        st.amount = formatted;
+        whtInput.value = formatted;
+        persistAppState();
+    });
+    const rerender = () => {
+        st.amount = formatInputDisplay(whtInput.value);
+        st.mode = document.getElementById('whtMode').value;
+        st.vatRate = document.getElementById('whtVat').value;
+        st.whtRate = document.getElementById('whtRate').value;
+        persistAppState();
+        renderActiveTool();
+    };
+    ['whtAmount','whtMode','whtVat','whtRate'].forEach(id => document.getElementById(id).addEventListener('change', rerender));
+    container.querySelector('#btnPrintVatWhtSummary')?.addEventListener('click', () => {
+        triggerPrintReceipt('vat_wht');
+    });
+    setStatusBanner(Number.isFinite(amount) ? 'success' : 'empty', Number.isFinite(amount) ? `ยอดโอนสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(net)} บาท</span>` : 'กรุณาป้อนยอดเงินเพื่อคำนวณ VAT และหัก ณ ที่จ่าย');
+}
+
+/* -----------------------------------------------------------
+ * TOOL 5: เปอร์เซ็นต์ (Percentage Calculator)
+ * ----------------------------------------------------------- */
+function renderPercentTool(container) {
+    const st = appState.percent;
+    const x = parseNumericInput(st.x);
+    const y = parseNumericInput(st.y);
+    const z = parseNumericInput(st.z);
+
+    let labelX = 'เปอร์เซ็นต์ (X%)';
+    let labelY = 'ของจำนวน (Y)';
+    if (st.mode === 'what_pct') {
+        labelX = 'จำนวนย่อย (X)';
+        labelY = 'คิดเป็นกี่ % ของจำนวนเต็ม (Y)';
+    } else if (st.mode === 'change') {
+        labelX = 'ค่าเริ่มต้น (X)';
+        labelY = 'ค่าใหม่ (Y)';
+    } else if (st.mode === 'reverse') {
+        labelX = 'ค่าหลังลด';
+        labelY = 'ลดกี่ %';
+    } else if (st.mode === 'split') {
+        labelX = 'ยอดรวม';
+        labelY = 'สัดส่วน (%)';
+    } else if (st.mode === 'compound') {
+        labelX = 'ค่าตั้งต้น';
+        labelY = 'ลดครั้งที่ 1 (%)';
+    } else if (st.mode === 'profit') {
+        labelX = 'ต้นทุน';
+        labelY = 'ราคาขาย';
+    }
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-2">
+            <div class="segment-group grid-cols-3">
+                <button class="segment-btn pct-mode ${st.mode === 'pct_of' ? 'active' : ''}" data-m="pct_of">X% ของ Y</button>
+                <button class="segment-btn pct-mode ${st.mode === 'what_pct' ? 'active' : ''}" data-m="what_pct">X เป็นกี่ % ของ Y</button>
+                <button class="segment-btn pct-mode ${st.mode === 'change' ? 'active' : ''}" data-m="change">% เพิ่ม/ลด</button>
+            </div>
+            <div class="segment-group grid-cols-2 balanced-segment-modes">
+                <button class="segment-btn pct-mode ${st.mode === 'reverse' ? 'active' : ''}" data-m="reverse">ย้อนหาค่าเดิม</button>
+                <button class="segment-btn pct-mode ${st.mode === 'split' ? 'active' : ''}" data-m="split">แบ่งสัดส่วน</button>
+                <button class="segment-btn pct-mode ${st.mode === 'compound' ? 'active' : ''}" data-m="compound">ลดต่อเนื่อง</button>
+                <button class="segment-btn pct-mode ${st.mode === 'profit' ? 'active' : ''}" data-m="profit">กำไร / Margin</button>
+            </div>
+
+            ${createKeypadFieldHTML(0, labelX, st.x, st.mode === 'pct_of' ? '%' : '', 'ป้อนค่า X')}
+            ${createKeypadFieldHTML(1, labelY, st.y, '', 'ป้อนค่า Y')}
+            ${st.mode === 'compound' ? createKeypadFieldHTML(2, 'ลดครั้งที่ 2 (%)', st.z, '%', 'ป้อนเปอร์เซ็นต์ครั้งที่ 2') : ''}
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+    container.querySelectorAll('.pct-mode').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.mode = btn.getAttribute('data-m');
+            renderActiveTool();
+        });
+    });
+
+    if (['reverse', 'split', 'compound', 'profit'].includes(st.mode)) {
+        if (isNaN(x) || isNaN(y) || (st.mode === 'compound' && isNaN(z))) {
+            setStatusBanner('empty', 'กรุณาป้อนข้อมูลให้ครบเพื่อคำนวณ');
+        } else if (st.mode === 'reverse') {
+            if (y >= 100) {
+                setStatusBanner('empty', 'เปอร์เซ็นต์ลดต้องน้อยกว่า 100%');
+            } else {
+                const original = x / (1 - y / 100);
+                const saved = original - x;
+                setStatusBanner('success', `ราคาก่อนลด = <span class="text-lg text-[var(--app-accent)] underline">${formatNum(original, 2)}</span><span class="text-xs font-medium block">ส่วนต่าง ${formatNum(saved, 2)}</span>`);
+            }
+        } else if (st.mode === 'split') {
+            const part = x * y / 100;
+            setStatusBanner('success', `${formatNum(y, 2)}% ของ ${formatNum(x)} = <span class="text-lg text-[var(--app-accent)] underline">${formatNum(part, 2)}</span>`);
+        } else if (st.mode === 'compound') {
+            const afterFirst = x * (1 - y / 100);
+            const finalValue = afterFirst * (1 - z / 100);
+            const totalPct = (1 - finalValue / x) * 100;
+            setStatusBanner('success', `เหลือ <span class="text-lg text-[var(--app-accent)] underline">${formatNum(finalValue, 2)}</span><span class="text-xs font-medium block">ลดจริงรวม ${formatNum(totalPct, 2)}% (ไม่ใช่ ${formatNum(y + z, 2)}% ตรงๆ)</span>`);
+        } else {
+            const profit = y - x;
+            const markup = x === 0 ? 0 : (profit / x) * 100;
+            const margin = y === 0 ? 0 : (profit / y) * 100;
+            setStatusBanner('success', `กำไร <span class="text-lg text-[var(--app-accent)] underline">${formatNum(profit, 2)}</span><span class="text-xs font-medium block">Markup ${formatNum(markup, 2)}% · Margin ${formatNum(margin, 2)}%</span>`);
+        }
+        return;
+    }
+
+    if (isNaN(x) || isNaN(y)) {
+        setStatusBanner('empty', 'กรุณาป้อนค่า X และ Y เพื่อคำนวณเปอร์เซ็นต์');
+    } else if (st.mode === 'pct_of') {
+        const res = (x / 100) * y;
+        setStatusBanner('success', `${formatNum(x)}% ของ ${formatNum(y)} = <span class="text-lg text-[var(--app-accent)] underline">${formatNum(res, 4)}</span>`);
+    } else if (st.mode === 'what_pct') {
+        if (y === 0) {
+            setStatusBanner('empty', 'ค่า Y ต้องไม่เป็น 0');
+        } else {
+            const res = (x / y) * 100;
+            setStatusBanner('success', `${formatNum(x)} คิดเป็น <span class="text-lg text-[var(--app-accent)] underline">${formatNum(res, 2)}%</span> ของ ${formatNum(y)}`);
+        }
+    } else {
+        if (x === 0) {
+            setStatusBanner('empty', 'ค่าเริ่มต้น X ต้องไม่เป็น 0');
+        } else {
+            const diff = y - x;
+            const pct = (diff / x) * 100;
+            const dir = diff >= 0 ? 'เพิ่มขึ้น +' : 'ลดลง ';
+            setStatusBanner('success', `เปลี่ยนแปลง: <b class="text-[var(--app-accent)]">${dir}${formatNum(pct, 2)}%</b> (ผลต่าง ${formatNum(diff, 2)})`);
+        }
+    }
+}
+
+/* -----------------------------------------------------------
+ * TOOL: จัดการเงินเดือน 50/30/20 (Salary Allocation)
+ * ----------------------------------------------------------- */
+function renderSalaryTool(container) {
+    const st = appState.salary;
+    const income = numberOrDefault(st.income, 0);
+    const needsPct = numberOrDefault(st.needsPct, 0);
+    const wantsPct = numberOrDefault(st.wantsPct, 0);
+    const savingsPct = numberOrDefault(st.savingsPct, 0);
+    const emergencyPct = numberOrDefault(st.emergencyPct, 0);
+    const debtPct = numberOrDefault(st.debtPct, 0);
+    const totalPct = needsPct + wantsPct + savingsPct;
+    const needs = income * needsPct / 100;
+    const wants = income * wantsPct / 100;
+    const savings = income * savingsPct / 100;
+    const emergency = income * emergencyPct / 100;
+    const debt = income * debtPct / 100;
+
+    container.innerHTML = `<div class="flex flex-col gap-2"><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3"><div class="text-xs text-[#6a6a6a] mb-2">หลักการเริ่มต้น 50/30/20: ค่าใช้จ่ายจำเป็น / ความต้องการ / ออมและลงทุน</div>${createKeypadFieldHTML(0, 'เงินเดือนสุทธิที่ได้รับ', st.income, 'บาท/เดือน', 'เช่น 30,000')}</div><div class="grid grid-cols-3 gap-2">${[['salaryNeedsPct','ค่าใช้จ่ายจำเป็น (%)',st.needsPct],['salaryWantsPct','ไลฟ์สไตล์ (%)',st.wantsPct],['salarySavingsPct','ออม/ลงทุน (%)',st.savingsPct]].map(([id,label,value]) => `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-2"><label class="text-[10px] text-[#6a6a6a] block">${label}</label><input id="${id}" type="number" min="0" max="100" step="1" value="${value}" class="airbnb-input w-full"></div>`).join('')}</div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2"><div class="text-xs font-semibold text-[#6a6a6a]">เป้าหมายย่อยที่แนะนำ</div><div class="grid grid-cols-2 gap-2"><label class="text-xs">เงินสำรองฉุกเฉิน (% ของเงินเดือน)<input id="salaryEmergencyPct" type="number" min="0" max="100" value="${st.emergencyPct}" class="airbnb-input w-full mt-1"></label><label class="text-xs">ชำระหนี้เพิ่มเติม (% ของเงินเดือน)<input id="salaryDebtPct" type="number" min="0" max="100" value="${st.debtPct}" class="airbnb-input w-full mt-1"></label></div></div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2"><div class="flex justify-between"><span>ค่าใช้จ่ายจำเป็น</span><b>${formatMoney(needs)} บาท</b></div><div class="flex justify-between"><span>ความต้องการ/ไลฟ์สไตล์</span><b>${formatMoney(wants)} บาท</b></div><div class="flex justify-between"><span>ออมและลงทุน</span><b>${formatMoney(savings)} บาท</b></div><div class="flex justify-between text-[var(--app-accent)]"><span>เป้าหมายเงินฉุกเฉิน</span><b>${formatMoney(emergency)} บาท/เดือน</b></div><div class="flex justify-between"><span>แนวทางชำระหนี้เพิ่ม</span><b>${formatMoney(debt)} บาท/เดือน</b></div>${income > 0 ? `<div class="flex justify-end pt-2"><button id="btnPrintSalarySummary" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">🖨️ พิมพ์แผนการเงิน / PDF</button></div>` : ''}</div></div>`;
+    attachFieldClickListeners(container);
+    const save = (id, key) => document.getElementById(id)?.addEventListener('change', event => { st[key] = event.target.value; renderActiveTool(); });
+    save('salaryNeedsPct', 'needsPct');
+    save('salaryWantsPct', 'wantsPct');
+    save('salarySavingsPct', 'savingsPct');
+    save('salaryEmergencyPct', 'emergencyPct');
+    save('salaryDebtPct', 'debtPct');
+    container.querySelector('#btnPrintSalarySummary')?.addEventListener('click', () => {
+        triggerPrintReceipt('salary');
+    });
+    if (income <= 0) setStatusBanner('empty', 'กรุณากรอกเงินเดือนสุทธิที่ได้รับ');
+    else if (Math.abs(totalPct - 100) > 0.01) setStatusBanner('empty', `สัดส่วนหลักรวม ${formatNum(totalPct, 0)}% ควรปรับให้รวมเท่ากับ 100%`);
+    else setStatusBanner('success', `จัดสรรเงินเดือน ${formatMoney(income)} บาทเรียบร้อย · ออม/ลงทุน ${formatMoney(savings)} บาทต่อเดือน`);
+}
+
+(function(root) {
+    const exportsObj = {
+        renderVatTool,
+        renderVatWhtTool,
+        renderPercentTool,
+        renderSalaryTool
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/tools/biz.js <<<
+
+// >>> src/tools/finance.js >>>
+// ==============================================================
+// Multitools Calculator - Finance & Planning Tools
+// (loan, savings, currency)
+// ==============================================================
+
+if (typeof globalThis.currencyFetchInFlight === 'undefined') {
+    globalThis.currencyFetchInFlight = false;
+}
+
+/* -----------------------------------------------------------
+ * TOOL 2: สกุลเงิน (Currency Converter)
+ * ----------------------------------------------------------- */
+async function loadFrankfurterRates(force = false) {
+    const st = appState.currency;
+    const now = Date.now();
+    if (currencyFetchInFlight) return;
+    if (!force && st.lastAttempt && now - new Date(st.lastAttempt).getTime() < 30000) return;
+    currencyFetchInFlight = true;
+    st.lastAttempt = new Date().toISOString();
+    if (appState.activeToolId === 'currency') renderActiveTool();
+    try {
+        const quotes = Object.keys(st.ratesInTHB).filter(code => code !== 'THB').join(',');
+        const response = await fetch(`https://api.frankfurter.dev/v2/rates?base=THB&quotes=${quotes}`, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`Frankfurter HTTP ${response.status}`);
+        const payload = await response.json();
+        // Commit a complete validated snapshot; never label old rates as fresh.
+        const snapshot = parseFrankfurterRates(payload, quotes.split(','));
+        st.ratesInTHB = snapshot.rates;
+        st.rateDates = snapshot.dates;
+        st.lastUpdated = new Date().toISOString();
+        st.rateSource = 'Frankfurter';
+    } catch (error) {
+        st.rateSource = 'ค่าเดิมในเครื่อง (เชื่อมต่อ API ไม่สำเร็จ)';
+    } finally {
+        currencyFetchInFlight = false;
+        persistAppState();
+        if (appState.activeToolId === 'currency') renderActiveTool();
+    }
+}
+
+function renderCurrencyTool(container) {
+    const st = appState.currency;
+    const currencies = [
+        { code: 'THB', name: '🇹🇭 THB - บาทไทย' },
+        { code: 'USD', name: '🇺🇸 USD - ดอลลาร์สหรัฐ' },
+        { code: 'EUR', name: '🇪🇺 EUR - ยูโร' },
+        { code: 'JPY', name: '🇯🇵 JPY - เยนญี่ปุ่น' },
+        { code: 'CNY', name: '🇨🇳 CNY - หยวนจีน' },
+        { code: 'GBP', name: '🇬🇧 GBP - ปอนด์อังกฤษ' },
+        { code: 'KRW', name: '🇰🇷 KRW - วอนเกาหลี' },
+        { code: 'SGD', name: '🇸🇬 SGD - ดอลลาร์สิงคโปร์' }
+    ];
+
+    const amt = numberOrDefault(st.amount, 0);
+    const fromRate = st.ratesInTHB[st.from] || 1;
+    const toRate = st.ratesInTHB[st.to] || 1;
+    const customRate = parseNumericInput(st.customRateToTHB);
+    const effectiveRate = (!isNaN(customRate) && customRate > 0) ? customRate : (fromRate / toRate);
+    const converted = amt * effectiveRate;
+    const rateDateText = [...new Set([st.from, st.to].filter(code => code !== 'THB').map(code => st.rateDates?.[code]).filter(Boolean))].join(', ');
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-1.5">
+            <div class="grid grid-cols-2 gap-1.5">
+                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-2">
+                    <label class="text-[11px] text-[#6a6a6a] block">จากสกุลเงิน</label>
+                    <select id="currFromSel" class="w-full font-semibold text-sm bg-transparent outline-none mt-0.5 text-[#222222]">
+                        ${currencies.map(c => `<option value="${c.code}" ${st.from === c.code ? 'selected' : ''}>${c.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-2">
+                    <label class="text-[11px] text-[#6a6a6a] block">เป็นสกุลเงิน</label>
+                    <select id="currToSel" class="w-full font-semibold text-sm bg-transparent outline-none mt-0.5 text-[#222222]">
+                        ${currencies.map(c => `<option value="${c.code}" ${st.to === c.code ? 'selected' : ''}>${c.name}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+
+            ${createKeypadFieldHTML(0, `จำนวนเงิน (${st.from})`, st.amount, st.from, 'ป้อนจำนวนเงิน')}
+            ${createKeypadFieldHTML(1, `กำหนดเรทเอง (1 ${st.from} = ? ${st.to})`, st.customRateToTHB, st.to, `อัตโนมัติ (${formatNum(fromRate / toRate, 4)})`)}
+
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-2.5 space-y-2 text-xs text-[#3f3f3f]">
+                <div class="flex items-center justify-between gap-2"><span>เรทที่ใช้: <b>1 ${st.from} = ${formatNum(effectiveRate, 4)} ${st.to}</b></span><button id="swapCurrBtn" class="px-3 py-1 bg-[#f7f7f7] border border-[#dddddd] rounded-full font-semibold text-[var(--app-accent)]">⇄ สลับ</button></div>
+                <div class="flex items-center justify-between gap-2 text-[11px] text-[#6a6a6a]"><span>${escapeHTML(st.rateSource)}${rateDateText ? ` · วันที่เรท ${escapeHTML(rateDateText)}` : ''}${st.lastUpdated ? ` · ดึงข้อมูล ${new Date(st.lastUpdated).toLocaleString('th-TH')}` : ''}</span><button id="refreshRatesBtn" class="px-2.5 py-1 border border-[var(--app-hairline)] rounded-full font-semibold text-[var(--app-accent)]">↻ อัปเดตเรท</button></div>
+            </div>
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    document.getElementById('currFromSel').addEventListener('change', (e) => {
+        st.from = e.target.value;
+        st.customRateToTHB = '';
+        renderActiveTool();
+    });
+    document.getElementById('currToSel').addEventListener('change', (e) => {
+        st.to = e.target.value;
+        st.customRateToTHB = '';
+        renderActiveTool();
+    });
+    document.getElementById('swapCurrBtn').addEventListener('click', () => {
+        const tmp = st.from;
+        st.from = st.to;
+        st.to = tmp;
+        st.customRateToTHB = '';
+        renderActiveTool();
+    });
+    document.getElementById('refreshRatesBtn').addEventListener('click', () => loadFrankfurterRates(true));
+
+    const stale = !st.lastUpdated || Date.now() - new Date(st.lastUpdated).getTime() > 30 * 60 * 1000;
+    if (stale) loadFrankfurterRates();
+
+    if (amt <= 0) {
+        setStatusBanner('empty', 'กรุณาป้อนจำนวนเงินที่ต้องการแปลง');
+    } else {
+        setStatusBanner('success', `💱 ${formatNum(amt, 2)} ${st.from} = <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(converted)} ${st.to}</span>`);
+    }
+}
+
+/* -----------------------------------------------------------
+ * TOOL 15: เงินกู้ (Loan Payment Calculator)
+ * ----------------------------------------------------------- */
+function renderLoanTool(container) {
+    const st = appState.loan;
+    const P = numberOrDefault(st.principal, 0);
+    const annualRate = numberOrDefault(st.interestRate, 0);
+    const n = integerOrDefault(st.months, 0);
+    const extra = numberOrDefault(st.extra, 0);
+
+    const rateAfter = numberOrDefault(st.rateAfter, annualRate);
+    const promoMonths = Math.max(0, integerOrDefault(st.promoMonths, 0));
+    let monthlyPay = 0, totalPay = 0, totalInterest = 0, extraInterest = 0, extraMonths = n;
+    const schedule = generateLoanSchedule(st);
+    if (schedule.length) {
+        monthlyPay = schedule[0]?.payment || 0;
+        extraMonths = schedule.length;
+        totalPay = schedule.reduce((sum, item) => sum + item.payment, 0);
+        totalInterest = schedule.reduce((sum, item) => sum + item.interest, 0);
+        extraInterest = totalInterest;
+    }
+    const calculateLoanPlan = (extraPayment) => {
+        let balance = P, month = 0, interestTotal = 0, payment = 0, previousRate = null;
+        while (balance > 0.01 && month < 1200 && month < n + 120) {
+            const currentRate = st.rateType === 'step' && month >= promoMonths ? rateAfter : annualRate;
+            const monthlyRate = (currentRate / 100) / 12;
+            const remaining = Math.max(1, n - month);
+            if (payment === 0 || previousRate !== currentRate) {
+                payment = st.calcMethod === 'flat' ? (P / n) + (P * currentRate / 100 / 12) : (monthlyRate === 0 ? balance / remaining : balance * (monthlyRate * Math.pow(1 + monthlyRate, remaining)) / (Math.pow(1 + monthlyRate, remaining) - 1));
+                previousRate = currentRate;
+            }
+            const interest = st.calcMethod === 'flat' ? (P * currentRate / 100 / 12) : (balance * monthlyRate);
+            const principalPart = Math.min(balance, Math.max(0, payment + extraPayment - interest));
+            if (principalPart <= 0) break;
+            interestTotal += interest;
+            balance -= principalPart;
+            month++;
+        }
+        return { interestTotal, months: month };
+    };
+    const normalPlan = P > 0 && n > 0 ? calculateLoanPlan(0) : { interestTotal: 0, months: 0 };
+    const interestSaved = Math.max(0, normalPlan.interestTotal - totalInterest);
+    const monthsSaved = Math.max(0, normalPlan.months - extraMonths);
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-1.5">
+            ${createKeypadFieldHTML(0, 'วงเงินกู้ (เงินต้น)', st.principal, 'บาท', 'เช่น 500,000')}
+            ${createKeypadFieldHTML(1, 'อัตราดอกเบี้ยต่อปี', st.interestRate, '% ต่อปี', 'เช่น 4.5')}
+            ${createKeypadFieldHTML(2, 'ระยะเวลาผ่อนชำระ', st.months, 'เดือน', 'เช่น 36')}
+            ${createKeypadFieldHTML(3, 'โปะเพิ่มรายเดือน', st.extra, 'บาท/เดือน', 'เช่น 1000')}
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    const loanRoot = container.firstElementChild;
+    loanRoot.insertAdjacentHTML('afterbegin', `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-2"><label class="text-xs text-[#6a6a6a] block mb-1">วิธีคำนวณดอกเบี้ย</label><select id="loanCalcMethod" class="w-full font-semibold text-sm bg-transparent outline-none"><option value="reducing" ${st.calcMethod !== 'flat' ? 'selected' : ''}>ลดต้นลดดอก</option><option value="flat" ${st.calcMethod === 'flat' ? 'selected' : ''}>ค่างวดคงที่ (Flat Rate)</option></select></div>`);
+    loanRoot.insertAdjacentHTML('afterbegin', `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-2"><label class="text-xs text-[#6a6a6a] block mb-1">ประเภทอัตราดอกเบี้ย</label><select id="loanRateType" class="w-full font-semibold text-sm bg-transparent outline-none"><option value="fixed" ${st.rateType !== 'step' ? 'selected' : ''}>Fixed Rate (คงที่)</option><option value="step" ${st.rateType === 'step' ? 'selected' : ''}>Step Rate (ขั้นบันได)</option></select><div id="loanStepFields" class="grid grid-cols-2 gap-2 mt-2" style="display:${st.rateType === 'step' ? 'grid' : 'none'}"><input id="loanPromoMonths" type="number" min="0" value="${st.promoMonths}" placeholder="ช่วงแรก (เดือน)" class="airbnb-input w-full"><input id="loanRateAfter" type="number" step="0.01" value="${st.rateAfter}" placeholder="ดอกเบี้ยหลังช่วงแรก" class="airbnb-input w-full"></div></div>`);
+    if (schedule.length) {
+        const table = document.createElement('div');
+        table.className = 'bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 mt-2 overflow-auto';
+        table.innerHTML = `
+            <div class="flex items-center justify-between gap-2 mb-2">
+                <div class="text-xs font-semibold text-[#6a6a6a]">ตารางผ่อนชำระ (${schedule.length} งวด)</div>
+                <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                    <button id="btnPrintLoanSummary" type="button" title="พิมพ์สรุปสินเชื่อหรือบันทึกเป็นไฟล์ PDF" class="px-2 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
+                        🖨️ พิมพ์/PDF
+                    </button>
+                    <button id="btnExportLoanMonthly" type="button" title="ดาวน์โหลดตารางผ่อนรายเดือนทุกงวดเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition-all shadow-sm flex items-center gap-1 cursor-pointer">
+                        📥 รายงวด (.CSV)
+                    </button>
+                    <button id="btnExportLoanYearly" type="button" title="ดาวน์โหลดสรุปยอดผ่อนรายปีเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2 py-1 text-xs font-medium rounded-lg border border-[var(--app-hairline)] text-[#4a4a4a] bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
+                        📥 สรุปรายปี (.CSV)
+                    </button>
+                </div>
+            </div>
+            <table class="w-full text-xs">
+                <thead>
+                    <tr class="border-b"><th class="text-left py-1">งวด</th><th class="text-right py-1">จ่าย</th><th class="text-right py-1">ดอกเบี้ย</th><th class="text-right py-1">เงินต้น</th><th class="text-right py-1">คงเหลือ</th></tr>
+                </thead>
+                <tbody>${schedule.slice(0, 120).map(item => `<tr class="border-b border-[#eee]"><td class="py-1">${item.month}</td><td class="text-right">${formatMoney(item.payment)}</td><td class="text-right">${formatMoney(item.interest)}</td><td class="text-right">${formatMoney(item.principal)}</td><td class="text-right">${formatMoney(item.balance)}</td></tr>`).join('')}</tbody>
+            </table>
+            ${schedule.length > 120 ? `<div class="text-[11px] text-[#888] text-center mt-2">แสดงบนหน้าจอ 120 งวดแรก · ดาวน์โหลดไฟล์ CSV เพื่อดูครบทั้ง ${schedule.length} งวด</div>` : ''}
+        `;
+        loanRoot.appendChild(table);
+
+        table.querySelector('#btnPrintLoanSummary')?.addEventListener('click', () => {
+            triggerPrintReceipt('loan');
+        });
+
+        table.querySelector('#btnExportLoanMonthly')?.addEventListener('click', (e) => {
+            const btn = e.currentTarget;
+            const csv = buildLoanAmortizationCSV(schedule, 'monthly');
+            downloadCSV(getCSVFilename('loan_amortization', 'monthly'), csv);
+            triggerButtonFeedback(btn, '✓ โหลดแล้ว');
+        });
+
+        table.querySelector('#btnExportLoanYearly')?.addEventListener('click', (e) => {
+            const btn = e.currentTarget;
+            const csv = buildLoanAmortizationCSV(schedule, 'yearly');
+            downloadCSV(getCSVFilename('loan_amortization', 'yearly'), csv);
+            triggerButtonFeedback(btn, '✓ โหลดแล้ว');
+        });
+    }
+    container.querySelector('#loanRateType').addEventListener('change', (event) => { st.rateType = event.target.value; renderActiveTool(); });
+    container.querySelector('#loanCalcMethod').addEventListener('change', (event) => { st.calcMethod = event.target.value; renderActiveTool(); });
+    container.querySelector('#loanPromoMonths')?.addEventListener('change', (event) => { st.promoMonths = event.target.value; renderActiveTool(); });
+    container.querySelector('#loanRateAfter')?.addEventListener('change', (event) => { st.rateAfter = event.target.value; renderActiveTool(); });
+
+    if (P <= 0 || n <= 0) {
+        setStatusBanner('empty', 'ป้อนวงเงินกู้ ดอกเบี้ย และจำนวนเดือนเพื่อคำนวณยอดผ่อน');
+    } else {
+        setStatusBanner('success', `🏦 ผ่อนเดือนละ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(monthlyPay)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">ดอกเบี้ยรวม: ${formatMoney(totalInterest)} ฿ | โปะเพิ่ม: ${formatMoney(extra)} ฿/เดือน | เหลือ ${extraMonths} เดือน</span><span class="text-xs font-bold block text-[var(--app-accent)]">ประหยัดดอกเบี้ย ${formatMoney(interestSaved)} ฿ และลดระยะเวลา ${monthsSaved} เดือน</span>`);
+    }
+}
+
+/* -----------------------------------------------------------
+ * TOOL 16: เงินออม (Savings & Compound Interest Calculator)
+ * ----------------------------------------------------------- */
+function renderSavingsTool(container) {
+    const st = appState.savings;
+    const init = numberOrDefault(st.initial, 0);
+    const monthly = numberOrDefault(st.monthly, 0);
+    const rate = numberOrDefault(st.interestRate, 0);
+    const retirementYears = Math.max(0, numberOrDefault(st.retirementAge, 0) - numberOrDefault(st.currentAge, 0));
+    const years = st.mode === 'retirement' ? retirementYears : numberOrDefault(st.years, 0);
+    const annualIncrease = numberOrDefault(st.annualIncrease, 0);
+    const inflationRate = numberOrDefault(st.inflationRate, 0);
+
+    const months = Math.round(years * 12);
+    const r = (rate / 100) / 12;
+    let totalBalance = init;
+    let totalPrincipal = init;
+    const yearlyRows = [];
+    const monthlyRows = [];
+
+    let yearlyDepositAcc = init;
+    let yearlyInterestAcc = 0;
+
+    for (let m = 0; m < months; m++) {
+        const prevBal = totalBalance;
+        const currentMonthly = monthly * Math.pow(1 + annualIncrease / 100, Math.floor(m / 12));
+        const monthInterest = (prevBal + currentMonthly) * r;
+        totalBalance = (prevBal + currentMonthly) + monthInterest;
+        totalPrincipal += currentMonthly;
+
+        yearlyDepositAcc += currentMonthly;
+        yearlyInterestAcc += monthInterest;
+
+        monthlyRows.push({
+            month: m + 1,
+            year: Math.ceil((m + 1) / 12),
+            deposit: currentMonthly,
+            interest: monthInterest,
+            principal: totalPrincipal,
+            cumulativeInterest: totalBalance - totalPrincipal,
+            balance: totalBalance
+        });
+
+        if ((m + 1) % 12 === 0 || m === months - 1) {
+            const y = Math.ceil((m + 1) / 12);
+            yearlyRows.push({
+                year: y,
+                depositThisYear: yearlyDepositAcc,
+                interestThisYear: yearlyInterestAcc,
+                principal: totalPrincipal,
+                balance: totalBalance,
+                interest: totalBalance - totalPrincipal,
+                cumulativeInterest: totalBalance - totalPrincipal,
+                realValue: totalBalance / Math.pow(1 + inflationRate / 100, y)
+            });
+            yearlyDepositAcc = 0;
+            yearlyInterestAcc = 0;
+        }
+    }
+    const interestEarned = Math.max(0, totalBalance - totalPrincipal);
+    const realValue = totalBalance / Math.pow(1 + inflationRate / 100, years);
+    const goalTarget = numberOrDefault(st.goalTarget, 0);
+    const emergencyTarget = (numberOrDefault(st.monthlyExpenses, 0)) * (numberOrDefault(st.emergencyMonths, 0));
+    const retirementTarget = numberOrDefault(st.retirementMonthly, 0) * 12 * 25;
+    const modeTarget = st.mode === 'goal' ? goalTarget : (st.mode === 'emergency' ? emergencyTarget : (st.mode === 'retirement' ? retirementTarget : 0));
+    const balanceForMonthly = (deposit) => {
+        let balance = init;
+        for (let month = 0; month < months; month++) balance = (balance + deposit * Math.pow(1 + annualIncrease / 100, Math.floor(month / 12))) * (1 + r);
+        return balance;
+    };
+    let requiredMonthly = 0;
+    if (modeTarget > 0 && months > 0 && balanceForMonthly(0) < modeTarget) {
+        let low = 0, high = modeTarget / Math.max(1, months);
+        // Falling returns/deposits may require more than target / months.
+        for (let i = 0; i < 64 && balanceForMonthly(high) < modeTarget; i++) high *= 2;
+        for (let i = 0; i < 40; i++) { const mid = (low + high) / 2; if (balanceForMonthly(mid) >= modeTarget) high = mid; else low = mid; }
+        requiredMonthly = high;
+    }
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-1.5">
+            ${createKeypadFieldHTML(0, 'เงินออมเริ่มต้น', st.initial, 'บาท', 'เช่น 10,000')}
+            ${createKeypadFieldHTML(1, 'ฝากเพิ่มรายเดือน', st.monthly, 'บาท/เดือน', 'เช่น 3,000')}
+            ${createKeypadFieldHTML(2, 'อัตราดอกเบี้ยต่อปี', st.interestRate, '% ต่อปี', 'เช่น 2.5')}
+            ${st.mode === 'retirement'
+                ? `<div class="p-3 text-sm">ระยะสะสมเงินก่อนเกษียณ: <b>${formatNum(retirementYears)} ปี</b><div class="text-xs text-[#6a6a6a] mt-1">เป้าหมายครอบคลุมค่าใช้จ่ายหลังเกษียณ 25 ปี ตามค่าใช้จ่ายรายเดือนที่กรอก ยังไม่รวมเงินเฟ้อและผลตอบแทนหลังเกษียณ</div></div>`
+                : createKeypadFieldHTML(3, 'ระยะเวลาออม', st.years, 'ปี', 'เช่น 5')}
+        </div>
+    `;
+
+    const savingsRoot = container.firstElementChild;
+    savingsRoot.insertAdjacentHTML('afterbegin', `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-2 space-y-2"><label class="text-xs text-[#6a6a6a] block mb-1">โหมดวางแผนเงินออม</label><select id="savingsMode" class="w-full font-semibold text-sm bg-transparent outline-none"><option value="growth" ${st.mode === 'growth' ? 'selected' : ''}>เงินออมเติบโต</option><option value="goal" ${st.mode === 'goal' ? 'selected' : ''}>เป้าหมายเงินออม</option><option value="emergency" ${st.mode === 'emergency' ? 'selected' : ''}>กองทุนฉุกเฉิน</option><option value="retirement" ${st.mode === 'retirement' ? 'selected' : ''}>เงินออมเพื่อเกษียณ</option></select><div class="grid grid-cols-2 gap-2"><input id="savingsAnnualIncrease" type="number" step="0.1" value="${st.annualIncrease}" placeholder="เพิ่มเงินฝาก/ปี (%)" class="airbnb-input w-full"><input id="savingsInflation" type="number" step="0.1" value="${st.inflationRate}" placeholder="เงินเฟ้อ (%)" class="airbnb-input w-full"></div><div id="savingsModeFields" class="grid grid-cols-2 gap-2"></div></div>`);
+    const modeFields = container.querySelector('#savingsModeFields');
+    const renderModeFields = () => {
+        if (st.mode === 'goal') modeFields.innerHTML = `<input id="savingsGoalTarget" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.goalTarget))}" placeholder="เป้าหมาย เช่น 100,000" class="airbnb-input w-full">`;
+        else if (st.mode === 'emergency') modeFields.innerHTML = `<input id="savingsExpenses" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.monthlyExpenses))}" placeholder="ค่าใช้จ่าย/เดือน เช่น 20,000" class="airbnb-input w-full"><input id="savingsEmergencyMonths" type="number" value="${st.emergencyMonths}" placeholder="สำรองกี่เดือน" class="airbnb-input w-full">`;
+        else if (st.mode === 'retirement') modeFields.innerHTML = `<input id="savingsCurrentAge" type="number" value="${st.currentAge}" placeholder="อายุปัจจุบัน" class="airbnb-input w-full"><input id="savingsRetirementAge" type="number" value="${st.retirementAge}" placeholder="อายุเกษียณ" class="airbnb-input w-full"><input id="savingsRetirementMonthly" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.retirementMonthly))}" placeholder="ค่าใช้จ่ายหลังเกษียณ เช่น 30,000" class="airbnb-input w-full">`;
+        else modeFields.innerHTML = '';
+    };
+    renderModeFields();
+    const saveField = (id, key) => container.querySelector(`#${id}`)?.addEventListener('change', event => {
+        const val = event.target.value;
+        st[key] = ['goalTarget', 'monthlyExpenses', 'retirementMonthly'].includes(key) ? formatInputDisplay(val) : val;
+        renderActiveTool();
+    });
+    container.querySelector('#savingsMode').addEventListener('change', event => { st.mode = event.target.value; renderActiveTool(); });
+    saveField('savingsAnnualIncrease', 'annualIncrease');
+    saveField('savingsInflation', 'inflationRate');
+    saveField('savingsGoalTarget', 'goalTarget');
+    saveField('savingsExpenses', 'monthlyExpenses');
+    saveField('savingsEmergencyMonths', 'emergencyMonths');
+    saveField('savingsCurrentAge', 'currentAge');
+    saveField('savingsRetirementAge', 'retirementAge');
+    saveField('savingsRetirementMonthly', 'retirementMonthly');
+    if (yearlyRows.length) {
+        const yearlyTable = document.createElement('div');
+        yearlyTable.className = 'bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 mt-2 overflow-auto';
+        yearlyTable.innerHTML = `
+            <div class="flex items-center justify-between gap-2 mb-2">
+                <div class="text-xs font-semibold text-[#6a6a6a]">ตารางเงินออมสะสม (${years} ปี)</div>
+                <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                    <button id="btnPrintSavingsSummary" type="button" title="พิมพ์แผนการออมเงินหรือบันทึกเป็นไฟล์ PDF" class="px-2 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
+                        🖨️ พิมพ์/PDF
+                    </button>
+                    <button id="btnExportSavingsMonthly" type="button" title="ดาวน์โหลดตารางเงินออมรายเดือนทุกงวดเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2 py-1 text-xs font-medium rounded-lg border border-[var(--app-hairline)] text-[#4a4a4a] bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
+                        📥 รายงวด (.CSV)
+                    </button>
+                    <button id="btnExportSavingsYearly" type="button" title="ดาวน์โหลดสรุปเงินออมรายปีเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition-all shadow-sm flex items-center gap-1 cursor-pointer">
+                        📥 รายปี (.CSV)
+                    </button>
+                </div>
+            </div>
+            <table class="w-full text-xs">
+                <thead><tr class="border-b"><th class="text-left py-1">ปี</th><th class="text-right py-1">เงินต้นสะสม</th><th class="text-right py-1">ดอกเบี้ยสะสม</th><th class="text-right py-1">ยอดรวม</th></tr></thead>
+                <tbody>${yearlyRows.map(row => `<tr class="border-b border-[#eee]"><td class="py-1">${row.year}</td><td class="text-right">${formatMoney(row.principal)}</td><td class="text-right">${formatMoney(row.interest)}</td><td class="text-right">${formatMoney(row.balance)}</td></tr>`).join('')}</tbody>
+            </table>
+        `;
+        savingsRoot.appendChild(yearlyTable);
+
+        const savingsData = { monthlyRows, yearlyRows, totalBalance, totalPrincipal, interestEarned };
+        yearlyTable.querySelector('#btnPrintSavingsSummary')?.addEventListener('click', () => {
+            triggerPrintReceipt('savings');
+        });
+        yearlyTable.querySelector('#btnExportSavingsMonthly')?.addEventListener('click', (e) => {
+            const btn = e.currentTarget;
+            const csv = buildSavingsScheduleCSV(savingsData, 'monthly');
+            downloadCSV(getCSVFilename('savings_schedule', 'monthly'), csv);
+            triggerButtonFeedback(btn, '✓ โหลดแล้ว');
+        });
+
+        yearlyTable.querySelector('#btnExportSavingsYearly')?.addEventListener('click', (e) => {
+            const btn = e.currentTarget;
+            const csv = buildSavingsScheduleCSV(savingsData, 'yearly');
+            downloadCSV(getCSVFilename('savings_schedule', 'yearly'), csv);
+            triggerButtonFeedback(btn, '✓ โหลดแล้ว');
+        });
+    }
+
+    attachFieldClickListeners(container);
+
+    if (st.mode === 'retirement' && retirementYears <= 0) {
+        setStatusBanner('error', 'อายุเกษียณต้องมากกว่าอายุปัจจุบัน เพื่อคำนวณระยะสะสมเงินและเงินออมรายเดือน');
+    } else if (totalPrincipal <= 0 || years <= 0) {
+        setStatusBanner('empty', 'ป้อนเงินออมเริ่มต้นหรือเงินฝากรายเดือนเพื่อคำนวณผลตอบแทน');
+    } else {
+        const targetText = modeTarget > 0 ? ` | เป้าหมาย: ${formatMoney(modeTarget)} ฿ | ${totalBalance >= modeTarget ? 'ถึงเป้าหมายแล้ว' : 'ยังขาด ' + formatMoney(modeTarget - totalBalance) + ' ฿' + (requiredMonthly ? ' · ควรออมประมาณ ' + formatMoney(requiredMonthly) + ' ฿/เดือน' : '')}` : '';
+        setStatusBanner('success', `🐷 เงินออมรวมสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(totalBalance)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">เงินต้น: ${formatMoney(totalPrincipal)} ฿ | ดอกเบี้ย: +${formatMoney(interestEarned)} ฿ | มูลค่าหลังเงินเฟ้อ: ${formatMoney(realValue)} ฿${targetText}</span>`);
+    }
+}
+
+(function(root) {
+    const exportsObj = {
+        loadFrankfurterRates,
+        renderCurrencyTool,
+        renderLoanTool,
+        renderSavingsTool
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/tools/finance.js <<<
+
+// >>> src/tools/work.js >>>
+// ==============================================================
+// Multitools Calculator - Time & Office Tools
+// (date_work, date_calc, world_time, gpa)
+// ==============================================================
+
+/* -----------------------------------------------------------
+ * TOOL: นับวันทำการ (Workday / SLA Calculator)
+ * ----------------------------------------------------------- */
+function renderWorkdayTool(container) {
+    const st = appState.date_work;
+    const originalDays = JSON.stringify(st.workDays);
+    st.workDays = normalizeWorkDays(st.workDays);
+    const recoveredDays = originalDays !== JSON.stringify(st.workDays);
+    if (recoveredDays) persistAppState();
+    if (typeof st.includeThaiHolidays !== 'boolean') st.includeThaiHolidays = true;
+    const start = new Date(st.startDate + 'T00:00:00');
+    const end = new Date(st.endDate + 'T00:00:00');
+    const customHolidayDays = new Set(String(st.customHolidays || '').split(',').map(value => parseDateInputThai(value.trim(), st.calendarEra)).filter(Boolean));
+    const isWorkday = (date) => {
+        const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        return st.workDays.includes(date.getDay()) && !(st.includeThaiHolidays && isThaiOfficialHoliday(date)) && !customHolidayDays.has(iso);
+    };
+    let result = 0, target = new Date(NaN), calculationError = '';
+    try {
+        if (st.mode === 'between') result = countWorkingDays(start, end, isWorkday);
+        else target = offsetWorkingDays(start, integerOrDefault(st.offset, 0), isWorkday);
+    } catch (error) { calculationError = error.message; }
+    container.innerHTML = `<div class="flex flex-col gap-3 p-1"><div class="segment-group grid-cols-2 balanced-segment-modes"><button class="segment-btn work-mode ${st.mode === 'between' ? 'active' : ''}" data-mode="between">นับวันทำการ</button><button class="segment-btn work-mode ${st.mode === 'add' ? 'active' : ''}" data-mode="add">เพิ่ม/ลดวันทำการ</button></div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)"><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่เริ่มต้น</label><input id="workStart" type="date" value="${st.startDate}" class="airbnb-input w-full"></div>${st.mode === 'between' ? `<div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่สิ้นสุด</label><input id="workEnd" type="date" value="${st.endDate}" class="airbnb-input w-full"></div>` : `<div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">จำนวนวันทำการ (+/-)</label><input id="workOffset" type="number" value="${st.offset}" class="airbnb-input w-full"></div>`}</div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-5 text-center" style="box-shadow:var(--app-elevation)"><div class="text-xs text-[#6a6a6a]">${st.mode === 'between' ? 'วันทำการทั้งหมด' : 'วันที่ได้ผลลัพธ์'}</div><div class="text-2xl font-bold text-[var(--app-accent)]">${st.mode === 'between' ? result.toLocaleString('th-TH') + ' วัน' : formatThaiDate(formatLocalDate(target))}</div></div></div>`;
+    const workEraBar = document.createElement('div');
+    workEraBar.className = 'segment-group grid-cols-2 balanced-segment-modes';
+    workEraBar.innerHTML = `<button class="segment-btn work-era ${st.calendarEra === 'BE' ? 'active' : ''}" data-era="BE">พ.ศ.</button><button class="segment-btn work-era ${st.calendarEra === 'CE' ? 'active' : ''}" data-era="CE">ค.ศ.</button>`;
+    container.querySelector('.work-mode').parentElement.insertAdjacentElement('afterend', workEraBar);
+    container.querySelector('.work-mode').parentElement.insertAdjacentHTML('beforeend', `<button class="segment-btn work-mode ${st.mode === 'sla' ? 'active' : ''}" data-mode="sla">กำหนดวันครบกำหนด / SLA</button><button class="segment-btn work-mode ${st.mode === 'list' ? 'active' : ''}" data-mode="list">แสดงรายการวันทำการ</button>`);
+    if (st.mode === 'list') {
+        const listCount = calculationError ? 0 : Math.min(Math.abs(integerOrDefault(st.offset, 0)), 100);
+        const direction = (integerOrDefault(st.offset, 0)) >= 0 ? 1 : -1;
+        const dates = [];
+        const cursor = new Date(start);
+        let searched = 0;
+        while (dates.length < listCount && searched++ < 36600) {
+            cursor.setDate(cursor.getDate() + direction);
+            if (isWorkday(cursor)) dates.push(formatThaiDate(formatLocalDate(cursor)));
+        }
+        const listPanel = document.createElement('div');
+        listPanel.className = 'bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2';
+        listPanel.innerHTML = `<div class="text-xs font-semibold text-[#6a6a6a]">รายการวันทำการ ${listCount} วัน</div><div class="text-sm leading-7">${dates.length ? dates.map((date, index) => `${index + 1}. ${date}`).join('<br>') : 'กรอกจำนวนวันทำการเพื่อแสดงรายการ'}</div>`;
+        container.querySelector('.work-mode').parentElement.parentElement.appendChild(listPanel);
+    }
+    const workOptions = document.createElement('div');
+    workOptions.className = 'bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2';
+    workOptions.innerHTML = `<div class="text-xs font-semibold text-[#6a6a6a]">ตั้งค่าวันทำการ</div><div class="flex flex-wrap gap-2">${[['1','จ'],['2','อ'],['3','พ'],['4','พฤ'],['5','ศ'],['6','ส'],['0','อา']].map(([day, label]) => `<label class="text-xs flex items-center gap-1"><input type="checkbox" class="work-day" value="${day}" ${st.workDays.includes(Number(day)) ? 'checked' : ''}>${label}</label>`).join('')}</div><label class="text-xs flex items-center gap-2"><input type="checkbox" id="workThaiHolidays" ${st.includeThaiHolidays ? 'checked' : ''}> ตัดวันหยุดไทยพื้นฐาน</label><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันหยุดเพิ่มเติม (คั่นด้วย , เช่น 13/04/2569,14/04/2569)</label><input id="workCustomHolidays" type="text" value="${st.customHolidays || ''}" placeholder="วว/ดด/ปปปป" class="airbnb-input w-full"></div>`;
+    workEraBar.insertAdjacentElement('afterend', workOptions);
+    if (calculationError || recoveredDays) {
+        const message = document.createElement('p');
+        message.className = 'text-sm p-3';
+        message.setAttribute('role', 'alert');
+        message.textContent = calculationError || 'กู้คืนการตั้งค่าวันทำงานที่ไม่ถูกต้องแล้ว กรุณาตรวจวันที่เลือกอีกครั้ง';
+        workOptions.after(message);
+    }
+    if (calculationError) container.querySelector('.text-2xl').textContent = '—';
+    ['workStart', 'workEnd'].forEach(id => {
+        const field = document.getElementById(id);
+        if (field) { field.type = 'text'; field.inputMode = 'numeric'; field.placeholder = 'วว/ดด/ปปปป'; field.value = formatDateInputThai(id === 'workStart' ? st.startDate : st.endDate, st.calendarEra); }
+    });
+    container.querySelectorAll('.work-mode').forEach(btn => btn.addEventListener('click', () => { st.mode = btn.dataset.mode; renderActiveTool(); }));
+    container.querySelectorAll('.work-era').forEach(btn => btn.addEventListener('click', () => { st.calendarEra = btn.dataset.era; renderActiveTool(); }));
+    container.querySelectorAll('.work-day').forEach(input => input.addEventListener('change', () => { const selectedDays = [...container.querySelectorAll('.work-day:checked')].map(item => Number(item.value)); if (selectedDays.length) { st.workDays = selectedDays; renderActiveTool(); } else { input.checked = true; } }));
+    document.getElementById('workThaiHolidays').addEventListener('change', e => { st.includeThaiHolidays = e.target.checked; renderActiveTool(); });
+    document.getElementById('workCustomHolidays').addEventListener('change', e => { st.customHolidays = e.target.value; renderActiveTool(); });
+    document.getElementById('workStart').addEventListener('change', e => { const parsed = parseDateInputThai(e.target.value, st.calendarEra); if (parsed) st.startDate = parsed; });
+    document.getElementById('workEnd')?.addEventListener('change', e => { const parsed = parseDateInputThai(e.target.value, st.calendarEra); if (parsed) st.endDate = parsed; });
+    document.getElementById('workOffset')?.addEventListener('change', e => { st.offset = e.target.value; });
+    const workFields = [...container.querySelectorAll('input:not([type="checkbox"]), select')];
+    workFields.forEach((field, index) => field.addEventListener('keydown', event => {
+        if (event.key !== 'Tab' && event.key !== 'Enter') return;
+        const next = workFields[index + (event.shiftKey ? -1 : 1)];
+        if (!next) { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); field.dispatchEvent(new Event('change', { bubbles: true })); renderActiveTool(); } return; }
+        event.preventDefault();
+        field.dispatchEvent(new Event('change', { bubbles: true }));
+        next.focus();
+        if (typeof next.select === 'function') next.select();
+    }));
+    container.onfocusout = () => setTimeout(() => { if (appState.activeToolId === 'date_work' && !container.contains(document.activeElement)) renderActiveTool(); }, 0);
+    setStatusBanner(calculationError ? 'error' : 'success', calculationError || 'คำนวณตามวันทำงานและวันหยุดที่เลือก');
+}
+
+/* -----------------------------------------------------------
+ * TOOL 13: วันที่ (Date Difference & Add/Subtract Days)
+ * ----------------------------------------------------------- */
+function renderDateCalcTool(container) {
+    const st = appState.date_calc;
+    const d1 = new Date(st.startDate + 'T00:00:00');
+    const d2 = new Date(st.endDate + 'T00:00:00');
+    const diffDays = Math.round(Math.abs(d2 - d1) / 86400000);
+
+    const offset = integerOrDefault(st.daysOffset, 0);
+    const targetDate = addCalendarDays(d1, st.op === 'add' ? offset : -offset);
+    const isBusinessDay = (date) => {
+        const day = date.getDay();
+        return day !== 0 && day !== 6 && (!st.includeThaiHolidays || !isThaiOfficialHoliday(date));
+    };
+    let countedDiffDays = NaN, adjustedTargetDate = new Date(NaN), calculationError = '';
+    try {
+        if (st.mode === 'diff') countedDiffDays = st.workdays
+            ? countWorkingDays(d1, d2, isBusinessDay) - (!st.inclusive && isBusinessDay(d1) ? 1 : 0)
+            : diffDays + (st.inclusive ? 1 : 0);
+        if (st.mode === 'add_sub') {
+            if (!Number.isSafeInteger(offset)) throw new RangeError('จำนวนวันต้องเป็นจำนวนเต็ม');
+            adjustedTargetDate = st.workdays ? offsetWorkingDays(d1, st.op === 'add' ? offset : -offset, isBusinessDay) : targetDate;
+            validateCalendarDate(adjustedTargetDate);
+        }
+    } catch (error) { calculationError = error.message; }
+    const birthDate = new Date(st.birthDate + 'T00:00:00');
+    const referenceDate = new Date(st.referenceDate + 'T00:00:00');
+    let ageText = 'กรุณาเลือกวันเกิด';
+    if (birthDate <= referenceDate) {
+        let years = referenceDate.getFullYear() - birthDate.getFullYear();
+        let months = referenceDate.getMonth() - birthDate.getMonth();
+        let days = referenceDate.getDate() - birthDate.getDate();
+        if (days < 0) { months--; days += new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 0).getDate(); }
+        if (months < 0) { years--; months += 12; }
+        ageText = `${years} ปี ${months} เดือน ${days} วัน`;
+    }
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-3 p-1">
+            <div class="segment-group grid-cols-3">
+                <button class="segment-btn date-mode ${st.mode === 'diff' ? 'active' : ''}" data-m="diff">ระยะห่าง</button>
+                <button class="segment-btn date-mode ${st.mode === 'add_sub' ? 'active' : ''}" data-m="add_sub">บวก / ลบวัน</button>
+                <button class="segment-btn date-mode ${st.mode === 'age' ? 'active' : ''}" data-m="age">คำนวณอายุ</button>
+            </div>
+            <div class="segment-group grid-cols-2">
+                <button class="segment-btn era-btn ${st.calendarEra === 'BE' ? 'active' : ''}" data-era="BE">พ.ศ.</button>
+                <button class="segment-btn era-btn ${st.calendarEra === 'CE' ? 'active' : ''}" data-era="CE">ค.ศ.</button>
+            </div>
+            ${st.mode !== 'age' ? `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2"><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="dateInclusive" ${st.inclusive ? 'checked' : ''}> นับรวมวันเริ่มต้น</label><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="dateWorkdays" ${st.workdays ? 'checked' : ''}> นับเฉพาะวันทำการ (ตัดเสาร์-อาทิตย์)</label><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="dateThaiHolidays" ${st.includeThaiHolidays ? 'checked' : ''}> ตัดวันหยุดไทยพื้นฐาน</label></div>` : ''}
+
+            ${st.mode === 'age' ? `
+                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow: var(--app-elevation);">
+                    <div>
+                        <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันเกิด</label>
+                        <input id="birthDateInput" type="date" value="${st.birthDate}" class="airbnb-input w-full">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">เทียบกับวันที่</label>
+                        <input id="refDateInput" type="date" value="${st.referenceDate}" class="airbnb-input w-full">
+                    </div>
+                </div>
+
+                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-5 text-center" style="box-shadow: var(--app-elevation);">
+                    <div class="text-xs text-[#6a6a6a]">อายุของคุณคือ</div>
+                    <div class="text-2xl font-bold text-[var(--app-accent)] mt-1">${ageText}</div>
+                </div>
+            ` : (st.mode === 'diff' ? `
+                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow: var(--app-elevation);">
+                    <div>
+                        <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่เริ่มต้น</label>
+                        <input id="startDateInput" type="date" value="${st.startDate}" class="airbnb-input w-full">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่สิ้นสุด</label>
+                        <input id="endDateInput" type="date" value="${st.endDate}" class="airbnb-input w-full">
+                    </div>
+                </div>
+
+                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-5 text-center" style="box-shadow: var(--app-elevation);">
+                    <div class="text-xs text-[#6a6a6a]">ระยะห่างระหว่างสองวัน</div>
+                    <div class="text-3xl font-bold text-[var(--app-accent)] mt-1">${calculationError ? '—' : Number(countedDiffDays).toLocaleString('th-TH') + ' วัน'}</div>
+                </div>
+            ` : `
+                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow: var(--app-elevation);">
+                    <div>
+                        <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่ตั้งต้น</label>
+                        <input id="baseDateInput" type="date" value="${st.startDate}" class="airbnb-input w-full">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">การคำนวณ</label>
+                            <select id="dateOpSel" class="airbnb-input w-full">
+                                <option value="add" ${st.op === 'add' ? 'selected' : ''}>บวก (+) เพิ่มวัน</option>
+                                <option value="sub" ${st.op === 'sub' ? 'selected' : ''}>ลบ (-) ย้อนหลัง</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">จำนวนวัน</label>
+                            <input id="dateDaysOffset" type="number" min="0" value="${st.daysOffset}" class="airbnb-input w-full">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-5 text-center" style="box-shadow: var(--app-elevation);">
+                    <div class="text-xs text-[#6a6a6a]">ผลลัพธ์วันที่</div>
+                    <div class="text-2xl font-bold text-[var(--app-accent)] mt-1">${calculationError ? '—' : formatThaiDate(formatLocalDate(adjustedTargetDate))}</div>
+                </div>
+            `)}
+        </div>
+    `;
+
+    if (calculationError) {
+        const message = document.createElement('p');
+        message.className = 'text-sm p-3 text-red-600';
+        message.setAttribute('role', 'alert');
+        message.textContent = calculationError;
+        container.querySelector('.segment-group').parentElement.appendChild(message);
+    }
+    const modeButtons = container.querySelectorAll('.date-mode');
+    modeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.mode = btn.getAttribute('data-m');
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('.era-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.calendarEra = btn.dataset.era;
+            renderActiveTool();
+        });
+    });
+
+    const bindThaiDateField = (id, key) => {
+        const field = document.getElementById(id);
+        if (!field) return;
+        field.type = 'text';
+        field.inputMode = 'numeric';
+        field.placeholder = 'วว/ดด/ปปปป';
+        field.value = formatDateInputThai(st[key], st.calendarEra);
+        field.addEventListener('change', (e) => {
+            const parsed = parseDateInputThai(e.target.value, st.calendarEra);
+            if (parsed) {
+                st[key] = parsed;
+                renderActiveTool();
+            }
+        });
+    };
+    bindThaiDateField('birthDateInput', 'birthDate');
+    bindThaiDateField('refDateInput', 'referenceDate');
+    bindThaiDateField('startDateInput', 'startDate');
+    bindThaiDateField('endDateInput', 'endDate');
+    bindThaiDateField('baseDateInput', 'startDate');
+
+    document.getElementById('dateOpSel')?.addEventListener('change', (e) => {
+        st.op = e.target.value;
+        renderActiveTool();
+    });
+    document.getElementById('dateDaysOffset')?.addEventListener('change', (e) => {
+        st.daysOffset = parseInt(e.target.value, 10) || 0;
+        renderActiveTool();
+    });
+    document.getElementById('dateInclusive')?.addEventListener('change', (e) => { st.inclusive = e.target.checked; renderActiveTool(); });
+    document.getElementById('dateWorkdays')?.addEventListener('change', (e) => { st.workdays = e.target.checked; renderActiveTool(); });
+    document.getElementById('dateThaiHolidays')?.addEventListener('change', (e) => { st.includeThaiHolidays = e.target.checked; renderActiveTool(); });
+    const dateFields = [...container.querySelectorAll('input:not([type="checkbox"]), select')];
+    dateFields.forEach((field, index) => {
+        field.addEventListener('keydown', event => {
+            if (event.key !== 'Tab' && event.key !== 'Enter') return;
+            const nextField = dateFields[index + (event.shiftKey ? -1 : 1)];
+            if (!nextField) {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    field.dispatchEvent(new Event('change', { bubbles: true }));
+                    renderActiveTool();
+                }
+                return;
+            }
+            event.preventDefault();
+            field.dispatchEvent(new Event('change', { bubbles: true }));
+            nextField.focus();
+            if (typeof nextField.select === 'function') nextField.select();
+        });
+    });
+    container.onfocusout = () => setTimeout(() => {
+        if (appState.activeToolId === 'date_calc' && !container.contains(document.activeElement)) renderActiveTool();
+    }, 0);
+}
+
+/* -----------------------------------------------------------
+ * TOOL 14: เกรดเฉลี่ย (GPA Calculator - Uses Airbnb Rating Display 64px)
+ * ----------------------------------------------------------- */
+function renderGpaTool(container) {
+    const st = appState.gpa;
+    const gradeOptions = [
+        { label: 'A (4.0)', val: '4.0' },
+        { label: 'B+ (3.5)', val: '3.5' },
+        { label: 'B (3.0)', val: '3.0' },
+        { label: 'C+ (2.5)', val: '2.5' },
+        { label: 'C (2.0)', val: '2.0' },
+        { label: 'D+ (1.5)', val: '1.5' },
+        { label: 'D (1.0)', val: '1.0' },
+        { label: 'F (0.0)', val: '0.0' }
+    ];
+
+    let totalCredits = 0;
+    let totalPoints = 0;
+    st.courses.forEach(c => {
+        const cr = numberOrDefault(c.credit, 0);
+        const gr = numberOrDefault(c.grade, 0);
+        totalCredits += cr;
+        totalPoints += (cr * gr);
+    });
+    const gpa = totalCredits > 0 ? (totalPoints / totalCredits) : 0;
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-2.5 h-full">
+            <!-- Airbnb Rating Display Card Style (64px/700 in Airbnb theme) -->
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 flex items-center justify-between" style="box-shadow: var(--app-elevation);">
+                <div>
+                    <div class="text-xs font-semibold text-[#6a6a6a]">★ เกรดเฉลี่ยสะสม (GPA)</div>
+                    <div class="text-4xl font-bold text-[#222222] leading-tight mt-0.5">${gpa.toFixed(2)}</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs text-[#6a6a6a] mb-1.5">หน่วยกิตรวม: <b class="text-[#222222]">${totalCredits}</b></div>
+                    <button id="addCourseBtn" class="bg-[var(--app-accent)] text-white px-3.5 py-1.5 rounded-full text-xs font-semibold">+ เพิ่มวิชา</button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto space-y-1.5 thin-scroll pr-0.5">
+                ${st.courses.map((c, idx) => `
+                    <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-2.5 flex items-center gap-2">
+                        <span class="text-xs font-bold text-[#6a6a6a] w-14 shrink-0">วิชาที่ ${idx + 1}</span>
+                        <select class="gpa-credit border border-[#dddddd] rounded-md px-2 py-1 text-xs font-semibold flex-1 text-[#222222]" data-idx="${idx}">
+                            ${[1, 1.5, 2, 2.5, 3, 4, 6].map(cr => `<option value="${cr}" ${Number(c.credit) === cr ? 'selected' : ''}>${cr} หน่วยกิต</option>`).join('')}
+                        </select>
+                        <select class="gpa-grade border border-[#dddddd] rounded-md px-2 py-1 text-xs font-bold text-[var(--app-accent)] flex-1" data-idx="${idx}">
+                            ${gradeOptions.map(g => `<option value="${g.val}" ${c.grade === g.val ? 'selected' : ''}>เกรด ${g.label}</option>`).join('')}
+                        </select>
+                        <button class="del-course text-[#c13515] hover:bg-red-50 w-7 h-7 rounded-full text-xs font-bold" data-idx="${idx}">✕</button>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+
+    document.getElementById('addCourseBtn').addEventListener('click', () => {
+        st.courses.push({ name: `วิชาที่ ${st.courses.length + 1}`, credit: 3, grade: '4.0' });
+        renderActiveTool();
+    });
+    container.querySelectorAll('.gpa-credit').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+            const i = parseInt(sel.getAttribute('data-idx'), 10);
+            st.courses[i].credit = parseNumericInput(e.target.value);
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('.gpa-grade').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+            const i = parseInt(sel.getAttribute('data-idx'), 10);
+            st.courses[i].grade = e.target.value;
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('.del-course').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (st.courses.length <= 1) return;
+            const i = parseInt(btn.getAttribute('data-idx'), 10);
+            st.courses.splice(i, 1);
+            renderActiveTool();
+        });
+    });
+}
+
+/* -----------------------------------------------------------
+ * TOOL 18: เวลาโลก (World Clock)
+ * ----------------------------------------------------------- */
+function updateWorldClocks(container) {
+    const now = new Date();
+    const st = appState.world_time;
+    container.querySelectorAll('[data-world-time]').forEach(node => {
+        node.textContent = now.toLocaleTimeString('en-GB', { timeZone: node.dataset.worldTime, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !st.use24h });
+    });
+    container.querySelectorAll('[data-world-date]').forEach(node => {
+        node.textContent = now.toLocaleDateString('th-TH', { timeZone: node.dataset.worldDate, dateStyle: 'medium' });
+    });
+}
+
+function updateWorldMeeting(container) {
+    const st = appState.world_time;
+    const date = new Date(`${st.meetingDate}T${st.meetingTime}:00+07:00`);
+    const valid = /^\d{4}-\d{2}-\d{2}$/.test(st.meetingDate) && /^\d{2}:\d{2}$/.test(st.meetingTime) && Number.isFinite(date.getTime());
+    container.querySelector('#worldMeetingResult').textContent = valid ? 'เวลานัดหมายด้านล่างแสดงตามเขตเวลาของแต่ละเมือง' : 'กรุณาระบุวันที่และเวลานัดหมายให้ครบ';
+    container.querySelectorAll('[data-world-meeting]').forEach(node => {
+        node.textContent = valid ? 'นัดหมาย: ' + date.toLocaleString('th-TH', { timeZone: node.dataset.worldMeeting, dateStyle: 'medium', timeStyle: 'short', hour12: !st.use24h }) : 'นัดหมาย: —';
+    });
+}
+
+function filterWorldCities(container) {
+    const query = String(appState.world_time.search || '').trim().toLocaleLowerCase();
+    let count = 0;
+    container.querySelectorAll('[data-world-search]').forEach(card => {
+        card.hidden = !card.dataset.worldSearch.includes(query);
+        if (!card.hidden) count++;
+    });
+    container.querySelector('#worldNoResults').hidden = count > 0;
+}
+
+function renderWorldTimeTool(container) {
+    const st = appState.world_time;
+    if (!Array.isArray(st.favoriteCities)) st.favoriteCities = ['Asia/Bangkok'];
+    if (!st.meetingTime) st.meetingTime = '09:00';
+    if (!st.meetingDate) st.meetingDate = formatDateInTimezone(new Date(), 'Asia/Bangkok');
+    const cities = [
+        { name: 'กรุงเทพฯ (Bangkok)', country: 'ประเทศไทย', tz: 'Asia/Bangkok', diff: 'เวลามาตรฐานไทย' },
+        { name: 'โตเกียว (Tokyo)', country: 'ญี่ปุ่น', tz: 'Asia/Tokyo', diff: '+2 ชั่วโมง' },
+        { name: 'โซล (Seoul)', country: 'เกาหลีใต้', tz: 'Asia/Seoul', diff: '+2 ชั่วโมง' },
+        { name: 'สิงคโปร์ (Singapore)', country: 'สิงคโปร์', tz: 'Asia/Singapore', diff: '+1 ชั่วโมง' },
+        { name: 'ปักกิ่ง (Beijing)', country: 'จีน', tz: 'Asia/Shanghai', diff: '+1 ชั่วโมง' },
+        { name: 'ซิดนีย์ (Sydney)', country: 'ออสเตรเลีย', tz: 'Australia/Sydney', diff: '+3/+4 ชั่วโมง' },
+        { name: 'ดูไบ (Dubai)', country: 'สหรัฐอาหรับเอมิเรตส์', tz: 'Asia/Dubai', diff: '-3 ชั่วโมง' },
+        { name: 'ปารีส (Paris)', country: 'ฝรั่งเศส', tz: 'Europe/Paris', diff: '-5/-6 ชั่วโมง' },
+        { name: 'ลอนดอน (London)', country: 'สหราชอาณาจักร', tz: 'Europe/London', diff: '-6/-7 ชั่วโมง' },
+        { name: 'นิวยอร์ก (New York)', country: 'สหรัฐอเมริกา', tz: 'America/New_York', diff: '-11/-12 ชั่วโมง' },
+        { name: 'ลอสแอนเจลิส (Los Angeles)', country: 'สหรัฐอเมริกา', tz: 'America/Los_Angeles', diff: '-14/-15 ชั่วโมง' }
+    ];
+
+    const orderedCities = [...cities].sort((a, b) => Number(st.favoriteCities.includes(b.tz)) - Number(st.favoriteCities.includes(a.tz)));
+    container.innerHTML = `
+        <div class="flex flex-col gap-2 h-full">
+            <div class="bg-[var(--app-accent)] text-white rounded-[var(--app-card-radius)] p-3.5 flex items-center justify-between">
+                <div><div class="text-xs">🇹🇭 เวลาประเทศไทยปัจจุบัน</div><div class="text-2xl font-bold font-mono" data-world-time="Asia/Bangkok"></div></div>
+                <div class="text-right text-xs" data-world-date="Asia/Bangkok"></div>
+            </div>
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2">
+                <div class="flex gap-2"><input id="worldSearch" type="search" aria-label="ค้นหาเมืองหรือประเทศ" value="${escapeHTML(st.search)}" placeholder="ค้นหาเมือง/ประเทศ" class="airbnb-input w-full min-w-0"><button id="worldFormat" class="airbnb-input whitespace-nowrap" aria-label="เปลี่ยนรูปแบบเวลา">${st.use24h ? '24 ชั่วโมง' : '12 ชั่วโมง'}</button></div>
+                <div class="grid grid-cols-2 gap-2"><label class="text-xs">วันที่นัดหมายที่กรุงเทพฯ<input id="worldMeetingDate" type="date" value="${escapeHTML(st.meetingDate)}" class="airbnb-input w-full mt-1"></label><label class="text-xs">เวลานัดหมายที่กรุงเทพฯ<input id="worldMeetingTime" type="time" value="${escapeHTML(st.meetingTime)}" class="airbnb-input w-full mt-1"></label></div>
+                <div id="worldMeetingResult" class="text-xs text-[#6a6a6a]"></div>
+            </div>
+            <div class="flex-1 overflow-y-auto space-y-1.5 thin-scroll pr-0.5">
+                ${orderedCities.map(city => `<div data-world-search="${escapeHTML((city.name + ' ' + city.country).toLocaleLowerCase())}" class="world-city-card bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] px-3.5 py-2.5">
+                    <div class="flex items-center justify-between gap-2"><div><div class="font-semibold text-sm">${city.name}</div><div class="text-[11px] text-[#6a6a6a]">${city.country}</div></div><div class="text-right"><div class="font-mono font-bold text-lg text-[var(--app-accent)]" data-world-time="${city.tz}"></div><div class="text-[11px] text-[#6a6a6a]" data-world-date="${city.tz}"></div></div><button type="button" data-world-pin="${city.tz}" aria-label="ปักหมุด ${city.name}" aria-pressed="${st.favoriteCities.includes(city.tz)}" class="p-2 text-xl">${st.favoriteCities.includes(city.tz) ? '★' : '☆'}</button></div>
+                    <div class="text-xs text-[#6a6a6a] mt-1" data-world-meeting="${city.tz}"></div>
+                </div>`).join('')}
+                <p id="worldNoResults" class="p-3 text-sm" hidden>ไม่พบเมืองที่ค้นหา</p>
+            </div>
+        </div>`;
+    container.querySelector('#worldSearch').addEventListener('input', event => { st.search = event.target.value; filterWorldCities(container); persistAppState(); });
+    container.querySelector('#worldFormat').addEventListener('click', () => {
+        st.use24h = !st.use24h;
+        persistAppState();
+        renderWorldTimeTool(container);
+        container.querySelector('#worldFormat').focus({ preventScroll: true });
+    });
+    for (const [id, key] of [['worldMeetingDate', 'meetingDate'], ['worldMeetingTime', 'meetingTime']]) {
+        container.querySelector('#' + id).addEventListener('input', event => { st[key] = event.target.value; updateWorldMeeting(container); persistAppState(); });
+    }
+    container.querySelectorAll('[data-world-pin]').forEach(button => button.addEventListener('click', () => {
+        const tz = button.dataset.worldPin;
+        st.favoriteCities = st.favoriteCities.includes(tz) ? st.favoriteCities.filter(value => value !== tz) : [...st.favoriteCities, tz];
+        persistAppState();
+        renderWorldTimeTool(container);
+        container.querySelector(`[data-world-pin="${tz}"]`).focus({ preventScroll: true });
+    }));
+    updateWorldClocks(container);
+    updateWorldMeeting(container);
+    filterWorldCities(container);
+}
+
+// Update only clock text so editing, search and scrolling remain intact.
+if (typeof window !== 'undefined' && typeof window.setInterval === 'function') {
+    window.setInterval(() => {
+        if (typeof appState !== 'undefined' && appState.activeToolId === 'world_time') {
+            const panel = document.getElementById('toolTopPanel');
+            if (panel) updateWorldClocks(panel);
+        }
+    }, 1000);
+}
+
+(function(root) {
+    const exportsObj = {
+        renderWorkdayTool,
+        renderDateCalcTool,
+        updateWorldClocks,
+        updateWorldMeeting,
+        filterWorldCities,
+        renderWorldTimeTool,
+        renderGpaTool
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/tools/work.js <<<
+
+// >>> src/tools/special.js >>>
+// ==============================================================
+// Multitools Calculator - Health & Special Tools
+// (health, ovulation, fuel_cost, fuel_eff, area_cost, hex, calc)
+// ==============================================================
+
+/* -----------------------------------------------------------
+ * TOOL 8: ตัวชี้วัดร่างกาย (Body Metrics BMI & BMR)
+ * ----------------------------------------------------------- */
+function renderHealthTool(container) {
+    const st = appState.health;
+    const w = numberOrDefault(st.weight, 0);
+    const hCm = numberOrDefault(st.height, 0);
+    const age = numberOrDefault(st.age, 0);
+    const activity = numberOrDefault(st.activity, 1.2);
+
+    const hM = hCm / 100;
+    const bmi = (w > 0 && hM > 0) ? (w / (hM * hM)) : 0;
+
+    let bmr = 0;
+    if (w > 0 && hCm > 0 && age > 0) {
+        bmr = (10 * w) + (6.25 * hCm) - (5 * age) + (st.gender === 'male' ? 5 : -161);
+    }
+    const tdee = bmr * activity;
+    const activityOptions = [
+        { value: '1.2', label: 'นั่งทำงาน ไม่ค่อยออกกำลังกาย' },
+        { value: '1.375', label: 'ออกกำลังกายเบา 1–3 วัน/สัปดาห์' },
+        { value: '1.55', label: 'ออกกำลังกายปานกลาง 3–5 วัน/สัปดาห์' },
+        { value: '1.725', label: 'ออกกำลังกายหนัก 6–7 วัน/สัปดาห์' },
+        { value: '1.9', label: 'ใช้แรงงานหนัก / นักกีฬา' }
+    ];
+
+    let bmiCategory = 'ปกติ (สมส่วน)';
+    if (bmi < 18.5) bmiCategory = 'น้ำหนักน้อย / ผอม';
+    else if (bmi >= 23 && bmi < 25) bmiCategory = 'น้ำหนักเกิน (ท้วม)';
+    else if (bmi >= 25 && bmi < 30) bmiCategory = 'โรคอ้วนระดับ 1';
+    else if (bmi >= 30) bmiCategory = 'โรคอ้วนระดับ 2';
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-1.5">
+            <div class="segment-group grid-cols-2">
+                <button class="segment-btn gender-btn ${st.gender === 'male' ? 'active' : ''}" data-g="male">♂ ชาย (Male)</button>
+                <button class="segment-btn gender-btn ${st.gender === 'female' ? 'active' : ''}" data-g="female">♀ หญิง (Female)</button>
+            </div>
+
+            ${createKeypadFieldHTML(0, 'น้ำหนัก (Weight)', st.weight, 'กก.', '65')}
+            ${createKeypadFieldHTML(1, 'ส่วนสูง (Height)', st.height, 'ซม.', '170')}
+            ${createKeypadFieldHTML(2, 'อายุ (Age)', st.age, 'ปี', '28')}
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-2">
+                <label class="text-xs text-[#6a6a6a] block mb-1">ระดับกิจกรรมสำหรับคำนวณ TDEE</label>
+                <select id="healthActivity" class="w-full font-semibold text-sm bg-transparent outline-none text-[#222222]">
+                    ${activityOptions.map(option => `<option value="${option.value}" ${st.activity === option.value ? 'selected' : ''}>${option.label}</option>`).join('')}
+                </select>
+            </div>
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+    container.querySelectorAll('.gender-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.gender = btn.getAttribute('data-g');
+            renderActiveTool();
+        });
+    });
+    container.querySelector('#healthActivity').addEventListener('change', (event) => {
+        st.activity = event.target.value;
+        renderActiveTool();
+    });
+
+    if (bmi <= 0) {
+        setStatusBanner('empty', 'ป้อนน้ำหนักและส่วนสูงเพื่อคำนวณค่า BMI และ BMR');
+    } else {
+        setStatusBanner('success', `🏃 BMI: <b class="text-[var(--app-accent)] underline">${formatNum(bmi, 1)}</b> (${bmiCategory})<span class="text-xs font-medium block text-[#3f3f3f]">พลังงานพื้นฐาน (BMR): ${Math.round(bmr).toLocaleString()} kcal/วัน · พลังงานที่ใช้ต่อวัน (TDEE): <b>${Math.round(tdee).toLocaleString()} kcal/วัน</b></span>`);
+    }
+}
+
+/* -----------------------------------------------------------
+ * TOOL 12: วันตกไข่ (Ovulation & Fertility Calculator)
+ * ----------------------------------------------------------- */
+function renderOvulationTool(container) {
+    const st = appState.ovulation;
+    const lmp = new Date(st.lastPeriodDate + 'T00:00:00');
+    const cycle = integerOrDefault(st.cycleLength, 28);
+
+    const nextPeriod = addCalendarDays(lmp, cycle);
+    const ovulationDate = addCalendarDays(nextPeriod, -14);
+    const fertileStart = addCalendarDays(ovulationDate, -5);
+    const fertileEnd = addCalendarDays(ovulationDate, 1);
+
+    const toISO = formatLocalDate;
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-3 p-1">
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow: var(--app-elevation);">
+                <div>
+                    <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันแรกของประจำเดือนครั้งล่าสุด</label>
+                    <input type="date" id="ovuDateInput" value="${st.lastPeriodDate}" class="airbnb-input w-full">
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">ความยาวรอบเดือนเฉลี่ย: <b class="text-[var(--app-accent)]">${cycle} วัน</b></label>
+                    <input type="range" id="ovuCycleInput" min="21" max="35" value="${cycle}" class="w-full accent-[var(--app-accent)]">
+                    <div class="flex justify-between text-[11px] text-[#6a6a6a]"><span>21 วัน</span><span>28 วัน (ปกติ)</span><span>35 วัน</span></div>
+                </div>
+            </div>
+
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow: var(--app-elevation);">
+                <div class="flex justify-between items-center border-b border-[#ebebeb] pb-2.5">
+                    <span class="text-xs font-semibold text-[#222222]">🌸 วันตกไข่โดยประมาณ</span>
+                    <span class="text-sm font-bold text-[var(--app-accent)]">${formatThaiDate(toISO(ovulationDate))}</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-[#ebebeb] pb-2.5">
+                    <span class="text-xs font-semibold text-[#222222]">💕 ช่วงเวลาเจริญพันธุ์</span>
+                    <span class="text-xs font-bold text-[var(--app-accent)]">${formatThaiDate(toISO(fertileStart))} - ${formatThaiDate(toISO(fertileEnd))}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-semibold text-[#6a6a6a]">📅 ประจำเดือนรอบถัดไป</span>
+                    <span class="text-xs font-bold text-[#222222]">${formatThaiDate(toISO(nextPeriod))}</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('ovuDateInput').addEventListener('change', (e) => {
+        if (e.target.value) {
+            st.lastPeriodDate = e.target.value;
+            renderActiveTool();
+        }
+    });
+    document.getElementById('ovuCycleInput').addEventListener('input', (e) => {
+        st.cycleLength = parseInt(e.target.value, 10);
+        renderActiveTool();
+    });
+}
+
+/* -----------------------------------------------------------
+ * TOOL 7: ค่าใช้จ่ายเชื้อเพลิง (Fuel Cost Calculator)
+ * ----------------------------------------------------------- */
+function renderFuelCostTool(container) {
+    const st = appState.fuel_cost;
+    const dist = numberOrDefault(st.distance, 0);
+    const eff = numberOrDefault(st.efficiency, 0);
+    const price = numberOrDefault(st.oilPrice, 0);
+
+    const litersNeeded = eff > 0 ? dist / eff : 0;
+    const totalCost = litersNeeded * price;
+    const costPerKm = dist > 0 ? totalCost / dist : 0;
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-1.5">
+            ${createKeypadFieldHTML(0, 'ระยะทางที่เดินทาง', st.distance, 'กม.', 'ป้อนระยะทาง')}
+            ${createKeypadFieldHTML(1, 'อัตราสิ้นเปลืองเชื้อเพลิง', st.efficiency, 'กม./ลิตร', 'เช่น 15')}
+            ${createKeypadFieldHTML(2, 'ราคาน้ำมันต่อลิตร', st.oilPrice, 'บาท/ลิตร', 'เช่น 35.50')}
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    if (dist <= 0 || eff <= 0) {
+        setStatusBanner('empty', 'ป้อนระยะทางและอัตราสิ้นเปลืองเพื่อคำนวณค่าน้ำมัน');
+    } else {
+        setStatusBanner('success', `⛽ ค่าน้ำมันรวม: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(totalCost)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">ใช้น้ำมัน ${formatNum(litersNeeded, 2)} ลิตร (เฉลี่ย ${formatNum(costPerKm, 2)} บาท/กม.)</span>`);
+    }
+}
+
+/* -----------------------------------------------------------
+ * TOOL 10: ประสิทธิภาพเชื้อเพลิง (Fuel Efficiency Calculator)
+ * ----------------------------------------------------------- */
+function renderFuelEffTool(container) {
+    const st = appState.fuel_eff;
+    const dist = numberOrDefault(st.distance, 0);
+    const fuel = numberOrDefault(st.fuelUsed, 0);
+
+    const kmPerLiter = (dist > 0 && fuel > 0) ? (dist / fuel) : 0;
+    const literPer100Km = (dist > 0 && fuel > 0) ? ((fuel / dist) * 100) : 0;
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-2">
+            ${createKeypadFieldHTML(0, 'ระยะทางที่วิ่งได้', st.distance, 'กิโลเมตร', 'เช่น 450')}
+            ${createKeypadFieldHTML(1, 'ปริมาณน้ำมันที่ใช้ไป', st.fuelUsed, 'ลิตร', 'เช่น 30')}
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    if (kmPerLiter <= 0) {
+        setStatusBanner('empty', 'ป้อนระยะทางที่วิ่งและปริมาณน้ำมันที่ใช้');
+    } else {
+        setStatusBanner('success', `🚗 อัตราสิ้นเปลือง: <span class="text-lg text-[var(--app-accent)] underline">${formatNum(kmPerLiter, 2)} กม./ลิตร</span><span class="text-xs font-medium block text-[#3f3f3f]">หรือคิดเป็น ${formatNum(literPer100Km, 2)} ลิตร ต่อ 100 กม.</span>`);
+    }
+}
+
+/* -----------------------------------------------------------
+ * TOOL: ต้นทุนต่อพื้นที่ (ที่ดิน) (Area Cost Calculator)
+ * ----------------------------------------------------------- */
+function renderAreaCostTool(container) {
+    const st = appState.area_cost;
+    const rai = numberOrDefault(st.rai, 0), ngan = numberOrDefault(st.ngan, 0), wa = numberOrDefault(st.wa, 0);
+    const rate = parseNumericInput(st.rate), price = evaluateArithmeticExpression(st.price), rounds = numberOrDefault(st.rounds, 1);
+    const totalRai = rai + ngan / 4 + wa / 400;
+    const qty = totalRai * rate * rounds, total = qty * price;
+    container.innerHTML = `<div class="flex flex-col gap-3 p-1"><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)"><div class="text-xs text-[#6a6a6a]">พื้นที่แบบผสม: 1 ไร่ = 4 งาน = 400 ตารางวา</div><div class="grid grid-cols-3 gap-2">${[['areaRai','ไร่',st.rai],['areaNgan','งาน',st.ngan],['areaWa','ตารางวา',st.wa]].map(([id,l,v])=>`<div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">${l}</label><input id="${id}" type="number" min="0" value="${v}" class="airbnb-input w-full"></div>`).join('')}</div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">อัตราใช้ (กก./ไร่)</label><input id="areaRate" type="number" value="${st.rate}" placeholder="เช่น 25" class="airbnb-input w-full"></div><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">ราคา (บาท/กก.)</label><input id="areaPrice" type="text" inputmode="decimal" value="${st.price}" placeholder="เช่น 980/50" class="airbnb-input w-full"><div class="text-[10px] text-[#6a6a6a] mt-1">รองรับ + - * / เช่น 980/50 = ราคาต่อกก.</div></div></div><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">จำนวนรอบ</label><input id="areaRounds" type="number" min="1" value="${st.rounds}" class="airbnb-input w-full"></div></div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2" style="box-shadow:var(--app-elevation)"><div class="flex justify-between"><span>พื้นที่รวม</span><b>${formatNum(totalRai, 4)} ไร่</b></div><div class="flex justify-between"><span>ปริมาณรวม</span><b>${formatNum(qty, 2)} กก.</b></div><div class="flex justify-between"><span>ต้นทุนต่อไร่</span><b>${formatMoney((rate || 0) * (price || 0) * rounds)} บาท</b></div></div></div>`;
+    const areaPriceInput = document.getElementById('areaPrice');
+    const pricePreview = document.createElement('div');
+    pricePreview.className = 'text-xs font-semibold text-[var(--app-accent)] mt-1';
+    areaPriceInput.parentElement.appendChild(pricePreview);
+    const updateAreaPricePreview = () => {
+        st.price = areaPriceInput.value;
+        const calculatedPrice = evaluateArithmeticExpression(areaPriceInput.value);
+        pricePreview.textContent = Number.isFinite(calculatedPrice) ? `= ${formatNum(calculatedPrice, 2)} บาท/กก.` : '';
+    };
+    updateAreaPricePreview();
+    areaPriceInput.addEventListener('input', updateAreaPricePreview);
+    ['areaRai','areaNgan','areaWa','areaRate','areaPrice','areaRounds'].forEach(id => document.getElementById(id).addEventListener('change', e => { const key = {areaRai:'rai',areaNgan:'ngan',areaWa:'wa',areaRate:'rate',areaPrice:'price',areaRounds:'rounds'}[id]; st[key] = e.target.value; renderActiveTool(); }));
+    setStatusBanner(Number.isFinite(rate) && Number.isFinite(price) ? 'success' : 'empty', Number.isFinite(rate) && Number.isFinite(price) ? `ต้นทุนรวม: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(total)} บาท</span>` : 'กรอกอัตราการใช้และราคาเพื่อคำนวณต้นทุน');
+}
+
+/* -----------------------------------------------------------
+ * TOOL 17: เลขฐานสิบหก (Hexadecimal / Base Converter)
+ * ----------------------------------------------------------- */
+function renderHexTool(container) {
+    const st = appState.hex;
+    const val = Math.max(0, Math.floor(st.decValue || 0));
+
+    const decStr = val.toString(10);
+    const hexStr = val.toString(16).toUpperCase();
+    const binStr = val.toString(2);
+    const octStr = val.toString(8);
+
+    const hexKeys = ['A', 'B', 'C', 'D', 'E', 'F', '7', '8', '9', 'BS', '4', '5', '6', 'CLR', '1', '2', '3', '0'];
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-2 h-full">
+            <div class="space-y-1.5">
+                ${[
+                    { base: 10, label: 'DEC (ฐาน 10)', val: decStr },
+                    { base: 16, label: 'HEX (ฐาน 16)', val: hexStr },
+                    { base: 2,  label: 'BIN (ฐาน 2)',  val: binStr },
+                    { base: 8,  label: 'OCT (ฐาน 8)',  val: octStr }
+                ].map(item => `
+                    <div class="clev-field-box ${st.activeBase === item.base ? 'active-field' : ''}" data-base="${item.base}">
+                        <span class="text-xs font-bold text-[var(--app-accent)]">${item.label}</span>
+                        <span class="font-mono font-semibold text-sm break-all text-[#222222]">${item.val}</span>
+                    </div>
+                `).join('')}
+            </div>
+
+            <div class="grid grid-cols-4 gap-1.5 flex-1 pt-1">
+                ${hexKeys.map(k => {
+                    let allowed = true;
+                    if (k !== 'BS' && k !== 'CLR') {
+                        const digitVal = parseInt(k, 16);
+                        allowed = digitVal < st.activeBase;
+                    }
+                    return `<button class="key-btn !text-lg ${!allowed ? 'key-btn-disabled' : ''} ${(k === 'BS' || k === 'CLR') ? 'key-action' : ''}" data-hexkey="${k}">${k === 'BS' ? '⌫' : (k === 'CLR' ? 'C' : k)}</button>`;
+                }).join('')}
+            </div>
+        </div>
+    `;
+
+    container.querySelectorAll('[data-base]').forEach(el => {
+        el.addEventListener('click', () => {
+            st.activeBase = parseInt(el.getAttribute('data-base'), 10);
+            renderActiveTool();
+        });
+    });
+
+    container.querySelectorAll('[data-hexkey]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const k = btn.getAttribute('data-hexkey');
+            let curStr = st.decValue === 0 ? '' : st.decValue.toString(st.activeBase).toUpperCase();
+            if (k === 'CLR') {
+                st.decValue = 0;
+            } else if (k === 'BS') {
+                curStr = curStr.slice(0, -1);
+                st.decValue = curStr ? parseInt(curStr, st.activeBase) : 0;
+            } else {
+                if (curStr.length < 12) {
+                    curStr += k;
+                    st.decValue = parseInt(curStr, st.activeBase) || 0;
+                }
+            }
+            renderActiveTool();
+        });
+    });
+}
+
+/* -----------------------------------------------------------
+ * TOOL 1: เครื่องคิดเลข (Standard Calculator with History)
+ * ----------------------------------------------------------- */
+function renderStandardCalcTool(container) {
+    const st = appState.calc;
+    container.innerHTML = `
+        <div class="flex flex-col h-full gap-2">
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 flex flex-col justify-between min-h-[125px]" style="box-shadow: var(--app-elevation);">
+                <div class="text-xs text-[#6a6a6a] flex justify-between items-center border-b border-[#ebebeb] pb-1.5">
+                    <span>ล่าสุด: ${st.history[0] ? `${formatCalcExpr(st.history[0].expr)} = ${st.history[0].res}` : '-'}</span>
+                    <button id="clearCalcHistBtn" class="text-[var(--app-accent)] font-semibold hover:underline">ล้างประวัติ</button>
+                </div>
+                <div class="text-right text-[#6a6a6a] text-lg font-mono break-all min-h-[28px] mt-1">${formatCalcExpr(st.expr) || '0'}</div>
+                <div class="text-right text-3xl font-bold text-[#222222] font-mono truncate">= ${st.result}</div>
+            </div>
+
+            <div class="grid grid-cols-4 grid-rows-5 gap-2 flex-1">
+                <button class="key-btn key-action text-xl" data-std="C">C</button>
+                <button class="key-btn key-action text-xl" data-std="()">( )</button>
+                <button class="key-btn key-action text-xl" data-std="%">%</button>
+                <button class="key-btn key-action text-2xl" data-std="÷">÷</button>
+
+                <button class="key-btn" data-std="7">7</button>
+                <button class="key-btn" data-std="8">8</button>
+                <button class="key-btn" data-std="9">9</button>
+                <button class="key-btn key-action text-2xl" data-std="×">×</button>
+
+                <button class="key-btn" data-std="4">4</button>
+                <button class="key-btn" data-std="5">5</button>
+                <button class="key-btn" data-std="6">6</button>
+                <button class="key-btn key-action text-2xl" data-std="-">−</button>
+
+                <button class="key-btn" data-std="1">1</button>
+                <button class="key-btn" data-std="2">2</button>
+                <button class="key-btn" data-std="3">3</button>
+                <button class="key-btn key-action text-2xl" data-std="+">+</button>
+
+                <button class="key-btn" data-std="0">0</button>
+                <button class="key-btn" data-std=".">.</button>
+                <button class="key-btn key-action" data-std="BS" aria-label="ลบ">⌫</button>
+                <button class="key-btn key-primary-cta !bg-[var(--app-accent)] !text-white font-bold text-2xl" data-std="=">=</button>
+            </div>
+        </div>
+    `;
+
+    function evaluateStdExpr(raw) {
+        if (!raw) return '0';
+        try {
+            const sanitized = raw
+                .replace(/,/g, '')
+                .replace(/×/g, '*')
+                .replace(/÷/g, '/')
+                .replace(/%/g, '/100');
+            if (!/^[0-9+\-*/().\s]+$/.test(sanitized)) return st.result;
+            const val = Function('"use strict";return (' + sanitized + ')')();
+            return isFinite(val) ? formatNum(val, 6) : 'Error';
+        } catch {
+            return st.result;
+        }
+    }
+
+    container.querySelectorAll('[data-std]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const k = btn.getAttribute('data-std');
+            if (k === 'C') {
+                st.expr = '';
+                st.result = '0';
+            } else if (k === 'BS') {
+                st.expr = st.expr.slice(0, -1);
+                st.result = evaluateStdExpr(st.expr);
+            } else if (k === '()') {
+                const openCount = (st.expr.match(/\(/g) || []).length;
+                const closeCount = (st.expr.match(/\)/g) || []).length;
+                st.expr += openCount > closeCount ? ')' : '(';
+                st.result = evaluateStdExpr(st.expr);
+            } else if (k === '=') {
+                const finalRes = evaluateStdExpr(st.expr);
+                if (st.expr && finalRes !== 'Error') {
+                    st.history.unshift({ expr: st.expr, res: finalRes });
+                    st.expr = String(finalRes).replace(/,/g, '');
+                    st.result = finalRes;
+                }
+            } else {
+                st.expr += k;
+                st.result = evaluateStdExpr(st.expr);
+            }
+            renderActiveTool();
+        });
+    });
+
+    document.getElementById('clearCalcHistBtn')?.addEventListener('click', () => {
+        st.history = [];
+        renderActiveTool();
+    });
+}
+
+(function(root) {
+    const exportsObj = {
+        renderHealthTool,
+        renderOvulationTool,
+        renderFuelCostTool,
+        renderFuelEffTool,
+        renderAreaCostTool,
+        renderHexTool,
+        renderStandardCalcTool
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/tools/special.js <<<
+
+// >>> src/tools/lotto.js >>>
+// ==============================================================
+// Multitools Calculator - Thai Lottery & GLO UI Renderer
+// ==============================================================
+
+(function(root) {
+    function renderLottoTool(container) {
+        if (!container) return;
+        const state = appState.lotto_calc = appState.lotto_calc || {
+            activeTab: 'bet',
+            betNumberInput: '579',
+            numbersList: ['579', '597', '759', '795', '957', '975'],
+            pricePerNumber: '20',
+            payoutRate: '900',
+            claimPrize: 'back2',
+            claimTicketCount: '1',
+            claimChannel: 'bank',
+            claimCustomRate: '2.0',
+            lottoSpendPerDraw: '500',
+            savingsYears: '10',
+            savingsRate: '7',
+            luckyType: '3digit',
+            luckyResult: '579'
+        };
+
+        const activeTab = state.activeTab || 'bet';
+
+        let contentHTML = `
+            <div class="space-y-4">
+                <!-- Navigation Tabs -->
+                <div class="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto no-scrollbar gap-1 text-sm font-medium">
+                    <button type="button" data-lotto-tab="bet" class="px-3 py-2.5 whitespace-nowrap rounded-t-lg border-b-2 transition-colors ${activeTab === 'bet' ? 'border-[#FF385C] text-[#FF385C] font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}">
+                        🎯 ต้นทุน & กลับเลข
+                    </button>
+                    <button type="button" data-lotto-tab="claim" class="px-3 py-2.5 whitespace-nowrap rounded-t-lg border-b-2 transition-colors ${activeTab === 'claim' ? 'border-[#FF385C] text-[#FF385C] font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}">
+                        🏆 ขึ้นเงินรางวัล & ภาษี
+                    </button>
+                    <button type="button" data-lotto-tab="reality" class="px-3 py-2.5 whitespace-nowrap rounded-t-lg border-b-2 transition-colors ${activeTab === 'reality' ? 'border-[#FF385C] text-[#FF385C] font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}">
+                        💡 สถิติ & ออมเงินล้าน
+                    </button>
+                    <button type="button" data-lotto-tab="lucky" class="px-3 py-2.5 whitespace-nowrap rounded-t-lg border-b-2 transition-colors ${activeTab === 'lucky' ? 'border-[#FF385C] text-[#FF385C] font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}">
+                        🔮 สุ่มเลขเด็ด
+                    </button>
+                </div>
+        `;
+
+        // ==========================================
+        // TAB 1: ต้นทุน & ตัวช่วยกลับเลข
+        // ==========================================
+        if (activeTab === 'bet') {
+            const numbers = Array.isArray(state.numbersList) ? state.numbersList : [];
+            const betCalc = calculateLottoBet(numbers, state.pricePerNumber, state.payoutRate);
+
+            contentHTML += `
+                <div class="space-y-4">
+                    <!-- Helper Actions & Input Box -->
+                    <div class="bg-gray-50 dark:bg-gray-800/70 p-3.5 rounded-xl border border-gray-200 dark:border-gray-700/60 space-y-3">
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                            ป้อนเลขที่ต้องการคำนวณหรือกดตัวช่วยขยายเลข:
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="text" id="betNumberInput" value="${state.betNumberInput || ''}" placeholder="ใส่เลข 1, 2 หรือ 3 หลัก" maxlength="6"
+                                class="flex-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-base font-mono font-semibold tracking-wider text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#FF385C]">
+                            <button type="button" id="btnAddManualNumber" class="px-3.5 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white rounded-lg text-sm font-medium transition-colors">
+                                + เพิ่มเลข
+                            </button>
+                        </div>
+
+                        <!-- Permutation Quick Action Pills -->
+                        <div class="pt-1">
+                            <div class="text-[11px] text-gray-500 dark:text-gray-400 mb-1.5 font-medium">⚡ ตัวช่วยขยายเลขยอดฮิต (กดแล้วแตกเลขทันที):</div>
+                            <div class="flex flex-wrap gap-1.5 text-xs">
+                                <button type="button" data-lotto-expand="6doors" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 dark:text-rose-300 rounded-md font-medium border border-rose-200 dark:border-rose-800 transition">
+                                    🔀 6 ประตู (3 ตัวกลับ)
+                                </button>
+                                <button type="button" data-lotto-expand="2doors" class="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-300 rounded-md font-medium border border-blue-200 dark:border-blue-800 transition">
+                                    🔁 2 ตัวกลับ
+                                </button>
+                                <button type="button" data-lotto-expand="19doors" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 dark:text-amber-300 rounded-md font-medium border border-amber-200 dark:border-amber-800 transition">
+                                    🚪 19 ประตู (รูด 1 ตัว)
+                                </button>
+                                <button type="button" data-lotto-expand="frontRun" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 dark:text-emerald-300 rounded-md font-medium border border-emerald-200 dark:border-emerald-800 transition">
+                                    ⏩ รูดหน้า (10 หาง)
+                                </button>
+                                <button type="button" data-lotto-expand="backRun" class="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 dark:text-indigo-300 rounded-md font-medium border border-indigo-200 dark:border-indigo-800 transition">
+                                    ⏪ รูดหลัง (10 หาง)
+                                </button>
+                                <button type="button" data-lotto-expand="doubles" class="px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 dark:text-purple-300 rounded-md font-medium border border-purple-200 dark:border-purple-800 transition">
+                                    👥 เลขเบิ้ล (00-99)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Number Tags List -->
+                    <div class="bg-white dark:bg-gray-800 p-3.5 rounded-xl border border-gray-200 dark:border-gray-700 space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-semibold text-gray-700 dark:text-gray-300">
+                                รายการตัวเลขในชุด (${numbers.length} หาง):
+                            </span>
+                            ${numbers.length > 0 ? `
+                                <button type="button" id="btnClearLottoNumbers" class="text-xs text-rose-500 hover:text-rose-600 dark:text-rose-400 font-medium transition">
+                                    ล้างทั้งหมด
+                                </button>
+                            ` : ''}
+                        </div>
+                        <div class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-dashed border-gray-200 dark:border-gray-700/80">
+                            ${numbers.length > 0 ? numbers.map((num, idx) => `
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-xs font-mono font-bold text-gray-800 dark:text-gray-100 shadow-sm">
+                                    ${num}
+                                    <button type="button" data-remove-lotto-idx="${idx}" class="text-gray-400 hover:text-rose-500 transition-colors ml-0.5">✕</button>
+                                </span>
+                            `).join('') : `
+                                <div class="w-full text-center py-4 text-xs text-gray-400 dark:text-gray-500">
+                                    ยังไม่มีตัวเลขในชุด (ป้อนตัวเลขหรือกดปุ่มตัวช่วยด้านบน)
+                                </div>
+                            `}
+                        </div>
+                    </div>
+
+                    <!-- Cost & Rate Inputs -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="bg-gray-50 dark:bg-gray-800/70 p-3 rounded-xl border border-gray-200 dark:border-gray-700/60 space-y-2">
+                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                                ราคาซื้อต่อหาง (บาท):
+                            </label>
+                            <input type="text" id="lottoPricePerNumber" value="${state.pricePerNumber || '20'}"
+                                class="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-base font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#FF385C]">
+                            <div class="flex gap-1 text-[11px]">
+                                ${['10', '20', '50', '100'].map(p => `
+                                    <button type="button" data-preset-price="${p}" class="flex-1 py-1 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:border-[#FF385C] text-gray-700 dark:text-gray-300 transition">
+                                        ${p}฿
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-800/70 p-3 rounded-xl border border-gray-200 dark:border-gray-700/60 space-y-2">
+                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                                อัตราจ่ายเงินรางวัล (บาทละ):
+                            </label>
+                            <input type="text" id="lottoPayoutRate" value="${state.payoutRate || '900'}"
+                                class="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-base font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#FF385C]">
+                            <div class="flex gap-1 text-[11px]">
+                                <button type="button" data-preset-rate="900" class="flex-1 py-1 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:border-[#FF385C] text-gray-700 dark:text-gray-300 transition">3 ตัว 900</button>
+                                <button type="button" data-preset-rate="150" class="flex-1 py-1 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:border-[#FF385C] text-gray-700 dark:text-gray-300 transition">โต๊ด 150</button>
+                                <button type="button" data-preset-rate="90" class="flex-1 py-1 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:border-[#FF385C] text-gray-700 dark:text-gray-300 transition">2 ตัว 90</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Calculation Results Summary Card -->
+                    <div class="bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4 rounded-xl shadow-md space-y-3">
+                        <div class="text-xs uppercase font-semibold tracking-wider text-rose-300">
+                            💰 สรุปต้นทุนและผลตอบแทนเมื่อถูกรางวัล (1 หาง)
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div class="bg-white/10 p-2.5 rounded-lg">
+                                <div class="text-xs text-gray-300">ต้นทุนลงทุนรวม:</div>
+                                <div class="text-lg font-bold text-amber-300">${formatMoney(betCalc.totalCost)} บาท</div>
+                                <div class="text-[11px] text-gray-400">(${betCalc.count} หาง × ${formatMoney(betCalc.pricePerNumber)} บ.)</div>
+                            </div>
+                            <div class="bg-white/10 p-2.5 rounded-lg">
+                                <div class="text-xs text-gray-300">เงินรางวัลที่ได้รับ:</div>
+                                <div class="text-lg font-bold text-emerald-300">${formatMoney(betCalc.winningPayout)} บาท</div>
+                                <div class="text-[11px] text-gray-400">(บาทละ ${formatMoney(betCalc.payoutRate)})</div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-white/10 flex justify-between items-baseline">
+                            <div>
+                                <span class="text-xs text-gray-300">กำไรสุทธิ (ถ้าถูก):</span>
+                                <span class="text-xl font-black ${betCalc.netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'} ml-2">
+                                    ${betCalc.netProfit >= 0 ? '+' : ''}${formatMoney(betCalc.netProfit)} บาท
+                                </span>
+                            </div>
+                            <div class="text-xs ${betCalc.roiPercent >= 0 ? 'text-emerald-300' : 'text-rose-300'} font-semibold">
+                                ROI: ${betCalc.roiPercent >= 0 ? '+' : ''}${betCalc.roiPercent.toLocaleString('th-TH', { maximumFractionDigits: 1 })}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // TAB 2: ขึ้นเงินรางวัล & หักภาษีสลากรัฐบาล
+        // ==========================================
+        else if (activeTab === 'claim') {
+            const claim = calculatePrizeClaim(state.claimPrize, state.claimTicketCount, state.claimChannel, state.claimCustomRate);
+
+            contentHTML += `
+                <div class="space-y-4">
+                    <!-- Prize Selection -->
+                    <div class="bg-gray-50 dark:bg-gray-800/70 p-3.5 rounded-xl border border-gray-200 dark:border-gray-700/60 space-y-3">
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                            เลือกลำดับรางวัลที่ถูกสลากกินแบ่ง:
+                        </label>
+                        <select id="claimPrizeSelect" class="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#FF385C]">
+                            ${Object.values(GLO_PRIZES).map(p => `
+                                <option value="${p.key}" ${state.claimPrize === p.key ? 'selected' : ''}>
+                                    ${p.label} — ${formatMoney(p.amount)} บาท / ใบ
+                                </option>
+                            `).join('')}
+                        </select>
+
+                        <!-- Quick prize buttons -->
+                        <div class="flex flex-wrap gap-1.5 text-xs pt-1">
+                            <button type="button" data-quick-prize="first" class="px-2.5 py-1.5 rounded-md border ${state.claimPrize === 'first' ? 'bg-[#FF385C] text-white border-[#FF385C]' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'}">
+                                รางวัลที่ 1 (6 ล้าน)
+                            </button>
+                            <button type="button" data-quick-prize="back2" class="px-2.5 py-1.5 rounded-md border ${state.claimPrize === 'back2' ? 'bg-[#FF385C] text-white border-[#FF385C]' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'}">
+                                เลขท้าย 2 ตัว (2,000)
+                            </button>
+                            <button type="button" data-quick-prize="back3" class="px-2.5 py-1.5 rounded-md border ${state.claimPrize === 'back3' ? 'bg-[#FF385C] text-white border-[#FF385C]' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'}">
+                                ท้าย 3 ตัว (4,000)
+                            </button>
+                            <button type="button" data-quick-prize="front3" class="px-2.5 py-1.5 rounded-md border ${state.claimPrize === 'front3' ? 'bg-[#FF385C] text-white border-[#FF385C]' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300'}">
+                                หน้า 3 ตัว (4,000)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Ticket Count & Channel -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="bg-gray-50 dark:bg-gray-800/70 p-3 rounded-xl border border-gray-200 dark:border-gray-700/60 space-y-2">
+                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                                จำนวนสลากที่ถูกรางวัล (ใบ):
+                            </label>
+                            <input type="number" id="claimTicketCount" min="1" max="1000" value="${state.claimTicketCount || '1'}"
+                                class="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-base font-semibold text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#FF385C]">
+                            <div class="flex gap-1 text-[11px]">
+                                ${['1', '2', '5', '10'].map(c => `
+                                    <button type="button" data-preset-count="${c}" class="flex-1 py-1 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:border-[#FF385C] text-gray-700 dark:text-gray-300 transition">
+                                        ${c} ใบ
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-800/70 p-3 rounded-xl border border-gray-200 dark:border-gray-700/60 space-y-2">
+                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                                ช่องทางขึ้นเงินรางวัล:
+                            </label>
+                            <select id="claimChannelSelect" class="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-2.5 py-2 text-xs font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#FF385C]">
+                                ${Object.values(CLAIM_CHANNELS).map(ch => `
+                                    <option value="${ch.key}" ${state.claimChannel === ch.key ? 'selected' : ''}>
+                                        ${ch.label} (หัก ${ch.rate}%)
+                                    </option>
+                                `).join('')}
+                            </select>
+                            ${state.claimChannel === 'shop' ? `
+                                <div class="flex items-center gap-2 pt-1">
+                                    <span class="text-xs text-gray-500">อัตราหักร้าน:</span>
+                                    <input type="text" id="claimCustomRate" value="${state.claimCustomRate || '2.0'}" class="w-16 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-0.5 text-xs font-bold text-center">
+                                    <span class="text-xs text-gray-500">%</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Prize Breakdown Card -->
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-xl border-2 border-emerald-500/30 dark:border-emerald-500/20 shadow-md space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold uppercase text-emerald-600 dark:text-emerald-400">💵 สรุปเงินรางวัลสุทธิหลังหักภาษี</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-semibold">
+                                หัก ${claim.deductionRate}%
+                            </span>
+                        </div>
+
+                        <div class="space-y-1.5 text-sm">
+                            <div class="flex justify-between text-gray-600 dark:text-gray-400 text-xs">
+                                <span>ยอดเงินรางวัลรวม (${claim.ticketCount} ใบ):</span>
+                                <span class="font-semibold text-gray-900 dark:text-white">${formatMoney(claim.totalGrossPrize)} บาท</span>
+                            </div>
+                            <div class="flex justify-between text-rose-600 dark:text-rose-400 text-xs">
+                                <span>ค่าธรรมเนียม / อากร / ภาษี (${claim.deductionRate}%):</span>
+                                <span class="font-semibold">-${formatMoney(claim.deductionAmount)} บาท</span>
+                            </div>
+                            <div class="pt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between items-baseline">
+                                <span class="font-bold text-gray-800 dark:text-gray-100">เงินสดสุทธิที่ได้รับจริง:</span>
+                                <span class="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                                    ${formatMoney(claim.netPrize)} บาท
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40 p-2.5 rounded-lg text-xs text-emerald-800 dark:text-emerald-300">
+                            ℹ️ <strong>ข้อกฎหมาย & ข้อควรรู้:</strong> ${claim.feeNote}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // TAB 3: สถิติ & สัจธรรม เปลี่ยนค่าหวยเป็นเงินล้าน
+        // ==========================================
+        else if (activeTab === 'reality') {
+            const stats = calculateLottoStats(80);
+            const sim = calculateLottoSavingsSimulation(state.lottoSpendPerDraw, state.savingsYears, state.savingsRate);
+
+            contentHTML += `
+                <div class="space-y-4">
+                    <!-- Savings Simulator Card -->
+                    <div class="bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-950 text-white p-4 rounded-xl shadow-lg space-y-4">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">💰</span>
+                            <div>
+                                <h3 class="font-bold text-sm text-yellow-300">โปรแกรมจำลอง: "เปลี่ยนค่าหวยเป็นเงินล้าน"</h3>
+                                <p class="text-[11px] text-gray-300">ถ้าเปลี่ยนเงินซื้อหวยต่องวด มาลงทุน DCA แบบมีวินัย จะได้เงินเก็บเท่าไหร่?</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                            <div class="bg-white/10 p-2 rounded-lg">
+                                <label class="text-gray-300 block mb-1">ซื้อหวยงวดละ (บ.):</label>
+                                <input type="number" id="lottoSpendPerDraw" value="${state.lottoSpendPerDraw || '500'}"
+                                    class="w-full bg-white/20 border border-white/30 rounded px-2 py-1 text-sm font-bold text-white focus:outline-none">
+                            </div>
+                            <div class="bg-white/10 p-2 rounded-lg">
+                                <label class="text-gray-300 block mb-1">ระยะเวลาออม (ปี):</label>
+                                <select id="savingsYearsSelect" class="w-full bg-white/20 border border-white/30 rounded px-2 py-1 text-xs font-semibold text-white focus:outline-none">
+                                    <option value="5" ${state.savingsYears === '5' ? 'selected' : ''}>5 ปี</option>
+                                    <option value="10" ${state.savingsYears === '10' ? 'selected' : ''}>10 ปี</option>
+                                    <option value="20" ${state.savingsYears === '20' ? 'selected' : ''}>20 ปี</option>
+                                    <option value="30" ${state.savingsYears === '30' ? 'selected' : ''}>30 ปี</option>
+                                </select>
+                            </div>
+                            <div class="bg-white/10 p-2 rounded-lg">
+                                <label class="text-gray-300 block mb-1">ผลตอบแทนเฉลี่ย (%/ปี):</label>
+                                <select id="savingsRateSelect" class="w-full bg-white/20 border border-white/30 rounded px-2 py-1 text-xs font-semibold text-white focus:outline-none">
+                                    <option value="2" ${state.savingsRate === '2' ? 'selected' : ''}>2% (ฝากประจำ/ตราสารหนี้)</option>
+                                    <option value="5" ${state.savingsRate === '5' ? 'selected' : ''}>5% (กองทุนรวมผสม)</option>
+                                    <option value="7" ${state.savingsRate === '7' ? 'selected' : ''}>7% (ดัชนีหุ้นไทย/โลก)</option>
+                                    <option value="10" ${state.savingsRate === '10' ? 'selected' : ''}>10% (หุ้นเติบโต/S&P500)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Results -->
+                        <div class="bg-white/10 p-3 rounded-lg border border-white/10 space-y-2">
+                            <div class="flex justify-between text-xs text-gray-200">
+                                <span>เงินต้นค่าหวยที่สะสม (${sim.years} ปี = ${sim.totalMonths} เดือน):</span>
+                                <span class="font-semibold text-amber-200">${formatMoney(sim.totalPrincipal)} บาท</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-emerald-300">
+                                <span>กำไรดอกเบี้ยทบต้นที่งอกเงย:</span>
+                                <span class="font-bold">+${formatMoney(sim.totalInterest)} บาท</span>
+                            </div>
+                            <div class="pt-2 border-t border-white/20 flex justify-between items-baseline">
+                                <span class="font-bold text-sm text-yellow-300">ยอดเงินเก็บรวมทั้งหมด:</span>
+                                <span class="text-2xl font-black text-yellow-400">
+                                    ${formatMoney(sim.futureValue)} บาท
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reality Check Statistics Card -->
+                    <div class="bg-gray-50 dark:bg-gray-800/70 p-3.5 rounded-xl border border-gray-200 dark:border-gray-700/60 space-y-3">
+                        <div class="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                            📊 สถิติ & สัจธรรมความจริงสลากกินแบ่งรัฐบาล (1 ชุด = 1,000,000 ใบ)
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                            <div class="bg-white dark:bg-gray-700/80 p-2.5 rounded-lg border border-gray-200 dark:border-gray-600 text-center">
+                                <div class="text-[11px] text-gray-500 dark:text-gray-400">โอกาสถูกรางวัลใดๆ</div>
+                                <div class="text-base font-bold text-emerald-600 dark:text-emerald-400">1.42%</div>
+                                <div class="text-[10px] text-gray-400">14,168 ใบในล้าน</div>
+                            </div>
+                            <div class="bg-white dark:bg-gray-700/80 p-2.5 rounded-lg border border-gray-200 dark:border-gray-600 text-center">
+                                <div class="text-[11px] text-gray-500 dark:text-gray-400">โอกาสไม่ถูกรางวัล (กินเรียบ)</div>
+                                <div class="text-base font-bold text-rose-500 dark:text-rose-400">98.58%</div>
+                                <div class="text-[10px] text-gray-400">985,832 ใบในล้าน</div>
+                            </div>
+                            <div class="col-span-2 sm:col-span-1 bg-white dark:bg-gray-700/80 p-2.5 rounded-lg border border-gray-200 dark:border-gray-600 text-center">
+                                <div class="text-[11px] text-gray-500 dark:text-gray-400">มูลค่าคาดหวัง (EV)</div>
+                                <div class="text-base font-bold text-indigo-600 dark:text-indigo-400">48 บาท/ใบ</div>
+                                <div class="text-[10px] text-rose-500">ซื้อ 80 บ. ขาดทุน -40%</div>
+                            </div>
+                        </div>
+
+                        <div class="text-[11px] text-gray-500 dark:text-gray-400 space-y-1 pt-1">
+                            <div>• <strong>รางวัลที่ 1:</strong> โอกาส 1 ใน 1,000,000 (0.0001%) เปรียบเสมือนการถูกฟ้าผ่ากลางแจ้ง</div>
+                            <div>• <strong>เลขท้าย 2 ตัว:</strong> โอกาส 1 ใน 100 (1%) คือรางวัลที่คนถูกบ่อยที่สุด</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // TAB 4: สุ่มเลขเด็ดมงคล
+        // ==========================================
+        else if (activeTab === 'lucky') {
+            const luckyRes = state.luckyResult || '579';
+
+            contentHTML += `
+                <div class="space-y-4">
+                    <div class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-gray-800 dark:to-gray-900 p-6 rounded-2xl border-2 border-amber-300 dark:border-amber-600/40 text-center space-y-4 shadow-sm">
+                        <div class="text-xs uppercase tracking-wider font-bold text-amber-700 dark:text-amber-400">
+                            🔮 เครื่องเสี่ยงทาย & สุ่มเลขเด็ดนำโชค
+                        </div>
+
+                        <!-- Big Lucky Number Display -->
+                        <div class="py-4">
+                            <div id="luckyDisplayNumber" class="text-5xl sm:text-6xl font-black font-mono tracking-widest text-[#FF385C] drop-shadow-sm transition-transform duration-200">
+                                ${luckyRes}
+                            </div>
+                        </div>
+
+                        <!-- Selector Pills -->
+                        <div class="flex justify-center gap-2 text-xs">
+                            <button type="button" data-lucky-type="2digit" class="px-3 py-1.5 rounded-full border transition font-medium ${state.luckyType === '2digit' ? 'bg-amber-500 text-white border-amber-500' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'}">
+                                สุ่ม 2 ตัว
+                            </button>
+                            <button type="button" data-lucky-type="3digit" class="px-3 py-1.5 rounded-full border transition font-medium ${state.luckyType === '3digit' ? 'bg-amber-500 text-white border-amber-500' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'}">
+                                สุ่ม 3 ตัว
+                            </button>
+                            <button type="button" data-lucky-type="6digit" class="px-3 py-1.5 rounded-full border transition font-medium ${state.luckyType === '6digit' ? 'bg-amber-500 text-white border-amber-500' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'}">
+                                สุ่ม 6 ตัว (รางวัลที่ 1)
+                            </button>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex flex-col sm:flex-row justify-center gap-2 pt-2">
+                            <button type="button" id="btnSpinLucky" class="px-5 py-2.5 bg-[#FF385C] hover:bg-[#E00B41] text-white rounded-xl font-bold text-sm shadow-md transition transform active:scale-95 flex items-center justify-center gap-1.5">
+                                🎲 สุ่มเลขใหม่
+                            </button>
+                            <button type="button" id="btnSendToBet" class="px-4 py-2.5 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-xl font-medium text-xs transition flex items-center justify-center gap-1.5">
+                                🎯 ส่งเลขนี้ไปคำนวณต้นทุน
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        contentHTML += `</div>`;
+        container.innerHTML = contentHTML;
+
+        // Attach event listeners
+        attachLottoListeners(container, state);
+    }
+
+    function attachLottoListeners(container, state) {
+        if (!container) return;
+
+        // Tab Switching
+        container.querySelectorAll('[data-lotto-tab]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tab = e.currentTarget.dataset.lottoTab;
+                if (tab) {
+                    state.activeTab = tab;
+                    renderActiveTool();
+                }
+            });
+        });
+
+        // Tab 1 Events (Bet & Permutations)
+        const betInput = container.querySelector('#betNumberInput');
+        if (betInput) {
+            betInput.addEventListener('input', (e) => {
+                state.betNumberInput = e.target.value.replace(/\D/g, '');
+            });
+        }
+
+        const btnAddManual = container.querySelector('#btnAddManualNumber');
+        if (btnAddManual) {
+            btnAddManual.addEventListener('click', () => {
+                const val = (state.betNumberInput || '').trim();
+                if (val) {
+                    state.numbersList = Array.isArray(state.numbersList) ? state.numbersList : [];
+                    if (!state.numbersList.includes(val)) {
+                        state.numbersList.push(val);
+                    }
+                    state.betNumberInput = '';
+                    renderActiveTool();
+                }
+            });
+        }
+
+        // Permutations Expand Buttons
+        container.querySelectorAll('[data-lotto-expand]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const type = e.currentTarget.dataset.lottoExpand;
+                const raw = (state.betNumberInput || '').trim();
+                let expanded = [];
+
+                if (type === '6doors') {
+                    expanded = expand6Doors(raw || '579');
+                } else if (type === '2doors') {
+                    expanded = expandTwoDigitReverse(raw || '28');
+                } else if (type === '19doors') {
+                    const d = raw ? raw.slice(-1) : '8';
+                    expanded = expand19Doors(d);
+                } else if (type === 'frontRun') {
+                    const d = raw ? raw.slice(-1) : '8';
+                    expanded = expandFrontRun(d);
+                } else if (type === 'backRun') {
+                    const d = raw ? raw.slice(-1) : '8';
+                    expanded = expandBackRun(d);
+                } else if (type === 'doubles') {
+                    expanded = expandDoubleNumbers();
+                }
+
+                if (expanded.length > 0) {
+                    state.numbersList = expanded;
+                    if (raw) state.betNumberInput = raw;
+                    renderActiveTool();
+                }
+            });
+        });
+
+        // Remove single number pill
+        container.querySelectorAll('[data-remove-lotto-idx]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(e.currentTarget.dataset.removeLottoIdx, 10);
+                if (Array.isArray(state.numbersList) && Number.isFinite(idx)) {
+                    state.numbersList.splice(idx, 1);
+                    renderActiveTool();
+                }
+            });
+        });
+
+        // Clear all numbers
+        const btnClear = container.querySelector('#btnClearLottoNumbers');
+        if (btnClear) {
+            btnClear.addEventListener('click', () => {
+                state.numbersList = [];
+                renderActiveTool();
+            });
+        }
+
+        // Price and Payout rate inputs
+        const priceInput = container.querySelector('#lottoPricePerNumber');
+        if (priceInput) {
+            priceInput.addEventListener('input', (e) => {
+                state.pricePerNumber = e.target.value.replace(/[^0-9.]/g, '');
+                renderActiveTool();
+            });
+        }
+
+        container.querySelectorAll('[data-preset-price]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                state.pricePerNumber = e.currentTarget.dataset.presetPrice;
+                renderActiveTool();
+            });
+        });
+
+        const rateInput = container.querySelector('#lottoPayoutRate');
+        if (rateInput) {
+            rateInput.addEventListener('input', (e) => {
+                state.payoutRate = e.target.value.replace(/[^0-9.]/g, '');
+                renderActiveTool();
+            });
+        }
+
+        container.querySelectorAll('[data-preset-rate]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                state.payoutRate = e.currentTarget.dataset.presetRate;
+                renderActiveTool();
+            });
+        });
+
+        // Tab 2 Events (Claim)
+        const prizeSelect = container.querySelector('#claimPrizeSelect');
+        if (prizeSelect) {
+            prizeSelect.addEventListener('change', (e) => {
+                state.claimPrize = e.target.value;
+                renderActiveTool();
+            });
+        }
+
+        container.querySelectorAll('[data-quick-prize]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                state.claimPrize = e.currentTarget.dataset.quickPrize;
+                renderActiveTool();
+            });
+        });
+
+        const countInput = container.querySelector('#claimTicketCount');
+        if (countInput) {
+            countInput.addEventListener('input', (e) => {
+                state.claimTicketCount = e.target.value.replace(/\D/g, '');
+                renderActiveTool();
+            });
+        }
+
+        container.querySelectorAll('[data-preset-count]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                state.claimTicketCount = e.currentTarget.dataset.presetCount;
+                renderActiveTool();
+            });
+        });
+
+        const channelSelect = container.querySelector('#claimChannelSelect');
+        if (channelSelect) {
+            channelSelect.addEventListener('change', (e) => {
+                state.claimChannel = e.target.value;
+                renderActiveTool();
+            });
+        }
+
+        const customRateInput = container.querySelector('#claimCustomRate');
+        if (customRateInput) {
+            customRateInput.addEventListener('input', (e) => {
+                state.claimCustomRate = e.target.value.replace(/[^0-9.]/g, '');
+                renderActiveTool();
+            });
+        }
+
+        // Tab 3 Events (Reality & Savings)
+        const spendInput = container.querySelector('#lottoSpendPerDraw');
+        if (spendInput) {
+            spendInput.addEventListener('input', (e) => {
+                state.lottoSpendPerDraw = e.target.value.replace(/[^0-9.]/g, '');
+                renderActiveTool();
+            });
+        }
+
+        const yearsSelect = container.querySelector('#savingsYearsSelect');
+        if (yearsSelect) {
+            yearsSelect.addEventListener('change', (e) => {
+                state.savingsYears = e.target.value;
+                renderActiveTool();
+            });
+        }
+
+        const rateSelect = container.querySelector('#savingsRateSelect');
+        if (rateSelect) {
+            rateSelect.addEventListener('change', (e) => {
+                state.savingsRate = e.target.value;
+                renderActiveTool();
+            });
+        }
+
+        // Tab 4 Events (Lucky Generator)
+        container.querySelectorAll('[data-lucky-type]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const type = e.currentTarget.dataset.luckyType;
+                state.luckyType = type;
+                state.luckyResult = generateLuckyNumber(type);
+                renderActiveTool();
+            });
+        });
+
+        const btnSpin = container.querySelector('#btnSpinLucky');
+        if (btnSpin) {
+            btnSpin.addEventListener('click', () => {
+                state.luckyResult = generateLuckyNumber(state.luckyType || '3digit');
+                renderActiveTool();
+            });
+        }
+
+        const btnSendBet = container.querySelector('#btnSendToBet');
+        if (btnSendBet) {
+            btnSendBet.addEventListener('click', () => {
+                const num = state.luckyResult || '579';
+                state.betNumberInput = num;
+                if (num.length === 3) {
+                    state.numbersList = expand6Doors(num);
+                } else if (num.length === 2) {
+                    state.numbersList = expandTwoDigitReverse(num);
+                } else {
+                    state.numbersList = [num];
+                }
+                state.activeTab = 'bet';
+                renderActiveTool();
+            });
+        }
+    }
+
+    const exportsObj = {
+        renderLottoTool,
+        attachLottoListeners
+    };
+
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+// <<< src/tools/lotto.js <<<
+
+// >>> src/ui/actions.js >>>
+// ==============================================================
+// Multitools Calculator - Actions, Status Banner & Print
+// ==============================================================
+
+let lastClearSnapshot = null;
+
+function captureToolSnapshot() {
+    if (typeof appState === 'undefined') return null;
+    return {
+        toolId: appState.activeToolId,
+        fieldIndex: appState.activeFieldIndex,
+        state: JSON.parse(JSON.stringify(appState[appState.activeToolId]))
+    };
+}
+
+function rememberToolClear(snapshot) {
+    if (!snapshot || typeof appState === 'undefined') return;
+    if (JSON.stringify(snapshot.state) === JSON.stringify(appState[snapshot.toolId])) return;
+    lastClearSnapshot = snapshot;
+    const undoBtn = typeof document !== 'undefined' ? document.getElementById('menuUndoClear') : null;
+    if (undoBtn) undoBtn.disabled = false;
+}
+
+function undoLastClear() {
+    if (!lastClearSnapshot || typeof appState === 'undefined') return;
+    const snapshot = lastClearSnapshot;
+    lastClearSnapshot = null;
+    appState[snapshot.toolId] = snapshot.state;
+    appState.activeToolId = snapshot.toolId;
+    appState.activeFieldIndex = snapshot.fieldIndex;
+    const undoBtn = typeof document !== 'undefined' ? document.getElementById('menuUndoClear') : null;
+    if (undoBtn) undoBtn.disabled = true;
+    if (typeof renderSidebarMenu === 'function') renderSidebarMenu();
+    if (typeof renderActiveTool === 'function') renderActiveTool();
+}
+
+function clearCurrentTool() {
+    const snapshot = captureToolSnapshot();
+    const id = appState.activeToolId;
+    appState.activeFieldIndex = 0;
+
+    if (id === 'unit_price') {
+        appState.unit_price.rows.forEach(r => { r.price = ''; r.qty = ''; r.unit = 'unit'; });
+    } else if (id === 'calc') {
+        appState.calc.expr = '';
+        appState.calc.result = '0';
+    } else if (id === 'currency') {
+        appState.currency.amount = '';
+        appState.currency.customRateToTHB = '';
+    } else if (id === 'unit') {
+        appState.unit.val = '';
+    } else if (id === 'discount') {
+        appState.discount.price = '';
+        appState.discount.discountPct = '';
+        appState.discount.extraPct = '';
+    } else if (id === 'percent') {
+        appState.percent.x = '';
+        appState.percent.y = '';
+        appState.percent.z = '';
+    } else if (id === 'vat') {
+        appState.vat.amount = '';
+    } else if (id === 'vat_wht') {
+        appState.vat_wht.amount = '';
+    } else if (id === 'salary') {
+        appState.salary.income = '';
+    } else if (id === 'loan') {
+        appState.loan.principal = '';
+        appState.loan.extra = '0';
+    } else if (id === 'savings') {
+        appState.savings.initial = '';
+        appState.savings.monthly = '';
+    } else if (id === 'date_work') {
+        appState.date_work.customHolidays = '';
+        appState.date_work.offset = '0';
+    } else if (id === 'date_calc') {
+        appState.date_calc.daysOffset = 0;
+    } else if (id === 'world_time') {
+        appState.world_time.search = '';
+    } else if (id === 'gpa') {
+        appState.gpa.courses = [{ name: 'วิชาที่ 1', credit: 3, grade: '4.0' }];
+    } else if (id === 'health') {
+        appState.health.weight = '';
+        appState.health.height = '';
+        appState.health.age = '';
+    } else if (id === 'ovulation') {
+        appState.ovulation.lastPeriodDate = formatLocalDate(new Date());
+    } else if (id === 'fuel_cost') {
+        appState.fuel_cost.distance = '';
+    } else if (id === 'fuel_eff') {
+        appState.fuel_eff.distance = '';
+        appState.fuel_eff.fuelUsed = '';
+    } else if (id === 'area_cost') {
+        appState.area_cost.rai = '0';
+        appState.area_cost.ngan = '0';
+        appState.area_cost.wa = '0';
+        appState.area_cost.rate = '';
+        appState.area_cost.price = '';
+    } else if (id === 'tip') {
+        appState.tip.bill = '';
+    } else if (id === 'hex') {
+        appState.hex.decValue = 0;
+    } else if (id === 'lotto_calc') {
+        appState.lotto_calc = {
+            activeTab: 'bet',
+            betNumberInput: '',
+            numbersList: [],
+            pricePerNumber: '20',
+            payoutRate: '900',
+            claimPrize: 'back2',
+            claimTicketCount: '1',
+            claimChannel: 'bank',
+            claimCustomRate: '2.0',
+            lottoSpendPerDraw: '500',
+            savingsYears: '10',
+            savingsRate: '7',
+            luckyType: '3digit',
+            luckyResult: ''
+        };
+    }
+    rememberToolClear(snapshot);
+    renderActiveTool();
+}
+
+function loadDemoForCurrentTool() {
+    const id = appState.activeToolId;
+    if (id === 'unit_price') {
+        appState.unit_price.rows = [
+            { id: 'A', price: '80', qty: '500', unit: 'g' },
+            { id: 'B', price: '150', qty: '1', unit: 'kg' },
+            { id: 'C', price: '320', qty: '2', unit: 'kg' },
+            { id: 'D', price: '', qty: '', unit: 'g' }
+        ];
+    } else if (id === 'discount') {
+        appState.discount = { price: '1590', discountPct: '25', extraPct: '10' };
+    } else if (id === 'percent') {
+        appState.percent = { mode: 'pct_of', x: '15', y: '2400', z: '5' };
+    } else if (id === 'vat') {
+        appState.vat = { amount: '1000', rate: '7', mode: 'exclude' };
+    } else if (id === 'vat_wht') {
+        appState.vat_wht = { amount: '10000', vatRate: '7', whtRate: '3', mode: 'before' };
+    } else if (id === 'salary') {
+        appState.salary = { income: '35000', needsPct: '50', wantsPct: '30', savingsPct: '20', emergencyPct: '10', debtPct: '10' };
+    } else if (id === 'fuel_cost') {
+        appState.fuel_cost = { distance: '320', efficiency: '16', oilPrice: '35.50' };
+    } else if (id === 'tip') {
+        appState.tip = { bill: '1850', tipPct: '10', people: '4' };
+    } else if (id === 'fuel_eff') {
+        appState.fuel_eff = { distance: '480', fuelUsed: '32' };
+    } else if (id === 'loan') {
+        appState.loan = { principal: '600000', interestRate: '3.85', months: '48', extra: '0', rateType: 'fixed', promoMonths: '12', rateAfter: '6.5', calcMethod: 'reducing' };
+    } else if (id === 'savings') {
+        appState.savings = { initial: '50000', monthly: '5000', interestRate: '2.5', years: '5', compound: true, mode: 'growth', goalTarget: '500000', annualIncrease: '0', inflationRate: '2.5', monthlyExpenses: '15000', emergencyMonths: '6', currentAge: '30', retirementAge: '60', retirementMonthly: '30000' };
+    } else if (id === 'currency') {
+        appState.currency.amount = '250';
+        appState.currency.from = 'USD';
+        appState.currency.to = 'THB';
+    } else if (id === 'unit') {
+        appState.unit = { cat: 'area', val: '2.5', fromIdx: 0, targetIdx: 1 };
+    } else if (id === 'date_work') {
+        appState.date_work = { startDate: formatLocalDate(new Date()), endDate: formatLocalDate(addCalendarDays(new Date(), 45)), mode: 'between', offset: 30, calendarEra: 'CE', workDays: [1, 2, 3, 4, 5], includeThaiHolidays: true, customHolidays: '' };
+    } else if (id === 'date_calc') {
+        appState.date_calc = { mode: 'diff', startDate: formatLocalDate(new Date()), endDate: formatLocalDate(addCalendarDays(new Date(), 90)), op: 'add', daysOffset: 30, inclusive: false, workdays: false, includeThaiHolidays: false, birthDate: '1995-08-12', referenceDate: formatLocalDate(new Date()), calendarEra: 'CE' };
+    } else if (id === 'world_time') {
+        appState.world_time = { search: '', use24h: true, favoriteCities: ['Asia/Bangkok', 'Asia/Tokyo', 'Europe/London', 'America/New_York'], meetingTime: '14:00', meetingDate: formatLocalDate(new Date()) };
+    } else if (id === 'gpa') {
+        appState.gpa.courses = [
+            { name: 'คณิตศาสตร์พื้นฐาน', credit: 3, grade: '4.0' },
+            { name: 'ภาษาอังกฤษเพื่อการสื่อสาร', credit: 3, grade: '3.5' },
+            { name: 'การเขียนโปรแกรมคอมพิวเตอร์', credit: 3, grade: '3.5' },
+            { name: 'ฟิสิกส์ทั่วไป', credit: 3, grade: '3.0' }
+        ];
+    } else if (id === 'health') {
+        appState.health = { gender: 'male', age: '28', height: '172', weight: '68', activity: '1.375' };
+    } else if (id === 'ovulation') {
+        appState.ovulation = { lastPeriodDate: formatLocalDate(addCalendarDays(new Date(), -12)), cycleLength: 28, periodDays: 5 };
+    } else if (id === 'area_cost') {
+        appState.area_cost = { rai: '2', ngan: '1', wa: '50', rate: '1500', price: '3450000', rounds: '1' };
+    } else if (id === 'hex') {
+        appState.hex = { activeBase: 10, decValue: 2026 };
+    } else if (id === 'calc') {
+        appState.calc.expr = '1,250 × 12 + 3,500';
+        appState.calc.result = '18,500';
+    } else if (id === 'lotto_calc') {
+        appState.lotto_calc = {
+            activeTab: 'bet',
+            betNumberInput: '579',
+            numbersList: ['579', '597', '759', '795', '957', '975'],
+            pricePerNumber: '20',
+            payoutRate: '900',
+            claimPrize: 'back2',
+            claimTicketCount: '2',
+            claimChannel: 'bank',
+            claimCustomRate: '2.0',
+            lottoSpendPerDraw: '500',
+            savingsYears: '10',
+            savingsRate: '7',
+            luckyType: '3digit',
+            luckyResult: '579'
+        };
+    }
+    renderActiveTool();
+}
+
+function triggerPrintReceipt(toolId) {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    const targetId = toolId || appState.activeToolId;
+    if (typeof hasInvalidNumericInput === 'function' && hasInvalidNumericInput(targetId)) {
+        if (typeof showHistoryToast === 'function') {
+            showHistoryToast('⚠️ ข้อมูลตัวเลขไม่ถูกต้อง กรุณาแก้ไขก่อนพิมพ์', false);
+        }
+        return;
+    }
+    const printEl = document.getElementById('printFormalReceipt');
+    if (printEl && typeof generateFormalPrintHTML === 'function') {
+        printEl.innerHTML = generateFormalPrintHTML(targetId, appState);
+    }
+    window.print();
+}
+
+function setStatusBanner(stateType, htmlContent) {
+    if (typeof document === 'undefined') return;
+    if (typeof hasInvalidNumericInput === 'function' && hasInvalidNumericInput()) {
+        stateType = 'error';
+        htmlContent = 'รูปแบบตัวเลขไม่ถูกต้อง กรุณาแก้ข้อมูลก่อนใช้ผลคำนวณ เช่น 1,000 หรือ ๑๐๐๐';
+        document.getElementById('sharedStatusBanner')?.classList.remove('hidden');
+    }
+    const banner = document.getElementById('sharedStatusBanner');
+    const textEl = document.getElementById('sharedStatusText');
+    if (!banner || !textEl) return;
+    const isAirbnb = appState.theme === 'airbnb';
+    const isDark = appState.theme === 'dark' || appState.theme === 'ferrari';
+    const isTogether = appState.theme === 'together';
+
+    if (stateType === 'empty') {
+        banner.className = 'status-banner';
+        textEl.className = 'text-[var(--app-muted)] text-[1rem]';
+        textEl.innerHTML = htmlContent || 'กรุณาป้อนข้อมูลของคุณ';
+    } else if (stateType === 'success') {
+        if (typeof scheduleRecordHistory === 'function' && (typeof hasInvalidNumericInput !== 'function' || !hasInvalidNumericInput())) {
+            scheduleRecordHistory(appState.activeToolId);
+        }
+        if (isAirbnb) {
+            banner.className = 'status-banner !border-[#ff385c] !bg-[#fff8f9]';
+            textEl.className = 'text-[#222222] text-[0.98rem] font-semibold leading-snug w-full';
+        } else if (isTogether) {
+            banner.className = 'status-banner theme-success';
+            textEl.className = 'text-[var(--app-ink)] text-[1rem] font-bold leading-snug w-full';
+        } else if (isDark) {
+            banner.className = 'status-banner theme-success';
+            textEl.className = 'text-[var(--app-ink)] text-[1rem] font-bold leading-snug w-full';
+        } else {
+            banner.className = 'status-banner !bg-[#f0fdf4] !border-[#16a34a]';
+            textEl.className = 'text-[#15803d] text-[1rem] font-bold leading-snug w-full';
+        }
+        textEl.innerHTML = htmlContent;
+    } else {
+        banner.className = 'status-banner';
+        textEl.className = 'text-[#222222] text-[0.98rem] font-medium leading-snug w-full';
+        textEl.innerHTML = htmlContent;
+    }
+}
+
+function sanitizeSavedNumericValues(obj) {
+    if (!obj || typeof obj !== 'object') return;
+    for (const k of Object.keys(obj)) {
+        if (typeof obj[k] === 'string' && /^\d+,\d+/.test(obj[k])) {
+            obj[k] = formatInputDisplay(obj[k]);
+        } else if (typeof obj[k] === 'object' && obj[k] !== null) {
+            sanitizeSavedNumericValues(obj[k]);
+        }
+    }
+}
+
+(function(root) {
+    const exportsObj = {
+        captureToolSnapshot,
+        rememberToolClear,
+        undoLastClear,
+        clearCurrentTool,
+        loadDemoForCurrentTool,
+        triggerPrintReceipt,
+        setStatusBanner,
+        sanitizeSavedNumericValues
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/ui/actions.js <<<
+
+// >>> src/ui/modals.js >>>
+// ==============================================================
+// Multitools Calculator - Modals, Dropdown & PWA Setup
+// ==============================================================
+
+let deferredInstallPrompt = null;
+
+function openModal() {
+    if (typeof document === 'undefined') return;
+    const infoModal = document.getElementById('infoModal');
+    if (infoModal) infoModal.classList.remove('hidden');
+}
+
+function closeModal() {
+    if (typeof document === 'undefined') return;
+    const infoModal = document.getElementById('infoModal');
+    if (infoModal) infoModal.classList.add('hidden');
+}
+
+function createAppIconDataURL(size = 192) {
+    if (typeof document === 'undefined') return '';
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(0, 0, size, size, size * 0.24);
+    } else {
+        ctx.rect(0, 0, size, size);
+    }
+    ctx.fill();
+
+    ctx.fillStyle = '#ff385c';
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(size * 0.1, size * 0.1, size * 0.8, size * 0.8, size * 0.2);
+    } else {
+        ctx.rect(size * 0.1, size * 0.1, size * 0.8, size * 0.8);
+    }
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${Math.floor(size * 0.22)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const catalogLen = (typeof TOOLS_CATALOG !== 'undefined') ? TOOLS_CATALOG.length : 22;
+    ctx.fillText(`${catalogLen} in 1`, size / 2, size * 0.36);
+
+    const cols = [0.3, 0.5, 0.7];
+    const rows = [0.62, 0.76];
+    rows.forEach(ry => {
+        cols.forEach((cx) => {
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(size * cx, size * ry, size * 0.055, 0, Math.PI * 2);
+            ctx.fill();
+        });
+    });
+
+    return canvas.toDataURL('image/png');
+}
+
+function setupPWA() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    try {
+        const icon192 = createAppIconDataURL(192);
+        const icon512 = createAppIconDataURL(512);
+
+        const appleIcon = document.createElement('link');
+        appleIcon.rel = 'apple-touch-icon';
+        appleIcon.href = icon192;
+        document.head.appendChild(appleIcon);
+
+        const catalogLen = (typeof TOOLS_CATALOG !== 'undefined') ? TOOLS_CATALOG.length : 22;
+        const manifest = {
+            name: 'เครื่องคำนวณครบวงจร (All-in-One Calculator)',
+            short_name: 'เครื่องคำนวณ',
+            description: `รวม ${catalogLen} เครื่องคำนวณในแอปเดียว พร้อมดีไซน์ Airbnb Rausch และ Classic`,
+            start_url: window.location.href,
+            display: 'standalone',
+            orientation: 'portrait',
+            background_color: '#ffffff',
+            theme_color: '#ff385c',
+            icons: [
+                { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+                { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+            ]
+        };
+
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = manifestURL;
+        document.head.appendChild(manifestLink);
+
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+            navigator.serviceWorker.register('./sw.js').then(reg => {
+                console.log('PWA ServiceWorker registered with scope:', reg.scope);
+            }).catch(err => {
+                console.warn('PWA ServiceWorker registration failed:', err);
+            });
+        }
+    } catch (e) {
+        console.warn('PWA setup skipped:', e);
+    }
+}
+
+async function triggerInstallFlow() {
+    if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        const { outcome } = await deferredInstallPrompt.userChoice;
+        if (outcome === 'accepted') deferredInstallPrompt = null;
+    } else {
+        openModal();
+    }
+}
+
+function initDropdownListeners() {
+    if (typeof document === 'undefined') return;
+    const moreBtn = document.getElementById('moreBtn');
+    const dropdownMenu = document.getElementById('dropdownMenu');
+
+    moreBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdownMenu?.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', () => {
+        dropdownMenu?.classList.add('hidden');
+    });
+
+    document.getElementById('menuClearCurrent')?.addEventListener('click', () => {
+        if (typeof clearCurrentTool === 'function') clearCurrentTool();
+    });
+    document.getElementById('menuUndoClear')?.addEventListener('click', () => {
+        if (typeof undoLastClear === 'function') undoLastClear();
+    });
+    document.getElementById('menuLoadSample')?.addEventListener('click', () => {
+        if (typeof loadDemoForCurrentTool === 'function') loadDemoForCurrentTool();
+    });
+    document.getElementById('menuSaveCurrent')?.addEventListener('click', () => {
+        dropdownMenu?.classList.add('hidden');
+        if (typeof promptSaveCurrentSet === 'function') promptSaveCurrentSet();
+    });
+    document.getElementById('menuOpenHistory')?.addEventListener('click', () => {
+        dropdownMenu?.classList.add('hidden');
+        if (typeof openSidebar === 'function') openSidebar();
+        if (typeof switchDrawerTab === 'function') switchDrawerTab('history');
+    });
+    document.getElementById('menuPrintPDF')?.addEventListener('click', () => {
+        dropdownMenu?.classList.add('hidden');
+        if (typeof triggerPrintReceipt === 'function') triggerPrintReceipt();
+    });
+    document.getElementById('bannerPrintBtn')?.addEventListener('click', () => {
+        if (typeof triggerPrintReceipt === 'function') triggerPrintReceipt();
+    });
+
+    if (typeof window !== 'undefined') {
+        window.addEventListener('beforeprint', () => {
+            const printEl = document.getElementById('printFormalReceipt');
+            if (printEl && (!printEl.innerHTML || !printEl.innerHTML.trim())) {
+                if (typeof generateFormalPrintHTML === 'function' && typeof appState !== 'undefined') {
+                    printEl.innerHTML = generateFormalPrintHTML(appState.activeToolId, appState);
+                }
+            }
+        });
+    }
+
+    document.getElementById('sidebarTabTools')?.addEventListener('click', () => {
+        if (typeof switchDrawerTab === 'function') switchDrawerTab('tools');
+    });
+    document.getElementById('sidebarTabHistory')?.addEventListener('click', () => {
+        if (typeof switchDrawerTab === 'function') switchDrawerTab('history');
+    });
+    document.getElementById('btnSaveCurrentSet')?.addEventListener('click', () => {
+        if (typeof promptSaveCurrentSet === 'function') promptSaveCurrentSet();
+    });
+    document.getElementById('btnClearHistory')?.addEventListener('click', () => {
+        if (typeof getCalculationHistory !== 'function') return;
+        const list = getCalculationHistory();
+        const unpinned = list.filter(h => !h.isSaved);
+        if (!unpinned.length) {
+            if (typeof showHistoryToast === 'function') showHistoryToast('ไม่มีประวัติล่าสุดให้ล้าง');
+            return;
+        }
+        if (typeof confirm === 'function' && confirm(`ล้างประวัติการคำนวณล่าสุดทั้งหมด ${unpinned.length} รายการหรือไม่?\n(ชุดที่คุณบันทึกไว้จะไม่ถูกลบ)`)) {
+            if (typeof clearCalculationHistory === 'function') clearCalculationHistory(true);
+            if (typeof renderHistoryPanel === 'function') renderHistoryPanel();
+            if (typeof updateHistoryBadge === 'function') updateHistoryBadge();
+            if (typeof showHistoryToast === 'function') showHistoryToast('✓ ล้างประวัติการคำนวณล่าสุดแล้ว');
+        }
+    });
+}
+
+function initModalListeners() {
+    if (typeof document === 'undefined') return;
+    const infoModal = document.getElementById('infoModal');
+
+    document.getElementById('menuInstallPWA')?.addEventListener('click', triggerInstallFlow);
+    document.getElementById('closeModalBtn')?.addEventListener('click', closeModal);
+    document.getElementById('modalOkBtn')?.addEventListener('click', closeModal);
+    infoModal?.addEventListener('click', (e) => {
+        if (e.target === infoModal) closeModal();
+    });
+}
+
+function initCompareModalListeners() {
+    if (typeof document === 'undefined') return;
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    const compareModal = document.getElementById('compareModal');
+
+    document.getElementById('btnOpenCompareModal')?.addEventListener('click', () => {
+        if (typeof closeSidebar === 'function') closeSidebar();
+        if (typeof openCompareModal === 'function') openCompareModal();
+    });
+    document.getElementById('menuQuickCompare')?.addEventListener('click', () => {
+        dropdownMenu?.classList.add('hidden');
+        if (typeof openCompareModal === 'function') openCompareModal();
+    });
+    document.getElementById('closeCompareModalBtn')?.addEventListener('click', () => {
+        if (typeof closeCompareModal === 'function') closeCompareModal();
+    });
+    document.getElementById('closeCompareModalOkBtn')?.addEventListener('click', () => {
+        if (typeof closeCompareModal === 'function') closeCompareModal();
+    });
+    compareModal?.addEventListener('click', (e) => {
+        if (e.target === compareModal && typeof closeCompareModal === 'function') closeCompareModal();
+    });
+    document.getElementById('compareToolSelect')?.addEventListener('change', () => {
+        if (typeof populateCompareSlots === 'function') populateCompareSlots();
+        if (typeof renderCompareMatrix === 'function') renderCompareMatrix();
+    });
+    document.getElementById('compareSlotA')?.addEventListener('change', () => {
+        if (typeof renderCompareMatrix === 'function') renderCompareMatrix();
+    });
+    document.getElementById('compareSlotB')?.addEventListener('change', () => {
+        if (typeof renderCompareMatrix === 'function') renderCompareMatrix();
+    });
+    document.getElementById('compareSlotC')?.addEventListener('change', () => {
+        if (typeof renderCompareMatrix === 'function') renderCompareMatrix();
+    });
+    document.getElementById('btnToggleSlotC')?.addEventListener('click', () => {
+        if (typeof isCompareSlotCActive !== 'undefined') {
+            isCompareSlotCActive = !isCompareSlotCActive;
+        }
+        if (typeof updateSlotCUI === 'function') updateSlotCUI();
+        if (typeof renderCompareMatrix === 'function') renderCompareMatrix();
+    });
+    document.getElementById('btnComparePreset')?.addEventListener('click', () => {
+        const toolId = document.getElementById('compareToolSelect')?.value || 'loan';
+        if (typeof getComparisonPresets !== 'function') return;
+        const presets = getComparisonPresets(toolId);
+        if (!presets || presets.length < 2) return;
+        if (typeof isCompareSlotCActive !== 'undefined') {
+            isCompareSlotCActive = presets.length >= 3;
+        }
+        if (typeof updateSlotCUI === 'function') updateSlotCUI();
+        const slotA = document.getElementById('compareSlotA');
+        const slotB = document.getElementById('compareSlotB');
+        const slotC = document.getElementById('compareSlotC');
+        if (slotA) slotA.value = 'preset_0';
+        if (slotB) slotB.value = 'preset_1';
+        if (slotC && presets.length >= 3) slotC.value = 'preset_2';
+        if (typeof renderCompareMatrix === 'function') renderCompareMatrix();
+        if (typeof showHistoryToast === 'function') showHistoryToast('💡 โหลดตัวอย่างเปรียบเทียบเรียบร้อย');
+    });
+    document.getElementById('btnPrintCompareSummary')?.addEventListener('click', () => {
+        if (typeof currentCompareData === 'undefined' || !currentCompareData) return;
+        const printEl = document.getElementById('printFormalReceipt');
+        if (printEl && typeof generateComparePrintHTML === 'function') {
+            printEl.innerHTML = generateComparePrintHTML(currentCompareData);
+        }
+        if (typeof window !== 'undefined') window.print();
+    });
+}
+
+function initPwaListeners() {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        document.getElementById('modalDirectInstallBtn')?.classList.remove('hidden');
+    });
+
+    document.getElementById('footerInstallBtn')?.addEventListener('click', triggerInstallFlow);
+    document.getElementById('modalDirectInstallBtn')?.addEventListener('click', triggerInstallFlow);
+}
+
+function initAppListeners() {
+    initDropdownListeners();
+    initModalListeners();
+    initCompareModalListeners();
+    initPwaListeners();
+}
+
+(function(root) {
+    const exportsObj = {
+        openModal,
+        closeModal,
+        createAppIconDataURL,
+        setupPWA,
+        triggerInstallFlow,
+        initDropdownListeners,
+        initModalListeners,
+        initCompareModalListeners,
+        initPwaListeners,
+        initAppListeners
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/ui/modals.js <<<
