@@ -24,6 +24,7 @@ const moduleFiles = [
     'src/tools/work.js',
     'src/tools/special.js',
     'src/tools/lotto.js',
+    'src/tools/tax_property.js',
     'src/ui/actions.js',
     'src/ui/modals.js'
 ];
@@ -279,11 +280,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 23 tools classified into 5 valid groups with search keywords', () => {
+test('catalog contains exactly 25 tools classified into 5 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 5);
-    assert.equal(TOOLS_CATALOG.length, 23);
+    assert.equal(TOOLS_CATALOG.length, 25);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -409,7 +410,7 @@ test('thai official holidays: Songkran, fixed holidays and lunar Buddhist observ
     assert.equal(ctx.isThaiOfficialHoliday(new Date('2026-10-14T00:00:00')), false);
 });
 
-test('all 23 tools have complete and valid clear and demo data mappings', () => {
+test('all 25 tools have complete and valid clear and demo data mappings', () => {
     const rawAppStateMatch = html.match(/const appState = \{[\s\S]*?\n        \};/);
     assert.ok(rawAppStateMatch, 'appState must be defined');
 
@@ -425,7 +426,7 @@ test('all 23 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 23);
+    assert.equal(ctx.TOOLS_CATALOG.length, 25);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -693,7 +694,41 @@ test('formal print-to-pdf: generates accurate Thai receipt documents for loan, s
     assert.ok(salaryDoc.includes('12,000.00 บาท'), 'Wants 30% = 12,000');
     assert.ok(salaryDoc.includes('8,000.00 บาท'), 'Savings 20% = 8,000');
 
-    // 6. Generic Calculator Fallback
+    // 6. Tax Personal Formal Receipt
+    const taxState = {
+        activeToolId: 'tax_personal',
+        tax_personal: {
+            salaryMonthly: '50,000',
+            bonusYearly: '50,000',
+            withholdingTax: '12,000',
+            socialSecurity: '9,000',
+            lifeInsurance: '30,000'
+        }
+    };
+    const taxDoc = ctx.generateFormalPrintHTML('tax_personal', taxState);
+    assert.ok(taxDoc.includes('ใบสรุปการคำนวณภาษีเงินได้บุคคลธรรมดาและวางแผนลดหย่อน (ภ.ง.ด. 90/91)'));
+    assert.ok(taxDoc.includes('650,000.00 บาท'));
+    assert.ok(taxDoc.includes('ตารางแจกแจงภาษีอัตราก้าวหน้า 7 ขั้น'));
+
+    // 7. Property Transfer Formal Receipt
+    const propState = {
+        activeToolId: 'property_transfer',
+        property_transfer: {
+            appraisedValue: '3,000,000',
+            salePrice: '3,200,000',
+            mortgageAmount: '2,500,000',
+            holdingYears: '3',
+            exemptSBT: 'no',
+            splitMode: 'custom'
+        }
+    };
+    const propDoc = ctx.generateFormalPrintHTML('property_transfer', propState);
+    assert.ok(propDoc.includes('เอกสารประมาณการค่าธรรมเนียมและภาษีการโอนกรรมสิทธิ์อสังหาริมทรัพย์ สำนักงานที่ดิน'));
+    assert.ok(propDoc.includes('3,000,000.00 บาท'));
+    assert.ok(propDoc.includes('ฝั่งผู้ซื้อต้องเตรียมชำระ'));
+    assert.ok(propDoc.includes('ฝั่งผู้ขายต้องเตรียมชำระ'));
+
+    // 8. Generic Calculator Fallback
     const genericDoc = ctx.generateFormalPrintHTML('tip', { activeToolId: 'tip' });
     assert.ok(genericDoc.includes('MULTITOOLS AIO'));
     assert.ok(genericDoc.includes('เอกสารสรุปผลการคำนวณ'));
@@ -704,7 +739,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     const ctx = context();
 
     // 1. Presets availability
-    for (const toolId of ['loan', 'savings', 'vat_wht', 'salary']) {
+    for (const toolId of ['loan', 'savings', 'vat_wht', 'salary', 'tax_personal', 'property_transfer']) {
         const presets = ctx.getComparisonPresets(toolId);
         assert.ok(Array.isArray(presets) && presets.length >= 3, `Presets for ${toolId} must have at least 3 items`);
         assert.ok(presets[0].label && presets[0].state, `Preset item must have label and state`);
@@ -768,7 +803,35 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(salaryComp);
     assert.equal(salaryComp.winnerIndex, 1, 'Salary plan B with 40% savings must win for highest savings');
 
-    // 6. Print Comparison Sheet Generator
+    // 6. Tax Personal comparison
+    const taxA = {
+        label: 'ไม่ลดหย่อนเพิ่ม',
+        state: { salaryMonthly: '50,000', bonusYearly: '0', socialSecurity: '9,000', lifeInsurance: '0', ssf: '0' }
+    };
+    const taxB = {
+        label: 'ลดหย่อนประกัน 50k',
+        state: { salaryMonthly: '50,000', bonusYearly: '0', socialSecurity: '9,000', lifeInsurance: '50,000', ssf: '0' }
+    };
+    const taxComp = ctx.compareCalculations('tax_personal', [taxA, taxB]);
+    assert.ok(taxComp);
+    assert.equal(taxComp.winnerIndex, 1, 'Plan with deductions must yield lower tax');
+    assert.ok(taxComp.deltaSummary.includes('ประหยัดภาษีได้สูงสุด'));
+
+    // 7. Property Transfer comparison
+    const propA = {
+        label: 'ถือครอง 3 ปี (SBT 3.3%)',
+        state: { appraisedValue: '3,000,000', salePrice: '3,000,000', mortgageAmount: '0', holdingYears: '3', exemptSBT: 'no', isGovMeasure: 'standard' }
+    };
+    const propB = {
+        label: 'ถือครอง 5 ปี (อากร 0.5%)',
+        state: { appraisedValue: '3,000,000', salePrice: '3,000,000', mortgageAmount: '0', holdingYears: '5', exemptSBT: 'yes', isGovMeasure: 'standard' }
+    };
+    const propComp = ctx.compareCalculations('property_transfer', [propA, propB]);
+    assert.ok(propComp);
+    assert.equal(propComp.winnerIndex, 1, 'Option with 0.5% stamp duty must win over 3.3% SBT');
+    assert.ok(propComp.deltaSummary.includes('ค่าใช้จ่ายวันโอนรวมต่ำที่สุด'));
+
+    // 8. Print Comparison Sheet Generator
     const printHTML = ctx.generateComparePrintHTML(loanComp);
     assert.ok(printHTML.includes('MULTITOOLS AIO'));
     assert.ok(printHTML.includes('ตารางวิเคราะห์และเปรียบเทียบชุดคำนวณ'));
@@ -777,35 +840,37 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('🏆 คุ้มค่าที่สุด'));
 });
 
-test('all 23 tool renderers are modularized and exported across the 5 tool groups', () => {
+test('all 25 tool renderers are modularized and exported across the 5 tool groups', () => {
     const ctx = context();
     const rendererMap = {
-        unit_price: 'renderUnitPriceTool',
-        discount:   'renderDiscountTool',
-        tip:        'renderTipTool',
-        unit:       'renderUnitConverterTool',
-        vat:        'renderVatTool',
-        vat_wht:    'renderVatWhtTool',
-        percent:    'renderPercentTool',
-        salary:     'renderSalaryTool',
-        loan:       'renderLoanTool',
-        savings:    'renderSavingsTool',
-        currency:   'renderCurrencyTool',
-        date_work:  'renderWorkdayTool',
-        date_calc:  'renderDateCalcTool',
-        world_time: 'renderWorldTimeTool',
-        gpa:        'renderGpaTool',
-        health:     'renderHealthTool',
-        ovulation:  'renderOvulationTool',
-        fuel_cost:  'renderFuelCostTool',
-        fuel_eff:   'renderFuelEffTool',
-        area_cost:  'renderAreaCostTool',
-        hex:        'renderHexTool',
-        calc:       'renderStandardCalcTool',
-        lotto_calc: 'renderLottoTool'
+        unit_price:        'renderUnitPriceTool',
+        discount:          'renderDiscountTool',
+        tip:               'renderTipTool',
+        unit:              'renderUnitConverterTool',
+        vat:               'renderVatTool',
+        vat_wht:           'renderVatWhtTool',
+        percent:           'renderPercentTool',
+        salary:            'renderSalaryTool',
+        loan:              'renderLoanTool',
+        savings:           'renderSavingsTool',
+        currency:          'renderCurrencyTool',
+        date_work:         'renderWorkdayTool',
+        date_calc:         'renderDateCalcTool',
+        world_time:        'renderWorldTimeTool',
+        gpa:               'renderGpaTool',
+        health:            'renderHealthTool',
+        ovulation:         'renderOvulationTool',
+        fuel_cost:         'renderFuelCostTool',
+        fuel_eff:          'renderFuelEffTool',
+        area_cost:         'renderAreaCostTool',
+        hex:               'renderHexTool',
+        calc:              'renderStandardCalcTool',
+        lotto_calc:        'renderLottoTool',
+        tax_personal:      'renderTaxPersonalTool',
+        property_transfer: 'renderPropertyTransferTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 23);
+    assert.equal(Object.keys(rendererMap).length, 25);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -934,6 +999,160 @@ test('thai lottery engine: permutations, payouts, GLO prize claim, stats and sav
     assert.match(summaryClaim, /สรุปขึ้นเงินรางวัลสลากกินแบ่ง/);
     assert.match(summaryClaim, /รางวัลที่ 1/);
     assert.match(summaryClaim, /5,910,000\.00 บาท/);
+});
+
+test('personal income tax engine (ภ.ง.ด. 90/91): bracket steps, deduction caps, refund vs payable, savings simulator', () => {
+    const ctx = context();
+
+    // 1. Zero income
+    const zeroRes = ctx.calculatePersonalTax({ salaryMonthly: 0, bonusYearly: 0 });
+    assert.equal(zeroRes.grossIncome, 0);
+    assert.equal(zeroRes.totalTax, 0);
+    assert.equal(zeroRes.netTaxableIncome, 0);
+
+    // 2. Typical middle-income earner: 30,000 THB/month (360k/year)
+    // Expenses 50% capped at 100k -> 100k
+    // Deductions: self 60k + social security 9k = 69k
+    // Net taxable: 360k - 100k - 69k = 191,000 THB
+    // Tax: 150k @ 0% + 41k @ 5% = 2,050 THB
+    const midRes = ctx.calculatePersonalTax({
+        salaryMonthly: '30,000',
+        bonusYearly: '0',
+        socialSecurity: '9,000',
+        withholdingTax: '3,000'
+    });
+    assert.equal(midRes.grossIncome, 360000);
+    assert.equal(midRes.expenses, 100000);
+    assert.equal(midRes.incomeAfterExpenses, 260000);
+    assert.equal(midRes.totalDeductions, 69000);
+    assert.equal(midRes.netTaxableIncome, 191000);
+    assert.equal(midRes.totalTax, 2050);
+    assert.equal(midRes.marginalRate, 5);
+    assert.equal(midRes.isRefund, true);
+    assert.equal(midRes.refundAmount, 950);
+    assert.equal(midRes.savingsPer10k, 500); // 10k * 5%
+
+    // 3. Higher-income earner with family, insurance, PVD, SSF, Thai ESG, and donations
+    // Gross: 100k/mo (1.2M) + 200k bonus = 1,400,000
+    // Expenses: 100k (cap) -> incomeAfterExpenses = 1,300,000
+    // Personal deductions: self 60k + spouse 60k + 1 child pre-2018 (30k) + 1 child 2018+ (60k) + 1 parent (30k) = 240,000
+    // Savings: SS 9k + life 100k + health 15k (combo capped at 100k) + PVD 100k + SSF 100k (retirement combo 200k <= 500k) + Thai ESG 50k = 459,000
+    // Net before donation: 1,300,000 - 240,000 - 459,000 = 601,000
+    // Education donation 10k (x2 = 20k <= 10% limit of 60,100) -> 20,000
+    // Net taxable: 601,000 - 20,000 = 581,000
+    const highRes = ctx.calculatePersonalTax({
+        salaryMonthly: '100000',
+        bonusYearly: '200000',
+        hasSpouse: 'yes',
+        childCount: 1,
+        child2018Count: 1,
+        parentCount: 1,
+        socialSecurity: '9000',
+        lifeInsurance: '100000',
+        healthInsurance: '15000',
+        pvdGpf: '100000',
+        ssf: '100000',
+        thaiEsg: '50000',
+        donationEducation: '10000',
+        withholdingTax: '50000'
+    });
+    assert.equal(highRes.grossIncome, 1400000);
+    assert.equal(highRes.expenses, 100000);
+    assert.equal(highRes.personalTotal, 240000);
+    assert.equal(highRes.savingsTotal, 359000); // 9k SS + 100k Life/Health + 200k PVD/SSF + 50k Thai ESG
+    assert.equal(highRes.netTaxableIncome, 681000);
+    assert.equal(highRes.marginalRate, 15);
+    // Tax breakdown:
+    // 0-150k @ 0% = 0
+    // 150k-300k @ 5% = 7,500
+    // 300k-500k @ 10% = 20,000
+    // 500k-681k (181k) @ 15% = 27,150
+    // Total = 54,650
+    assert.equal(highRes.totalTax, 54650);
+    assert.equal(highRes.isRefund, false);
+    assert.equal(highRes.payableAmount, 4650); // 54,650 - 50,000
+    assert.equal(highRes.savingsPer10k, 1500); // 10k * 15%
+
+    // 4. Drawer summary check
+    const summary = ctx.getToolSummaryText('tax_personal', { tax_personal: { salaryMonthly: '30,000', bonusYearly: '0', socialSecurity: '9000', withholdingTax: '3000' } });
+    assert.match(summary, /สรุปภาษีเงินได้บุคคลธรรมดา/);
+    assert.match(summary, /360,000\.00 บาท/);
+    assert.match(summary, /191,000\.00 บาท/);
+    assert.match(summary, /ได้เงินคืนภาษี/);
+});
+
+test('property transfer fee and land department taxes engine: transfer fee, SBT vs stamp duty, section 50(5) withholding, split allocation', () => {
+    const ctx = context();
+
+    // 1. Standard calculation: Appraised 3M, Sale 3.2M, Mortgage 2.5M, 3 years holding (Specific Business Tax 3.3%)
+    const prop = {
+        appraisedValue: '3,000,000',
+        salePrice: '3,200,000',
+        mortgageAmount: '2,500,000',
+        holdingYears: '3',
+        exemptSBT: 'no',
+        isGovMeasure: 'standard',
+        splitMode: 'custom'
+    };
+    const res = ctx.calculatePropertyTransfer(prop);
+
+    // Transfer fee: 2% of 3M = 60,000
+    assert.equal(res.transferFee, 60000);
+    // Mortgage fee: 1% of 2.5M = 25,000
+    assert.equal(res.mortgageFee, 25000);
+    // SBT: 3.3% of max(3M, 3.2M) = 3.3% of 3.2M = 105,600
+    assert.equal(res.isSBT, true);
+    assert.equal(res.sbtTax, 105600);
+    assert.equal(res.stampDuty, 0);
+
+    // Withholding tax Section 50(5):
+    // 3 years holding -> 77% expense deduction -> net 23% = 690,000
+    // Yearly average income = 690,000 / 3 = 230,000
+    // Tax per year: 100k @ 5% (5,000) + 130k @ 10% (13,000) = 18,000
+    // Total withholding tax = 18,000 * 3 = 54,000
+    assert.equal(res.withholdingExpensePercent, 77);
+    assert.equal(res.withholdingTax, 54000);
+
+    // Total Land Office Cost: 60,000 + 25,000 + 105,600 + 54,000 = 244,600
+    assert.equal(res.totalLandCost, 244600);
+
+    // Custom Split:
+    // Buyer: transfer * 0.5 (30k) + mortgage (25k) = 55,000
+    // Seller: transfer * 0.5 (30k) + SBT (105.6k) + withholding (54k) = 189,600
+    assert.equal(res.buyerCost, 55000);
+    assert.equal(res.sellerCost, 189600);
+    assert.equal(res.buyerCost + res.sellerCost, res.totalLandCost);
+
+    // 2. Exempt SBT (holding 5 years) -> Stamp duty 0.5%
+    const prop5yrs = { ...prop, holdingYears: '5', exemptSBT: 'yes' };
+    const res5yrs = ctx.calculatePropertyTransfer(prop5yrs);
+    assert.equal(res5yrs.isSBT, false);
+    assert.equal(res5yrs.sbtTax, 0);
+    assert.equal(res5yrs.stampDuty, 16000); // 0.5% of 3.2M
+
+    // 3. Government Reduction Measure (0.01% transfer & 0.01% mortgage)
+    const propGov = { ...prop, isGovMeasure: 'reduced' };
+    const resGov = ctx.calculatePropertyTransfer(propGov);
+    assert.equal(resGov.transferFee, 300); // 3M * 0.01%
+    assert.equal(resGov.mortgageFee, 250); // 2.5M * 0.01%
+
+    // 4. Split modes: half, seller, buyer
+    const resHalf = ctx.calculatePropertyTransfer({ ...prop, splitMode: 'half' });
+    assert.equal(resHalf.buyerCost, ((res.transferFee + res.sbtTax + res.withholdingTax) * 0.5) + res.mortgageFee);
+
+    const resSeller = ctx.calculatePropertyTransfer({ ...prop, splitMode: 'seller' });
+    assert.equal(resSeller.buyerCost, res.mortgageFee);
+    assert.equal(resSeller.sellerCost, res.transferFee + res.sbtTax + res.withholdingTax);
+
+    const resBuyer = ctx.calculatePropertyTransfer({ ...prop, splitMode: 'buyer' });
+    assert.equal(resBuyer.buyerCost, res.totalLandCost);
+    assert.equal(resBuyer.sellerCost, 0);
+
+    // 5. Drawer summary check
+    const summaryProp = ctx.getToolSummaryText('property_transfer', { property_transfer: prop });
+    assert.match(summaryProp, /สรุปค่าธรรมเนียมโอนที่ดิน/);
+    assert.match(summaryProp, /3,000,000\.00 บาท/);
+    assert.match(summaryProp, /244,600\.00 บาท/);
 });
 
 test('bundle: src/bundle.js is up to date with modular source files and getSafeDateStr works safely', () => {

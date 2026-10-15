@@ -352,6 +352,25 @@ function getToolSummaryText(toolId, stateObj) {
                 return `🎯 สรุปคำนวณต้นทุน & หวยชุด\n${divider}\n• จำนวนเลขในชุด: ${bet.count} หาง\n• ราคาซื้อต่อหาง: ${formatMoney(bet.pricePerNumber)} บาท\n• อัตราจ่าย: บาทละ ${formatMoney(bet.payoutRate)}\n${divider}\n• ต้นทุนรวม: ${formatMoney(bet.totalCost)} บาท\n• เงินรางวัล (ถ้าถูก 1 หาง): ${formatMoney(bet.winningPayout)} บาท\n💰 กำไรสุทธิ: ${bet.netProfit >= 0 ? '+' : ''}${formatMoney(bet.netProfit)} บาท (ROI ${bet.roiPercent.toFixed(1)}%)\n(คำนวณโดย Multitools Calculator)`;
             }
         }
+        case 'tax_personal': {
+            const st = state.tax_personal || {};
+            const calc = (typeof calculatePersonalTax === 'function')
+                ? calculatePersonalTax(st)
+                : { grossIncome: 650000, expenses: 100000, totalDeductions: 160000, netTaxableIncome: 390000, totalTax: 16500, withholdingTax: 12000, taxBalance: 4500, marginalRate: 10, isRefund: false, refundAmount: 0, payableAmount: 4500 };
+            const statusLine = calc.isRefund
+                ? `🎉 ได้เงินคืนภาษี (Refund): ${formatMoney(calc.refundAmount)} บาท`
+                : (calc.payableAmount > 0
+                    ? `⚠️ ต้องชำระภาษีเพิ่มเติม: ${formatMoney(calc.payableAmount)} บาท`
+                    : `✓ ภาษีพอดี ไม่มียอดค้างชำระ`);
+            return `📄 สรุปภาษีเงินได้บุคคลธรรมดา (ภ.ง.ด. 90/91)\n${divider}\n• รายได้รวมทั้งปี: ${formatMoney(calc.grossIncome)} บาท\n• หักค่าใช้จ่าย: -${formatMoney(calc.expenses || 0)} บาท\n• หักค่าลดหย่อนรวม: -${formatMoney(calc.totalDeductions)} บาท\n• เงินได้สุทธิ (Taxable): ${formatMoney(calc.netTaxableIncome)} บาท (ฐานสูงสุด ${calc.marginalRate}%)\n• ภาษีคำนวณทั้งปี: ${formatMoney(calc.totalTax)} บาท\n• หัก ณ ที่จ่ายไว้แล้ว: ${formatMoney(calc.withholdingTax)} บาท\n${divider}\n💰 ${statusLine}\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'property_transfer': {
+            const st = state.property_transfer || {};
+            const calc = (typeof calculatePropertyTransfer === 'function')
+                ? calculatePropertyTransfer(st)
+                : { appraisedValue: 3000000, totalLandCost: 150000, buyerCost: 55000, sellerCost: 95000, transferFee: 60000, mortgageFee: 25000, isSBT: true, sbtTax: 105600, stampDuty: 0, withholdingTax: 72000 };
+            return `🏠 สรุปค่าธรรมเนียมโอนที่ดิน & ภาษีอสังหาฯ\n${divider}\n• ราคาประเมินกรมที่ดิน: ${formatMoney(calc.appraisedValue)} บาท\n• ค่าธรรมเนียมโอน: ${formatMoney(calc.transferFee)} บาท\n• ค่าจดจำนอง: ${formatMoney(calc.mortgageFee)} บาท\n• ${calc.isSBT ? 'ภาษีธุรกิจเฉพาะ (3.3%)' : 'ค่าอากรแสตมป์ (0.5%)'}: ${formatMoney(calc.isSBT ? calc.sbtTax : calc.stampDuty)} บาท\n• ภาษีหัก ณ ที่จ่าย: ${formatMoney(calc.withholdingTax)} บาท\n${divider}\n💰 ยอดรวมค่าใช้จ่าย ณ กรมที่ดิน: ${formatMoney(calc.totalLandCost)} บาท\n👤 ยอดที่ผู้ซื้อจ่าย: ${formatMoney(calc.buyerCost)} บาท\n🏠 ยอดที่ผู้ขายจ่าย: ${formatMoney(calc.sellerCost)} บาท\n(คำนวณโดย Multitools Calculator)`;
+        }
         default: {
             const statusText = document.getElementById('sharedStatusText')?.innerText?.trim();
             return `📋 สรุปผล: ${title}\n${divider}\n${statusText || 'คำนวณเรียบร้อยแล้ว'}\n(คำนวณโดย Multitools Calculator)`;

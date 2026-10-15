@@ -1722,6 +1722,43 @@
                 savingsRate: '7',
                 luckyType: '3digit',
                 luckyResult: '579'
+            },
+
+            // 20. Personal Tax (ภ.ง.ด. 90/91)
+            tax_personal: {
+                activeTab: 'income',
+                salaryMonthly: '50000',
+                bonusYearly: '50000',
+                otherIncomeYearly: '0',
+                withholdingTax: '12000',
+                hasSpouse: 'no',
+                childCount: '0',
+                child2018Count: '0',
+                parentCount: '0',
+                disabledCareCount: '0',
+                socialSecurity: '9000',
+                lifeInsurance: '30000',
+                healthInsurance: '10000',
+                parentHealthInsurance: '0',
+                pvdGpf: '30000',
+                rmf: '0',
+                ssf: '0',
+                pensionInsurance: '0',
+                thaiEsg: '0',
+                homeLoanInterest: '0',
+                donationEducation: '0',
+                donationGeneral: '0'
+            },
+
+            // 21. Real Estate Transfer & Land Department
+            property_transfer: {
+                appraisedValue: '3000000',
+                salePrice: '3200000',
+                mortgageAmount: '2500000',
+                holdingYears: '3',
+                exemptSBT: 'no',
+                splitMode: 'custom',
+                isGovMeasure: 'standard'
             }
         };
 
@@ -1790,8 +1827,10 @@
                 case 'savings':    renderSavingsTool(topPanel); break;
                 case 'salary':     renderSalaryTool(topPanel); break;
                 case 'hex':        renderHexTool(topPanel); break;
-                case 'world_time': renderWorldTimeTool(topPanel); break;
-                case 'lotto_calc': renderLottoTool(topPanel); break;
+                case 'world_time':        renderWorldTimeTool(topPanel); break;
+                case 'lotto_calc':         renderLottoTool(topPanel); break;
+                case 'tax_personal':      renderTaxPersonalTool(topPanel); break;
+                case 'property_transfer': renderPropertyTransferTool(topPanel); break;
             }
             if (editing) {
                 const replacement = topPanel.querySelector(`input[data-shared-field="${editing.index}"]`);

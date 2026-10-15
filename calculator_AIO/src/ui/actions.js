@@ -116,6 +116,41 @@ function clearCurrentTool() {
             luckyType: '3digit',
             luckyResult: ''
         };
+    } else if (id === 'tax_personal') {
+        appState.tax_personal = {
+            activeTab: 'income',
+            salaryMonthly: '',
+            bonusYearly: '',
+            otherIncomeYearly: '',
+            withholdingTax: '',
+            hasSpouse: 'no',
+            childCount: '0',
+            child2018Count: '0',
+            parentCount: '0',
+            disabledCareCount: '0',
+            socialSecurity: '',
+            lifeInsurance: '',
+            healthInsurance: '',
+            parentHealthInsurance: '',
+            pvdGpf: '',
+            rmf: '',
+            ssf: '',
+            pensionInsurance: '',
+            thaiEsg: '',
+            homeLoanInterest: '',
+            donationEducation: '',
+            donationGeneral: ''
+        };
+    } else if (id === 'property_transfer') {
+        appState.property_transfer = {
+            appraisedValue: '',
+            salePrice: '',
+            mortgageAmount: '',
+            holdingYears: '1',
+            exemptSBT: 'no',
+            splitMode: 'custom',
+            isGovMeasure: 'standard'
+        };
     }
     rememberToolClear(snapshot);
     renderActiveTool();
@@ -196,6 +231,41 @@ function loadDemoForCurrentTool() {
             savingsRate: '7',
             luckyType: '3digit',
             luckyResult: '579'
+        };
+    } else if (id === 'tax_personal') {
+        appState.tax_personal = {
+            activeTab: 'income',
+            salaryMonthly: '65000',
+            bonusYearly: '80000',
+            otherIncomeYearly: '20000',
+            withholdingTax: '25000',
+            hasSpouse: 'no',
+            childCount: '1',
+            child2018Count: '1',
+            parentCount: '1',
+            disabledCareCount: '0',
+            socialSecurity: '9000',
+            lifeInsurance: '50000',
+            healthInsurance: '15000',
+            parentHealthInsurance: '0',
+            pvdGpf: '45000',
+            rmf: '30000',
+            ssf: '20000',
+            pensionInsurance: '0',
+            thaiEsg: '30000',
+            homeLoanInterest: '40000',
+            donationEducation: '5000',
+            donationGeneral: '2000'
+        };
+    } else if (id === 'property_transfer') {
+        appState.property_transfer = {
+            appraisedValue: '3500000',
+            salePrice: '3800000',
+            mortgageAmount: '3000000',
+            holdingYears: '3',
+            exemptSBT: 'no',
+            splitMode: 'custom',
+            isGovMeasure: 'standard'
         };
     }
     renderActiveTool();

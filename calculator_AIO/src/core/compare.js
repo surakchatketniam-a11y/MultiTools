@@ -62,6 +62,34 @@ function getComparisonPresets(toolId) {
                 label: 'ทางเลือก 3: แผนเร่งปลดหนี้ 50/20/10 (หนี้ 20%)',
                 state: { income: '35,000', needsPct: '50', wantsPct: '20', savingsPct: '10', emergencyPct: '5', debtPct: '20' }
             }
+        ],
+        tax_personal: [
+            {
+                label: 'ทางเลือก 1: รายได้ล้วน (ไม่ลดหย่อนเพิ่ม)',
+                state: { salaryMonthly: '60000', bonusYearly: '60000', withholdingTax: '15000', socialSecurity: '9000', lifeInsurance: '0', healthInsurance: '0', ssf: '0', rmf: '0', thaiEsg: '0' }
+            },
+            {
+                label: 'ทางเลือก 2: ลดหย่อนประกัน (ชีวิต+สุขภาพ)',
+                state: { salaryMonthly: '60000', bonusYearly: '60000', withholdingTax: '15000', socialSecurity: '9000', lifeInsurance: '50000', healthInsurance: '15000', ssf: '0', rmf: '0', thaiEsg: '0' }
+            },
+            {
+                label: 'ทางเลือก 3: ลดหย่อนเต็มที่ (+SSF 50k +ThaiESG 30k)',
+                state: { salaryMonthly: '60000', bonusYearly: '60000', withholdingTax: '15000', socialSecurity: '9000', lifeInsurance: '50000', healthInsurance: '15000', ssf: '50000', rmf: '0', thaiEsg: '30000' }
+            }
+        ],
+        property_transfer: [
+            {
+                label: 'ทางเลือก 1: อัตราปกติ (ถือครอง 3 ปี เสียธุรกิจเฉพาะ 3.3%)',
+                state: { appraisedValue: '3000000', salePrice: '3200000', mortgageAmount: '2500000', holdingYears: '3', exemptSBT: 'no', isGovMeasure: 'standard', splitMode: 'custom' }
+            },
+            {
+                label: 'ทางเลือก 2: ถือครอง 5 ปี (ยกเว้นธุรกิจเฉพาะ เสียอากร 0.5%)',
+                state: { appraisedValue: '3000000', salePrice: '3200000', mortgageAmount: '2500000', holdingYears: '5', exemptSBT: 'yes', isGovMeasure: 'standard', splitMode: 'custom' }
+            },
+            {
+                label: 'ทางเลือก 3: มาตรการลดหย่อนรัฐ (โอน 0.01% จำนอง 0.01%)',
+                state: { appraisedValue: '3000000', salePrice: '3200000', mortgageAmount: '2500000', holdingYears: '5', exemptSBT: 'yes', isGovMeasure: 'reduced', splitMode: 'custom' }
+            }
         ]
     };
     return presets[toolId] || [];
@@ -276,6 +304,102 @@ function compareCalculations(toolId, itemsList) {
 
         winnerIndex = bestSavingsIdx;
         deltaSummary = `🏆 แผนที่มีสัดส่วนเงินออมและลงทุนสูงสุดคือ "${items[winnerIndex].label}" ออมได้ ${formatMoney(bestSavingsResult.savings)} บาท/เดือน (${formatMoney(bestSavingsResult.savings * 12)} บาท/ปี)`;
+
+    } else if (toolId === 'tax_personal') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const calc = (typeof calculatePersonalTax === 'function')
+                ? calculatePersonalTax(st)
+                : { grossIncome: 0, totalDeductions: 0, netTaxableIncome: 0, marginalRate: 0, totalTax: 0, isRefund: false, refundAmount: 0, payableAmount: 0 };
+            return calc;
+        });
+
+        rows.push({
+            label: 'รายได้รวมทั้งปี (Gross Income)',
+            values: results.map(r => `${formatMoney(r.grossIncome)} ฿`)
+        });
+        rows.push({
+            label: 'ค่าลดหย่อนรวม (Deductions)',
+            values: results.map(r => `${formatMoney(r.totalDeductions)} ฿`)
+        });
+        rows.push({
+            label: 'เงินได้สุทธิ (Taxable Income)',
+            values: results.map(r => `${formatMoney(r.netTaxableIncome)} ฿`)
+        });
+        rows.push({
+            label: 'ฐานภาษีสูงสุด (Marginal Rate)',
+            values: results.map(r => `${r.marginalRate}%`)
+        });
+
+        const minTaxRes = results.reduce((min, cur) => cur.totalTax < min.totalTax ? cur : min, results[0]);
+        const minTaxIdx = results.indexOf(minTaxRes);
+        rows.push({
+            label: 'ภาษีทั้งปีที่คำนวณได้',
+            values: results.map(r => `${formatMoney(r.totalTax)} ฿`),
+            bestIndex: minTaxIdx,
+            highlight: true
+        });
+        rows.push({
+            label: 'ยอดชำระเพิ่ม / ได้เงินคืน (Refund)',
+            values: results.map(r => r.isRefund ? `คืน ${formatMoney(r.refundAmount)} ฿` : (r.payableAmount > 0 ? `จ่ายเพิ่ม ${formatMoney(r.payableAmount)} ฿` : 'พอดี 0 ฿'))
+        });
+
+        winnerIndex = minTaxIdx;
+        const maxTax = Math.max(...results.map(r => r.totalTax));
+        const diffTax = maxTax - minTaxRes.totalTax;
+        deltaSummary = `🏆 ทางเลือกที่ช่วยประหยัดภาษีได้สูงสุดคือ "${items[winnerIndex].label}" เสียภาษีเพียง ${formatMoney(minTaxRes.totalTax)} บาท${diffTax > 0 ? ` (ประหยัดกว่าทางเลือกอื่นสูงสุด ${formatMoney(diffTax)} บาท)` : ''}`;
+
+    } else if (toolId === 'property_transfer') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const calc = (typeof calculatePropertyTransfer === 'function')
+                ? calculatePropertyTransfer(st)
+                : { appraisedValue: 0, transferFee: 0, mortgageFee: 0, sbtTax: 0, stampDuty: 0, withholdingTax: 0, totalLandCost: 0, buyerCost: 0, sellerCost: 0, isSBT: true };
+            return calc;
+        });
+
+        rows.push({
+            label: 'ราคาประเมินกรมที่ดิน',
+            values: results.map(r => `${formatMoney(r.appraisedValue)} ฿`)
+        });
+        rows.push({
+            label: 'ค่าธรรมเนียมโอนกรรมสิทธิ์',
+            values: results.map(r => `${formatMoney(r.transferFee)} ฿`)
+        });
+        rows.push({
+            label: 'ค่าจดทะเบียนจำนอง',
+            values: results.map(r => `${formatMoney(r.mortgageFee)} ฿`)
+        });
+        rows.push({
+            label: 'ภาษีธุรกิจเฉพาะ / อากรแสตมป์',
+            values: results.map(r => `${formatMoney(r.isSBT ? r.sbtTax : r.stampDuty)} ฿ (${r.isSBT ? '3.3%' : '0.5%'})`)
+        });
+        rows.push({
+            label: 'ภาษีเงินได้หัก ณ ที่จ่าย',
+            values: results.map(r => `${formatMoney(r.withholdingTax)} ฿`)
+        });
+
+        const minCostRes = results.reduce((min, cur) => cur.totalLandCost < min.totalLandCost ? cur : min, results[0]);
+        const minCostIdx = results.indexOf(minCostRes);
+        rows.push({
+            label: 'ยอดรวมค่าใช้จ่าย ณ กรมที่ดิน',
+            values: results.map(r => `${formatMoney(r.totalLandCost)} ฿`),
+            bestIndex: minCostIdx,
+            highlight: true
+        });
+        rows.push({
+            label: 'ยอดที่ผู้ซื้อจ่าย',
+            values: results.map(r => `${formatMoney(r.buyerCost)} ฿`)
+        });
+        rows.push({
+            label: 'ยอดที่ผู้ขายจ่าย',
+            values: results.map(r => `${formatMoney(r.sellerCost)} ฿`)
+        });
+
+        winnerIndex = minCostIdx;
+        const maxCost = Math.max(...results.map(r => r.totalLandCost));
+        const diffCost = maxCost - minCostRes.totalLandCost;
+        deltaSummary = `🏆 ทางเลือกที่มีค่าใช้จ่ายวันโอนรวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดรวมเพียง ${formatMoney(minCostRes.totalLandCost)} บาท${diffCost > 0 ? ` (ประหยัดได้ถึง ${formatMoney(diffCost)} บาท)` : ''}`;
 
     } else {
         rows.push({

@@ -604,6 +604,137 @@ function generateFormalPrintHTML(toolId, stateObj) {
             </div>
         `;
 
+    } else if (curToolId === 'tax_personal') {
+        docTitle = 'ใบสรุปการคำนวณภาษีเงินได้บุคคลธรรมดาและวางแผนลดหย่อน (ภ.ง.ด. 90/91)';
+        docSubtitle = 'Personal Income Tax & Deduction Planning Statement';
+        const st = state.tax_personal || {};
+        const calc = (typeof calculatePersonalTax === 'function')
+            ? calculatePersonalTax(st)
+            : { grossIncome: 0, expenses: 0, incomeAfterExpenses: 0, personalTotal: 0, savingsTotal: 0, totalDonations: 0, totalDeductions: 0, netTaxableIncome: 0, totalTax: 0, marginalRate: 0, withholdingTax: 0, isRefund: false, refundAmount: 0, payableAmount: 0, taxByBands: [] };
+
+        paramsRows = [
+            ['รายได้รวมพึงประเมินทั้งปี', `${formatMoney(calc.grossIncome)} บาท`],
+            ['หักค่าใช้จ่ายตามกฎหมาย (50% ไม่เกิน 100,000 บ.)', `-${formatMoney(calc.expenses)} บาท`],
+            ['เงินได้หลังหักค่าใช้จ่าย', `${formatMoney(calc.incomeAfterExpenses)} บาท`],
+            ['ลดหย่อนส่วนตัวและครอบครัว', `-${formatMoney(calc.personalTotal)} บาท`],
+            ['ลดหย่อนประกัน กองทุน และดอกเบี้ยบ้าน', `-${formatMoney(calc.savingsTotal)} บาท`],
+            ['ลดหย่อนเงินบริจาค', `-${formatMoney(calc.totalDonations)} บาท`],
+            ['รวมค่าลดหย่อนทั้งสิ้น', `-${formatMoney(calc.totalDeductions)} บาท`],
+            ['ภาษีถูกหัก ณ ที่จ่ายสะสมทั้งปี (50 ทวิ)', `${formatMoney(calc.withholdingTax)} บาท`]
+        ];
+
+        resultCards = [
+            { label: 'เงินได้สุทธิพึงประเมิน (Taxable Income)', value: `${formatMoney(calc.netTaxableIncome)} บาท` },
+            { label: 'ฐานภาษีสูงสุด (Marginal Rate)', value: `${calc.marginalRate}%` },
+            { label: 'ภาษีคำนวณทั้งปี', value: `${formatMoney(calc.totalTax)} บาท` },
+            {
+                label: calc.isRefund ? '🎉 ได้รับเงินคืนภาษี (Tax Refund)' : (calc.payableAmount > 0 ? '⚠️ ต้องชำระภาษีเพิ่มเติม' : '✓ ภาษีครบถ้วนพอดี'),
+                value: `${formatMoney(calc.isRefund ? calc.refundAmount : calc.payableAmount)} บาท`,
+                highlight: true
+            }
+        ];
+
+        const bandsHTML = (calc.taxByBands || []).map(b => `
+            <tr style="border-bottom: 1px solid #e2e8f0; ${b.taxInBand > 0 ? 'font-weight: 600;' : 'color: #94a3b8;'}">
+                <td style="padding: 6px 8px;">${b.range}</td>
+                <td style="padding: 6px 8px; text-align: center;">${b.ratePercent}%</td>
+                <td style="padding: 6px 8px; text-align: right;">${formatMoney(b.taxableInBand)}</td>
+                <td style="padding: 6px 8px; text-align: right;">${formatMoney(b.taxInBand)}</td>
+            </tr>
+        `).join('');
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    ตารางแจกแจงภาษีอัตราก้าวหน้า 7 ขั้น (Progressive Tax Computation)
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 6px 8px; text-align: left;">ช่วงเงินได้สุทธิ</th>
+                            <th style="padding: 6px 8px; text-align: center;">อัตราภาษี</th>
+                            <th style="padding: 6px 8px; text-align: right;">เงินได้ในขั้น (บาท)</th>
+                            <th style="padding: 6px 8px; text-align: right;">ภาษีที่ต้องเสีย (บาท)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${bandsHTML}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                            <td colspan="3" style="padding: 8px; text-align: right;">ภาษีรวมทั้งสิ้น:</td>
+                            <td style="padding: 8px; text-align: right; color: #0284c7;">${formatMoney(calc.totalTax)} บาท</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+
+    } else if (curToolId === 'property_transfer') {
+        docTitle = 'เอกสารประมาณการค่าธรรมเนียมและภาษีการโอนกรรมสิทธิ์อสังหาริมทรัพย์ สำนักงานที่ดิน';
+        docSubtitle = 'Real Estate Transfer Fees & Land Department Taxes Estimation';
+        const st = state.property_transfer || {};
+        const calc = (typeof calculatePropertyTransfer === 'function')
+            ? calculatePropertyTransfer(st)
+            : { appraisedValue: 0, salePrice: 0, mortgageAmount: 0, holdingYears: 1, isGovMeasure: false, isSBT: true, splitMode: 'custom', transferFee: 0, mortgageFee: 0, sbtTax: 0, stampDuty: 0, withholdingTax: 0, totalLandCost: 0, buyerCost: 0, sellerCost: 0, breakdown: [] };
+
+        paramsRows = [
+            ['ราคาประเมินทุนทรัพย์กรมที่ดิน', `${formatMoney(calc.appraisedValue)} บาท`],
+            ['ราคาซื้อขายจริงตามสัญญา', `${formatMoney(calc.salePrice)} บาท`],
+            ['วงเงินสินเชื่อจดจำนอง', `${formatMoney(calc.mortgageAmount)} บาท`],
+            ['ระยะเวลาถือครองของผู้ขาย', `${calc.holdingYears} ปี (หัก คชจ. ${calc.withholdingExpensePercent || 50}%)`],
+            ['ประเภทภาษีธุรกิจเฉพาะ / อากร', calc.isSBT ? 'ภาษีธุรกิจเฉพาะ (SBT 3.3%)' : 'ค่าอากรแสตมป์ (0.5%)'],
+            ['มาตรการรัฐ', calc.isGovMeasure ? 'มาตรการลดค่าโอน-จำนองเหลือ 0.01%' : 'อัตราปกติ (โอน 2%, จำนอง 1%)'],
+            ['ข้อตกลงการแบ่งจ่าย', calc.splitMode === 'custom' ? 'ธรรมเนียมปฏิบัติ (โอนคนละครึ่ง ผู้ขายออกภาษี ผู้ซื้อออกจำนอง)' : calc.splitMode]
+        ];
+
+        resultCards = [
+            { label: 'ยอดรวมค่าใช้จ่ายทั้งหมด ณ กรมที่ดิน', value: `${formatMoney(calc.totalLandCost)} บาท`, highlight: true },
+            { label: '👤 ฝั่งผู้ซื้อต้องเตรียมชำระ', value: `${formatMoney(calc.buyerCost)} บาท` },
+            { label: '🏠 ฝั่งผู้ขายต้องเตรียมชำระ', value: `${formatMoney(calc.sellerCost)} บาท` }
+        ];
+
+        const rowsHTML = (calc.breakdown || []).map(r => `
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 8px;">
+                    <b>${r.name}</b>
+                    <div style="font-size: 10px; color: #64748b;">ฐานคำนวณ: ${formatMoney(r.baseAmount)} บาท (${r.rateText})</div>
+                </td>
+                <td style="padding: 8px; text-align: right; color: #2563eb; font-weight: 600;">${formatMoney(r.buyer)}</td>
+                <td style="padding: 8px; text-align: right; color: #d97706; font-weight: 600;">${formatMoney(r.seller)}</td>
+                <td style="padding: 8px; text-align: right; font-weight: 700;">${formatMoney(r.total)}</td>
+            </tr>
+        `).join('');
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    ตารางแจกแจงค่าธรรมเนียมและภาษีการโอนกรรมสิทธิ์
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 8px; text-align: left;">รายการ</th>
+                            <th style="padding: 8px; text-align: right;">ผู้ซื้อจ่าย (บาท)</th>
+                            <th style="padding: 8px; text-align: right;">ผู้ขายจ่าย (บาท)</th>
+                            <th style="padding: 8px; text-align: right;">ยอดรวม (บาท)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHTML}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f8fafc; font-weight: 800; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8; font-size: 12px;">
+                            <td style="padding: 10px 8px;">รวมยอดแบ่งจ่ายสุทธิ:</td>
+                            <td style="padding: 10px 8px; text-align: right; color: #2563eb;">${formatMoney(calc.buyerCost)}</td>
+                            <td style="padding: 10px 8px; text-align: right; color: #d97706;">${formatMoney(calc.sellerCost)}</td>
+                            <td style="padding: 10px 8px; text-align: right; color: #0284c7;">${formatMoney(calc.totalLandCost)} บาท</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+
     } else {
         // Generic Fallback for other calculators
         const summary = (typeof getToolSummaryText === 'function') ? getToolSummaryText(curToolId) : '';
