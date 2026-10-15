@@ -411,6 +411,20 @@ function getToolSummaryText(toolId, stateObj) {
                 : `💰 เงินบำเหน็จชราภาพ (ก้อนเดียว): ${formatMoney(calc.lumpSumTotal)} บาท`;
             return `🛡️ สรุปสิทธิประโยชน์ประกันสังคม\n${divider}\n• สิทธิ์: ${secName}\n• ส่งเงินสมทบ: ${calc.contributionMonths} งวด (${(calc.contributionMonths / 12).toFixed(1)} ปี)\n• เงินสมทบรายเดือน: ${formatMoney(calc.monthlyContribution)} บาท/เดือน\n• รวมเงินสมทบที่จ่ายสะสม: ${formatMoney(calc.totalWorkerContributed)} บาท\n${divider}\n${benefitLine}\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'labor_severance': {
+            const st = state.labor_severance || {};
+            const calc = (typeof calculateLaborSeverance === 'function')
+                ? calculateLaborSeverance(st)
+                : { salaryMonthly: 35000, dailyWage: 1166.67, serviceYears: 3, serviceMonths: 6, severanceDays: 180, severancePay: 210000, noticePay: 35000, leavePay: 5833, totalSeverancePackage: 250833, taxExemptAmount: 210000, tierLabel: 'อายุงาน 3 ปี แต่ไม่ถึง 6 ปี' };
+            return `⚖️ สรุปเงินชดเชยเลิกจ้างตามกฎหมายแรงงาน\n${divider}\n• เงินเดือนฐาน: ${formatMoney(calc.salaryMonthly)} บาท (${formatMoney(calc.dailyWage)} บาท/วัน)\n• อายุงาน: ${calc.serviceYears} ปี ${calc.serviceMonths} เดือน\n• เกณฑ์ ม.118: ชดเชย ${calc.severanceDays} วัน (${formatMoney(calc.severancePay)} บาท)\n• ค่าตกใจ ม.17: ${calc.noticePay > 0 ? `+${formatMoney(calc.noticePay)} บาท` : '0.00 บาท'}\n• วันลาพักร้อนคงเหลือ: ${calc.leavePay > 0 ? `+${formatMoney(calc.leavePay)} บาท` : '0.00 บาท'}\n${divider}\n💰 รวมยอดชดเชยสุทธิ: ${formatMoney(calc.totalSeverancePackage)} บาท\n🛡️ สิทธิยกเว้นภาษี: ${formatMoney(calc.taxExemptAmount)} บาท\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'legal_interest': {
+            const st = state.legal_interest || {};
+            const calc = (typeof calculateLegalInterest === 'function')
+                ? calculateLegalInterest(st)
+                : { principal: 100000, interestRate: 5.0, overdueDays: 60, totalInterest: 821.92, totalPayable: 100821.92 };
+            return `⚖️ สรุปดอกเบี้ยผิดนัดชำระหนี้ (ป.พ.พ.)\n${divider}\n• เงินต้นค้างชำระ: ${formatMoney(calc.principal)} บาท\n• อัตราดอกเบี้ย: ${formatNum(calc.interestRate, 2)}% ต่อปี (ป.พ.พ. ม.224)\n• ระยะเวลาผิดนัด: ${calc.overdueDays} วัน\n• ดอกเบี้ยผิดนัดชำระ: +${formatMoney(calc.totalInterest)} บาท\n${divider}\n💰 ยอดหนี้รวมที่ต้องชำระ: ${formatMoney(calc.totalPayable)} บาท\n(คำนวณโดย Multitools Calculator)`;
+        }
         default: {
             const statusText = document.getElementById('sharedStatusText')?.innerText?.trim();
             return `📋 สรุปผล: ${title}\n${divider}\n${statusText || 'คำนวณเรียบร้อยแล้ว'}\n(คำนวณโดย Multitools Calculator)`;

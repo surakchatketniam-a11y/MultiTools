@@ -197,6 +197,29 @@ function clearCurrentTool() {
             m40Plan: 'plan2',
             m40ExtraSavings: ''
         };
+    } else if (id === 'labor_severance') {
+        appState.labor_severance = {
+            salaryMonthly: '',
+            mode: 'duration',
+            serviceYears: '0',
+            serviceMonths: '0',
+            serviceDays: '0',
+            startDate: formatLocalDate(new Date()),
+            endDate: formatLocalDate(new Date()),
+            noticeGiven: 'no',
+            noticeMonths: '1',
+            unusedLeaveDays: '0'
+        };
+    } else if (id === 'legal_interest') {
+        appState.legal_interest = {
+            principal: '',
+            ratePreset: 'default_5',
+            customRate: '5.0',
+            calcMode: 'dates',
+            startDate: formatLocalDate(addCalendarDays(new Date(), -30)),
+            endDate: formatLocalDate(new Date()),
+            overdueDays: '30'
+        };
     }
     rememberToolClear(snapshot);
     renderActiveTool();
@@ -358,6 +381,29 @@ function loadDemoForCurrentTool() {
             contributionMonths: '240',
             m40Plan: 'plan2',
             m40ExtraSavings: '500'
+        };
+    } else if (id === 'labor_severance') {
+        appState.labor_severance = {
+            salaryMonthly: '45000',
+            mode: 'duration',
+            serviceYears: '5',
+            serviceMonths: '8',
+            serviceDays: '15',
+            startDate: formatLocalDate(addCalendarDays(new Date(), -2085)),
+            endDate: formatLocalDate(new Date()),
+            noticeGiven: 'no',
+            noticeMonths: '1',
+            unusedLeaveDays: '6'
+        };
+    } else if (id === 'legal_interest') {
+        appState.legal_interest = {
+            principal: '250000',
+            ratePreset: 'default_5',
+            customRate: '5.0',
+            calcMode: 'dates',
+            startDate: formatLocalDate(addCalendarDays(new Date(), -120)),
+            endDate: formatLocalDate(new Date()),
+            overdueDays: '120'
         };
     }
     renderActiveTool();

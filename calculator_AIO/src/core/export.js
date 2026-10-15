@@ -1017,6 +1017,149 @@ function generateFormalPrintHTML(toolId, stateObj) {
             </div>
         `;
 
+    } else if (curToolId === 'labor_severance') {
+        docTitle = 'หนังสือแสดงรายการคำนวณเงินชดเชยการเลิกจ้างตามกฎหมายแรงงาน';
+        docSubtitle = 'Labor Protection Act Severance & Notice Pay Calculation Statement';
+        const st = state.labor_severance || {};
+        const calc = (typeof calculateLaborSeverance === 'function')
+            ? calculateLaborSeverance(st)
+            : { salaryMonthly: 35000, dailyWage: 1166.67, serviceYears: 3, serviceMonths: 6, serviceDays: 0, severanceDays: 180, severancePay: 210000, noticeGiven: 'no', noticeMonths: 1, noticePay: 35000, unusedLeaveDays: 5, leavePay: 5833.33, totalSeverancePackage: 250833.33, taxExemptAmount: 210000, taxableSeverance: 40833.33, tierLabel: 'อายุงาน 3 ปี แต่ไม่ถึง 6 ปี' };
+
+        paramsRows = [
+            ['ค่าจ้างรายเดือนฐานคำนวณ', `${formatMoney(calc.salaryMonthly)} บาท/เดือน (${formatMoney(calc.dailyWage)} บาท/วัน)`],
+            ['อายุงานสะสม', `${calc.serviceYears} ปี ${calc.serviceMonths} เดือน ${calc.serviceDays} วัน`],
+            ['การบอกกล่าวล่วงหน้า (ม.17)', calc.noticeGiven === 'yes' ? 'บอกกล่าวถูกต้องตามงวดค่าจ้าง' : `เลิกจ้างทันที (จ่ายสินจ้างแทน ${calc.noticeMonths} เดือน)`],
+            ['วันหยุดพักผ่อนประจำปีคงเหลือ', `${calc.unusedLeaveDays} วัน (สะสมตามสิทธิ์)`],
+            ['เกณฑ์การชดเชย (ม.118)', calc.tierLabel]
+        ];
+
+        resultCards = [
+            { label: '💰 รวมเงินชดเชยสุทธิที่ได้รับ', value: `${formatMoney(calc.totalSeverancePackage)} บาท`, highlight: true },
+            { label: 'เงินชดเชยเลิกจ้าง (ม.118)', value: `${formatMoney(calc.severancePay)} บาท (${calc.severanceDays} วัน)` },
+            { label: 'ค่าบอกกล่าวล่วงหน้า (ค่าตกใจ)', value: `${formatMoney(calc.noticePay)} บาท` },
+            { label: 'สิทธิยกเว้นภาษีเงินได้', value: `${formatMoney(calc.taxExemptAmount)} บาท (สูงสุด 3 แสน)` }
+        ];
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    รายละเอียดสิทธิประโยชน์และภาระภาษีตามกฎหมายแรงงาน
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 6px 8px; text-align: left;">รายการชดเชยตามกฎหมาย</th>
+                            <th style="padding: 6px 8px; text-align: right;">จำนวนเงิน (บาท)</th>
+                            <th style="padding: 6px 8px; text-align: left;">บทบัญญัติกฎหมาย / สิทธิภาษี</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;"><b>เงินชดเชยเลิกจ้างตามอายุงาน</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.severancePay)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">พ.ร.บ. คุ้มครองแรงงาน ม.118 (${calc.severanceDays} วัน)</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">สินจ้างแทนการบอกกล่าวล่วงหน้า (ค่าตกใจ)</td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.noticePay)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">ม.17 วรรคสอง (${calc.noticeMonths} เดือน)</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">ค่าจ้างวันหยุดพักผ่อนประจำปีสะสมคงเหลือ</td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.leavePay)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">ม.67 (${calc.unusedLeaveDays} วัน × ${formatMoney(calc.dailyWage)} บ.)</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: #f0fdf4;">
+                            <td style="padding: 6px 8px; color: #166534;"><b>ส่วนที่ได้รับยกเว้นภาษีเงินได้บุคคลธรรมดา</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #166534;">${formatMoney(calc.taxExemptAmount)}</td>
+                            <td style="padding: 6px 8px; color: #166534;">กฎกระทรวง ฉบับที่ 126 (ไม่เกินค่าจ้าง 300 วัน และไม่เกิน 300,000 บ.)</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: #fff7ed;">
+                            <td style="padding: 6px 8px; color: #c2410c;">ส่วนที่ต้องนำไปคำนวณภาษีเงินได้</td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600; color: #c2410c;">${formatMoney(calc.taxableSeverance)}</td>
+                            <td style="padding: 6px 8px; color: #c2410c;">เงินชดเชยส่วนเกิน 3 แสน + ค่าตกใจ + พักร้อน</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                            <td style="padding: 8px;">รวมยอดเงินที่นายจ้างต้องจ่ายให้ลูกจ้างทั้งสิ้น:</td>
+                            <td style="padding: 8px; text-align: right; color: #0284c7; font-size: 12px;">${formatMoney(calc.totalSeverancePackage)} บาท</td>
+                            <td style="padding: 8px; color: #64748b;">ต้องจ่าย ณ วันเลิกจ้างหรือภายใน 3 วัน</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+
+    } else if (curToolId === 'legal_interest') {
+        docTitle = 'หนังสือแสดงรายการคำนวณดอกเบี้ยผิดนัดชำระหนี้ตามประมวลกฎหมายแพ่งและพาณิชย์';
+        docSubtitle = 'Civil & Commercial Code Default Legal Interest Statement (Section 224 / 7)';
+        const st = state.legal_interest || {};
+        const calc = (typeof calculateLegalInterest === 'function')
+            ? calculateLegalInterest(st)
+            : { principal: 100000, interestRate: 5.0, overdueDays: 60, dailyInterest: 13.70, totalInterest: 821.92, totalPayable: 100821.92, ratePreset: 'default_5', ratePresetLabel: 'อัตราดอกเบี้ยผิดนัดตามกฎหมายใหม่ (5.00% ต่อปี)' };
+
+        paramsRows = [
+            ['เงินต้นค้างชำระ (Principal)', `${formatMoney(calc.principal)} บาท`],
+            ['อัตราดอกเบี้ยผิดนัดตามกฎหมาย', `${formatNum(calc.interestRate, 2)}% ต่อปี`],
+            ['บทบัญญัติและฐานคิดอัตราดอกเบี้ย', calc.ratePresetLabel || 'ป.พ.พ. ม.224'],
+            ['วิธีคำนวณระยะเวลาผิดนัด', calc.calcMode === 'dates' ? `นับตามช่วงวันที่ (${calc.startDate} ถึง ${calc.endDate})` : 'ระบุจำนวนวันผิดนัดโดยตรง'],
+            ['จำนวนวันผิดนัดชำระหนี้', `${calc.overdueDays} วัน (เกณฑ์ฐาน 365 วัน/ปี)`]
+        ];
+
+        resultCards = [
+            { label: '💰 ยอดหนี้รวมทั้งสิ้นที่ต้องชำระ', value: `${formatMoney(calc.totalPayable)} บาท`, highlight: true },
+            { label: 'เงินต้นค้างชำระ', value: `${formatMoney(calc.principal)} บาท` },
+            { label: 'ดอกเบี้ยผิดนัดชำระหนี้สะสม', value: `+${formatMoney(calc.totalInterest)} บาท` },
+            { label: 'ดอกเบี้ยผิดนัดเฉลี่ยต่อวัน', value: `+${formatMoney(calc.dailyInterest)} บาท/วัน` }
+        ];
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    สรุปภาระหนี้และข้อกำหนดทางกฎหมาย (ป.พ.พ.)
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 6px 8px; text-align: left;">รายการโครงสร้างหนี้</th>
+                            <th style="padding: 6px 8px; text-align: right;">จำนวนเงิน (บาท)</th>
+                            <th style="padding: 6px 8px; text-align: left;">ข้อกฎหมายและเกณฑ์การบังคับใช้</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;"><b>เงินต้นค้างชำระ (เงินหนี้เดิม)</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.principal)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">เฉพาะงวดที่ผิดนัดชำระแล้วจริง</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: #fff1f2;">
+                            <td style="padding: 6px 8px; color: #be123c;"><b>ดอกเบี้ยผิดนัดชำระ (${calc.overdueDays} วัน)</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #be123c;">+${formatMoney(calc.totalInterest)}</td>
+                            <td style="padding: 6px 8px; color: #be123c;">คำนวณตาม ป.พ.พ. ม.224 อัตรา ${formatNum(calc.interestRate, 2)}% ต่อปี</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                            <td style="padding: 6px 8px;">ดอกเบี้ยผิดนัดเฉลี่ยต่อวัน</td>
+                            <td style="padding: 6px 8px; text-align: right;">+${formatMoney(calc.dailyInterest)}/วัน</td>
+                            <td style="padding: 6px 8px; color: #64748b;">เงินต้น × อัตราดอกเบี้ย ÷ 365 วัน</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">ข้อห้ามตาม ป.พ.พ. ม.224/1</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #166534;">มีผลบังคับใช้</td>
+                            <td style="padding: 6px 8px; color: #166534;">ห้ามคิดดอกเบี้ยผิดนัดจากเงินงวดในอนาคตที่ยังไม่ถึงกำหนดชำระ</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                            <td style="padding: 8px;">ยอดหนี้รวมทั้งสิ้นที่ลูกหนี้ต้องชำระ:</td>
+                            <td style="padding: 8px; text-align: right; color: #e11d48; font-size: 12px;">${formatMoney(calc.totalPayable)} บาท</td>
+                            <td style="padding: 8px; color: #64748b;">ยอดหนี้ ณ วันที่ระบุในเอกสารนี้</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+
     } else {
         // Generic Fallback for other calculators
         const summary = (typeof getToolSummaryText === 'function') ? getToolSummaryText(curToolId) : '';

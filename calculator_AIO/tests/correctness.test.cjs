@@ -27,6 +27,7 @@ const moduleFiles = [
     'src/tools/tax_property.js',
     'src/tools/lifestyle_thai.js',
     'src/tools/finance_thai.js',
+    'src/tools/legal_labor.js',
     'src/ui/actions.js',
     'src/ui/modals.js'
 ];
@@ -282,11 +283,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 29 tools classified into 5 valid groups with search keywords', () => {
+test('catalog contains exactly 31 tools classified into 5 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 5);
-    assert.equal(TOOLS_CATALOG.length, 29);
+    assert.equal(TOOLS_CATALOG.length, 31);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -412,7 +413,7 @@ test('thai official holidays: Songkran, fixed holidays and lunar Buddhist observ
     assert.equal(ctx.isThaiOfficialHoliday(new Date('2026-10-14T00:00:00')), false);
 });
 
-test('all 29 tools have complete and valid clear and demo data mappings', () => {
+test('all 31 tools have complete and valid clear and demo data mappings', () => {
     const rawAppStateMatch = html.match(/const appState = \{[\s\S]*?\n        \};/);
     assert.ok(rawAppStateMatch, 'appState must be defined');
 
@@ -428,7 +429,7 @@ test('all 29 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 29);
+    assert.equal(ctx.TOOLS_CATALOG.length, 31);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -803,7 +804,44 @@ test('formal print-to-pdf: generates accurate Thai receipt documents for loan, s
     assert.ok(ssDoc.includes('เงินบำนาญชราภาพรายเดือน'));
     assert.ok(ssDoc.includes('เกณฑ์สิทธิประโยชน์ชราภาพและการจัดสรรเงินสมทบ'));
 
-    // 12. Generic Calculator Fallback
+    // 12. Labor Severance Formal Receipt
+    const laborState = {
+        activeToolId: 'labor_severance',
+        labor_severance: {
+            salaryMonthly: '45,000',
+            mode: 'duration',
+            serviceYears: '5',
+            serviceMonths: '8',
+            serviceDays: '15',
+            noticeGiven: 'no',
+            noticeMonths: '1',
+            unusedLeaveDays: '6'
+        }
+    };
+    const laborDoc = ctx.generateFormalPrintHTML('labor_severance', laborState);
+    assert.ok(laborDoc.includes('หนังสือแสดงรายการคำนวณเงินชดเชยการเลิกจ้างตามกฎหมายแรงงาน'));
+    assert.ok(laborDoc.includes('45,000.00 บาท/เดือน'));
+    assert.ok(laborDoc.includes('เงินชดเชยเลิกจ้างตามอายุงาน'));
+    assert.ok(laborDoc.includes('พ.ร.บ. คุ้มครองแรงงาน ม.118'));
+
+    // 13. Legal Interest Formal Receipt
+    const legState = {
+        activeToolId: 'legal_interest',
+        legal_interest: {
+            principal: '250,000',
+            ratePreset: 'default_5',
+            customRate: '5.0',
+            calcMode: 'days',
+            overdueDays: '120'
+        }
+    };
+    const legDoc = ctx.generateFormalPrintHTML('legal_interest', legState);
+    assert.ok(legDoc.includes('หนังสือแสดงรายการคำนวณดอกเบี้ยผิดนัดชำระหนี้ตามประมวลกฎหมายแพ่งและพาณิชย์'));
+    assert.ok(legDoc.includes('250,000.00 บาท'));
+    assert.ok(legDoc.includes('ป.พ.พ. ม.224'));
+    assert.ok(legDoc.includes('ยอดหนี้รวมทั้งสิ้นที่ลูกหนี้ต้องชำระ'));
+
+    // 14. Generic Calculator Fallback
     const genericDoc = ctx.generateFormalPrintHTML('tip', { activeToolId: 'tip' });
     assert.ok(genericDoc.includes('MULTITOOLS AIO'));
     assert.ok(genericDoc.includes('เอกสารสรุปผลการคำนวณ'));
@@ -814,7 +852,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     const ctx = context();
 
     // 1. Presets availability
-    for (const toolId of ['loan', 'savings', 'vat_wht', 'salary', 'tax_personal', 'property_transfer', 'gold_thai', 'electricity_bill', 'car_loan', 'social_security']) {
+    for (const toolId of ['loan', 'savings', 'vat_wht', 'salary', 'tax_personal', 'property_transfer', 'gold_thai', 'electricity_bill', 'car_loan', 'social_security', 'labor_severance', 'legal_interest']) {
         const presets = ctx.getComparisonPresets(toolId);
         assert.ok(Array.isArray(presets) && presets.length >= 3, `Presets for ${toolId} must have at least 3 items`);
         assert.ok(presets[0].label && presets[0].state, `Preset item must have label and state`);
@@ -962,7 +1000,35 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.equal(ssComp.winnerIndex, 1, '25 years contribution must yield higher monthly pension than 15 years');
     assert.ok(ssComp.deltaSummary.includes('ม.33 ส่ง 25 ปี (300 งวด)'));
 
-    // 12. Print Comparison Sheet Generator
+    // 12. Labor Severance comparison
+    const laborA = {
+        label: 'อายุงาน 2 ปี (ชดเชย 90 วัน)',
+        state: { salaryMonthly: '35000', mode: 'duration', serviceYears: '2', serviceMonths: '0', noticeGiven: 'yes', noticeMonths: '1', unusedLeaveDays: '0' }
+    };
+    const laborB = {
+        label: 'อายุงาน 5 ปี (ชดเชย 180 วัน) + ค่าตกใจ 1 ด.',
+        state: { salaryMonthly: '35000', mode: 'duration', serviceYears: '5', serviceMonths: '0', noticeGiven: 'no', noticeMonths: '1', unusedLeaveDays: '5' }
+    };
+    const laborComp = ctx.compareCalculations('labor_severance', [laborA, laborB]);
+    assert.ok(laborComp);
+    assert.equal(laborComp.winnerIndex, 1, '5 years with notice pay must yield higher severance package');
+    assert.ok(laborComp.deltaSummary.includes('อายุงาน 5 ปี'));
+
+    // 13. Legal Interest comparison
+    const legA = {
+        label: 'ดอกเบี้ย ป.พ.พ. 5.0%',
+        state: { principal: '200000', ratePreset: 'default_5', customRate: '5.0', calcMode: 'days', overdueDays: '60' }
+    };
+    const legB = {
+        label: 'ดอกเบี้ย ป.พ.พ. ม.7 3.0%',
+        state: { principal: '200000', ratePreset: 'statutory_3', customRate: '3.0', calcMode: 'days', overdueDays: '60' }
+    };
+    const legComp = ctx.compareCalculations('legal_interest', [legA, legB]);
+    assert.ok(legComp);
+    assert.equal(legComp.winnerIndex, 1, '3.0% interest must yield lower debt than 5.0%');
+    assert.ok(legComp.deltaSummary.includes('ดอกเบี้ย ป.พ.พ. ม.7 3.0%'));
+
+    // 14. Print Comparison Sheet Generator
     const printHTML = ctx.generateComparePrintHTML(loanComp);
     assert.ok(printHTML.includes('MULTITOOLS AIO'));
     assert.ok(printHTML.includes('ตารางวิเคราะห์และเปรียบเทียบชุดคำนวณ'));
@@ -971,7 +1037,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('🏆 คุ้มค่าที่สุด'));
 });
 
-test('all 29 tool renderers are modularized and exported across the 5 tool groups', () => {
+test('all 31 tool renderers are modularized and exported across the 5 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -1002,10 +1068,12 @@ test('all 29 tool renderers are modularized and exported across the 5 tool group
         gold_thai:         'renderGoldThaiTool',
         electricity_bill:  'renderElectricityBillTool',
         car_loan:          'renderCarLoanTool',
-        social_security:   'renderSocialSecurityTool'
+        social_security:   'renderSocialSecurityTool',
+        labor_severance:   'renderLaborSeveranceTool',
+        legal_interest:    'renderLegalInterestTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 29);
+    assert.equal(Object.keys(rendererMap).length, 31);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -1748,6 +1816,216 @@ test('social security engine (social_security): Section 33, 39, 40, wage ceiling
     assert.match(summarySS, /มาตรา 33/);
     assert.match(summarySS, /240 งวด/);
     assert.match(summarySS, /เงินบำนาญชราภาพตลอดชีพ: 4,125\.00 บาท\/เดือน/);
+});
+
+test('pure engine calculateLaborSeverance: Section 118 tiers, notice pay, leave compensation, and tax exemptions', () => {
+    const ctx = context();
+
+    // 1. Tier 0: < 120 days worked (e.g. 90 days) -> 0 days severance
+    const t0 = ctx.calculateLaborSeverance({
+        salaryMonthly: 30000,
+        mode: 'duration',
+        serviceYears: 0,
+        serviceMonths: 2,
+        serviceDays: 25,
+        noticeGiven: 'yes'
+    });
+    assert.equal(t0.severanceDays, 0);
+    assert.equal(t0.severancePay, 0);
+
+    // 2. Tier 1: 120 days to < 1 year (e.g. 6 months) -> 30 days severance
+    const t1 = ctx.calculateLaborSeverance({
+        salaryMonthly: 30000,
+        mode: 'duration',
+        serviceYears: 0,
+        serviceMonths: 6,
+        noticeGiven: 'yes'
+    });
+    assert.equal(t1.dailyWage, 1000);
+    assert.equal(t1.severanceDays, 30);
+    assert.equal(t1.severancePay, 30000);
+
+    // 3. Tier 2: 1 year to < 3 years (e.g. 2 years) -> 90 days severance
+    const t2 = ctx.calculateLaborSeverance({
+        salaryMonthly: 30000,
+        mode: 'duration',
+        serviceYears: 2,
+        serviceMonths: 0,
+        noticeGiven: 'yes'
+    });
+    assert.equal(t2.severanceDays, 90);
+    assert.equal(t2.severancePay, 90000);
+
+    // 4. Tier 3: 3 years to < 6 years (e.g. 4 years) -> 180 days severance
+    const t3 = ctx.calculateLaborSeverance({
+        salaryMonthly: 30000,
+        mode: 'duration',
+        serviceYears: 4,
+        serviceMonths: 3,
+        noticeGiven: 'yes'
+    });
+    assert.equal(t3.severanceDays, 180);
+    assert.equal(t3.severancePay, 180000);
+
+    // 5. Tier 4: 6 years to < 10 years (e.g. 7 years) -> 240 days severance
+    const t4 = ctx.calculateLaborSeverance({
+        salaryMonthly: 30000,
+        mode: 'duration',
+        serviceYears: 7,
+        serviceMonths: 0,
+        noticeGiven: 'yes'
+    });
+    assert.equal(t4.severanceDays, 240);
+    assert.equal(t4.severancePay, 240000);
+
+    // 6. Tier 5: 10 years to < 20 years (e.g. 15 years) -> 300 days severance
+    const t5 = ctx.calculateLaborSeverance({
+        salaryMonthly: 30000,
+        mode: 'duration',
+        serviceYears: 15,
+        serviceMonths: 0,
+        noticeGiven: 'yes'
+    });
+    assert.equal(t5.severanceDays, 300);
+    assert.equal(t5.severancePay, 300000);
+
+    // 7. Tier 6: 20 years or more (e.g. 22 years) -> 400 days severance
+    const t6 = ctx.calculateLaborSeverance({
+        salaryMonthly: 30000,
+        mode: 'duration',
+        serviceYears: 22,
+        serviceMonths: 0,
+        noticeGiven: 'yes'
+    });
+    assert.equal(t6.severanceDays, 400);
+    assert.equal(t6.severancePay, 400000);
+
+    // 8. Notice Pay (Section 17) & Unused Leave Pay (Section 67)
+    const withExtras = ctx.calculateLaborSeverance({
+        salaryMonthly: 45000,
+        mode: 'duration',
+        serviceYears: 5,
+        serviceMonths: 0,
+        noticeGiven: 'no',
+        noticeMonths: 1,
+        unusedLeaveDays: 6
+    });
+    assert.equal(withExtras.dailyWage, 1500); // 45,000 / 30
+    assert.equal(withExtras.severanceDays, 180);
+    assert.equal(withExtras.severancePay, 270000); // 1,500 * 180
+    assert.equal(withExtras.noticePay, 45000); // 1 month
+    assert.equal(withExtras.leavePay, 9000); // 6 * 1,500
+    assert.equal(withExtras.totalSeverancePackage, 270000 + 45000 + 9000); // 324,000
+
+    // 9. Tax Exemption under Ministerial Regulation 126 (capped at 300 days and 300,000 THB)
+    // Case A: Severance 270,000 <= 300,000 -> full 270,000 exempt
+    assert.equal(withExtras.taxExemptAmount, 270000);
+    assert.equal(withExtras.taxableSeverance, 45000 + 9000); // Notice and leave are taxable
+
+    // Case B: High earner severance exceeds 300,000 THB cap
+    const highEarner = ctx.calculateLaborSeverance({
+        salaryMonthly: 90000,
+        mode: 'duration',
+        serviceYears: 10, // 300 days = 900,000 THB
+        noticeGiven: 'yes',
+        unusedLeaveDays: 0
+    });
+    assert.equal(highEarner.dailyWage, 3000);
+    assert.equal(highEarner.severanceDays, 300);
+    assert.equal(highEarner.severancePay, 900000);
+    assert.equal(highEarner.taxExemptAmount, 300000); // Capped at 300,000 THB
+    assert.equal(highEarner.taxableSeverance, 600000); // 900,000 - 300,000
+
+    // 10. Date mode: start and end date calculation
+    const dateMode = ctx.calculateLaborSeverance({
+        salaryMonthly: 30000,
+        mode: 'dates',
+        startDate: '2020-01-01',
+        endDate: '2024-01-01'
+    });
+    assert.ok(dateMode.serviceYears >= 4);
+    assert.equal(dateMode.severanceDays, 180);
+
+    // 11. Summary Text
+    const summaryLabor = ctx.getToolSummaryText('labor_severance', {
+        labor_severance: {
+            salaryMonthly: '35000',
+            mode: 'duration',
+            serviceYears: '3',
+            serviceMonths: '6'
+        }
+    });
+    assert.match(summaryLabor, /สรุปเงินชดเชยเลิกจ้างตามกฎหมายแรงงาน/);
+    assert.match(summaryLabor, /ชดเชย 180 วัน/);
+    assert.match(summaryLabor, /210,000\.00 บาท/);
+});
+
+test('pure engine calculateLegalInterest: Section 224 (5%), Section 7 (3%), day count, and daily interest', () => {
+    const ctx = context();
+
+    // 1. Statutory default interest under CCC Section 224: 5.0% per annum
+    const def5 = ctx.calculateLegalInterest({
+        principal: 100000,
+        ratePreset: 'default_5',
+        calcMode: 'days',
+        overdueDays: 73 // 73 days = 73 / 365 = exactly 0.2 year
+    });
+    assert.equal(def5.principal, 100000);
+    assert.equal(def5.interestRate, 5.0);
+    assert.equal(def5.overdueDays, 73);
+    // 100,000 * 5% * 0.2 = 1,000 THB
+    assert.equal(Math.round(def5.totalInterest), 1000);
+    assert.equal(Math.round(def5.totalPayable), 101000);
+    assert.ok(Math.abs(def5.dailyInterest - (100000 * 0.05 / 365)) < 0.01);
+
+    // 2. Statutory interest under CCC Section 7: 3.0% per annum
+    const stat3 = ctx.calculateLegalInterest({
+        principal: 365000,
+        ratePreset: 'statutory_3',
+        calcMode: 'days',
+        overdueDays: 100
+    });
+    assert.equal(stat3.interestRate, 3.0);
+    // 365,000 * 3% * (100 / 365) = 10,950 * (100/365) = 3,000 THB
+    assert.equal(Math.round(stat3.totalInterest), 3000);
+    assert.equal(Math.round(stat3.totalPayable), 368000);
+
+    // 3. Custom rate
+    const custom = ctx.calculateLegalInterest({
+        principal: 50000,
+        ratePreset: 'custom',
+        customRate: 7.5,
+        calcMode: 'days',
+        overdueDays: 365
+    });
+    assert.equal(custom.interestRate, 7.5);
+    assert.equal(Math.round(custom.totalInterest), 3750);
+    assert.equal(Math.round(custom.totalPayable), 53750);
+
+    // 4. Date range mode
+    const dateRange = ctx.calculateLegalInterest({
+        principal: 100000,
+        ratePreset: 'default_5',
+        calcMode: 'dates',
+        startDate: '2026-01-01',
+        endDate: '2026-03-02' // 60 days
+    });
+    assert.equal(dateRange.overdueDays, 60);
+    assert.ok(dateRange.totalInterest > 0);
+
+    // 5. Summary Text
+    const summaryLeg = ctx.getToolSummaryText('legal_interest', {
+        legal_interest: {
+            principal: '100000',
+            ratePreset: 'default_5',
+            calcMode: 'days',
+            overdueDays: '60'
+        }
+    });
+    assert.match(summaryLeg, /สรุปดอกเบี้ยผิดนัดชำระหนี้ \(ป\.พ\.พ\.\)/);
+    assert.match(summaryLeg, /100,000\.00 บาท/);
+    assert.match(summaryLeg, /5% ต่อปี/);
+    assert.match(summaryLeg, /60 วัน/);
 });
 
 

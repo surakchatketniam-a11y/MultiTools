@@ -861,6 +861,14 @@
             outline: 2px solid var(--app-accent);
             outline-offset: 2px;
         }
+        .finance-thai-tool { color: var(--app-ink); }
+        .finance-thai-tool .tool-chip-btn[aria-pressed="true"] {
+            background-color: var(--app-accent-soft);
+            color: var(--app-ink);
+            border-color: var(--app-accent);
+        }
+        .finance-thai-tool .airbnb-input { min-width: 0; }
+        .finance-thai-tool .segment-btn { min-height: 44px; margin-inline: 2px; }
         .tool-summary-row + .tool-summary-row { border-top: 1px solid var(--app-hairline); }
         .tool-summary-row b { text-align: right; }
         html:is([data-theme="dark"], [data-theme="ferrari"]) .themed-tool-card,
@@ -1410,7 +1418,7 @@
             <div class="bg-white rounded-full px-3.5 py-1.5 border border-[var(--app-hairline)] flex items-center justify-between" style="box-shadow: var(--airbnb-shadow);">
                 <div class="flex items-center gap-2.5 min-w-0">
                     <div class="w-8 h-8 rounded-full bg-[var(--app-accent)] text-white flex flex-col items-center justify-center font-bold text-[9px] leading-none shrink-0">
-                        <span id="footerCatalogCount">29 in 1</span>
+                        <span id="footerCatalogCount">31 in 1</span>
                     </div>
                     <div class="leading-tight truncate">
                         <div class="text-xs sm:text-sm font-bold text-[#222222] truncate">มีตังค์ | เครื่องสารพัดคำนวณ Free+</div>
@@ -1902,6 +1910,31 @@
                 contributionMonths: '240',
                 m40Plan: 'plan2',
                 m40ExtraSavings: '0'
+            },
+
+            // 26. Labor Severance & Notice Pay
+            labor_severance: {
+                salaryMonthly: '35000',
+                mode: 'duration',
+                serviceYears: '3',
+                serviceMonths: '6',
+                serviceDays: '0',
+                startDate: getSafeDateStr(-1280),
+                endDate: getSafeDateStr(0),
+                noticeGiven: 'no',
+                noticeMonths: '1',
+                unusedLeaveDays: '5'
+            },
+
+            // 27. Legal Default Interest (CCC Sec 224/7)
+            legal_interest: {
+                principal: '100000',
+                ratePreset: 'default_5',
+                customRate: '5.0',
+                calcMode: 'dates',
+                startDate: getSafeDateStr(-60),
+                endDate: getSafeDateStr(0),
+                overdueDays: '60'
             }
         };
 
@@ -1978,6 +2011,8 @@
                 case 'electricity_bill': renderElectricityBillTool(topPanel); break;
                 case 'car_loan':         renderCarLoanTool(topPanel); break;
                 case 'social_security':  renderSocialSecurityTool(topPanel); break;
+                case 'labor_severance':  renderLaborSeveranceTool(topPanel); break;
+                case 'legal_interest':   renderLegalInterestTool(topPanel); break;
             }
             if (editing) {
                 const replacement = topPanel.querySelector(`input[data-shared-field="${editing.index}"]`);

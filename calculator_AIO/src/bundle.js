@@ -48,9 +48,11 @@ var TOOLS_CATALOG = [
     { id: 'car_loan',          group: 'finance', category: 'fav', menuTitle: 'สินเชื่อเช่าซื้อรถ (Car Loan)', headerTitle: 'คำนวณสินเชื่อเช่าซื้อรถยนต์ & มอเตอร์ไซค์', usesSharedKeypad: false, keywords: 'car loan รถ เช่าซื้อ ผ่อนรถ รถยนต์ มอเตอร์ไซค์ ปิดบัญชีก่อนกำหนด สคบ ดอกเบี้ยคงที่ flat rate vat รถมือสอง เงินดาวน์ ค่างวด' },
     { id: 'currency',          group: 'finance', category: 'fav', menuTitle: 'แปลงสกุลเงิน', headerTitle: 'ตัวแปลงสกุลเงิน', usesSharedKeypad: true, keywords: 'currency สกุลเงิน แลกเงิน ดอลลาร์ บาท เยน ยูโร exchange rate forex' },
     { id: 'lotto_calc',        group: 'finance', category: 'fav', menuTitle: 'หวย & สลากไทย', headerTitle: 'เครื่องคำนวณหวย & สลากไทย', usesSharedKeypad: false, keywords: 'lotto หวย สลากกินแบ่งรัฐบาล สลากออมสิน สลาก n3 เลขเด็ด 6 ประตู 19 ประตู 2 ตัว 3 ตัว รางวัลที่ 1 โต๊ด ขึ้นเงินรางวัล ภาษีสลาก' },
+    { id: 'legal_interest',    group: 'finance', category: 'fav', menuTitle: 'ดอกเบี้ยผิดนัด ป.พ.พ. 5%', headerTitle: 'คำนวณดอกเบี้ยผิดนัดชำระหนี้ตามกฎหมายใหม่ (ป.พ.พ. ม.7/ม.224)', usesSharedKeypad: false, keywords: 'legal interest ดอกเบี้ย ผิดนัด กฎหมาย ปพพ 224 7 ร้อยละ 5 3 ต่อปี หนี้ค้าง วันผิดนัด เบี้ยปรับ' },
 
     // หมวดหมู่ที่ 4: เวลา & สำนักงาน
     { id: 'social_security',   group: 'work', category: 'fav', menuTitle: 'ประกันสังคม & บำนาญ', headerTitle: 'คำนวณเงินสมทบ & บำนาญชราภาพ ประกันสังคม (ม.33/39/40)', usesSharedKeypad: false, keywords: 'social security ประกันสังคม บำนาญ บำเหน็จ ชราภาพ ม33 ม39 ม40 เงินสมทบ เงินออมเกษียณ สปส เกษียณอายุ 55 ปี 60 เดือนสุดท้าย' },
+    { id: 'labor_severance',   group: 'work', category: 'fav', menuTitle: 'เงินชดเชยเลิกจ้าง & ค่าตกใจ', headerTitle: 'คำนวณเงินชดเชยเลิกจ้าง & สินจ้างแทนบอกกล่าวล่วงหน้า (ม.118/ม.17)', usesSharedKeypad: false, keywords: 'labor severance เลิกจ้าง ชดเชย ค่าตกใจ กฎหมายแรงงาน ม118 ม17 อายุงาน วันลาพักร้อน ว่างงาน ไล่ออก ปลดพนักงาน' },
     { id: 'date_work',  group: 'work', category: 'all', menuTitle: 'นับวันทำการ (Workdays)', headerTitle: 'นับวันทำการ', usesSharedKeypad: false, keywords: 'date work วันทำการ วันทำงาน sla วันหยุด ส่งงาน วันครบกำหนด' },
     { id: 'date_calc',  group: 'work', category: 'all', menuTitle: 'คำนวณวันที่ & อายุ', headerTitle: 'เครื่องคำนวณวันที่', usesSharedKeypad: false, keywords: 'date calc วันที่ บวกวัน ลบวัน คำนวณอายุ ระยะห่างวัน' },
     { id: 'world_time', group: 'work', category: 'all', menuTitle: 'เวลาโลก & นัดหมาย', headerTitle: 'นาฬิกาเวลาโลก', usesSharedKeypad: false, keywords: 'world time เวลาโลก timezone ข้ามเขตเวลา โตเกียว นิวยอร์ก ลอนดอน นัดประชุม' },
@@ -1473,6 +1475,149 @@ function generateFormalPrintHTML(toolId, stateObj) {
             </div>
         `;
 
+    } else if (curToolId === 'labor_severance') {
+        docTitle = 'หนังสือแสดงรายการคำนวณเงินชดเชยการเลิกจ้างตามกฎหมายแรงงาน';
+        docSubtitle = 'Labor Protection Act Severance & Notice Pay Calculation Statement';
+        const st = state.labor_severance || {};
+        const calc = (typeof calculateLaborSeverance === 'function')
+            ? calculateLaborSeverance(st)
+            : { salaryMonthly: 35000, dailyWage: 1166.67, serviceYears: 3, serviceMonths: 6, serviceDays: 0, severanceDays: 180, severancePay: 210000, noticeGiven: 'no', noticeMonths: 1, noticePay: 35000, unusedLeaveDays: 5, leavePay: 5833.33, totalSeverancePackage: 250833.33, taxExemptAmount: 210000, taxableSeverance: 40833.33, tierLabel: 'อายุงาน 3 ปี แต่ไม่ถึง 6 ปี' };
+
+        paramsRows = [
+            ['ค่าจ้างรายเดือนฐานคำนวณ', `${formatMoney(calc.salaryMonthly)} บาท/เดือน (${formatMoney(calc.dailyWage)} บาท/วัน)`],
+            ['อายุงานสะสม', `${calc.serviceYears} ปี ${calc.serviceMonths} เดือน ${calc.serviceDays} วัน`],
+            ['การบอกกล่าวล่วงหน้า (ม.17)', calc.noticeGiven === 'yes' ? 'บอกกล่าวถูกต้องตามงวดค่าจ้าง' : `เลิกจ้างทันที (จ่ายสินจ้างแทน ${calc.noticeMonths} เดือน)`],
+            ['วันหยุดพักผ่อนประจำปีคงเหลือ', `${calc.unusedLeaveDays} วัน (สะสมตามสิทธิ์)`],
+            ['เกณฑ์การชดเชย (ม.118)', calc.tierLabel]
+        ];
+
+        resultCards = [
+            { label: '💰 รวมเงินชดเชยสุทธิที่ได้รับ', value: `${formatMoney(calc.totalSeverancePackage)} บาท`, highlight: true },
+            { label: 'เงินชดเชยเลิกจ้าง (ม.118)', value: `${formatMoney(calc.severancePay)} บาท (${calc.severanceDays} วัน)` },
+            { label: 'ค่าบอกกล่าวล่วงหน้า (ค่าตกใจ)', value: `${formatMoney(calc.noticePay)} บาท` },
+            { label: 'สิทธิยกเว้นภาษีเงินได้', value: `${formatMoney(calc.taxExemptAmount)} บาท (สูงสุด 3 แสน)` }
+        ];
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    รายละเอียดสิทธิประโยชน์และภาระภาษีตามกฎหมายแรงงาน
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 6px 8px; text-align: left;">รายการชดเชยตามกฎหมาย</th>
+                            <th style="padding: 6px 8px; text-align: right;">จำนวนเงิน (บาท)</th>
+                            <th style="padding: 6px 8px; text-align: left;">บทบัญญัติกฎหมาย / สิทธิภาษี</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;"><b>เงินชดเชยเลิกจ้างตามอายุงาน</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.severancePay)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">พ.ร.บ. คุ้มครองแรงงาน ม.118 (${calc.severanceDays} วัน)</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">สินจ้างแทนการบอกกล่าวล่วงหน้า (ค่าตกใจ)</td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.noticePay)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">ม.17 วรรคสอง (${calc.noticeMonths} เดือน)</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">ค่าจ้างวันหยุดพักผ่อนประจำปีสะสมคงเหลือ</td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.leavePay)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">ม.67 (${calc.unusedLeaveDays} วัน × ${formatMoney(calc.dailyWage)} บ.)</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: #f0fdf4;">
+                            <td style="padding: 6px 8px; color: #166534;"><b>ส่วนที่ได้รับยกเว้นภาษีเงินได้บุคคลธรรมดา</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #166534;">${formatMoney(calc.taxExemptAmount)}</td>
+                            <td style="padding: 6px 8px; color: #166534;">กฎกระทรวง ฉบับที่ 126 (ไม่เกินค่าจ้าง 300 วัน และไม่เกิน 300,000 บ.)</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: #fff7ed;">
+                            <td style="padding: 6px 8px; color: #c2410c;">ส่วนที่ต้องนำไปคำนวณภาษีเงินได้</td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600; color: #c2410c;">${formatMoney(calc.taxableSeverance)}</td>
+                            <td style="padding: 6px 8px; color: #c2410c;">เงินชดเชยส่วนเกิน 3 แสน + ค่าตกใจ + พักร้อน</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                            <td style="padding: 8px;">รวมยอดเงินที่นายจ้างต้องจ่ายให้ลูกจ้างทั้งสิ้น:</td>
+                            <td style="padding: 8px; text-align: right; color: #0284c7; font-size: 12px;">${formatMoney(calc.totalSeverancePackage)} บาท</td>
+                            <td style="padding: 8px; color: #64748b;">ต้องจ่าย ณ วันเลิกจ้างหรือภายใน 3 วัน</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+
+    } else if (curToolId === 'legal_interest') {
+        docTitle = 'หนังสือแสดงรายการคำนวณดอกเบี้ยผิดนัดชำระหนี้ตามประมวลกฎหมายแพ่งและพาณิชย์';
+        docSubtitle = 'Civil & Commercial Code Default Legal Interest Statement (Section 224 / 7)';
+        const st = state.legal_interest || {};
+        const calc = (typeof calculateLegalInterest === 'function')
+            ? calculateLegalInterest(st)
+            : { principal: 100000, interestRate: 5.0, overdueDays: 60, dailyInterest: 13.70, totalInterest: 821.92, totalPayable: 100821.92, ratePreset: 'default_5', ratePresetLabel: 'อัตราดอกเบี้ยผิดนัดตามกฎหมายใหม่ (5.00% ต่อปี)' };
+
+        paramsRows = [
+            ['เงินต้นค้างชำระ (Principal)', `${formatMoney(calc.principal)} บาท`],
+            ['อัตราดอกเบี้ยผิดนัดตามกฎหมาย', `${formatNum(calc.interestRate, 2)}% ต่อปี`],
+            ['บทบัญญัติและฐานคิดอัตราดอกเบี้ย', calc.ratePresetLabel || 'ป.พ.พ. ม.224'],
+            ['วิธีคำนวณระยะเวลาผิดนัด', calc.calcMode === 'dates' ? `นับตามช่วงวันที่ (${calc.startDate} ถึง ${calc.endDate})` : 'ระบุจำนวนวันผิดนัดโดยตรง'],
+            ['จำนวนวันผิดนัดชำระหนี้', `${calc.overdueDays} วัน (เกณฑ์ฐาน 365 วัน/ปี)`]
+        ];
+
+        resultCards = [
+            { label: '💰 ยอดหนี้รวมทั้งสิ้นที่ต้องชำระ', value: `${formatMoney(calc.totalPayable)} บาท`, highlight: true },
+            { label: 'เงินต้นค้างชำระ', value: `${formatMoney(calc.principal)} บาท` },
+            { label: 'ดอกเบี้ยผิดนัดชำระหนี้สะสม', value: `+${formatMoney(calc.totalInterest)} บาท` },
+            { label: 'ดอกเบี้ยผิดนัดเฉลี่ยต่อวัน', value: `+${formatMoney(calc.dailyInterest)} บาท/วัน` }
+        ];
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    สรุปภาระหนี้และข้อกำหนดทางกฎหมาย (ป.พ.พ.)
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 6px 8px; text-align: left;">รายการโครงสร้างหนี้</th>
+                            <th style="padding: 6px 8px; text-align: right;">จำนวนเงิน (บาท)</th>
+                            <th style="padding: 6px 8px; text-align: left;">ข้อกฎหมายและเกณฑ์การบังคับใช้</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;"><b>เงินต้นค้างชำระ (เงินหนี้เดิม)</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.principal)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">เฉพาะงวดที่ผิดนัดชำระแล้วจริง</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: #fff1f2;">
+                            <td style="padding: 6px 8px; color: #be123c;"><b>ดอกเบี้ยผิดนัดชำระ (${calc.overdueDays} วัน)</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #be123c;">+${formatMoney(calc.totalInterest)}</td>
+                            <td style="padding: 6px 8px; color: #be123c;">คำนวณตาม ป.พ.พ. ม.224 อัตรา ${formatNum(calc.interestRate, 2)}% ต่อปี</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                            <td style="padding: 6px 8px;">ดอกเบี้ยผิดนัดเฉลี่ยต่อวัน</td>
+                            <td style="padding: 6px 8px; text-align: right;">+${formatMoney(calc.dailyInterest)}/วัน</td>
+                            <td style="padding: 6px 8px; color: #64748b;">เงินต้น × อัตราดอกเบี้ย ÷ 365 วัน</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">ข้อห้ามตาม ป.พ.พ. ม.224/1</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #166534;">มีผลบังคับใช้</td>
+                            <td style="padding: 6px 8px; color: #166534;">ห้ามคิดดอกเบี้ยผิดนัดจากเงินงวดในอนาคตที่ยังไม่ถึงกำหนดชำระ</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                            <td style="padding: 8px;">ยอดหนี้รวมทั้งสิ้นที่ลูกหนี้ต้องชำระ:</td>
+                            <td style="padding: 8px; text-align: right; color: #e11d48; font-size: 12px;">${formatMoney(calc.totalPayable)} บาท</td>
+                            <td style="padding: 8px; color: #64748b;">ยอดหนี้ ณ วันที่ระบุในเอกสารนี้</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+
     } else {
         // Generic Fallback for other calculators
         const summary = (typeof getToolSummaryText === 'function') ? getToolSummaryText(curToolId) : '';
@@ -2192,6 +2337,34 @@ function getComparisonPresets(toolId) {
                 label: 'ทางเลือก 3: ม.33 ส่ง 25 ปี (300 งวด) ฐาน 15,000 บ.',
                 state: { section: 'm33', wageMonthly: '35000', contributionMonths: '300', m40Plan: 'plan2', m40ExtraSavings: '0' }
             }
+        ],
+        labor_severance: [
+            {
+                label: 'ทางเลือก 1: อายุงาน 2 ปี (ชดเชย 90 วัน) บอกกล่าวล่วงหน้า',
+                state: { salaryMonthly: '35000', mode: 'duration', serviceYears: '2', serviceMonths: '0', serviceDays: '0', noticeGiven: 'yes', noticeMonths: '1', unusedLeaveDays: '0' }
+            },
+            {
+                label: 'ทางเลือก 2: อายุงาน 4 ปี (ชดเชย 180 วัน) + ค่าตกใจ 1 ด.',
+                state: { salaryMonthly: '35000', mode: 'duration', serviceYears: '4', serviceMonths: '0', serviceDays: '0', noticeGiven: 'no', noticeMonths: '1', unusedLeaveDays: '5' }
+            },
+            {
+                label: 'ทางเลือก 3: อายุงาน 8 ปี (ชดเชย 240 วัน) + ค่าตกใจ 1 ด.',
+                state: { salaryMonthly: '35000', mode: 'duration', serviceYears: '8', serviceMonths: '0', serviceDays: '0', noticeGiven: 'no', noticeMonths: '1', unusedLeaveDays: '10' }
+            }
+        ],
+        legal_interest: [
+            {
+                label: 'ทางเลือก 1: ดอกเบี้ยผิดนัด ป.พ.พ. 5.0% (ค้าง 60 วัน)',
+                state: { principal: '200000', ratePreset: 'default_5', customRate: '5.0', calcMode: 'days', overdueDays: '60' }
+            },
+            {
+                label: 'ทางเลือก 2: ดอกเบี้ยกฎหมาย ป.พ.พ. ม.7 3.0% (ค้าง 60 วัน)',
+                state: { principal: '200000', ratePreset: 'statutory_3', customRate: '3.0', calcMode: 'days', overdueDays: '60' }
+            },
+            {
+                label: 'ทางเลือก 3: อัตราสัญญาเดิม 7.5% (ค้าง 60 วัน)',
+                state: { principal: '200000', ratePreset: 'custom', customRate: '7.5', calcMode: 'days', overdueDays: '60' }
+            }
         ]
     };
     return presets[toolId] || [];
@@ -2728,6 +2901,105 @@ function compareCalculations(toolId, itemsList) {
             winnerIndex = maxLumpIdx;
             deltaSummary = `🏆 ทางเลือกที่ได้รับเงินบำเหน็จชราภาพสูงสุดคือ "${items[winnerIndex].label}" ได้รับ ${formatMoney(maxLumpRes.lumpSumTotal)} บาท`;
         }
+
+    } else if (toolId === 'labor_severance') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const calc = (typeof calculateLaborSeverance === 'function')
+                ? calculateLaborSeverance(st)
+                : { salaryMonthly: 0, dailyWage: 0, serviceYears: 0, serviceMonths: 0, severanceDays: 0, severancePay: 0, noticePay: 0, leavePay: 0, totalSeverancePackage: 0, taxExemptAmount: 0, taxableSeverance: 0, tierLabel: '' };
+            return calc;
+        });
+
+        rows.push({
+            label: 'เงินเดือนฐานคำนวณ',
+            values: results.map(r => `${formatMoney(r.salaryMonthly)} ฿ (${formatMoney(r.dailyWage)} ฿/วัน)`)
+        });
+        rows.push({
+            label: 'อายุงานสะสม',
+            values: results.map(r => `${r.serviceYears} ปี ${r.serviceMonths} เดือน`)
+        });
+        rows.push({
+            label: 'เกณฑ์ชดเชยตาม ม.118',
+            values: results.map(r => `${r.severanceDays} วัน`)
+        });
+        rows.push({
+            label: 'เงินชดเชยเลิกจ้าง (ม.118)',
+            values: results.map(r => `${formatMoney(r.severancePay)} ฿`)
+        });
+        rows.push({
+            label: 'สินจ้างแทนบอกกล่าว (ม.17)',
+            values: results.map(r => r.noticePay > 0 ? `+${formatMoney(r.noticePay)} ฿` : '0 ฿ (บอกถูกต้อง)')
+        });
+        rows.push({
+            label: 'ค่าจ้างพักร้อนคงเหลือ (ม.67)',
+            values: results.map(r => r.leavePay > 0 ? `+${formatMoney(r.leavePay)} ฿` : '0 ฿')
+        });
+
+        const maxPackageRes = results.reduce((max, cur) => cur.totalSeverancePackage > max.totalSeverancePackage ? cur : max, results[0]);
+        const maxPackageIdx = results.indexOf(maxPackageRes);
+
+        rows.push({
+            label: 'รวมเงินชดเชยสุทธิที่ได้รับ',
+            values: results.map(r => `${formatMoney(r.totalSeverancePackage)} ฿`),
+            bestIndex: maxPackageIdx,
+            highlight: true
+        });
+        rows.push({
+            label: 'สิทธิยกเว้นภาษีเงินได้',
+            values: results.map(r => `${formatMoney(r.taxExemptAmount)} ฿ (สูงสุด 3 แสน)`)
+        });
+
+        winnerIndex = maxPackageIdx;
+        const minPackage = Math.min(...results.map(r => r.totalSeverancePackage));
+        const diffPackage = maxPackageRes.totalSeverancePackage - minPackage;
+        deltaSummary = `🏆 ทางเลือกที่ได้รับเงินชดเชยรวมสูงสุดคือ "${items[winnerIndex].label}" ยอดสุทธิ ${formatMoney(maxPackageRes.totalSeverancePackage)} บาท${diffPackage > 0 ? ` (มากกว่าทางเลือกต่ำสุด ${formatMoney(diffPackage)} บาท)` : ''}`;
+
+    } else if (toolId === 'legal_interest') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const calc = (typeof calculateLegalInterest === 'function')
+                ? calculateLegalInterest(st)
+                : { principal: 0, interestRate: 0, overdueDays: 0, dailyInterest: 0, totalInterest: 0, totalPayable: 0, ratePresetLabel: '' };
+            return calc;
+        });
+
+        rows.push({
+            label: 'เงินต้นค้างชำระ (Principal)',
+            values: results.map(r => `${formatMoney(r.principal)} ฿`)
+        });
+        rows.push({
+            label: 'อัตราดอกเบี้ยต่อปี',
+            values: results.map(r => `${formatNum(r.interestRate, 2)}% (${r.ratePresetLabel || 'ป.พ.พ.'})`)
+        });
+        rows.push({
+            label: 'ระยะเวลาผิดนัดชำระ',
+            values: results.map(r => `${r.overdueDays} วัน`)
+        });
+        rows.push({
+            label: 'ดอกเบี้ยผิดนัดเฉลี่ยต่อวัน',
+            values: results.map(r => `+${formatMoney(r.dailyInterest)} ฿/วัน`)
+        });
+
+        const minPayableRes = results.reduce((min, cur) => cur.totalPayable < min.totalPayable ? cur : min, results[0]);
+        const minPayableIdx = results.indexOf(minPayableRes);
+
+        rows.push({
+            label: 'ดอกเบี้ยผิดนัดชำระสะสม',
+            values: results.map(r => `+${formatMoney(r.totalInterest)} ฿`),
+            bestIndex: minPayableIdx
+        });
+        rows.push({
+            label: 'ยอดหนี้รวมทั้งสิ้นที่ต้องชำระ',
+            values: results.map(r => `${formatMoney(r.totalPayable)} ฿`),
+            bestIndex: minPayableIdx,
+            highlight: true
+        });
+
+        winnerIndex = minPayableIdx;
+        const maxPayable = Math.max(...results.map(r => r.totalPayable));
+        const diffPayable = maxPayable - minPayableRes.totalPayable;
+        deltaSummary = `🏆 ทางเลือกที่มียอดหนี้รวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดชำระรวม ${formatMoney(minPayableRes.totalPayable)} บาท (ดอกเบี้ย ${formatMoney(minPayableRes.totalInterest)} บาท)${diffPayable > 0 ? ` ประหยัดภาระหนี้ได้ ${formatMoney(diffPayable)} บาท` : ''}`;
 
     } else {
         rows.push({
@@ -3915,6 +4187,20 @@ function getToolSummaryText(toolId, stateObj) {
                 ? `💰 เงินบำนาญชราภาพตลอดชีพ: ${formatMoney(calc.monthlyPension)} บาท/เดือน (ปีละ ${formatMoney(calc.yearlyPension)} บ.)`
                 : `💰 เงินบำเหน็จชราภาพ (ก้อนเดียว): ${formatMoney(calc.lumpSumTotal)} บาท`;
             return `🛡️ สรุปสิทธิประโยชน์ประกันสังคม\n${divider}\n• สิทธิ์: ${secName}\n• ส่งเงินสมทบ: ${calc.contributionMonths} งวด (${(calc.contributionMonths / 12).toFixed(1)} ปี)\n• เงินสมทบรายเดือน: ${formatMoney(calc.monthlyContribution)} บาท/เดือน\n• รวมเงินสมทบที่จ่ายสะสม: ${formatMoney(calc.totalWorkerContributed)} บาท\n${divider}\n${benefitLine}\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'labor_severance': {
+            const st = state.labor_severance || {};
+            const calc = (typeof calculateLaborSeverance === 'function')
+                ? calculateLaborSeverance(st)
+                : { salaryMonthly: 35000, dailyWage: 1166.67, serviceYears: 3, serviceMonths: 6, severanceDays: 180, severancePay: 210000, noticePay: 35000, leavePay: 5833, totalSeverancePackage: 250833, taxExemptAmount: 210000, tierLabel: 'อายุงาน 3 ปี แต่ไม่ถึง 6 ปี' };
+            return `⚖️ สรุปเงินชดเชยเลิกจ้างตามกฎหมายแรงงาน\n${divider}\n• เงินเดือนฐาน: ${formatMoney(calc.salaryMonthly)} บาท (${formatMoney(calc.dailyWage)} บาท/วัน)\n• อายุงาน: ${calc.serviceYears} ปี ${calc.serviceMonths} เดือน\n• เกณฑ์ ม.118: ชดเชย ${calc.severanceDays} วัน (${formatMoney(calc.severancePay)} บาท)\n• ค่าตกใจ ม.17: ${calc.noticePay > 0 ? `+${formatMoney(calc.noticePay)} บาท` : '0.00 บาท'}\n• วันลาพักร้อนคงเหลือ: ${calc.leavePay > 0 ? `+${formatMoney(calc.leavePay)} บาท` : '0.00 บาท'}\n${divider}\n💰 รวมยอดชดเชยสุทธิ: ${formatMoney(calc.totalSeverancePackage)} บาท\n🛡️ สิทธิยกเว้นภาษี: ${formatMoney(calc.taxExemptAmount)} บาท\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'legal_interest': {
+            const st = state.legal_interest || {};
+            const calc = (typeof calculateLegalInterest === 'function')
+                ? calculateLegalInterest(st)
+                : { principal: 100000, interestRate: 5.0, overdueDays: 60, totalInterest: 821.92, totalPayable: 100821.92 };
+            return `⚖️ สรุปดอกเบี้ยผิดนัดชำระหนี้ (ป.พ.พ.)\n${divider}\n• เงินต้นค้างชำระ: ${formatMoney(calc.principal)} บาท\n• อัตราดอกเบี้ย: ${formatNum(calc.interestRate, 2)}% ต่อปี (ป.พ.พ. ม.224)\n• ระยะเวลาผิดนัด: ${calc.overdueDays} วัน\n• ดอกเบี้ยผิดนัดชำระ: +${formatMoney(calc.totalInterest)} บาท\n${divider}\n💰 ยอดหนี้รวมที่ต้องชำระ: ${formatMoney(calc.totalPayable)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
         default: {
             const statusText = document.getElementById('sharedStatusText')?.innerText?.trim();
@@ -9082,44 +9368,44 @@ function renderCarLoanTool(container) {
     const calc = calculateCarLoan(st);
 
     container.innerHTML = `
-        <div class="flex flex-col gap-3 p-1">
+        <div class="finance-thai-tool flex flex-col gap-3 p-1">
             <!-- Vehicle Type & Condition Tabs -->
-            <div class="grid grid-cols-2 gap-2">
-                <div class="segment-group grid-cols-2 balanced-segment-modes" role="tablist" aria-label="ประเภทยานพาหนะ">
-                    <button type="button" class="segment-btn ${st.vehicleType === 'car' ? 'active' : ''}" data-vehicle="car">🚗 รถยนต์</button>
-                    <button type="button" class="segment-btn ${st.vehicleType === 'motorcycle' ? 'active' : ''}" data-vehicle="motorcycle">🏍️ มอเตอร์ไซค์</button>
+            <div class="flex flex-col gap-2">
+                <div class="segment-group grid-cols-2 balanced-segment-modes" role="group" aria-label="ประเภทยานพาหนะ">
+                    <button type="button" aria-pressed="${st.vehicleType === 'car'}" class="segment-btn ${st.vehicleType === 'car' ? 'active' : ''}" data-vehicle="car">รถยนต์</button>
+                    <button type="button" aria-pressed="${st.vehicleType === 'motorcycle'}" class="segment-btn ${st.vehicleType === 'motorcycle' ? 'active' : ''}" data-vehicle="motorcycle">มอเตอร์ไซค์</button>
                 </div>
-                <div class="segment-group grid-cols-2 balanced-segment-modes" role="tablist" aria-label="สภาพรถ">
-                    <button type="button" class="segment-btn ${st.condition === 'new' ? 'active' : ''}" data-condition="new">✨ รถใหม่ป้ายแดง</button>
-                    <button type="button" class="segment-btn ${st.condition === 'used' ? 'active' : ''}" data-condition="used">🚙 รถมือสอง (VAT 7%)</button>
+                <div class="segment-group grid-cols-2 balanced-segment-modes" role="group" aria-label="สภาพรถ">
+                    <button type="button" aria-pressed="${st.condition === 'new'}" class="segment-btn ${st.condition === 'new' ? 'active' : ''}" data-condition="new">รถใหม่</button>
+                    <button type="button" aria-pressed="${st.condition === 'used'}" class="segment-btn ${st.condition === 'used' ? 'active' : ''}" data-condition="used">รถมือสอง (VAT 7%)</button>
                 </div>
             </div>
 
             <!-- Main Input Form -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">
-                    🚘 ข้อมูลราคารถและเงินดาวน์
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">
+                    ข้อมูลราคารถและเงินดาวน์
                 </div>
 
                 <div>
-                    <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ราคารถยนต์ / ยานพาหนะ (บาท)</label>
+                    <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">ราคารถยนต์ / ยานพาหนะ (บาท)</label>
                     <input id="carPriceInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.price))}" placeholder="เช่น 850,000" class="airbnb-input w-full text-base font-semibold">
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <div class="flex justify-between items-center mb-1">
-                            <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400">เงินดาวน์</label>
+                        <div class="flex flex-wrap justify-between items-center gap-1 mb-1">
+                            <label class="text-xs font-semibold text-[var(--app-muted)]">เงินดาวน์</label>
                             <div class="flex gap-1 text-[11px]">
-                                <button type="button" id="btnDownPct" class="px-1.5 py-0.5 rounded ${st.downPaymentType === 'percent' ? 'bg-neutral-800 text-white dark:bg-neutral-200 dark:text-black font-bold' : 'text-neutral-500'}">ระบุเป็น %</button>
-                                <button type="button" id="btnDownAmt" class="px-1.5 py-0.5 rounded ${st.downPaymentType === 'amount' ? 'bg-neutral-800 text-white dark:bg-neutral-200 dark:text-black font-bold' : 'text-neutral-500'}">ระบุเป็นบาท</button>
+                                <button type="button" id="btnDownPct" class="tool-chip-btn" aria-pressed="${st.downPaymentType === 'percent'}">%</button>
+                                <button type="button" id="btnDownAmt" class="tool-chip-btn" aria-pressed="${st.downPaymentType === 'amount'}">บาท</button>
                             </div>
                         </div>
                         <input id="carDownValInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.downPaymentValue))}" placeholder="${st.downPaymentType === 'percent' ? 'เช่น 15 หรือ 20' : 'เช่น 150,000'}" class="airbnb-input w-full">
                     </div>
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ยอดเงินดาวน์คำนวณได้</label>
-                        <div class="airbnb-input w-full bg-neutral-50 dark:bg-neutral-800 font-semibold text-neutral-800 dark:text-neutral-200 flex items-center">
+                        <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">ยอดเงินดาวน์คำนวณได้</label>
+                        <div class="themed-subcard p-3 w-full font-semibold text-[var(--app-ink)] flex items-center">
                             ${formatMoney(calc.downPaymentAmount)} บาท (${formatNum(calc.downPaymentPercent, 1)}%)
                         </div>
                     </div>
@@ -9127,11 +9413,11 @@ function renderCarLoanTool(container) {
 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">อัตราดอกเบี้ยต่อปี Flat Rate (%)</label>
+                        <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">อัตราดอกเบี้ยต่อปี Flat Rate (%)</label>
                         <input id="carInterestRateInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.interestRate))}" placeholder="เช่น 2.59 หรือ 4.5" class="airbnb-input w-full">
                     </div>
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ระยะเวลาผ่อนชำระ (เดือน)</label>
+                        <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">ระยะเวลาผ่อนชำระ (เดือน)</label>
                         <select id="carPeriodSelect" class="airbnb-input w-full">
                             <option value="24" ${st.periodMonths === '24' ? 'selected' : ''}>24 เดือน (2 ปี)</option>
                             <option value="36" ${st.periodMonths === '36' ? 'selected' : ''}>36 เดือน (3 ปี)</option>
@@ -9145,61 +9431,61 @@ function renderCarLoanTool(container) {
             </div>
 
             <!-- Big Result Card -->
-            <div class="border rounded-[var(--app-card-radius)] p-4 text-center border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 space-y-1" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-semibold uppercase tracking-wider">🚘 ค่างวดผ่อนชำระต่อเดือน (${st.condition === 'used' ? 'รวม VAT 7% แล้ว' : 'ราคารวม VAT แล้ว'})</div>
-                <div class="text-3xl md:text-4xl font-extrabold text-[var(--app-accent)]">${formatMoney(calc.monthlyPayment)} บาท/เดือน</div>
-                <div class="text-xs opacity-90">
+            <div class="themed-result-card theme-result-highlight p-5 text-center space-y-1">
+                <div class="text-xs font-semibold text-[var(--app-muted)]">ค่างวดผ่อนชำระต่อเดือน (${st.condition === 'used' ? 'รวม VAT 7% แล้ว' : 'ราคารวม VAT แล้ว'})</div>
+                <div class="themed-result-value text-2xl md:text-3xl font-extrabold">${formatMoney(calc.monthlyPayment)} บาท/เดือน</div>
+                <div class="text-xs text-[var(--app-body)]">
                     ยอดจัด: <b>${formatMoney(calc.principal)}</b> บ. · ดอกเบี้ยคงที่ <b>${formatNum(calc.interestRate, 2)}%</b> (เทียบเท่าลดต้นลดดอก ~${formatNum(calc.effectiveRateApprox, 2)}%)
                 </div>
             </div>
 
             <!-- Breakdown Detail Cards -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
-                <div class="font-bold text-neutral-800 dark:text-neutral-200 mb-1">สรุปโครงสร้างภาระหนี้ทั้งสัญญา</div>
-                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                    <span class="text-neutral-600 dark:text-neutral-400">ราคารถยนต์สุทธิ</span>
+            <div class="themed-tool-card p-4 space-y-1 text-xs">
+                <div class="font-bold text-[var(--app-ink)] mb-1">สรุปโครงสร้างภาระหนี้ทั้งสัญญา</div>
+                <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                    <span class="text-[var(--app-muted)]">ราคารถยนต์สุทธิ</span>
                     <b>${formatMoney(calc.price)} บาท</b>
                 </div>
-                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                    <span class="text-neutral-600 dark:text-neutral-400">เงินดาวน์ (${formatNum(calc.downPaymentPercent, 1)}%)</span>
-                    <b class="text-emerald-600">-${formatMoney(calc.downPaymentAmount)} บาท</b>
+                <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                    <span class="text-[var(--app-muted)]">เงินดาวน์ (${formatNum(calc.downPaymentPercent, 1)}%)</span>
+                    <b class="text-[var(--app-ink)]">-${formatMoney(calc.downPaymentAmount)} บาท</b>
                 </div>
-                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                    <span class="text-neutral-600 dark:text-neutral-400">ยอดจัดเช่าซื้อ (เงินต้น)</span>
+                <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                    <span class="text-[var(--app-muted)]">ยอดจัดเช่าซื้อ (เงินต้น)</span>
                     <b>${formatMoney(calc.principal)} บาท</b>
                 </div>
-                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                    <span class="text-neutral-600 dark:text-neutral-400">ดอกเบี้ยรวมทั้งสัญญา (${calc.years} ปี)</span>
-                    <b class="text-rose-600">+${formatMoney(calc.totalInterest)} บาท</b>
+                <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                    <span class="text-[var(--app-muted)]">ดอกเบี้ยรวมทั้งสัญญา (${calc.years} ปี)</span>
+                    <b class="text-[var(--app-ink)]">+${formatMoney(calc.totalInterest)} บาท</b>
                 </div>
                 ${calc.isVatAdded ? `
-                    <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                        <span class="text-neutral-600 dark:text-neutral-400">ภาษีมูลค่าเพิ่มในค่างวด (VAT 7% รถมือสอง)</span>
+                    <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                        <span class="text-[var(--app-muted)]">ภาษีมูลค่าเพิ่มในค่างวด (VAT 7% รถมือสอง)</span>
                         <b>+${formatMoney(calc.totalVat)} บาท (+${formatMoney(calc.vatMonthly)} บ./ด.)</b>
                     </div>
                 ` : ''}
-                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800 font-semibold">
+                <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)] font-semibold">
                     <span>ยอดผ่อนชำระรวมทุกงวด (${calc.periodMonths} งวด)</span>
                     <b>${formatMoney(calc.totalRepayment)} บาท</b>
                 </div>
-                <div class="flex justify-between py-1 text-sm font-bold text-[var(--app-accent)]">
+                <div class="flex justify-between gap-3 py-2 text-sm font-bold text-[var(--app-accent)]">
                     <span>ราคารวมที่จ่ายจริงทั้งหมด (ดาวน์ + ผ่อน)</span>
                     <b>${formatMoney(calc.totalCostOfCar)} บาท</b>
                 </div>
             </div>
 
             <!-- Early Payoff Simulation Card (สคบ. เกณฑ์ใหม่) -->
-            <div class="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-800 rounded-[var(--app-card-radius)] p-4 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
+            <div class="themed-tool-card p-4 space-y-3 text-xs">
                 <div class="flex justify-between items-center">
-                    <span class="font-bold text-emerald-950 dark:text-emerald-200">💰 จำลองการปิดบัญชีก่อนกำหนด (สคบ. เกณฑ์ใหม่ 2566)</span>
+                    <span class="font-bold text-[var(--app-ink)]">จำลองการปิดบัญชีก่อนกำหนด (สคบ. เกณฑ์ใหม่ 2566)</span>
                 </div>
-                <div class="text-[11px] text-neutral-600 dark:text-neutral-400">
+                <div class="text-[11px] text-[var(--app-muted)]">
                     กฎหมายใหม่ให้สิทธิส่วนลดดอกเบี้ยที่ยังไม่ถึงกำหนดแบบลดต้นลดดอก
                 </div>
 
                 <div class="grid grid-cols-2 gap-2 pt-1">
                     <div>
-                        <label class="text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 block mb-1">ต้องการปิดบัญชี ณ สิ้นงวดที่:</label>
+                        <label class="text-[11px] font-semibold text-[var(--app-body)] block mb-1">ต้องการปิดบัญชี ณ สิ้นงวดที่:</label>
                         <select id="carPayoffMonthSelect" class="airbnb-input w-full text-xs">
                             ${Array.from({ length: calc.periodMonths - 1 }, (_, i) => i + 1).map(m => `
                                 <option value="${m}" ${m === calc.payoffMonth ? 'selected' : ''}>งวดที่ ${m} (เหลืออีก ${calc.periodMonths - m} งวด)</option>
@@ -9207,31 +9493,31 @@ function renderCarLoanTool(container) {
                         </select>
                     </div>
                     <div>
-                        <label class="text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 block mb-1">เกณฑ์ส่วนลดตาม สคบ.</label>
-                        <div class="airbnb-input w-full bg-white dark:bg-neutral-800 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 flex items-center">
+                        <label class="text-[11px] font-semibold text-[var(--app-body)] block mb-1">เกณฑ์ส่วนลดตาม สคบ.</label>
+                        <div class="themed-subcard p-3 w-full text-[11px] font-bold text-[var(--app-accent)] flex items-center">
                             ลดดอกเบี้ย ${calc.discountTierPercent}%
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white/80 dark:bg-black/30 rounded-lg p-2.5 space-y-1.5 mt-2 border border-emerald-200 dark:border-emerald-900">
+                <div class="themed-subcard p-3 space-y-2 mt-2">
                     <div class="flex justify-between">
-                        <span class="text-neutral-600 dark:text-neutral-400">ดอกเบี้ยคงเหลือที่ยังไม่ถึงกำหนด</span>
+                        <span class="text-[var(--app-muted)]">ดอกเบี้ยคงเหลือที่ยังไม่ถึงกำหนด</span>
                         <b>${formatMoney(calc.unearnedInterest)} บาท</b>
                     </div>
-                    <div class="flex justify-between text-emerald-700 dark:text-emerald-300 font-bold">
+                    <div class="flex justify-between text-[var(--app-accent)] font-bold">
                         <span>ส่วนลดดอกเบี้ยที่ได้รับ (${calc.discountTierPercent}%)</span>
                         <b>-${formatMoney(calc.totalSavedByEarlyPayoff)} บาท</b>
                     </div>
-                    <div class="flex justify-between pt-1 border-t border-neutral-200 dark:border-neutral-700 font-extrabold text-sm text-[var(--app-accent)]">
+                    <div class="flex justify-between pt-1 border-t border-[var(--app-hairline)] font-extrabold text-sm text-[var(--app-accent)]">
                         <span>ยอดเงินสุทธิที่ต้องเตรียมปิดบัญชี</span>
                         <b>${formatMoney(calc.totalPayoffAmount)} บาท</b>
                     </div>
                 </div>
 
                 <div class="flex justify-end pt-2">
-                    <button id="btnPrintCarLoanSummary" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer">
-                        🖨️ พิมพ์ใบสรุปสินเชื่อรถ / PDF
+                    <button id="btnPrintCarLoanSummary" type="button" class="tool-action-btn text-xs">
+                        พิมพ์ใบสรุปสินเชื่อรถ / PDF
                     </button>
                 </div>
             </div>
@@ -9329,41 +9615,41 @@ function renderSocialSecurityTool(container) {
     const calc = calculateSocialSecurity(st);
 
     container.innerHTML = `
-        <div class="flex flex-col gap-3 p-1">
+        <div class="finance-thai-tool flex flex-col gap-3 p-1">
             <!-- Section Selection Tabs (M.33, M.39, M.40) -->
-            <div class="segment-group grid-cols-3 balanced-segment-modes" role="tablist" aria-label="มาตราประกันสังคม">
-                <button type="button" class="segment-btn ${st.section === 'm33' ? 'active' : ''}" data-sec="m33">🏢 ม.33 (ลูกจ้างประจำ)</button>
-                <button type="button" class="segment-btn ${st.section === 'm39' ? 'active' : ''}" data-sec="m39">💼 ม.39 (ประกันตนเอง)</button>
-                <button type="button" class="segment-btn ${st.section === 'm40' ? 'active' : ''}" data-sec="m40">🛵 ม.40 (อิสระ/ฟรีแลนซ์)</button>
+            <div class="segment-group grid-cols-3 balanced-segment-modes" role="group" aria-label="มาตราประกันสังคม">
+                <button type="button" aria-pressed="${st.section === 'm33'}" class="segment-btn ${st.section === 'm33' ? 'active' : ''}" data-sec="m33">ม.33 ลูกจ้าง</button>
+                <button type="button" aria-pressed="${st.section === 'm39'}" class="segment-btn ${st.section === 'm39' ? 'active' : ''}" data-sec="m39">ม.39 สมัครใจ</button>
+                <button type="button" aria-pressed="${st.section === 'm40'}" class="segment-btn ${st.section === 'm40' ? 'active' : ''}" data-sec="m40">ม.40 อาชีพอิสระ</button>
             </div>
 
             <!-- Main Input Form -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">
-                    📋 ข้อมูลเงินเดือนและระยะเวลาส่งเงินสมทบ
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">
+                    ข้อมูลเงินเดือนและระยะเวลาส่งเงินสมทบ
                 </div>
 
                 ${st.section === 'm33' ? `
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">เงินเดือน / ค่าจ้างเฉลี่ย (บาท)</label>
+                            <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">เงินเดือน / ค่าจ้างเฉลี่ย (บาท)</label>
                             <input id="ssWageInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.wageMonthly))}" placeholder="เช่น 35,000" class="airbnb-input w-full font-semibold">
                         </div>
                         <div>
-                            <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ฐานคิดคำนวณ (เพดาน 15,000 บ.)</label>
-                            <div class="airbnb-input w-full bg-neutral-50 dark:bg-neutral-800 font-semibold text-neutral-800 dark:text-neutral-200 flex items-center">
+                            <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">ฐานคิดคำนวณ (เพดาน 15,000 บ.)</label>
+                            <div class="themed-subcard p-3 w-full font-semibold text-[var(--app-ink)] flex items-center">
                                 ${formatMoney(calc.cappedWage)} บาท
                             </div>
                         </div>
                     </div>
                 ` : (st.section === 'm39' ? `
-                    <div class="p-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-xs space-y-1">
-                        <div class="font-bold text-neutral-800 dark:text-neutral-200">ℹ️ กฎหมายกำหนดฐานค่าจ้าง ม.39 ไว้คงที่: 4,800 บาท</div>
-                        <div class="text-neutral-600 dark:text-neutral-400 text-[11px]">ส่งเงินสมทบ 9% = เดือนละ 432 บาท (เข้าชราภาพ 288 บาท)</div>
+                    <div class="themed-subcard p-3 text-xs space-y-1">
+                        <div class="font-bold text-[var(--app-ink)]">กฎหมายกำหนดฐานค่าจ้าง ม.39 ไว้คงที่: 4,800 บาท</div>
+                        <div class="text-[var(--app-muted)] text-[11px]">ส่งเงินสมทบ 9% = เดือนละ 432 บาท (เข้าชราภาพ 288 บาท)</div>
                     </div>
                 ` : `
                     <div class="space-y-2">
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block">เลือกทางเลือกการคุ้มครอง ม.40</label>
+                        <label class="text-xs font-semibold text-[var(--app-muted)] block">เลือกทางเลือกการคุ้มครอง ม.40</label>
                         <select id="ssM40PlanSelect" class="airbnb-input w-full text-xs">
                             <option value="plan1" ${st.m40Plan === 'plan1' ? 'selected' : ''}>ทางเลือก 1: จ่าย 70 บ./ด. (เจ็บป่วย/ทุพพลภาพ/เสียชีวิต - ไม่มีชราภาพ)</option>
                             <option value="plan2" ${st.m40Plan === 'plan2' ? 'selected' : ''}>ทางเลือก 2: จ่าย 100 บ./ด. (มีออมชราภาพ 50 บ./ด.)</option>
@@ -9371,12 +9657,12 @@ function renderSocialSecurityTool(container) {
                         </select>
                         <div class="grid grid-cols-2 gap-2 pt-1">
                             <div>
-                                <label class="text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 block mb-1">ออมเพิ่มโดยสมัครใจ (บาท/เดือน)</label>
+                                <label class="text-[11px] font-semibold text-[var(--app-muted)] block mb-1">ออมเพิ่มโดยสมัครใจ (บาท/เดือน)</label>
                                 <input id="ssM40ExtraInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.m40ExtraSavings))}" placeholder="สูงสุด 1,000" class="airbnb-input w-full text-xs">
                             </div>
                             <div>
-                                <label class="text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 block mb-1">ยอดเงินส่งต่อเดือนรวม</label>
-                                <div class="airbnb-input w-full bg-neutral-50 dark:bg-neutral-800 font-semibold text-xs flex items-center">
+                                <label class="text-[11px] font-semibold text-[var(--app-muted)] block mb-1">ยอดเงินส่งต่อเดือนรวม</label>
+                                <div class="themed-subcard p-3 w-full font-semibold text-xs flex items-center">
                                     ${formatMoney(calc.monthlyContribution)} บาท/เดือน
                                 </div>
                             </div>
@@ -9386,12 +9672,12 @@ function renderSocialSecurityTool(container) {
 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">จำนวนงวดที่ส่งเงินสมทบ (เดือน)</label>
+                        <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">จำนวนงวดที่ส่งเงินสมทบ (เดือน)</label>
                         <input id="ssMonthsInput" type="text" inputmode="numeric" value="${escapeHTML(formatInputDisplay(st.contributionMonths))}" placeholder="เช่น 180 หรือ 240" class="airbnb-input w-full font-semibold">
                     </div>
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ระยะเวลาส่งสะสม</label>
-                        <div class="airbnb-input w-full bg-neutral-50 dark:bg-neutral-800 font-semibold text-neutral-800 dark:text-neutral-200 flex items-center">
+                        <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">ระยะเวลาส่งสะสม</label>
+                        <div class="themed-subcard p-3 w-full font-semibold text-[var(--app-ink)] flex items-center">
                             ${formatNum(calc.yearsContributed, 1)} ปี (${formatNum(calc.contributionMonths, 0)} งวด)
                         </div>
                     </div>
@@ -9399,64 +9685,64 @@ function renderSocialSecurityTool(container) {
 
                 <!-- Fast Preset Month Buttons -->
                 <div class="flex flex-wrap gap-1.5 pt-1 text-[11px]">
-                    <span class="text-neutral-400 self-center">ลัด:</span>
-                    <button type="button" class="btnPresetMonths px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 text-neutral-700 dark:text-neutral-300" data-months="60">5 ปี (60 ด.)</button>
-                    <button type="button" class="btnPresetMonths px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 text-neutral-700 dark:text-neutral-300" data-months="120">10 ปี (120 ด.)</button>
-                    <button type="button" class="btnPresetMonths px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200 font-bold" data-months="180">⭐ 15 ปี (180 ด. บำนาญ)</button>
-                    <button type="button" class="btnPresetMonths px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 text-neutral-700 dark:text-neutral-300" data-months="240">20 ปี (240 ด.)</button>
-                    <button type="button" class="btnPresetMonths px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 text-neutral-700 dark:text-neutral-300" data-months="300">25 ปี (300 ด.)</button>
+                    <span class="text-[var(--app-muted)] self-center">ลัด:</span>
+                    <button type="button" class="btnPresetMonths tool-chip-btn" aria-pressed="${String(st.contributionMonths) === '60'}" data-months="60">5 ปี (60 ด.)</button>
+                    <button type="button" class="btnPresetMonths tool-chip-btn" aria-pressed="${String(st.contributionMonths) === '120'}" data-months="120">10 ปี (120 ด.)</button>
+                    <button type="button" class="btnPresetMonths tool-chip-btn" aria-pressed="${String(st.contributionMonths) === '180'}" data-months="180">15 ปี (180 ด.)</button>
+                    <button type="button" class="btnPresetMonths tool-chip-btn" aria-pressed="${String(st.contributionMonths) === '240'}" data-months="240">20 ปี (240 ด.)</button>
+                    <button type="button" class="btnPresetMonths tool-chip-btn" aria-pressed="${String(st.contributionMonths) === '300'}" data-months="300">25 ปี (300 ด.)</button>
                 </div>
             </div>
 
             <!-- Big Result Card -->
             ${calc.isPension ? `
-                <div class="border rounded-[var(--app-card-radius)] p-4 text-center border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200 space-y-1" style="box-shadow:var(--app-elevation)">
-                    <div class="text-xs font-semibold uppercase tracking-wider">🎉 ได้รับสิทธิเงินบำนาญชราภาพตลอดชีพ (ครบ 55 ปีบริบูรณ์)</div>
-                    <div class="text-3xl md:text-4xl font-extrabold text-emerald-700 dark:text-emerald-300">${formatMoney(calc.monthlyPension)} บาท/เดือน</div>
-                    <div class="text-xs opacity-90">
+                <div class="themed-result-card theme-result-highlight p-5 text-center space-y-1">
+                    <div class="text-xs font-semibold text-[var(--app-muted)]">ได้รับสิทธิเงินบำนาญชราภาพตลอดชีพ (ครบ 55 ปีบริบูรณ์)</div>
+                    <div class="themed-result-value text-2xl md:text-3xl font-extrabold">${formatMoney(calc.monthlyPension)} บาท/เดือน</div>
+                    <div class="text-xs text-[var(--app-body)]">
                         คิดเป็นปีละ <b>${formatMoney(calc.yearlyPension)}</b> บ. · อัตราบำนาญ <b>${formatNum(calc.pensionRatePercent, 2)}%</b> (เกิน 180 เดือนมา ${formatNum(Math.floor((calc.contributionMonths - 180) / 12), 0)} ปี)
                     </div>
                 </div>
             ` : `
-                <div class="border rounded-[var(--app-card-radius)] p-4 text-center border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 space-y-1" style="box-shadow:var(--app-elevation)">
-                    <div class="text-xs font-semibold uppercase tracking-wider">💰 ได้รับสิทธิเงินบำเหน็จชราภาพ (เงินก้อนครั้งเดียว)</div>
-                    <div class="text-3xl md:text-4xl font-extrabold text-[var(--app-accent)]">${formatMoney(calc.lumpSumTotal)} บาท</div>
-                    <div class="text-xs opacity-90">
+                <div class="themed-result-card theme-result-highlight p-5 text-center space-y-1">
+                    <div class="text-xs font-semibold text-[var(--app-muted)]">ได้รับสิทธิเงินบำเหน็จชราภาพ (เงินก้อนครั้งเดียว)</div>
+                    <div class="themed-result-value text-2xl md:text-3xl font-extrabold">${formatMoney(calc.lumpSumTotal)} บาท</div>
+                    <div class="text-xs text-[var(--app-body)]">
                         ${st.section === 'm40' ? 'รับเงินก้อนพร้อมผลประโยชน์ตอบแทนเมื่ออายุครบ 60 ปีบริบูรณ์' : `ส่งเงินสมทบยังไม่ถึง 180 เดือน (${formatNum(calc.contributionMonths, 0)}/180 เดือน) จึงได้รับเป็นเงินบำเหน็จก้อนเดียว`}
                     </div>
                 </div>
             `}
 
             <!-- Benefit Breakdown Details -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
-                <div class="font-bold text-neutral-800 dark:text-neutral-200 mb-1">สรุปยอดเงินสมทบและสิทธิประโยชน์</div>
-                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                    <span class="text-neutral-600 dark:text-neutral-400">เงินสมทบของผู้ประกันตนต่อเดือน</span>
+            <div class="themed-tool-card p-4 space-y-1 text-xs">
+                <div class="font-bold text-[var(--app-ink)] mb-1">สรุปยอดเงินสมทบและสิทธิประโยชน์</div>
+                <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                    <span class="text-[var(--app-muted)]">เงินสมทบของผู้ประกันตนต่อเดือน</span>
                     <b>${formatMoney(calc.monthlyContribution)} บาท/เดือน</b>
                 </div>
                 ${st.section === 'm33' ? `
-                    <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                        <span class="text-neutral-600 dark:text-neutral-400">เงินสมทบฝั่งนายจ้างช่วยจ่าย (5%)</span>
-                        <b class="text-emerald-600">+${formatMoney(calc.employerContribution)} บาท/เดือน</b>
+                    <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                        <span class="text-[var(--app-muted)]">เงินสมทบฝั่งนายจ้างช่วยจ่าย (5%)</span>
+                        <b class="text-[var(--app-ink)]">+${formatMoney(calc.employerContribution)} บาท/เดือน</b>
                     </div>
-                    <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                        <span class="text-neutral-600 dark:text-neutral-400">ยอดสะสมเฉพาะส่วนชราภาพ (ลูกจ้าง 3% + นายจ้าง 3%)</span>
+                    <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                        <span class="text-[var(--app-muted)]">ยอดสะสมเฉพาะส่วนชราภาพ (ลูกจ้าง 3% + นายจ้าง 3%)</span>
                         <b>${formatMoney(calc.oldAgeSavingsMonthly * 2)} บาท/เดือน</b>
                     </div>
                 ` : ''}
-                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                    <span class="text-neutral-600 dark:text-neutral-400">เงินที่ผู้ประกันตนจ่ายสะสมตลอด ${formatNum(calc.yearsContributed, 1)} ปี</span>
+                <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                    <span class="text-[var(--app-muted)]">เงินที่ผู้ประกันตนจ่ายสะสมตลอด ${formatNum(calc.yearsContributed, 1)} ปี</span>
                     <b>${formatMoney(calc.totalWorkerContributed)} บาท</b>
                 </div>
                 ${calc.isPension ? `
-                    <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                        <span class="text-neutral-600 dark:text-neutral-400">จุดคุ้มทุน (รับบำนาญกี่ปีคืนทุนที่เคยจ่าย)</span>
-                        <b class="text-emerald-600">~${calc.monthlyPension > 0 ? (calc.totalWorkerContributed / (calc.monthlyPension * 12)).toFixed(1) : 0} ปี (${calc.monthlyPension > 0 ? Math.ceil(calc.totalWorkerContributed / calc.monthlyPension) : 0} เดือน)</b>
+                    <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                        <span class="text-[var(--app-muted)]">จุดคุ้มทุน (รับบำนาญกี่ปีคืนทุนที่เคยจ่าย)</span>
+                        <b class="text-[var(--app-ink)]">~${calc.monthlyPension > 0 ? (calc.totalWorkerContributed / (calc.monthlyPension * 12)).toFixed(1) : 0} ปี (${calc.monthlyPension > 0 ? Math.ceil(calc.totalWorkerContributed / calc.monthlyPension) : 0} เดือน)</b>
                     </div>
                 ` : ''}
                 <div class="flex justify-end pt-2">
-                    <button id="btnPrintSocialSecuritySummary" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer">
-                        🖨️ พิมพ์ใบสรุปสิทธิประกันสังคม / PDF
+                    <button id="btnPrintSocialSecuritySummary" type="button" class="tool-action-btn text-xs">
+                        พิมพ์ใบสรุปสิทธิประกันสังคม / PDF
                     </button>
                 </div>
             </div>
@@ -9510,7 +9796,7 @@ function renderSocialSecurityTool(container) {
     });
 
     if (calc.isPension) {
-        setStatusBanner('success', `บำนาญชราภาพ (${calc.section.toUpperCase()} ส่ง ${formatNum(calc.contributionMonths, 0)} งวด): <b class="text-emerald-600">${formatMoney(calc.monthlyPension)} บาท/เดือนตลอดชีพ</b> (ปีละ ${formatMoney(calc.yearlyPension)} บ.)`);
+        setStatusBanner('success', `บำนาญชราภาพ (${calc.section.toUpperCase()} ส่ง ${formatNum(calc.contributionMonths, 0)} งวด): <b class="text-[var(--app-ink)]">${formatMoney(calc.monthlyPension)} บาท/เดือนตลอดชีพ</b> (ปีละ ${formatMoney(calc.yearlyPension)} บ.)`);
     } else {
         setStatusBanner('success', `บำเหน็จชราภาพ (${calc.section.toUpperCase()} ส่ง ${formatNum(calc.contributionMonths, 0)} งวด): <b class="text-[var(--app-accent)]">${formatMoney(calc.lumpSumTotal)} บาท</b> (รับเงินก้อนครั้งเดียว)`);
     }
@@ -9533,6 +9819,569 @@ function renderSocialSecurityTool(container) {
 })(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
 
 // <<< src/tools/finance_thai.js <<<
+
+// >>> src/tools/legal_labor.js >>>
+// ==============================================================
+// Multitools Calculator - Thai Labor Law & Legal Interest Tools
+// (labor_severance, legal_interest) - Phase 7
+// ==============================================================
+
+/* -----------------------------------------------------------
+ * PURE ENGINE: คำนวณเงินชดเชยเลิกจ้าง & ค่าตกใจ (Labor Severance)
+ * พ.ร.บ. คุ้มครองแรงงาน พ.ศ. 2541 ม.118, ม.17 และสิทธิยกเว้นภาษี
+ * ----------------------------------------------------------- */
+function calculateLaborSeverance(params) {
+    const p = params || {};
+    const salaryMonthly = Math.max(0, numberOrDefault(p.salaryMonthly, 35000));
+    const mode = p.mode || 'duration'; // 'duration' (ระบุอายุงาน) | 'dates' (ระบุวันเริ่มงาน-สิ้นสุด)
+    const startDate = p.startDate || '';
+    const endDate = p.endDate || '';
+    
+    // อายุงาน
+    let years = Math.max(0, integerOrDefault(p.serviceYears, 3));
+    let months = Math.max(0, Math.min(11, integerOrDefault(p.serviceMonths, 6)));
+    let days = Math.max(0, Math.min(30, integerOrDefault(p.serviceDays, 0)));
+
+    if (mode === 'dates' && startDate && endDate) {
+        const d1 = new Date(startDate + 'T00:00:00');
+        const d2 = new Date(endDate + 'T00:00:00');
+        if (!isNaN(d1.getTime()) && !isNaN(d2.getTime()) && d2 >= d1) {
+            let totalDays = Math.round((d2 - d1) / 86400000);
+            years = Math.floor(totalDays / 365);
+            const remDays = totalDays % 365;
+            months = Math.floor(remDays / 30);
+            days = remDays % 30;
+        }
+    }
+
+    const totalDaysWorked = (years * 365) + (months * 30) + days;
+    const dailyWage = salaryMonthly > 0 ? (salaryMonthly / 30) : 0;
+
+    // 1. เกณฑ์เงินชดเชยเลิกจ้างตามกฎหมายแรงงาน (ม.118)
+    // - 120 วัน แต่ไม่ถึง 1 ปี: 30 วัน (1 เดือน)
+    // - 1 ปี แต่ไม่ถึง 3 ปี: 90 วัน (3 เดือน)
+    // - 3 ปี แต่ไม่ถึง 6 ปี: 180 วัน (6 เดือน)
+    // - 6 ปี แต่ไม่ถึง 10 ปี: 240 วัน (8 เดือน)
+    // - 10 ปี แต่ไม่ถึง 20 ปี: 300 วัน (10 เดือน)
+    // - 20 ปีขึ้นไป: 400 วัน (~13.33 เดือน)
+    let severanceDays = 0;
+    let tierLabel = 'อายุงานไม่ถึง 120 วัน (ไม่ได้รับเงินชดเชย)';
+    let tierDescription = 'ทำงานยังไม่ครบ 120 วัน นายจ้างไม่ต้องจ่ายค่าชดเชยตาม ม.118';
+
+    if (years >= 20) {
+        severanceDays = 400;
+        tierLabel = 'อายุงาน 20 ปีขึ้นไป (ชดเชย 400 วัน)';
+        tierDescription = 'ได้รับค่าชดเชยอัตราสูงสุด 400 วันตามกฎหมายแรงงาน';
+    } else if (years >= 10) {
+        severanceDays = 300;
+        tierLabel = 'อายุงาน 10 ปี แต่ไม่ถึง 20 ปี (ชดเชย 300 วัน)';
+        tierDescription = 'ได้รับค่าชดเชย 300 วัน (ประมาณ 10 เดือน)';
+    } else if (years >= 6) {
+        severanceDays = 240;
+        tierLabel = 'อายุงาน 6 ปี แต่ไม่ถึง 10 ปี (ชดเชย 240 วัน)';
+        tierDescription = 'ได้รับค่าชดเชย 240 วัน (ประมาณ 8 เดือน)';
+    } else if (years >= 3) {
+        severanceDays = 180;
+        tierLabel = 'อายุงาน 3 ปี แต่ไม่ถึง 6 ปี (ชดเชย 180 วัน)';
+        tierDescription = 'ได้รับค่าชดเชย 180 วัน (ประมาณ 6 เดือน)';
+    } else if (years >= 1) {
+        severanceDays = 90;
+        tierLabel = 'อายุงาน 1 ปี แต่ไม่ถึง 3 ปี (ชดเชย 90 วัน)';
+        tierDescription = 'ได้รับค่าชดเชย 90 วัน (ประมาณ 3 เดือน)';
+    } else if (totalDaysWorked >= 120) {
+        severanceDays = 30;
+        tierLabel = 'อายุงาน 120 วัน แต่ไม่ถึง 1 ปี (ชดเชย 30 วัน)';
+        tierDescription = 'ได้รับค่าชดเชย 30 วัน (ประมาณ 1 เดือน)';
+    }
+
+    const severancePay = dailyWage * severanceDays;
+
+    // 2. สินจ้างแทนการบอกกล่าวล่วงหน้า (ค่าตกใจ ม.17)
+    // กรณีเลิกจ้างทันทีโดยไม่บอกกล่าวล่วงหน้าตามงวดการจ่ายค่าจ้าง
+    const noticeGiven = p.noticeGiven || 'no'; // 'yes' (บอกล่วงหน้าถูกต้อง) | 'no' (เลิกจ้างทันที)
+    const noticeMonths = Math.max(0, numberOrDefault(p.noticeMonths, 1));
+    const noticePay = noticeGiven === 'no' ? (salaryMonthly * noticeMonths) : 0;
+
+    // 3. ค่าจ้างสำหรับวันหยุดพักผ่อนประจำปีสะสมที่ไม่ได้ใช้ (พักร้อนคงเหลือ)
+    const unusedLeaveDays = Math.max(0, numberOrDefault(p.unusedLeaveDays, 0));
+    const leavePay = unusedLeaveDays * dailyWage;
+
+    // รวมยอดเงินชดเชยทั้งหมดที่ลูกจ้างต้องได้รับ
+    const totalSeverancePackage = severancePay + noticePay + leavePay;
+
+    // 4. สิทธิยกเว้นภาษีเงินได้บุคคลธรรมดา
+    // กฎกระทรวงกำหนด: เงินชดเชยตามกฎหมายแรงงานได้รับยกเว้นภาษีสำหรับเงินชดเชย 300 วันสุดท้าย แต่ไม่เกิน 300,000 บาท
+    const taxExemptDays = Math.min(severanceDays, 300);
+    const taxExemptByDays = dailyWage * taxExemptDays;
+    const taxExemptLimit = Math.min(300000, taxExemptByDays);
+    const taxExemptAmount = Math.min(severancePay, taxExemptLimit);
+    const taxableSeverance = Math.max(0, severancePay - taxExemptAmount) + noticePay + leavePay;
+
+    return {
+        salaryMonthly,
+        mode,
+        startDate,
+        endDate,
+        serviceYears: years,
+        serviceMonths: months,
+        serviceDays: days,
+        totalDaysWorked,
+        dailyWage,
+        severanceDays,
+        tierLabel,
+        tierDescription,
+        severancePay,
+        noticeGiven,
+        noticeMonths,
+        noticePay,
+        unusedLeaveDays,
+        leavePay,
+        totalSeverancePackage,
+        taxExemptAmount,
+        taxableSeverance
+    };
+}
+
+/* -----------------------------------------------------------
+ * PURE ENGINE: คำนวณดอกเบี้ยผิดนัดชำระหนี้ตามกฎหมายใหม่ (Legal Interest)
+ * ประมวลกฎหมายแพ่งและพาณิชย์ ม.7 และ ม.224 (ปรับปรุง 2564)
+ * ----------------------------------------------------------- */
+function calculateLegalInterest(params) {
+    const p = params || {};
+    const principal = Math.max(0, numberOrDefault(p.principal, 100000));
+    const ratePreset = p.ratePreset || 'default_5'; // 'default_5' (5% ม.224) | 'statutory_3' (3% ม.7) | 'custom'
+    let interestRate = 5.0;
+    if (ratePreset === 'statutory_3') {
+        interestRate = 3.0;
+    } else if (ratePreset === 'custom') {
+        interestRate = Math.max(0, numberOrDefault(p.customRate, 5.0));
+    }
+
+    const calcMode = p.calcMode || 'dates'; // 'dates' (ระบุช่วงวันที่) | 'days' (ระบุจำนวนวัน)
+    const startDate = p.startDate || formatLocalDate(addCalendarDays(new Date(), -60));
+    const endDate = p.endDate || formatLocalDate(new Date());
+    let overdueDays = 0;
+
+    if (calcMode === 'dates') {
+        const d1 = new Date(startDate + 'T00:00:00');
+        const d2 = new Date(endDate + 'T00:00:00');
+        if (!isNaN(d1.getTime()) && !isNaN(d2.getTime())) {
+            overdueDays = Math.max(0, Math.round((d2 - d1) / 86400000));
+        }
+    } else {
+        overdueDays = Math.max(0, integerOrDefault(p.overdueDays, 60));
+    }
+
+    // การคำนวณดอกเบี้ยรายวันตามเกณฑ์สากลและ ป.พ.พ. (ฐาน 365 วัน)
+    // ดอกเบี้ย = เงินต้น * (อัตราดอกเบี้ย / 100) * (จำนวนวันผิดนัด / 365)
+    const dailyRate = (interestRate / 100) / 365;
+    const dailyInterest = principal * dailyRate;
+    const monthlyInterestApprox = dailyInterest * 30;
+    const totalInterest = principal * (interestRate / 100) * (overdueDays / 365);
+    const totalPayable = principal + totalInterest;
+
+    return {
+        principal,
+        ratePreset,
+        interestRate,
+        calcMode,
+        startDate,
+        endDate,
+        overdueDays,
+        dailyInterest,
+        monthlyInterestApprox,
+        totalInterest,
+        totalPayable
+    };
+}
+
+/* -----------------------------------------------------------
+ * UI RENDERER: คำนวณเงินชดเชยเลิกจ้าง & ค่าตกใจ (labor_severance)
+ * ----------------------------------------------------------- */
+function renderLaborSeveranceTool(container) {
+    if (!container) return;
+    const st = appState.labor_severance = appState.labor_severance || {
+        salaryMonthly: '35000',
+        mode: 'duration', // 'duration' | 'dates'
+        serviceYears: '3',
+        serviceMonths: '6',
+        serviceDays: '0',
+        startDate: formatLocalDate(addCalendarDays(new Date(), -1277)),
+        endDate: formatLocalDate(new Date()),
+        noticeGiven: 'no', // 'yes' | 'no'
+        noticeMonths: '1',
+        unusedLeaveDays: '5'
+    };
+
+    const calc = calculateLaborSeverance(st);
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-3 p-1">
+            <!-- Mode Switch: Duration vs Dates -->
+            <div class="segment-group grid-cols-2 balanced-segment-modes" role="tablist" aria-label="วิธีระบุอายุงาน">
+                <button type="button" class="segment-btn ${st.mode === 'duration' ? 'active' : ''}" data-mode="duration">⏳ ระบุอายุงาน (ปี/เดือน/วัน)</button>
+                <button type="button" class="segment-btn ${st.mode === 'dates' ? 'active' : ''}" data-mode="dates">📅 ระบุวันที่เริ่มงาน - วันเลิกจ้าง</button>
+            </div>
+
+            <!-- Main Input Form -->
+            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
+                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">
+                    💼 ข้อมูลค่าจ้างและอายุงาน
+                </div>
+
+                <div>
+                    <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">เงินเดือนล่าสุด / ค่าจ้างเฉลี่ย 30 วันสุดท้าย (บาท)</label>
+                    <input id="sevSalaryInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.salaryMonthly))}" placeholder="เช่น 35,000" class="airbnb-input w-full text-base font-semibold">
+                    <div class="text-[11px] text-[var(--app-muted)] mt-0.5">คิดเป็นค่าจ้างรายวัน: <b>${formatMoney(calc.dailyWage)} บาท/วัน</b> (เงินเดือน ÷ 30)</div>
+                </div>
+
+                ${st.mode === 'duration' ? `
+                    <div>
+                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">อายุการทำงานที่ผ่านมา</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <span class="text-[11px] text-neutral-400 block mb-0.5">ปี</span>
+                                <input id="sevYearsInput" type="number" min="0" max="60" value="${escapeHTML(st.serviceYears)}" class="airbnb-input w-full text-center font-bold">
+                            </div>
+                            <div>
+                                <span class="text-[11px] text-neutral-400 block mb-0.5">เดือน</span>
+                                <input id="sevMonthsInput" type="number" min="0" max="11" value="${escapeHTML(st.serviceMonths)}" class="airbnb-input w-full text-center font-bold">
+                            </div>
+                            <div>
+                                <span class="text-[11px] text-neutral-400 block mb-0.5">วัน</span>
+                                <input id="sevDaysInput" type="number" min="0" max="30" value="${escapeHTML(st.serviceDays)}" class="airbnb-input w-full text-center font-bold">
+                            </div>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">วันเริ่มงาน</label>
+                            <input id="sevStartDateInput" type="date" value="${escapeHTML(st.startDate)}" class="airbnb-input w-full text-xs font-semibold">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">วันเลิกจ้าง / วันสุดท้าย</label>
+                            <input id="sevEndDateInput" type="date" value="${escapeHTML(st.endDate)}" class="airbnb-input w-full text-xs font-semibold">
+                        </div>
+                    </div>
+                    <div class="text-[11px] text-[var(--app-muted)]">
+                        คำนวณอายุงานได้: <b>${calc.serviceYears} ปี ${calc.serviceMonths} เดือน ${calc.serviceDays} วัน</b> (รวม ${calc.totalDaysWorked} วัน)
+                    </div>
+                `}
+
+                <!-- Notice & Vacation Leave -->
+                <div class="border-t border-[var(--app-hairline)] pt-3 space-y-3">
+                    <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">
+                        ⚖️ สิทธิเพิ่มเติม (ค่าตกใจ & พักร้อนคงเหลือ)
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">การบอกกล่าวล่วงหน้า</label>
+                            <select id="sevNoticeSelect" class="airbnb-input w-full text-xs font-semibold">
+                                <option value="no" ${st.noticeGiven === 'no' ? 'selected' : ''}>เลิกจ้างทันที (ได้ค่าตกใจ ม.17)</option>
+                                <option value="yes" ${st.noticeGiven === 'yes' ? 'selected' : ''}>แจ้งล่วงหน้าถูกต้อง (ไม่ได้ค่าตกใจ)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">วันพักร้อนคงเหลือ (วัน)</label>
+                            <input id="sevLeaveInput" type="number" min="0" max="60" value="${escapeHTML(st.unusedLeaveDays)}" placeholder="0" class="airbnb-input w-full text-xs font-semibold">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Card -->
+            <div class="bg-gradient-to-br from-white to-amber-50/20 dark:from-[#1f1f1f] dark:to-neutral-900 border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
+                <div class="flex items-center justify-between">
+                    <div class="text-xs font-bold text-[var(--app-ink)]">
+                        💰 ยอดเงินรวมที่ต้องได้รับทั้งสิ้น (Gross Package)
+                    </div>
+                    <span class="tool-metric-chip">${calc.tierLabel}</span>
+                </div>
+
+                <div class="text-2xl md:text-3xl font-extrabold text-[var(--app-accent)]" id="sevTotalResult">
+                    ${formatMoney(calc.totalSeverancePackage)} บาท
+                </div>
+
+                <!-- Breakdown Items -->
+                <div class="space-y-1.5 text-xs border-t border-[var(--app-hairline)] pt-2.5">
+                    <div class="flex justify-between tool-summary-row py-1">
+                        <span class="text-[var(--app-muted)]">1. ค่าชดเชยตามกฎหมาย ม.118 (${calc.severanceDays} วัน):</span>
+                        <b class="font-bold text-[var(--app-ink)]">${formatMoney(calc.severancePay)} บาท</b>
+                    </div>
+                    <div class="flex justify-between tool-summary-row py-1">
+                        <span class="text-[var(--app-muted)]">2. ค่าบอกกล่าวล่วงหน้า (ค่าตกใจ ม.17):</span>
+                        <b class="font-semibold text-amber-600 dark:text-amber-400">${calc.noticePay > 0 ? `+${formatMoney(calc.noticePay)} บาท` : '0.00 บาท'}</b>
+                    </div>
+                    <div class="flex justify-between tool-summary-row py-1">
+                        <span class="text-[var(--app-muted)]">3. ค่าจ้างวันหยุดพักผ่อนคงเหลือ (${calc.unusedLeaveDays} วัน):</span>
+                        <b class="font-semibold text-emerald-600 dark:text-emerald-400">${calc.leavePay > 0 ? `+${formatMoney(calc.leavePay)} บาท` : '0.00 บาท'}</b>
+                    </div>
+                    <div class="flex justify-between tool-summary-row py-1.5 border-t border-dashed border-[var(--app-hairline)]">
+                        <span class="text-blue-600 dark:text-blue-400 font-medium">🛡️ สิทธิยกเว้นภาษีเงินได้ (ตามกฎกระทรวง):</span>
+                        <b class="font-bold text-blue-600 dark:text-blue-400">ยกเว้น ${formatMoney(calc.taxExemptAmount)} บาท</b>
+                    </div>
+                    <div class="text-[10px] text-neutral-400">
+                        *เงินชดเชยตามกฎหมายได้รับยกเว้นภาษีสำหรับ 300 วันสุดท้ายแต่ไม่เกิน 300,000 บาท ส่วนที่เหลือ (${formatMoney(calc.taxableSeverance)} บ.) นำไปคำนวณภาษีเงินได้ตามปกติ
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-1">
+                    <button id="btnPrintSeveranceSummary" type="button" class="tool-action-btn text-xs">
+                        🖨️ พิมพ์เอกสารสรุปเงินชดเชยเลิกจ้าง / PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Event Bindings
+    container.querySelectorAll('[data-mode]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.mode = btn.dataset.mode;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    const bindInput = (id, key) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', e => {
+            st[key] = e.target.value;
+            persistAppState();
+            const liveCalc = calculateLaborSeverance(st);
+            const resEl = document.getElementById('sevTotalResult');
+            if (resEl) resEl.textContent = `${formatMoney(liveCalc.totalSeverancePackage)} บาท`;
+        });
+        el.addEventListener('blur', () => {
+            if (key === 'salaryMonthly') {
+                const formatted = formatInputDisplay(el.value);
+                st[key] = formatted;
+                el.value = formatted;
+            }
+            persistAppState();
+            renderActiveTool();
+        });
+    };
+
+    bindInput('sevSalaryInput', 'salaryMonthly');
+    bindInput('sevYearsInput', 'serviceYears');
+    bindInput('sevMonthsInput', 'serviceMonths');
+    bindInput('sevDaysInput', 'serviceDays');
+    bindInput('sevStartDateInput', 'startDate');
+    bindInput('sevEndDateInput', 'endDate');
+    bindInput('sevLeaveInput', 'unusedLeaveDays');
+
+    document.getElementById('sevNoticeSelect')?.addEventListener('change', e => {
+        st.noticeGiven = e.target.value;
+        persistAppState();
+        renderActiveTool();
+    });
+
+    container.querySelector('#btnPrintSeveranceSummary')?.addEventListener('click', () => {
+        triggerPrintReceipt('labor_severance');
+    });
+
+    setStatusBanner('success', `เงินชดเชยและสิทธิเลิกจ้าง (${calc.tierLabel}): <b class="text-[var(--app-accent)]">${formatMoney(calc.totalSeverancePackage)} บาท</b> (ยกเว้นภาษี ${formatMoney(calc.taxExemptAmount)} บ.)`);
+}
+
+/* -----------------------------------------------------------
+ * UI RENDERER: คำนวณดอกเบี้ยผิดนัดชำระหนี้ ป.พ.พ. 5% (legal_interest)
+ * ----------------------------------------------------------- */
+function renderLegalInterestTool(container) {
+    if (!container) return;
+    const st = appState.legal_interest = appState.legal_interest || {
+        principal: '100000',
+        ratePreset: 'default_5', // 'default_5' (5% ม.224) | 'statutory_3' (3% ม.7) | 'custom'
+        customRate: '5.0',
+        calcMode: 'dates', // 'dates' | 'days'
+        startDate: formatLocalDate(addCalendarDays(new Date(), -90)),
+        endDate: formatLocalDate(new Date()),
+        overdueDays: '90'
+    };
+
+    const calc = calculateLegalInterest(st);
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-3 p-1">
+            <!-- Rate Presets Segment -->
+            <div class="segment-group grid-cols-3 balanced-segment-modes" role="tablist" aria-label="อัตราดอกเบี้ยตามกฎหมาย">
+                <button type="button" class="segment-btn ${st.ratePreset === 'default_5' ? 'active' : ''}" data-rate="default_5">⚖️ ผิดนัด 5% (ม.224)</button>
+                <button type="button" class="segment-btn ${st.ratePreset === 'statutory_3' ? 'active' : ''}" data-rate="statutory_3">📜 กฎหมาย 3% (ม.7)</button>
+                <button type="button" class="segment-btn ${st.ratePreset === 'custom' ? 'active' : ''}" data-rate="custom">⚙️ กำหนดเอง</button>
+            </div>
+
+            <!-- Main Input Form -->
+            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
+                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">
+                    💵 ข้อมูลหนี้และอัตราดอกเบี้ย
+                </div>
+
+                <div>
+                    <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ยอดเงินต้นที่ผิดนัดชำระ (บาท)</label>
+                    <input id="legPrincipalInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.principal))}" placeholder="เช่น 100,000" class="airbnb-input w-full text-base font-semibold">
+                </div>
+
+                ${st.ratePreset === 'custom' ? `
+                    <div>
+                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">อัตราดอกเบี้ยต่อปี (% ต่อปี)</label>
+                        <input id="legCustomRateInput" type="number" step="0.1" min="0" max="100" value="${escapeHTML(st.customRate)}" class="airbnb-input w-full text-sm font-semibold">
+                    </div>
+                ` : `
+                    <div class="p-2.5 rounded-lg bg-[var(--app-surface-soft)] text-xs text-[var(--app-muted)] border border-[var(--app-hairline)]">
+                        อัตราดอกเบี้ยที่ใช้: <b class="text-[var(--app-ink)]">${calc.interestRate}% ต่อปี</b>
+                        ${st.ratePreset === 'default_5' ? '(อัตราตาม ป.พ.พ. ม.224 ใหม่ = อัตราตาม ม.7 บวก 2%)' : '(อัตราดอกเบี้ยที่มิได้กำหนดไว้ในนิติกรรม ป.พ.พ. ม.7)'}
+                    </div>
+                `}
+
+                <!-- Overdue Period Mode -->
+                <div class="border-t border-[var(--app-hairline)] pt-3 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">ระยะเวลาผิดนัดชำระ</label>
+                        <div class="flex gap-1 text-[11px]">
+                            <button type="button" class="tool-chip-btn ${st.calcMode === 'dates' ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent)] font-bold' : ''}" data-calcmode="dates">เลือกช่วงวันที่</button>
+                            <button type="button" class="tool-chip-btn ${st.calcMode === 'days' ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent)] font-bold' : ''}" data-calcmode="days">ระบุจำนวนวัน</button>
+                        </div>
+                    </div>
+
+                    ${st.calcMode === 'dates' ? `
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <span class="text-[11px] text-neutral-400 block mb-0.5">วันครบกำหนดชำระ (เริ่มผิดนัด)</span>
+                                <input id="legStartDateInput" type="date" value="${escapeHTML(st.startDate)}" class="airbnb-input w-full text-xs font-semibold">
+                            </div>
+                            <div>
+                                <span class="text-[11px] text-neutral-400 block mb-0.5">วันชำระจริง / วันปัจจุบัน</span>
+                                <input id="legEndDateInput" type="date" value="${escapeHTML(st.endDate)}" class="airbnb-input w-full text-xs font-semibold">
+                            </div>
+                        </div>
+                        <div class="text-[11px] text-[var(--app-muted)]">
+                            คำนวณจำนวนวันที่ผิดนัด: <b class="text-[var(--app-ink)]">${calc.overdueDays} วัน</b>
+                        </div>
+                    ` : `
+                        <div>
+                            <span class="text-[11px] text-neutral-400 block mb-0.5">จำนวนวันผิดนัดชำระจริง (วัน)</span>
+                            <input id="legDaysInput" type="number" min="1" max="10000" value="${escapeHTML(st.overdueDays)}" class="airbnb-input w-full text-sm font-semibold">
+                        </div>
+                    `}
+                </div>
+            </div>
+
+            <!-- Results Card -->
+            <div class="bg-gradient-to-br from-white to-rose-50/20 dark:from-[#1f1f1f] dark:to-neutral-900 border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
+                <div class="flex items-center justify-between">
+                    <div class="text-xs font-bold text-[var(--app-ink)]">
+                        ⚖️ ยอดหนี้รวมทั้งสิ้นที่ต้องชำระ (เงินต้น + ดอกเบี้ย)
+                    </div>
+                    <span class="tool-metric-chip">${calc.overdueDays} วัน (${calc.interestRate}%)</span>
+                </div>
+
+                <div class="text-2xl md:text-3xl font-extrabold text-[var(--app-accent)]" id="legTotalResult">
+                    ${formatMoney(calc.totalPayable)} บาท
+                </div>
+
+                <!-- Breakdown Items -->
+                <div class="space-y-1.5 text-xs border-t border-[var(--app-hairline)] pt-2.5">
+                    <div class="flex justify-between tool-summary-row py-1">
+                        <span class="text-[var(--app-muted)]">เงินต้นที่ค้างชำระ:</span>
+                        <b class="font-bold text-[var(--app-ink)]">${formatMoney(calc.principal)} บาท</b>
+                    </div>
+                    <div class="flex justify-between tool-summary-row py-1">
+                        <span class="text-[var(--app-muted)]">ดอกเบี้ยผิดนัดชำระรวม (${calc.overdueDays} วัน):</span>
+                        <b class="font-bold text-rose-600 dark:text-rose-400">+${formatMoney(calc.totalInterest)} บาท</b>
+                    </div>
+                    <div class="flex justify-between tool-summary-row py-1">
+                        <span class="text-[var(--app-muted)]">เฉลี่ยดอกเบี้ยต่อวัน:</span>
+                        <span class="text-[var(--app-ink)]">${formatMoney(calc.dailyInterest)} บาท/วัน</span>
+                    </div>
+                    <div class="flex justify-between tool-summary-row py-1">
+                        <span class="text-[var(--app-muted)]">ประมาณการดอกเบี้ยต่อเดือน (30 วัน):</span>
+                        <span class="text-[var(--app-ink)]">${formatMoney(calc.monthlyInterestApprox)} บาท/เดือน</span>
+                    </div>
+                    <div class="text-[10px] text-neutral-400 pt-1">
+                        *หมายเหตุตาม ป.พ.พ. ม.224/1: การคิดดอกเบี้ยผิดนัดในหนี้ผ่อนส่งเป็นงวด ห้ามคิดดอกเบี้ยจากเงินต้นงวดที่ยังไม่ถึงกำหนดชำระ
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-1">
+                    <button id="btnPrintLegalInterestSummary" type="button" class="tool-action-btn text-xs">
+                        🖨️ พิมพ์เอกสารคำนวณดอกเบี้ยผิดนัด / PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Event Bindings
+    container.querySelectorAll('[data-rate]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.ratePreset = btn.dataset.rate;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    container.querySelectorAll('[data-calcmode]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.calcMode = btn.dataset.calcmode;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    const bindInput = (id, key) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', e => {
+            st[key] = e.target.value;
+            persistAppState();
+            const liveCalc = calculateLegalInterest(st);
+            const resEl = document.getElementById('legTotalResult');
+            if (resEl) resEl.textContent = `${formatMoney(liveCalc.totalPayable)} บาท`;
+        });
+        el.addEventListener('blur', () => {
+            if (key === 'principal') {
+                const formatted = formatInputDisplay(el.value);
+                st[key] = formatted;
+                el.value = formatted;
+            }
+            persistAppState();
+            renderActiveTool();
+        });
+    };
+
+    bindInput('legPrincipalInput', 'principal');
+    bindInput('legCustomRateInput', 'customRate');
+    bindInput('legStartDateInput', 'startDate');
+    bindInput('legEndDateInput', 'endDate');
+    bindInput('legDaysInput', 'overdueDays');
+
+    container.querySelector('#btnPrintLegalInterestSummary')?.addEventListener('click', () => {
+        triggerPrintReceipt('legal_interest');
+    });
+
+    setStatusBanner('success', `ดอกเบี้ยผิดนัดชำระ (${calc.interestRate}% ต่อปี ${calc.overdueDays} วัน): <b class="text-rose-600 font-bold">+${formatMoney(calc.totalInterest)} บาท</b> (ยอดหนี้รวม ${formatMoney(calc.totalPayable)} บ.)`);
+}
+
+// Module export definitions
+(function(root) {
+    const exportsObj = {
+        calculateLaborSeverance,
+        calculateLegalInterest,
+        renderLaborSeveranceTool,
+        renderLegalInterestTool
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/tools/legal_labor.js <<<
 
 // >>> src/ui/actions.js >>>
 // ==============================================================
@@ -9734,6 +10583,29 @@ function clearCurrentTool() {
             m40Plan: 'plan2',
             m40ExtraSavings: ''
         };
+    } else if (id === 'labor_severance') {
+        appState.labor_severance = {
+            salaryMonthly: '',
+            mode: 'duration',
+            serviceYears: '0',
+            serviceMonths: '0',
+            serviceDays: '0',
+            startDate: formatLocalDate(new Date()),
+            endDate: formatLocalDate(new Date()),
+            noticeGiven: 'no',
+            noticeMonths: '1',
+            unusedLeaveDays: '0'
+        };
+    } else if (id === 'legal_interest') {
+        appState.legal_interest = {
+            principal: '',
+            ratePreset: 'default_5',
+            customRate: '5.0',
+            calcMode: 'dates',
+            startDate: formatLocalDate(addCalendarDays(new Date(), -30)),
+            endDate: formatLocalDate(new Date()),
+            overdueDays: '30'
+        };
     }
     rememberToolClear(snapshot);
     renderActiveTool();
@@ -9895,6 +10767,29 @@ function loadDemoForCurrentTool() {
             contributionMonths: '240',
             m40Plan: 'plan2',
             m40ExtraSavings: '500'
+        };
+    } else if (id === 'labor_severance') {
+        appState.labor_severance = {
+            salaryMonthly: '45000',
+            mode: 'duration',
+            serviceYears: '5',
+            serviceMonths: '8',
+            serviceDays: '15',
+            startDate: formatLocalDate(addCalendarDays(new Date(), -2085)),
+            endDate: formatLocalDate(new Date()),
+            noticeGiven: 'no',
+            noticeMonths: '1',
+            unusedLeaveDays: '6'
+        };
+    } else if (id === 'legal_interest') {
+        appState.legal_interest = {
+            principal: '250000',
+            ratePreset: 'default_5',
+            customRate: '5.0',
+            calcMode: 'dates',
+            startDate: formatLocalDate(addCalendarDays(new Date(), -120)),
+            endDate: formatLocalDate(new Date()),
+            overdueDays: '120'
         };
     }
     renderActiveTool();

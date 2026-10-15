@@ -146,6 +146,34 @@ function getComparisonPresets(toolId) {
                 label: 'ทางเลือก 3: ม.33 ส่ง 25 ปี (300 งวด) ฐาน 15,000 บ.',
                 state: { section: 'm33', wageMonthly: '35000', contributionMonths: '300', m40Plan: 'plan2', m40ExtraSavings: '0' }
             }
+        ],
+        labor_severance: [
+            {
+                label: 'ทางเลือก 1: อายุงาน 2 ปี (ชดเชย 90 วัน) บอกกล่าวล่วงหน้า',
+                state: { salaryMonthly: '35000', mode: 'duration', serviceYears: '2', serviceMonths: '0', serviceDays: '0', noticeGiven: 'yes', noticeMonths: '1', unusedLeaveDays: '0' }
+            },
+            {
+                label: 'ทางเลือก 2: อายุงาน 4 ปี (ชดเชย 180 วัน) + ค่าตกใจ 1 ด.',
+                state: { salaryMonthly: '35000', mode: 'duration', serviceYears: '4', serviceMonths: '0', serviceDays: '0', noticeGiven: 'no', noticeMonths: '1', unusedLeaveDays: '5' }
+            },
+            {
+                label: 'ทางเลือก 3: อายุงาน 8 ปี (ชดเชย 240 วัน) + ค่าตกใจ 1 ด.',
+                state: { salaryMonthly: '35000', mode: 'duration', serviceYears: '8', serviceMonths: '0', serviceDays: '0', noticeGiven: 'no', noticeMonths: '1', unusedLeaveDays: '10' }
+            }
+        ],
+        legal_interest: [
+            {
+                label: 'ทางเลือก 1: ดอกเบี้ยผิดนัด ป.พ.พ. 5.0% (ค้าง 60 วัน)',
+                state: { principal: '200000', ratePreset: 'default_5', customRate: '5.0', calcMode: 'days', overdueDays: '60' }
+            },
+            {
+                label: 'ทางเลือก 2: ดอกเบี้ยกฎหมาย ป.พ.พ. ม.7 3.0% (ค้าง 60 วัน)',
+                state: { principal: '200000', ratePreset: 'statutory_3', customRate: '3.0', calcMode: 'days', overdueDays: '60' }
+            },
+            {
+                label: 'ทางเลือก 3: อัตราสัญญาเดิม 7.5% (ค้าง 60 วัน)',
+                state: { principal: '200000', ratePreset: 'custom', customRate: '7.5', calcMode: 'days', overdueDays: '60' }
+            }
         ]
     };
     return presets[toolId] || [];
@@ -682,6 +710,105 @@ function compareCalculations(toolId, itemsList) {
             winnerIndex = maxLumpIdx;
             deltaSummary = `🏆 ทางเลือกที่ได้รับเงินบำเหน็จชราภาพสูงสุดคือ "${items[winnerIndex].label}" ได้รับ ${formatMoney(maxLumpRes.lumpSumTotal)} บาท`;
         }
+
+    } else if (toolId === 'labor_severance') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const calc = (typeof calculateLaborSeverance === 'function')
+                ? calculateLaborSeverance(st)
+                : { salaryMonthly: 0, dailyWage: 0, serviceYears: 0, serviceMonths: 0, severanceDays: 0, severancePay: 0, noticePay: 0, leavePay: 0, totalSeverancePackage: 0, taxExemptAmount: 0, taxableSeverance: 0, tierLabel: '' };
+            return calc;
+        });
+
+        rows.push({
+            label: 'เงินเดือนฐานคำนวณ',
+            values: results.map(r => `${formatMoney(r.salaryMonthly)} ฿ (${formatMoney(r.dailyWage)} ฿/วัน)`)
+        });
+        rows.push({
+            label: 'อายุงานสะสม',
+            values: results.map(r => `${r.serviceYears} ปี ${r.serviceMonths} เดือน`)
+        });
+        rows.push({
+            label: 'เกณฑ์ชดเชยตาม ม.118',
+            values: results.map(r => `${r.severanceDays} วัน`)
+        });
+        rows.push({
+            label: 'เงินชดเชยเลิกจ้าง (ม.118)',
+            values: results.map(r => `${formatMoney(r.severancePay)} ฿`)
+        });
+        rows.push({
+            label: 'สินจ้างแทนบอกกล่าว (ม.17)',
+            values: results.map(r => r.noticePay > 0 ? `+${formatMoney(r.noticePay)} ฿` : '0 ฿ (บอกถูกต้อง)')
+        });
+        rows.push({
+            label: 'ค่าจ้างพักร้อนคงเหลือ (ม.67)',
+            values: results.map(r => r.leavePay > 0 ? `+${formatMoney(r.leavePay)} ฿` : '0 ฿')
+        });
+
+        const maxPackageRes = results.reduce((max, cur) => cur.totalSeverancePackage > max.totalSeverancePackage ? cur : max, results[0]);
+        const maxPackageIdx = results.indexOf(maxPackageRes);
+
+        rows.push({
+            label: 'รวมเงินชดเชยสุทธิที่ได้รับ',
+            values: results.map(r => `${formatMoney(r.totalSeverancePackage)} ฿`),
+            bestIndex: maxPackageIdx,
+            highlight: true
+        });
+        rows.push({
+            label: 'สิทธิยกเว้นภาษีเงินได้',
+            values: results.map(r => `${formatMoney(r.taxExemptAmount)} ฿ (สูงสุด 3 แสน)`)
+        });
+
+        winnerIndex = maxPackageIdx;
+        const minPackage = Math.min(...results.map(r => r.totalSeverancePackage));
+        const diffPackage = maxPackageRes.totalSeverancePackage - minPackage;
+        deltaSummary = `🏆 ทางเลือกที่ได้รับเงินชดเชยรวมสูงสุดคือ "${items[winnerIndex].label}" ยอดสุทธิ ${formatMoney(maxPackageRes.totalSeverancePackage)} บาท${diffPackage > 0 ? ` (มากกว่าทางเลือกต่ำสุด ${formatMoney(diffPackage)} บาท)` : ''}`;
+
+    } else if (toolId === 'legal_interest') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const calc = (typeof calculateLegalInterest === 'function')
+                ? calculateLegalInterest(st)
+                : { principal: 0, interestRate: 0, overdueDays: 0, dailyInterest: 0, totalInterest: 0, totalPayable: 0, ratePresetLabel: '' };
+            return calc;
+        });
+
+        rows.push({
+            label: 'เงินต้นค้างชำระ (Principal)',
+            values: results.map(r => `${formatMoney(r.principal)} ฿`)
+        });
+        rows.push({
+            label: 'อัตราดอกเบี้ยต่อปี',
+            values: results.map(r => `${formatNum(r.interestRate, 2)}% (${r.ratePresetLabel || 'ป.พ.พ.'})`)
+        });
+        rows.push({
+            label: 'ระยะเวลาผิดนัดชำระ',
+            values: results.map(r => `${r.overdueDays} วัน`)
+        });
+        rows.push({
+            label: 'ดอกเบี้ยผิดนัดเฉลี่ยต่อวัน',
+            values: results.map(r => `+${formatMoney(r.dailyInterest)} ฿/วัน`)
+        });
+
+        const minPayableRes = results.reduce((min, cur) => cur.totalPayable < min.totalPayable ? cur : min, results[0]);
+        const minPayableIdx = results.indexOf(minPayableRes);
+
+        rows.push({
+            label: 'ดอกเบี้ยผิดนัดชำระสะสม',
+            values: results.map(r => `+${formatMoney(r.totalInterest)} ฿`),
+            bestIndex: minPayableIdx
+        });
+        rows.push({
+            label: 'ยอดหนี้รวมทั้งสิ้นที่ต้องชำระ',
+            values: results.map(r => `${formatMoney(r.totalPayable)} ฿`),
+            bestIndex: minPayableIdx,
+            highlight: true
+        });
+
+        winnerIndex = minPayableIdx;
+        const maxPayable = Math.max(...results.map(r => r.totalPayable));
+        const diffPayable = maxPayable - minPayableRes.totalPayable;
+        deltaSummary = `🏆 ทางเลือกที่มียอดหนี้รวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดชำระรวม ${formatMoney(minPayableRes.totalPayable)} บาท (ดอกเบี้ย ${formatMoney(minPayableRes.totalInterest)} บาท)${diffPayable > 0 ? ` ประหยัดภาระหนี้ได้ ${formatMoney(diffPayable)} บาท` : ''}`;
 
     } else {
         rows.push({
