@@ -34,9 +34,9 @@ assert.throws(() => Sync.normalize({ ...complete, prizes: { ...complete.prizes, 
     /ยังไม่ครบ/);
 
 Sync.fetchLatest(async (url, options) => {
-    assert.match(url, /glo\.or\.th\/api\/lottery/);
+    assert.equal(url, '/api/glo-results');
     assert.equal(options.method, 'GET');
-    return { ok: true, json: async () => ({ data: { items: [complete] } }) };
+    return { ok: true, json: async () => complete };
 }).then(result => {
     assert.equal(result.prizes.first, '000001');
     console.log('Phase 1 date, scan, and result-validation checks passed.');

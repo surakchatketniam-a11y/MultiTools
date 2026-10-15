@@ -2,7 +2,7 @@
 (function(root) {
     'use strict';
 
-    const ENDPOINT = 'https://www.glo.or.th/api/lottery/getLotteryResultByPage';
+    const ENDPOINT = '/api/glo-results';
     const fields = {
         first: ['first', 'firstPrize', 'prize1'],
         nearFirst: ['nearFirst', 'nearFirstPrize', 'near1'],
@@ -70,20 +70,27 @@
     }
 
     async function fetchLatest(fetcher = fetch) {
+        if (typeof location !== 'undefined' && location.protocol === 'file:') {
+            throw new Error('กรุณาเปิด LottoBook ผ่านเว็บไซต์ HTTPS เพื่ออัปเดตผล GLO');
+        }
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 12000);
         let response;
         try {
-            response = await fetcher(`${ENDPOINT}?page=1&pageSize=1`, {
+            response = await fetcher(ENDPOINT, {
             method: 'GET', mode: 'cors', cache: 'no-store',
             headers: { Accept: 'application/json' }, signal: controller.signal
             });
         } catch (error) {
             throw new Error(error.name === 'AbortError'
                 ? 'GLO ไม่ตอบกลับภายใน 12 วินาที'
-                : 'เชื่อมต่อ GLO จากเบราว์เซอร์นี้ไม่ได้');
+                : 'เชื่อมต่อ API อัปเดตผลไม่ได้');
         } finally { clearTimeout(timeout); }
-        if (!response.ok) throw new Error(`GLO ตอบกลับ HTTP ${response.status}`);
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}));
+            if (errorBody.error === 'GLO_TIMEOUT') throw new Error('GLO ไม่ตอบกลับภายในเวลาที่กำหนด');
+            throw new Error(`API อัปเดตผลตอบกลับ HTTP ${response.status}`);
+        }
         return normalize(await response.json());
     }
 
