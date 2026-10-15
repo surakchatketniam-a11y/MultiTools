@@ -24,6 +24,7 @@ var TOOLS_CATALOG = [
     // หมวดหมู่ที่ 1: ซื้อของ & ทั่วไป
     { id: 'unit_price', group: 'shop', category: 'fav', menuTitle: 'ราคาต่อหน่วย', headerTitle: 'เครื่องคำนวณราคาต่อหน่วย', usesSharedKeypad: true, keywords: 'unit price ราคา ต่อหน่วย คุ้ม เปรียบเทียบ ซื้อของ ถูกกว่า' },
     { id: 'discount',   group: 'shop', category: 'fav', menuTitle: 'ส่วนลด', headerTitle: 'เครื่องคำนวณส่วนลด', usesSharedKeypad: true, keywords: 'discount ส่วนลด sale โปรโมชั่น ontop ลดราคา' },
+    { id: 'gold_thai',  group: 'shop', category: 'fav', menuTitle: 'ราคาทองคำไทย', headerTitle: 'คำนวณราคาทองคำไทย (แท่ง/รูปพรรณ/กำเหน็จ)', usesSharedKeypad: false, keywords: 'gold thai ทอง ราคาทอง ทองคำ ทองแท่ง ทองรูปพรรณ สลึง กำเหน็จ เยาวราช สมาคมค้าทองคำ ออมทอง' },
     { id: 'tip',        group: 'shop', category: 'all', menuTitle: 'ทิป & หารบิล', headerTitle: 'เครื่องคำนวณทิป & หารค่าอาหาร', usesSharedKeypad: true, keywords: 'tip ทิป หารค่าข้าว บิล หารคน split bill ร้านอาหาร' },
     { id: 'unit',       group: 'shop', category: 'fav', menuTitle: 'แปลงหน่วย', headerTitle: 'ตัวแปลงหน่วย', usesSharedKeypad: true, keywords: 'unit แปลงหน่วย ตารางวา ไร่ เมตร กิโลกรัม ลิตร นิ้ว ฟุต' },
 
@@ -51,7 +52,8 @@ var TOOLS_CATALOG = [
     { id: 'health',     group: 'special', category: 'all', menuTitle: 'ตัวชี้วัดร่างกาย (BMI/BMR)', headerTitle: 'คำนวณตัวชี้วัดร่างกาย (BMI/BMR)', usesSharedKeypad: true, keywords: 'health สุขภาพ bmi bmr ส่วนสูง น้ำหนัก แคลอรี่ อ้วน ผอม' },
     { id: 'ovulation',  group: 'special', category: 'all', menuTitle: 'วันตกไข่ & รอบเดือน', headerTitle: 'คำนวณวันตกไข่และรอบเดือน', usesSharedKeypad: false, keywords: 'ovulation ตกไข่ ประจำเดือน รอบเดือน ภาวะเจริญพันธุ์ มีลูก' },
     { id: 'fuel_cost',  group: 'special', category: 'all', menuTitle: 'ค่าใช้จ่ายเชื้อเพลิง', headerTitle: 'คำนวณค่าใช้จ่ายเชื้อเพลิง', usesSharedKeypad: true, keywords: 'fuel cost น้ำมัน ค่าน้ำมัน ระยะทาง ทริป เที่ยว ค่าน้ำมันไปกลับ' },
-    { id: 'fuel_eff',   group: 'special', category: 'all', menuTitle: 'ประสิทธิภาพเชื้อเพลิง', headerTitle: 'คำนวณประสิทธิภาพเชื้อเพลิง', usesSharedKeypad: true, keywords: 'fuel efficiency ประสิทธิภาพน้ำมัน อัตราสิ้นเปลือง กิโลเมตรต่อลิตร l/100km' },
+    { id: 'fuel_eff',         group: 'special', category: 'all', menuTitle: 'ประสิทธิภาพเชื้อเพลิง', headerTitle: 'คำนวณประสิทธิภาพเชื้อเพลิง', usesSharedKeypad: true, keywords: 'fuel efficiency ประสิทธิภาพน้ำมัน อัตราสิ้นเปลือง กิโลเมตรต่อลิตร l/100km' },
+    { id: 'electricity_bill', group: 'special', category: 'fav', menuTitle: 'ค่าไฟฟ้า & อุปกรณ์', headerTitle: 'คำนวณค่าไฟฟ้าบ้าน & เครื่องใช้ไฟฟ้า', usesSharedKeypad: false, keywords: 'electricity bill ค่าไฟ ค่าไฟฟ้า การไฟฟ้า กฟน กฟภ ft ขั้นบันได แอร์ ค่าไฟบ้าน วัตต์ watt' },
     { id: 'area_cost',  group: 'special', category: 'all', menuTitle: 'ต้นทุนต่อพื้นที่ (ที่ดิน)', headerTitle: 'คำนวณต้นทุนต่อพื้นที่', usesSharedKeypad: false, keywords: 'area cost ต้นทุน ที่ดิน ไร่ งาน ตารางวา เกษตร ค่าปุ๋ย ค่าไถ' },
     { id: 'hex',        group: 'special', category: 'all', menuTitle: 'แปลงเลขฐาน (HEX/BIN)', headerTitle: 'แปลงเลขฐาน (DEC/HEX/BIN/OCT)', usesSharedKeypad: false, keywords: 'hex bin oct dec เลขฐาน ฐานสิบ ฐานสิบหก ฐานสอง ไบนารี โปรแกรมเมอร์' },
     { id: 'calc',       group: 'special', category: 'fav', menuTitle: 'เครื่องคิดเลขทั่วไป', headerTitle: 'เครื่องคิดเลข', usesSharedKeypad: false, keywords: 'calc เครื่องคิดเลข คิดเลข บวก ลบ คูณ หาร' }

@@ -28,6 +28,7 @@ const sourceFiles = [
     'src/tools/special.js',
     'src/tools/lotto.js',
     'src/tools/tax_property.js',
+    'src/tools/lifestyle_thai.js',
     'src/ui/actions.js',
     'src/ui/modals.js'
 ];

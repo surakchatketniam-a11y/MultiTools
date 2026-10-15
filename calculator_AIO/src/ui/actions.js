@@ -151,6 +151,33 @@ function clearCurrentTool() {
             splitMode: 'custom',
             isGovMeasure: 'standard'
         };
+    } else if (id === 'gold_thai') {
+        appState.gold_thai = {
+            mode: 'buy',
+            goldType: 'ornament',
+            weightUnit: 'baht',
+            weightValue: '',
+            craftFee: '',
+            priceBarBuy: '43900',
+            priceBarSell: '44000',
+            priceOrnamentBuy: '43115',
+            priceOrnamentSell: '44500',
+            savingsCostPerBaht: ''
+        };
+    } else if (id === 'electricity_bill') {
+        appState.electricity_bill = {
+            mode: 'bill',
+            tariffType: 'type1_2',
+            units: '',
+            ftRate: '0.3972',
+            appliances: [
+                { id: 'air12k', name: 'แอร์ Inverter 12,000 BTU', watts: 900, qty: 1, hoursPerDay: 8 },
+                { id: 'fridge', name: 'ตู้เย็น 2 ประตู', watts: 100, qty: 1, hoursPerDay: 24 },
+                { id: 'fan', name: 'พัดลม 16 นิ้ว', watts: 50, qty: 2, hoursPerDay: 8 },
+                { id: 'tv', name: 'สมาร์ททีวี 55 นิ้ว', watts: 100, qty: 1, hoursPerDay: 4 },
+                { id: 'water', name: 'เครื่องทำน้ำอุ่น', watts: 3500, qty: 1, hoursPerDay: 0.5 }
+            ]
+        };
     }
     rememberToolClear(snapshot);
     renderActiveTool();
@@ -266,6 +293,33 @@ function loadDemoForCurrentTool() {
             exemptSBT: 'no',
             splitMode: 'custom',
             isGovMeasure: 'standard'
+        };
+    } else if (id === 'gold_thai') {
+        appState.gold_thai = {
+            mode: 'buy',
+            goldType: 'ornament',
+            weightUnit: 'baht',
+            weightValue: '2',
+            craftFee: '1200',
+            priceBarBuy: '43900',
+            priceBarSell: '44000',
+            priceOrnamentBuy: '43115',
+            priceOrnamentSell: '44500',
+            savingsCostPerBaht: '40000'
+        };
+    } else if (id === 'electricity_bill') {
+        appState.electricity_bill = {
+            mode: 'bill',
+            tariffType: 'type1_2',
+            units: '420',
+            ftRate: '0.3972',
+            appliances: [
+                { id: 'air12k', name: 'แอร์ Inverter 12,000 BTU', watts: 900, qty: 1, hoursPerDay: 8 },
+                { id: 'fridge', name: 'ตู้เย็น 2 ประตู', watts: 100, qty: 1, hoursPerDay: 24 },
+                { id: 'fan', name: 'พัดลม 16 นิ้ว', watts: 50, qty: 2, hoursPerDay: 8 },
+                { id: 'tv', name: 'สมาร์ททีวี 55 นิ้ว', watts: 100, qty: 1, hoursPerDay: 4 },
+                { id: 'water', name: 'เครื่องทำน้ำอุ่น', watts: 3500, qty: 1, hoursPerDay: 0.5 }
+            ]
         };
     }
     renderActiveTool();

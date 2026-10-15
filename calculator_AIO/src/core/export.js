@@ -735,6 +735,138 @@ function generateFormalPrintHTML(toolId, stateObj) {
             </div>
         `;
 
+    } else if (curToolId === 'gold_thai') {
+        docTitle = 'เอกสารประมาณการราคาทองคำแท่งและทองรูปพรรณ (มาตรฐานสมาคมค้าทองคำ / สคบ.)';
+        docSubtitle = 'Thai Gold Price, Craft Fee & Buyback Estimation Receipt';
+        const st = state.gold_thai || {};
+        const calc = (typeof calculateGoldThai === 'function')
+            ? calculateGoldThai(st)
+            : { mode: 'buy', goldType: 'ornament', weightVal: 1, weightUnit: 'baht', bahtWeight: 1, craftFee: 800, rawGoldValue: 44500, totalBuyPrice: 45300, officialSellBackRate: 43115, sellBackValue: 43115, deductionFromSellPrice: 2185, profitLoss: 0, profitLossPercent: 0, prices: { priceBarBuy: 43900, priceBarSell: 44000, priceOrnamentBuy: 43115, priceOrnamentSell: 44500 } };
+
+        const typeLabel = calc.goldType === 'bar' ? 'ทองคำแท่ง (96.5%)' : 'ทองรูปพรรณ (96.5%)';
+        const modeLabel = calc.mode === 'buy' ? 'ซื้อทองคำหน้าร้าน' : (calc.mode === 'sell' ? 'ขายคืนทองคำ (เกณฑ์ สคบ.)' : 'จำลองผลตอบแทนการออมทอง');
+
+        paramsRows = [
+            ['รูปแบบการคำนวณ', modeLabel],
+            ['ประเภททองคำ', typeLabel],
+            ['น้ำหนักที่ระบุ', `${formatNum(calc.weightVal, 2)} ${calc.weightUnit === 'baht' ? 'บาททอง' : (calc.weightUnit === 'salung' ? 'สลึง' : 'กรัม')}`],
+            ['น้ำหนักแปลงเป็นบาททองคำ', `${formatNum(calc.bahtWeight, 4)} บาททอง (${formatNum(calc.salungWeight, 2)} สลึง / ${formatNum(calc.totalGrams, 3)} กรัม)`],
+            ['ราคาขายออกสมาคม', `${formatMoney(calc.baseBuyRate)} บาท/บาททอง`],
+            ['ราคารับซื้อคืนสมาคม', `${formatMoney(calc.officialSellBackRate)} บาท/บาททอง`],
+            ['ค่ากำเหน็จ', `${formatMoney(calc.craftFee)} บาท`]
+        ];
+
+        if (calc.mode === 'buy') {
+            resultCards = [
+                { label: '💰 ราคาซื้อสุทธิที่หน้าร้าน', value: `${formatMoney(calc.totalBuyPrice)} บาท`, highlight: true },
+                { label: 'มูลค่าเนื้อทองคำ', value: `${formatMoney(calc.rawGoldValue)} บาท` },
+                { label: 'ค่ากำเหน็จ', value: `${formatMoney(calc.craftFee)} บาท` }
+            ];
+        } else if (calc.mode === 'sell') {
+            resultCards = [
+                { label: '💵 ราคารับซื้อคืนขั้นต่ำ (สคบ.)', value: `${formatMoney(calc.sellBackValue)} บาท`, highlight: true },
+                { label: 'เรทรับซื้อคืนสมาคม', value: `${formatMoney(calc.officialSellBackRate)} บาท/บาท` },
+                { label: 'หักจากราคาซื้อประมาณ', value: `-${formatMoney(calc.deductionFromSellPrice)} บาท` }
+            ];
+        } else {
+            resultCards = [
+                { label: calc.isProfit ? '🎉 ผลกำไรจากการออมทอง' : '⚠️ ผลขาดทุนจากการออมทอง', value: `${calc.isProfit ? '+' : ''}${formatMoney(calc.profitLoss)} บาท (${formatNum(calc.profitLossPercent, 2)}%)`, highlight: true },
+                { label: 'มูลค่าตลาดปัจจุบัน', value: `${formatMoney(calc.currentMarketValue)} บาท` },
+                { label: 'ต้นทุนที่ลงทุนสะสม', value: `${formatMoney(calc.totalInvested)} บาท` }
+            ];
+        }
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    เกณฑ์ราคากลางสมาคมค้าทองคำแห่งประเทศไทย (ความบริสุทธิ์ 96.5%)
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 6px 8px; text-align: left;">รายการทองคำ</th>
+                            <th style="padding: 6px 8px; text-align: right;">ราคารับซื้อ (บาท)</th>
+                            <th style="padding: 6px 8px; text-align: right;">ราคาขายออก (บาท)</th>
+                            <th style="padding: 6px 8px; text-align: right;">ส่วนต่าง (Spread)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;"><b>ทองคำแท่ง (ความบริสุทธิ์ 96.5%)</b></td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.prices.priceBarBuy)}</td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.prices.priceBarSell)}</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #dc2626;">-${formatMoney(calc.prices.priceBarSell - calc.prices.priceBarBuy)}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                            <td style="padding: 6px 8px;"><b>ทองรูปพรรณ (ความบริสุทธิ์ 96.5%)</b></td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.prices.priceOrnamentBuy)}</td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.prices.priceOrnamentSell)}</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #dc2626;">-${formatMoney(calc.prices.priceOrnamentSell - calc.prices.priceOrnamentBuy)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+    } else if (curToolId === 'electricity_bill') {
+        docTitle = 'เอกสารประมาณการค่าไฟฟ้าบ้านอยู่อาศัยตามอัตราก้าวหน้า กฟน. / กฟภ.';
+        docSubtitle = 'Residential Electricity Tariff & Power Consumption Estimation';
+        const st = state.electricity_bill || {};
+        const calc = (typeof calculateElectricityBill === 'function')
+            ? calculateElectricityBill(st)
+            : { units: 0, ftRate: 0.3972, serviceFee: 24.62, baseEnergyCharge: 0, ftCharge: 0, preVatTotal: 0, vat7: 0, totalBill: 0, avgRatePerUnit: 0, tariffType: 'type1_2', tariffLabel: 'ประเภท 1.2', tierBreakdown: [] };
+
+        paramsRows = [
+            ['ประเภทอัตราค่าไฟฟ้า', calc.tariffLabel || (calc.tariffType === 'type1_1' ? 'ประเภท 1.1 บ้านไม่เกิน 150 หน่วย' : 'ประเภท 1.2 บ้านเกิน 150 หน่วย')],
+            ['จำนวนหน่วยไฟฟ้าที่ใช้', `${formatNum(calc.units, 1)} หน่วย (kWh)`],
+            ['ค่าไฟฟ้าผันแปร (Ft)', `${formatNum(calc.ftRate, 4)} บาท/หน่วย`],
+            ['ค่าบริการรายเดือน', `${formatMoney(calc.serviceFee)} บาท`],
+            ['อัตราภาษีมูลค่าเพิ่ม', '7.0%']
+        ];
+
+        resultCards = [
+            { label: '⚡ ค่าไฟฟ้ารวมสุทธิ (Total Bill)', value: `${formatMoney(calc.totalBill)} บาท`, highlight: true },
+            { label: 'ค่าไฟฟ้าฐานตามขั้นบันได', value: `${formatMoney(calc.baseEnergyCharge)} บาท` },
+            { label: 'ค่า Ft รวม', value: `${formatMoney(calc.ftCharge)} บาท` },
+            { label: 'ภาษีมูลค่าเพิ่ม (VAT 7%)', value: `${formatMoney(calc.vat7)} บาท` }
+        ];
+
+        const tiersHTML = (calc.tierBreakdown || []).map((t, idx) => `
+            <tr style="border-bottom: 1px solid #e2e8f0; background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+                <td style="padding: 6px 8px;">${t.label}</td>
+                <td style="padding: 6px 8px; text-align: center;">${formatNum(t.rate, 4)}</td>
+                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatNum(t.units, 1)}</td>
+                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(t.cost)}</td>
+            </tr>
+        `).join('');
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    ตารางแจกแจงค่าพลังงานไฟฟ้าตามขั้นบันไดอัตราก้าวหน้า (Base Energy Charge Tiers)
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 6px 8px; text-align: left;">ช่วงหน่วยการใช้ไฟฟ้า</th>
+                            <th style="padding: 6px 8px; text-align: center;">อัตรา (บาท/หน่วย)</th>
+                            <th style="padding: 6px 8px; text-align: right;">หน่วยที่ใช้จริง</th>
+                            <th style="padding: 6px 8px; text-align: right;">รวมเป็นเงิน (บาท)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tiersHTML}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                            <td colspan="3" style="padding: 8px; text-align: right;">รวมค่าพลังงานไฟฟ้าฐาน:</td>
+                            <td style="padding: 8px; text-align: right; color: #0284c7;">${formatMoney(calc.baseEnergyCharge)} บาท</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+
     } else {
         // Generic Fallback for other calculators
         const summary = (typeof getToolSummaryText === 'function') ? getToolSummaryText(curToolId) : '';

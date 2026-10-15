@@ -90,6 +90,34 @@ function getComparisonPresets(toolId) {
                 label: 'ทางเลือก 3: มาตรการลดหย่อนรัฐ (โอน 0.01% จำนอง 0.01%)',
                 state: { appraisedValue: '3000000', salePrice: '3200000', mortgageAmount: '2500000', holdingYears: '5', exemptSBT: 'yes', isGovMeasure: 'reduced', splitMode: 'custom' }
             }
+        ],
+        gold_thai: [
+            {
+                label: 'ทางเลือก 1: ซื้อทองคำแท่ง 1 บาท (ไม่มีกำเหน็จ)',
+                state: { mode: 'buy', goldType: 'bar', weightUnit: 'baht', weightValue: '1', craftFee: '0', priceBarBuy: '43900', priceBarSell: '44000', priceOrnamentBuy: '43115', priceOrnamentSell: '44500' }
+            },
+            {
+                label: 'ทางเลือก 2: ซื้อทองรูปพรรณ 1 บาท (กำเหน็จ 800 บ.)',
+                state: { mode: 'buy', goldType: 'ornament', weightUnit: 'baht', weightValue: '1', craftFee: '800', priceBarBuy: '43900', priceBarSell: '44000', priceOrnamentBuy: '43115', priceOrnamentSell: '44500' }
+            },
+            {
+                label: 'ทางเลือก 3: ซื้อทองรูปพรรณ 2 สลึง (กำเหน็จ 600 บ.)',
+                state: { mode: 'buy', goldType: 'ornament', weightUnit: 'salung', weightValue: '2', craftFee: '600', priceBarBuy: '43900', priceBarSell: '44000', priceOrnamentBuy: '43115', priceOrnamentSell: '44500' }
+            }
+        ],
+        electricity_bill: [
+            {
+                label: 'ทางเลือก 1: ใช้ไฟ 250 หน่วย/ด. (บ้านทั่วไป)',
+                state: { mode: 'bill', tariffType: 'type1_2', units: '250', ftRate: '0.3972' }
+            },
+            {
+                label: 'ทางเลือก 2: ใช้ไฟ 400 หน่วย/ด. (เปิดแอร์หน้าร้อน)',
+                state: { mode: 'bill', tariffType: 'type1_2', units: '400', ftRate: '0.3972' }
+            },
+            {
+                label: 'ทางเลือก 3: ใช้ไฟ 600 หน่วย/ด. (บ้านขนาดใหญ่)',
+                state: { mode: 'bill', tariffType: 'type1_2', units: '600', ftRate: '0.3972' }
+            }
         ]
     };
     return presets[toolId] || [];
@@ -400,6 +428,106 @@ function compareCalculations(toolId, itemsList) {
         const maxCost = Math.max(...results.map(r => r.totalLandCost));
         const diffCost = maxCost - minCostRes.totalLandCost;
         deltaSummary = `🏆 ทางเลือกที่มีค่าใช้จ่ายวันโอนรวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดรวมเพียง ${formatMoney(minCostRes.totalLandCost)} บาท${diffCost > 0 ? ` (ประหยัดได้ถึง ${formatMoney(diffCost)} บาท)` : ''}`;
+
+    } else if (toolId === 'gold_thai') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const calc = (typeof calculateGoldThai === 'function')
+                ? calculateGoldThai(st)
+                : { goldType: 'ornament', bahtWeight: 1, totalGrams: 15.16, rawGoldValue: 0, craftFee: 0, totalBuyPrice: 0, sellBackValue: 0, deductionFromSellPrice: 0 };
+            return calc;
+        });
+
+        rows.push({
+            label: 'ประเภททองคำ',
+            values: results.map(r => r.goldType === 'bar' ? 'ทองคำแท่ง (96.5%)' : 'ทองรูปพรรณ (96.5%)')
+        });
+        rows.push({
+            label: 'น้ำหนักคำนวณ',
+            values: results.map(r => `${formatNum(r.bahtWeight, 2)} บาท (${formatNum(r.totalGrams, 2)} g)`)
+        });
+        rows.push({
+            label: 'มูลค่าเนื้อทองคำ',
+            values: results.map(r => `${formatMoney(r.rawGoldValue)} ฿`)
+        });
+        rows.push({
+            label: 'ค่ากำเหน็จ',
+            values: results.map(r => `${formatMoney(r.craftFee)} ฿`)
+        });
+
+        const minBuyRes = results.reduce((min, cur) => cur.totalBuyPrice < min.totalBuyPrice ? cur : min, results[0]);
+        const minBuyIdx = results.indexOf(minBuyRes);
+
+        rows.push({
+            label: 'ราคาซื้อสุทธิหน้าร้าน',
+            values: results.map(r => `${formatMoney(r.totalBuyPrice)} ฿`),
+            bestIndex: minBuyIdx,
+            highlight: true
+        });
+        rows.push({
+            label: 'ราคารับซื้อคืนขั้นต่ำ (สคบ.)',
+            values: results.map(r => `${formatMoney(r.sellBackValue)} ฿`)
+        });
+        rows.push({
+            label: 'ส่วนต่างค่าธรรมเนียม/กำเหน็จ',
+            values: results.map(r => `-${formatMoney(r.deductionFromSellPrice)} ฿`)
+        });
+
+        winnerIndex = minBuyIdx;
+        deltaSummary = `🏆 ทางเลือกที่ใช้เงินซื้อน้อยที่สุดคือ "${items[winnerIndex].label}" ยอดสุทธิ ${formatMoney(minBuyRes.totalBuyPrice)} บาท (น้ำหนัก ${formatNum(minBuyRes.bahtWeight, 2)} บาททอง)`;
+
+    } else if (toolId === 'electricity_bill') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const calc = (typeof calculateElectricityBill === 'function')
+                ? calculateElectricityBill(st)
+                : { units: 0, tariffType: 'type1_2', baseEnergyCharge: 0, serviceFee: 0, ftCharge: 0, vat7: 0, totalBill: 0, avgRatePerUnit: 0 };
+            return calc;
+        });
+
+        rows.push({
+            label: 'จำนวนหน่วยไฟฟ้าที่ใช้',
+            values: results.map(r => `${formatNum(r.units, 0)} หน่วย (kWh)`)
+        });
+        rows.push({
+            label: 'ประเภทบ้านอยู่อาศัย',
+            values: results.map(r => r.tariffType === 'type1_1' ? 'ประเภท 1.1 (<=150)' : 'ประเภท 1.2 (>150)')
+        });
+        rows.push({
+            label: 'ค่าไฟฟ้าฐานตามขั้นบันได',
+            values: results.map(r => `${formatMoney(r.baseEnergyCharge)} ฿`)
+        });
+        rows.push({
+            label: 'ค่าบริการรายเดือน',
+            values: results.map(r => `${formatMoney(r.serviceFee)} ฿`)
+        });
+        rows.push({
+            label: 'ค่าไฟฟ้าผันแปร (Ft)',
+            values: results.map(r => `${formatMoney(r.ftCharge)} ฿`)
+        });
+        rows.push({
+            label: 'ภาษีมูลค่าเพิ่ม (VAT 7%)',
+            values: results.map(r => `${formatMoney(r.vat7)} ฿`)
+        });
+
+        const minBillRes = results.reduce((min, cur) => cur.totalBill < min.totalBill ? cur : min, results[0]);
+        const minBillIdx = results.indexOf(minBillRes);
+
+        rows.push({
+            label: 'ยอดค่าไฟฟ้ารวมสุทธิ',
+            values: results.map(r => `${formatMoney(r.totalBill)} ฿`),
+            bestIndex: minBillIdx,
+            highlight: true
+        });
+        rows.push({
+            label: 'อัตราค่าไฟฟ้าเฉลี่ยต่อหน่วย',
+            values: results.map(r => `${formatNum(r.avgRatePerUnit, 2)} ฿/หน่วย`)
+        });
+
+        winnerIndex = minBillIdx;
+        const maxBill = Math.max(...results.map(r => r.totalBill));
+        const diffBill = maxBill - minBillRes.totalBill;
+        deltaSummary = `🏆 ทางเลือกที่มียอดค่าไฟฟ้ารวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดสุทธิเพียง ${formatMoney(minBillRes.totalBill)} บาท${diffBill > 0 ? ` (ประหยัดได้ ${formatMoney(diffBill)} บาท/เดือน)` : ''}`;
 
     } else {
         rows.push({

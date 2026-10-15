@@ -25,6 +25,7 @@ const moduleFiles = [
     'src/tools/special.js',
     'src/tools/lotto.js',
     'src/tools/tax_property.js',
+    'src/tools/lifestyle_thai.js',
     'src/ui/actions.js',
     'src/ui/modals.js'
 ];
@@ -280,11 +281,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 25 tools classified into 5 valid groups with search keywords', () => {
+test('catalog contains exactly 27 tools classified into 5 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 5);
-    assert.equal(TOOLS_CATALOG.length, 25);
+    assert.equal(TOOLS_CATALOG.length, 27);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -410,7 +411,7 @@ test('thai official holidays: Songkran, fixed holidays and lunar Buddhist observ
     assert.equal(ctx.isThaiOfficialHoliday(new Date('2026-10-14T00:00:00')), false);
 });
 
-test('all 25 tools have complete and valid clear and demo data mappings', () => {
+test('all 27 tools have complete and valid clear and demo data mappings', () => {
     const rawAppStateMatch = html.match(/const appState = \{[\s\S]*?\n        \};/);
     assert.ok(rawAppStateMatch, 'appState must be defined');
 
@@ -426,7 +427,7 @@ test('all 25 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 25);
+    assert.equal(ctx.TOOLS_CATALOG.length, 27);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -728,7 +729,44 @@ test('formal print-to-pdf: generates accurate Thai receipt documents for loan, s
     assert.ok(propDoc.includes('ฝั่งผู้ซื้อต้องเตรียมชำระ'));
     assert.ok(propDoc.includes('ฝั่งผู้ขายต้องเตรียมชำระ'));
 
-    // 8. Generic Calculator Fallback
+    // 8. Gold Thai Formal Receipt
+    const goldState = {
+        activeToolId: 'gold_thai',
+        gold_thai: {
+            mode: 'buy',
+            goldType: 'ornament',
+            weightUnit: 'baht',
+            weightValue: '2',
+            craftFee: '1200',
+            priceBarBuy: '43900',
+            priceBarSell: '44000',
+            priceOrnamentBuy: '43115',
+            priceOrnamentSell: '44500'
+        }
+    };
+    const goldDoc = ctx.generateFormalPrintHTML('gold_thai', goldState);
+    assert.ok(goldDoc.includes('เอกสารประมาณการราคาทองคำแท่งและทองรูปพรรณ'));
+    assert.ok(goldDoc.includes('ทองรูปพรรณ (96.5%)'));
+    assert.ok(goldDoc.includes('ราคาซื้อสุทธิที่หน้าร้าน'));
+    assert.ok(goldDoc.includes('เกณฑ์ราคากลางสมาคมค้าทองคำแห่งประเทศไทย'));
+
+    // 9. Electricity Bill Formal Receipt
+    const elecState = {
+        activeToolId: 'electricity_bill',
+        electricity_bill: {
+            mode: 'bill',
+            tariffType: 'type1_2',
+            units: '350',
+            ftRate: '0.3972'
+        }
+    };
+    const elecDoc = ctx.generateFormalPrintHTML('electricity_bill', elecState);
+    assert.ok(elecDoc.includes('เอกสารประมาณการค่าไฟฟ้าบ้านอยู่อาศัยตามอัตราก้าวหน้า'));
+    assert.ok(elecDoc.includes('350 หน่วย (kWh)'));
+    assert.ok(elecDoc.includes('ค่าไฟฟ้ารวมสุทธิ (Total Bill)'));
+    assert.ok(elecDoc.includes('ตารางแจกแจงค่าพลังงานไฟฟ้าตามขั้นบันไดอัตราก้าวหน้า'));
+
+    // 10. Generic Calculator Fallback
     const genericDoc = ctx.generateFormalPrintHTML('tip', { activeToolId: 'tip' });
     assert.ok(genericDoc.includes('MULTITOOLS AIO'));
     assert.ok(genericDoc.includes('เอกสารสรุปผลการคำนวณ'));
@@ -739,7 +777,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     const ctx = context();
 
     // 1. Presets availability
-    for (const toolId of ['loan', 'savings', 'vat_wht', 'salary', 'tax_personal', 'property_transfer']) {
+    for (const toolId of ['loan', 'savings', 'vat_wht', 'salary', 'tax_personal', 'property_transfer', 'gold_thai', 'electricity_bill']) {
         const presets = ctx.getComparisonPresets(toolId);
         assert.ok(Array.isArray(presets) && presets.length >= 3, `Presets for ${toolId} must have at least 3 items`);
         assert.ok(presets[0].label && presets[0].state, `Preset item must have label and state`);
@@ -831,7 +869,35 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.equal(propComp.winnerIndex, 1, 'Option with 0.5% stamp duty must win over 3.3% SBT');
     assert.ok(propComp.deltaSummary.includes('ค่าใช้จ่ายวันโอนรวมต่ำที่สุด'));
 
-    // 8. Print Comparison Sheet Generator
+    // 8. Gold Thai comparison
+    const goldA = {
+        label: 'ทองรูปพรรณ 1 บาท',
+        state: { mode: 'buy', goldType: 'ornament', weightUnit: 'baht', weightValue: '1', craftFee: '800', priceOrnamentSell: '44500' }
+    };
+    const goldB = {
+        label: 'ทองคำแท่ง 1 บาท',
+        state: { mode: 'buy', goldType: 'bar', weightUnit: 'baht', weightValue: '1', craftFee: '0', priceBarSell: '44000' }
+    };
+    const goldComp = ctx.compareCalculations('gold_thai', [goldA, goldB]);
+    assert.ok(goldComp);
+    assert.equal(goldComp.winnerIndex, 1, 'Gold bar without craft fee must have lower total buy price');
+    assert.ok(goldComp.deltaSummary.includes('ทองคำแท่ง 1 บาท'));
+
+    // 9. Electricity Bill comparison
+    const elecA = {
+        label: 'ปกติ 250 หน่วย',
+        state: { mode: 'bill', tariffType: 'type1_2', units: '250', ftRate: '0.3972' }
+    };
+    const elecB = {
+        label: 'เปิดแอร์ 400 หน่วย',
+        state: { mode: 'bill', tariffType: 'type1_2', units: '400', ftRate: '0.3972' }
+    };
+    const elecComp = ctx.compareCalculations('electricity_bill', [elecA, elecB]);
+    assert.ok(elecComp);
+    assert.equal(elecComp.winnerIndex, 0, '250 units must yield lower total bill than 400 units');
+    assert.ok(elecComp.deltaSummary.includes('ปกติ 250 หน่วย'));
+
+    // 10. Print Comparison Sheet Generator
     const printHTML = ctx.generateComparePrintHTML(loanComp);
     assert.ok(printHTML.includes('MULTITOOLS AIO'));
     assert.ok(printHTML.includes('ตารางวิเคราะห์และเปรียบเทียบชุดคำนวณ'));
@@ -840,7 +906,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('🏆 คุ้มค่าที่สุด'));
 });
 
-test('all 25 tool renderers are modularized and exported across the 5 tool groups', () => {
+test('all 27 tool renderers are modularized and exported across the 5 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -867,10 +933,12 @@ test('all 25 tool renderers are modularized and exported across the 5 tool group
         calc:              'renderStandardCalcTool',
         lotto_calc:        'renderLottoTool',
         tax_personal:      'renderTaxPersonalTool',
-        property_transfer: 'renderPropertyTransferTool'
+        property_transfer: 'renderPropertyTransferTool',
+        gold_thai:        'renderGoldThaiTool',
+        electricity_bill: 'renderElectricityBillTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 25);
+    assert.equal(Object.keys(rendererMap).length, 27);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -1170,6 +1238,173 @@ test('bundle: src/bundle.js is up to date with modular source files and getSafeD
     const futureStr = ctx.getSafeDateStr(30);
     assert.match(futureStr, /^\d{4}-\d{2}-\d{2}$/);
     assert.notEqual(todayStr, futureStr);
+});
+
+test('thai gold price & buyback engine: 96.5% purity, bar vs ornament, weight units, OCPB buyback rules and savings simulation', () => {
+    const ctx = context();
+
+    // 1. Buy gold ornament: 1 Baht with 800 THB craft fee
+    const buyOrnament = ctx.calculateGoldThai({
+        mode: 'buy',
+        goldType: 'ornament',
+        weightUnit: 'baht',
+        weightValue: '1',
+        craftFee: '800',
+        priceOrnamentSell: '44500',
+        priceOrnamentBuy: '43115'
+    });
+    assert.equal(buyOrnament.bahtWeight, 1);
+    assert.equal(buyOrnament.salungWeight, 4);
+    assert.equal(buyOrnament.totalGrams, 15.16);
+    assert.equal(buyOrnament.rawGoldValue, 44500);
+    assert.equal(buyOrnament.craftFee, 800);
+    assert.equal(buyOrnament.totalBuyPrice, 45300);
+
+    // 2. Buy gold bar: 1 Baht without craft fee
+    const buyBar = ctx.calculateGoldThai({
+        mode: 'buy',
+        goldType: 'bar',
+        weightUnit: 'baht',
+        weightValue: '1',
+        craftFee: '0',
+        priceBarSell: '44000',
+        priceBarBuy: '43900'
+    });
+    assert.equal(buyBar.bahtWeight, 1);
+    assert.equal(buyBar.salungWeight, 4);
+    assert.equal(buyBar.totalGrams, 15.244);
+    assert.equal(buyBar.totalBuyPrice, 44000);
+
+    // 3. Weight conversion: 2 Salung ornament
+    const salung2 = ctx.calculateGoldThai({
+        mode: 'buy',
+        goldType: 'ornament',
+        weightUnit: 'salung',
+        weightValue: '2',
+        craftFee: '500',
+        priceOrnamentSell: '44000'
+    });
+    assert.equal(salung2.bahtWeight, 0.5);
+    assert.equal(salung2.salungWeight, 2);
+    assert.equal(salung2.totalGrams, 7.58); // 0.5 * 15.16
+    assert.equal(salung2.rawGoldValue, 22000);
+    assert.equal(salung2.totalBuyPrice, 22500);
+
+    // 4. Gram weight input: 15.244g gold bar
+    const gramInput = ctx.calculateGoldThai({
+        mode: 'buy',
+        goldType: 'bar',
+        weightUnit: 'gram',
+        weightValue: '15.244'
+    });
+    assert.equal(gramInput.bahtWeight, 1);
+
+    // 5. Sell back OCPB rules
+    const sellBack = ctx.calculateGoldThai({
+        mode: 'sell',
+        goldType: 'ornament',
+        weightUnit: 'baht',
+        weightValue: '2',
+        priceOrnamentBuy: '43115'
+    });
+    assert.equal(sellBack.sellBackValue, 86230); // 2 * 43,115
+
+    // 6. Savings and Investment Simulator
+    const savingsProfit = ctx.calculateGoldThai({
+        mode: 'savings',
+        goldType: 'bar',
+        weightUnit: 'baht',
+        weightValue: '5',
+        savingsCostPerBaht: '40000',
+        priceBarBuy: '44000'
+    });
+    assert.equal(savingsProfit.totalInvested, 200000); // 5 * 40k
+    assert.equal(savingsProfit.currentMarketValue, 220000); // 5 * 44k
+    assert.equal(savingsProfit.profitLoss, 20000);
+    assert.equal(savingsProfit.profitLossPercent, 10);
+    assert.equal(savingsProfit.isProfit, true);
+
+    // 7. Drawer summary text check
+    const summaryGold = ctx.getToolSummaryText('gold_thai', {
+        gold_thai: { mode: 'buy', goldType: 'ornament', weightUnit: 'baht', weightValue: '1', craftFee: '800', priceOrnamentSell: '44500' }
+    });
+    assert.match(summaryGold, /สรุปราคาซื้อทองคำหน้าร้าน/);
+    assert.match(summaryGold, /45,300\.00 บาท/);
+});
+
+test('progressive electricity tariff & appliance energy engine: MEA/PEA type 1.1 vs 1.2, Ft rate, VAT 7%, tiered blocks and appliance kWh calculation', () => {
+    const ctx = context();
+
+    // 1. Type 1.1 (Small residence <= 150 units): 100 units
+    // Tier 1: 15 @ 2.3488 = 35.232
+    // Tier 2: 10 @ 2.9882 = 29.882
+    // Tier 3: 10 @ 3.2405 = 32.405
+    // Tier 4: 65 @ 3.6237 = 235.5405
+    // Base energy: 35.232 + 29.882 + 32.405 + 235.5405 = 333.0595
+    // Service: 8.19
+    // Ft @ 0.3972: 100 * 0.3972 = 39.72
+    // Pre-VAT: 333.0595 + 8.19 + 39.72 = 380.9695
+    // VAT 7%: 26.667865
+    // Total: 407.637365 -> ~407.64
+    const bill1_1 = ctx.calculateElectricityBill({
+        tariffType: 'type1_1',
+        units: '100',
+        ftRate: '0.3972'
+    });
+    assert.equal(bill1_1.tariffType, 'type1_1');
+    assert.equal(bill1_1.units, 100);
+    assert.equal(bill1_1.serviceFee, 8.19);
+    assert.ok(Math.abs(bill1_1.baseEnergyCharge - 333.0595) < 0.01);
+    assert.equal(bill1_1.ftCharge, 39.72);
+    assert.ok(Math.abs(bill1_1.totalBill - 407.64) < 0.05);
+
+    // 2. Type 1.2 (Regular residence > 150 units): 350 units
+    // Tier 1: 150 @ 3.2484 = 487.26
+    // Tier 2: 200 @ 4.2218 = 844.36
+    // Base: 487.26 + 844.36 = 1331.62
+    // Service: 24.62
+    // Ft: 350 * 0.3972 = 139.02
+    // Pre-VAT: 1331.62 + 24.62 + 139.02 = 1495.26
+    // VAT: 1495.26 * 0.07 = 104.6682
+    // Total: 1599.9282 -> ~1599.93
+    const bill1_2 = ctx.calculateElectricityBill({
+        tariffType: 'type1_2',
+        units: '350',
+        ftRate: '0.3972'
+    });
+    assert.equal(bill1_2.tariffType, 'type1_2');
+    assert.equal(bill1_2.units, 350);
+    assert.equal(bill1_2.serviceFee, 24.62);
+    assert.ok(Math.abs(bill1_2.baseEnergyCharge - 1331.62) < 0.01);
+    assert.ok(Math.abs(bill1_2.ftCharge - 139.02) < 0.01);
+    assert.ok(Math.abs(bill1_2.totalBill - 1599.93) < 0.05);
+    assert.ok(bill1_2.avgRatePerUnit > 4.5 && bill1_2.avgRatePerUnit < 4.6);
+
+    // 3. Appliance Energy Calculator (kWh & Monthly Cost)
+    const appliances = [
+        { id: 'air', name: 'แอร์ 12,000 BTU', watts: 1000, qty: 1, hoursPerDay: 8 },
+        { id: 'fan', name: 'พัดลม', watts: 50, qty: 2, hoursPerDay: 10 }
+    ];
+    // Air: (1000 * 1 * 8) / 1000 = 8 kWh/day
+    // Fan: (50 * 2 * 10) / 1000 = 1 kWh/day
+    // Total daily: 9 kWh/day
+    // Total monthly: 9 * 30 = 270 kWh/month
+    // Cost @ 4.5 THB: 270 * 4.5 = 1,215 THB
+    const appRes = ctx.calculateApplianceEnergy(appliances, 4.5);
+    assert.equal(appRes.totalDailyKwh, 9);
+    assert.equal(appRes.totalMonthlyKwh, 270);
+    assert.equal(appRes.totalMonthlyCost, 1215);
+    assert.equal(appRes.items.length, 2);
+    assert.equal(appRes.items[0].dailyKwh, 8);
+    assert.equal(appRes.items[1].dailyKwh, 1);
+
+    // 4. Drawer summary text check
+    const summaryElec = ctx.getToolSummaryText('electricity_bill', {
+        electricity_bill: { mode: 'bill', tariffType: 'type1_2', units: '350', ftRate: '0.3972' }
+    });
+    assert.match(summaryElec, /สรุปค่าไฟฟ้าบ้าน/);
+    assert.match(summaryElec, /350 หน่วย/);
+    assert.match(summaryElec, /1,599\.93 บาท/);
 });
 
 

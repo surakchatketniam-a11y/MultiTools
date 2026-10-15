@@ -371,6 +371,26 @@ function getToolSummaryText(toolId, stateObj) {
                 : { appraisedValue: 3000000, totalLandCost: 150000, buyerCost: 55000, sellerCost: 95000, transferFee: 60000, mortgageFee: 25000, isSBT: true, sbtTax: 105600, stampDuty: 0, withholdingTax: 72000 };
             return `🏠 สรุปค่าธรรมเนียมโอนที่ดิน & ภาษีอสังหาฯ\n${divider}\n• ราคาประเมินกรมที่ดิน: ${formatMoney(calc.appraisedValue)} บาท\n• ค่าธรรมเนียมโอน: ${formatMoney(calc.transferFee)} บาท\n• ค่าจดจำนอง: ${formatMoney(calc.mortgageFee)} บาท\n• ${calc.isSBT ? 'ภาษีธุรกิจเฉพาะ (3.3%)' : 'ค่าอากรแสตมป์ (0.5%)'}: ${formatMoney(calc.isSBT ? calc.sbtTax : calc.stampDuty)} บาท\n• ภาษีหัก ณ ที่จ่าย: ${formatMoney(calc.withholdingTax)} บาท\n${divider}\n💰 ยอดรวมค่าใช้จ่าย ณ กรมที่ดิน: ${formatMoney(calc.totalLandCost)} บาท\n👤 ยอดที่ผู้ซื้อจ่าย: ${formatMoney(calc.buyerCost)} บาท\n🏠 ยอดที่ผู้ขายจ่าย: ${formatMoney(calc.sellerCost)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'gold_thai': {
+            const st = state.gold_thai || {};
+            const calc = (typeof calculateGoldThai === 'function')
+                ? calculateGoldThai(st)
+                : { bahtWeight: 1, totalGrams: 15.16, totalBuyPrice: 45300, craftFee: 800, sellBackValue: 43115, profitLoss: 3115, isProfit: true, profitLossPercent: 7.79, goldType: 'ornament', mode: 'buy' };
+            if (st.mode === 'sell') {
+                return `💰 สรุปราคารับซื้อคืนทองคำ\n${divider}\n• ประเภท: ${st.goldType === 'bar' ? 'ทองคำแท่ง 96.5%' : 'ทองรูปพรรณ 96.5%'}\n• น้ำหนัก: ${formatNum(calc.bahtWeight, 4)} บาท (${formatNum(calc.totalGrams, 3)} กรัม)\n• ราคารับซื้อสมาคม: ${formatMoney(calc.officialSellBackRate)} บาท/บาททอง\n${divider}\n💵 ยอดรับซื้อคืนสุทธิ (สคบ.): ${formatMoney(calc.sellBackValue)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            } else if (st.mode === 'savings') {
+                return `📈 สรุปผลการออมทองคำ\n${divider}\n• น้ำหนักสะสม: ${formatNum(calc.bahtWeight, 4)} บาท (${formatNum(calc.totalGrams, 3)} กรัม)\n• ต้นทุนเฉลี่ย: ${formatMoney(calc.costPerBaht)} บาท/บาททอง (รวม ${formatMoney(calc.totalInvested)} บาท)\n• มูลค่าตลาดปัจจุบัน: ${formatMoney(calc.currentMarketValue)} บาท\n${divider}\n💰 ผลตอบแทนสุทธิ: ${calc.isProfit ? '+' : ''}${formatMoney(calc.profitLoss)} บาท (${formatNum(calc.profitLossPercent, 2)}%)\n(คำนวณโดย Multitools Calculator)`;
+            } else {
+                return `🛒 สรุปราคาซื้อทองคำหน้าร้าน\n${divider}\n• ประเภท: ${st.goldType === 'bar' ? 'ทองคำแท่ง 96.5%' : 'ทองรูปพรรณ 96.5%'}\n• น้ำหนัก: ${formatNum(calc.bahtWeight, 4)} บาท (${formatNum(calc.totalGrams, 3)} กรัม)\n• ราคาทองคำ: ${formatMoney(calc.rawGoldValue)} บาท\n• ค่ากำเหน็จ: +${formatMoney(calc.craftFee)} บาท\n${divider}\n💰 ราคาซื้อสุทธิ: ${formatMoney(calc.totalBuyPrice)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            }
+        }
+        case 'electricity_bill': {
+            const st = state.electricity_bill || {};
+            const calc = (typeof calculateElectricityBill === 'function')
+                ? calculateElectricityBill(st)
+                : { units: 350, baseEnergyCharge: 1250, serviceFee: 24.62, ftCharge: 139, vat7: 98.95, totalBill: 1512.57, avgRatePerUnit: 4.32, ftRate: 0.3972 };
+            return `⚡ สรุปค่าไฟฟ้าบ้าน (กฟน./กฟภ.)\n${divider}\n• จำนวนหน่วยไฟฟ้า: ${formatNum(calc.units, 1)} หน่วย (kWh)\n• ค่าไฟฟ้าฐาน (ขั้นบันได): ${formatMoney(calc.baseEnergyCharge)} บาท\n• ค่าบริการรายเดือน: ${formatMoney(calc.serviceFee)} บาท\n• ค่าไฟฟ้าผันแปร Ft (${formatNum(calc.ftRate, 4)} ฿): ${formatMoney(calc.ftCharge)} บาท\n• ภาษีมูลค่าเพิ่ม (VAT 7%): +${formatMoney(calc.vat7)} บาท\n${divider}\n💰 ยอดชำระสุทธิ: ${formatMoney(calc.totalBill)} บาท (เฉลี่ย ${formatNum(calc.avgRatePerUnit, 2)} ฿/หน่วย)\n(คำนวณโดย Multitools Calculator)`;
+        }
         default: {
             const statusText = document.getElementById('sharedStatusText')?.innerText?.trim();
             return `📋 สรุปผล: ${title}\n${divider}\n${statusText || 'คำนวณเรียบร้อยแล้ว'}\n(คำนวณโดย Multitools Calculator)`;

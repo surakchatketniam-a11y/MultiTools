@@ -1759,6 +1759,35 @@
                 exemptSBT: 'no',
                 splitMode: 'custom',
                 isGovMeasure: 'standard'
+            },
+
+            // 22. Thai Gold Price & Savings
+            gold_thai: {
+                mode: 'buy',
+                goldType: 'ornament',
+                weightUnit: 'baht',
+                weightValue: '1',
+                craftFee: '800',
+                priceBarBuy: '43900',
+                priceBarSell: '44000',
+                priceOrnamentBuy: '43115',
+                priceOrnamentSell: '44500',
+                savingsCostPerBaht: '40000'
+            },
+
+            // 23. Electricity Tariff & Appliances
+            electricity_bill: {
+                mode: 'bill',
+                tariffType: 'type1_2',
+                units: '350',
+                ftRate: '0.3972',
+                appliances: [
+                    { id: 'air12k', name: 'แอร์ Inverter 12,000 BTU', watts: 900, qty: 1, hoursPerDay: 8 },
+                    { id: 'fridge', name: 'ตู้เย็น 2 ประตู', watts: 100, qty: 1, hoursPerDay: 24 },
+                    { id: 'fan', name: 'พัดลม 16 นิ้ว', watts: 50, qty: 2, hoursPerDay: 8 },
+                    { id: 'tv', name: 'สมาร์ททีวี 55 นิ้ว', watts: 100, qty: 1, hoursPerDay: 4 },
+                    { id: 'water', name: 'เครื่องทำน้ำอุ่น', watts: 3500, qty: 1, hoursPerDay: 0.5 }
+                ]
             }
         };
 
@@ -1831,6 +1860,8 @@
                 case 'lotto_calc':         renderLottoTool(topPanel); break;
                 case 'tax_personal':      renderTaxPersonalTool(topPanel); break;
                 case 'property_transfer': renderPropertyTransferTool(topPanel); break;
+                case 'gold_thai':        renderGoldThaiTool(topPanel); break;
+                case 'electricity_bill': renderElectricityBillTool(topPanel); break;
             }
             if (editing) {
                 const replacement = topPanel.querySelector(`input[data-shared-field="${editing.index}"]`);
