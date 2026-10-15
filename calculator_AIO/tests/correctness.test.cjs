@@ -231,3 +231,52 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     ctx.undoLastClear();
     assert.equal(renders, 1);
 });
+
+test('catalog contains exactly 22 tools classified into 5 valid groups with search keywords', () => {
+    const catalogMatch = html.match(/const TOOL_GROUPS = \[[\s\S]*?const TOOLS_CATALOG = \[[\s\S]*?\];/);
+    assert.ok(catalogMatch, 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
+    const ctx = vm.createContext({});
+    const { TOOL_GROUPS, TOOLS_CATALOG } = vm.runInContext('(() => {\n' + catalogMatch[0] + '\nreturn { TOOL_GROUPS, TOOLS_CATALOG };\n})()', ctx);
+    assert.equal(TOOL_GROUPS.length, 5);
+    assert.equal(TOOLS_CATALOG.length, 22);
+    const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
+    for (const tool of TOOLS_CATALOG) {
+        assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
+        assert.ok(validGroupIds.has(tool.group), `Tool ${tool.id} has invalid group: ${tool.group}`);
+        assert.ok(tool.menuTitle && typeof tool.menuTitle === 'string', `Tool ${tool.id} missing menuTitle`);
+        assert.ok(tool.keywords && typeof tool.keywords === 'string' && tool.keywords.length > 5, `Tool ${tool.id} missing search keywords`);
+    }
+});
+
+test('getToolSummaryText formats context-rich summary for key tools, and discount caps over 100%', () => {
+    const ctx = context({
+        appState: {
+            vat_wht: { amount: '10000', vatRate: '7', whtRate: '3' },
+            discount: { price: '1000', discountPct: '150', extraPct: '0' },
+            unit_price: { rows: [{ id: 'A', price: '864', qty: '50' }, { id: 'B', price: '900', qty: '50' }] }
+        }
+    });
+    const catalogMatch = html.match(/const TOOL_GROUPS = \[[\s\S]*?const TOOLS_CATALOG = \[[\s\S]*?\];/);
+    vm.runInContext(catalogMatch[0].replace(/const /g, 'var ') + '\n' + source('getToolSummaryText'), ctx);
+
+    // 1. VAT + WHT summary
+    const vatWhtText = ctx.getToolSummaryText('vat_wht');
+    assert.match(vatWhtText, /สรุปยอด VAT \+ หัก ณ ที่จ่าย/);
+    assert.match(vatWhtText, /10,000\.00 บาท/);
+    assert.match(vatWhtText, /\+700\.00 บาท/);
+    assert.match(vatWhtText, /\-300\.00 บาท/);
+    assert.match(vatWhtText, /10,400\.00 บาท/);
+
+    // 2. Unit price comparison summary
+    const unitPriceText = ctx.getToolSummaryText('unit_price');
+    assert.match(unitPriceText, /เปรียบเทียบราคาต่อหน่วย/);
+    assert.match(unitPriceText, /17\.28 บาท\/หน่วย/);
+    assert.match(unitPriceText, /ตัวเลือก A/);
+
+    // 3. Discount capping
+    const discountRes = calculation(ctx, 'renderDiscountTool', null, '({finalPrice, saved, isOver100})');
+    assert.equal(discountRes.finalPrice, 0);
+    assert.equal(discountRes.saved, 1000);
+    assert.equal(discountRes.isOver100, true);
+});
+

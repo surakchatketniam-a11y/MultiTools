@@ -2,7 +2,7 @@
 <html lang="th" data-theme="airbnb">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta id="metaThemeColor" name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -839,8 +839,8 @@
             <!-- Sidebar Top Brand & Theme Switcher Header -->
             <div class="px-5 pt-4 pb-3 border-b border-[var(--color-hairline-soft)] flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-full bg-[var(--app-accent)] text-white flex items-center justify-center font-bold text-sm shadow-sm">
-                        18
+                    <div class="w-8 h-8 rounded-full bg-[var(--app-accent)] text-white flex items-center justify-center font-bold text-xs shadow-sm" id="sidebarBrandCount">
+                        22
                     </div>
                     <div>
                         <div class="text-sm font-bold text-[var(--color-ink)] leading-tight">เครื่องคำนวณครบวงจร</div>
@@ -852,14 +852,32 @@
                 </button>
             </div>
 
-            <div class="pb-8">
-                <!-- Category 1: รายการโปรด -->
-                <div class="sidebar-category-header">รายการโปรด</div>
-                <div id="sidebarFavList"></div>
+            <!-- Instant Search Input -->
+            <div class="px-4 pt-3 pb-2 border-b border-[var(--color-hairline-soft)] sticky top-0 bg-[var(--color-canvas)] z-10">
+                <div class="relative">
+                    <input type="search" id="sidebarSearchInput" placeholder="🔍 ค้นหาเครื่องมือ (เช่น vat, ลด, วัน)..." autocomplete="off" spellcheck="false" class="airbnb-input w-full text-xs py-2 pl-3 pr-8 rounded-lg bg-[var(--color-surface-soft)] text-[var(--color-ink)] border border-[var(--app-hairline)] focus:border-[var(--app-accent)]">
+                    <button id="sidebarSearchClearBtn" type="button" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#999999] hover:text-[#333333] hidden" aria-label="ล้างคำค้น">✕</button>
+                </div>
+            </div>
 
-                <!-- Category 2: ตัวคำนวณทั้งหมด -->
-                <div class="sidebar-category-header mt-1">ตัวคำนวณทั้งหมด</div>
-                <div id="sidebarAllList"></div>
+            <div class="pb-8" id="sidebarContentArea">
+                <!-- Category 1: รายการโปรด -->
+                <div id="sidebarFavSection">
+                    <div class="sidebar-category-header">⭐ รายการโปรด</div>
+                    <div id="sidebarFavList"></div>
+                </div>
+
+                <!-- Category 2: จัดหมวดหมู่ตามภารกิจ -->
+                <div id="sidebarCategoriesContainer"></div>
+
+                <!-- Category 3: ผลการค้นหา (แสดงเมื่อพิมพ์ค้นหา) -->
+                <div id="sidebarSearchResults" class="hidden">
+                    <div class="sidebar-category-header" id="sidebarSearchResultHeader">ผลการค้นหา</div>
+                    <div id="sidebarSearchResultList"></div>
+                </div>
+
+                <!-- Backwards-compatibility container -->
+                <div id="sidebarAllList" class="hidden"></div>
             </div>
         </aside>
 
@@ -877,6 +895,12 @@
             </div>
 
             <div class="flex items-center gap-1.5 relative shrink-0">
+                <!-- One-Click Copy Summary Button -->
+                <button id="headerCopyBtn" type="button" class="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-full border border-[var(--app-hairline)] bg-[var(--color-surface-soft)] text-[var(--app-accent)] hover:opacity-90 active:scale-95 transition" title="คัดลอกสรุปผลลัพธ์พร้อมบริบท">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    <span id="headerCopyText">คัดลอกสรุป</span>
+                </button>
+
                 <!-- Instant Theme Switcher Pill Button -->
                 <button id="headerThemeBtn" class="theme-pill-switch" title="สลับดีไซน์" style="display:none" aria-hidden="true" tabindex="-1">
                     <span id="themeDotIndicator" class="w-2.5 h-2.5 rounded-full bg-[#ff385c] inline-block"></span>
@@ -1004,7 +1028,7 @@
             <div class="bg-white rounded-full px-3.5 py-1.5 border border-[var(--app-hairline)] flex items-center justify-between" style="box-shadow: var(--airbnb-shadow);">
                 <div class="flex items-center gap-2.5 min-w-0">
                     <div class="w-8 h-8 rounded-full bg-[var(--app-accent)] text-white flex flex-col items-center justify-center font-bold text-[9px] leading-none shrink-0">
-                        <span>18 in 1</span>
+                        <span id="footerCatalogCount">22 in 1</span>
                     </div>
                     <div class="leading-tight truncate">
                         <div class="text-xs font-semibold text-[#222222] truncate">มีตัง • เครื่องคำนวณครบวงจร PWA</div>
@@ -1063,35 +1087,46 @@
     </div>
 
     <script>
-        /**************************************************************
-         * 1. ALL 18 CALCULATORS CATALOG (Exact Order from Screenshot 2)
-         **************************************************************/
-        const TOOLS_CATALOG = [
-            // หมวดหมู่ที่ 1: รายการโปรด
-            { id: 'calc',       category: 'fav', menuTitle: 'เครื่องคิดเลข',       headerTitle: 'เครื่องคิดเลข',             usesSharedKeypad: false },
-            { id: 'currency',   category: 'fav', menuTitle: 'สกุลเงิน',           headerTitle: 'ตัวแปลงสกุลเงิน',           usesSharedKeypad: true  },
-            { id: 'unit',       category: 'fav', menuTitle: 'หน่วย',             headerTitle: 'ตัวแปลงหน่วย',             usesSharedKeypad: true  },
-            { id: 'discount',   category: 'fav', menuTitle: 'ส่วนลด',            headerTitle: 'เครื่องคำนวณส่วนลด',        usesSharedKeypad: true  },
-            { id: 'percent',    category: 'fav', menuTitle: 'เปอร์เซ็นต์',         headerTitle: 'เครื่องคำนวณเปอร์เซ็นต์',     usesSharedKeypad: true  },
-            { id: 'vat',        category: 'fav', menuTitle: 'ภาษีมูลค่าเพิ่ม',      headerTitle: 'เครื่องคำนวณภาษีมูลค่าเพิ่ม', usesSharedKeypad: true  },
-            { id: 'vat_wht',    category: 'fav', menuTitle: 'VAT + หัก ณ ที่จ่าย',  headerTitle: 'VAT + หัก ณ ที่จ่าย',       usesSharedKeypad: false },
+        const TOOL_GROUPS = [
+            { id: 'shop', name: '🛒 ซื้อของ & ทั่วไป' },
+            { id: 'biz', name: '💼 ธุรกิจ & ค้าขาย' },
+            { id: 'finance', name: '🏦 การเงิน & วางแผน' },
+            { id: 'work', name: '📅 เวลา & สำนักงาน' },
+            { id: 'special', name: '🩺 สุขภาพ & พิเศษ' }
+        ];
 
-            // หมวดหมู่ที่ 2: ตัวคำนวณทั้งหมด
-            { id: 'fuel_cost',  category: 'all', menuTitle: 'ค่าใช้จ่ายเชื้อเพลิง',  headerTitle: 'คำนวณค่าใช้จ่ายเชื้อเพลิง',   usesSharedKeypad: true  },
-            { id: 'health',     category: 'all', menuTitle: 'ตัวชี้วัดร่างกาย',     headerTitle: 'คำนวณตัวชี้วัดร่างกาย (BMI/BMR)', usesSharedKeypad: true },
-            { id: 'tip',        category: 'all', menuTitle: 'ทิป',               headerTitle: 'เครื่องคำนวณทิป',           usesSharedKeypad: true  },
-            { id: 'fuel_eff',   category: 'all', menuTitle: 'ประสิทธิภาพเชื้อเพลิง', headerTitle: 'คำนวณประสิทธิภาพเชื้อเพลิง',  usesSharedKeypad: true  },
-            { id: 'unit_price', category: 'all', menuTitle: 'ราคาต่อหน่วย',       headerTitle: 'เครื่องคำนวณราคาต่อหน่วย',   usesSharedKeypad: true  },
-            { id: 'area_cost',  category: 'all', menuTitle: 'ต้นทุนต่อพื้นที่',   headerTitle: 'คำนวณต้นทุนต่อพื้นที่',        usesSharedKeypad: false },
-            { id: 'ovulation',  category: 'all', menuTitle: 'วันตกไข่',           headerTitle: 'คำนวณวันตกไข่และรอบเดือน',    usesSharedKeypad: false },
-            { id: 'date_calc',  category: 'all', menuTitle: 'วันที่',             headerTitle: 'เครื่องคำนวณวันที่',          usesSharedKeypad: false },
-            { id: 'date_work',  category: 'all', menuTitle: 'วันทำการ',           headerTitle: 'นับวันทำการ',                  usesSharedKeypad: false },
-            { id: 'gpa',        category: 'all', menuTitle: 'เกรดเฉลี่ย',         headerTitle: 'คำนวณเกรดเฉลี่ย (GPA)',      usesSharedKeypad: false },
-            { id: 'loan',       category: 'all', menuTitle: 'เงินกู้',            headerTitle: 'เครื่องคำนวณเงินกู้',         usesSharedKeypad: true  },
-            { id: 'savings',    category: 'all', menuTitle: 'เงินออม',           headerTitle: 'เครื่องคำนวณเงินออม',        usesSharedKeypad: true  },
-            { id: 'salary',     category: 'all', menuTitle: 'จัดการเงินเดือน',   headerTitle: 'เครื่องมือจัดการเงินเดือน',  usesSharedKeypad: true  },
-            { id: 'hex',        category: 'all', menuTitle: 'เลขฐานสิบหก',       headerTitle: 'แปลงเลขฐาน (DEC/HEX/BIN/OCT)', usesSharedKeypad: false },
-            { id: 'world_time', category: 'all', menuTitle: 'เวลาโลก',           headerTitle: 'นาฬิกาเวลาโลก',             usesSharedKeypad: false }
+        const TOOLS_CATALOG = [
+            // หมวดหมู่ที่ 1: ซื้อของ & ทั่วไป
+            { id: 'unit_price', group: 'shop', category: 'fav', menuTitle: 'ราคาต่อหน่วย', headerTitle: 'เครื่องคำนวณราคาต่อหน่วย', usesSharedKeypad: true, keywords: 'unit price ราคา ต่อหน่วย คุ้ม เปรียบเทียบ ซื้อของ ถูกกว่า' },
+            { id: 'discount',   group: 'shop', category: 'fav', menuTitle: 'ส่วนลด', headerTitle: 'เครื่องคำนวณส่วนลด', usesSharedKeypad: true, keywords: 'discount ส่วนลด sale โปรโมชั่น ontop ลดราคา' },
+            { id: 'tip',        group: 'shop', category: 'all', menuTitle: 'ทิป & หารบิล', headerTitle: 'เครื่องคำนวณทิป & หารค่าอาหาร', usesSharedKeypad: true, keywords: 'tip ทิป หารค่าข้าว บิล หารคน split bill ร้านอาหาร' },
+            { id: 'unit',       group: 'shop', category: 'fav', menuTitle: 'แปลงหน่วย', headerTitle: 'ตัวแปลงหน่วย', usesSharedKeypad: true, keywords: 'unit แปลงหน่วย ตารางวา ไร่ เมตร กิโลกรัม ลิตร นิ้ว ฟุต' },
+
+            // หมวดหมู่ที่ 2: ธุรกิจ & ค้าขาย
+            { id: 'vat',        group: 'biz', category: 'fav', menuTitle: 'ภาษีมูลค่าเพิ่ม (VAT)', headerTitle: 'เครื่องคำนวณภาษีมูลค่าเพิ่ม', usesSharedKeypad: true, keywords: 'vat ภาษี 7% มูลค่าเพิ่ม ถอด vat รวม vat' },
+            { id: 'vat_wht',    group: 'biz', category: 'fav', menuTitle: 'VAT + หัก ณ ที่จ่าย', headerTitle: 'VAT + หัก ณ ที่จ่าย', usesSharedKeypad: false, keywords: 'vat wht หัก ณ ที่จ่าย 1% 2% 3% 5% ภาษีหัก ณ ที่จ่าย วางบิล' },
+            { id: 'percent',    group: 'biz', category: 'fav', menuTitle: 'เปอร์เซ็นต์ & กำไร', headerTitle: 'เครื่องคำนวณเปอร์เซ็นต์', usesSharedKeypad: true, keywords: 'percent เปอร์เซ็นต์ กำไร margin markup ร้อยละ สัดส่วน' },
+            { id: 'salary',     group: 'biz', category: 'all', menuTitle: 'จัดการเงินเดือน 50/30/20', headerTitle: 'เครื่องมือจัดการเงินเดือน', usesSharedKeypad: true, keywords: 'salary เงินเดือน 50 30 20 รายจ่าย เงินเก็บ ออมเงิน หนี้' },
+
+            // หมวดหมู่ที่ 3: การเงิน & วางแผน
+            { id: 'loan',       group: 'finance', category: 'all', menuTitle: 'เงินกู้ & ผ่อนชำระ', headerTitle: 'เครื่องคำนวณเงินกู้', usesSharedKeypad: true, keywords: 'loan เงินกู้ ผ่อนบ้าน ผ่อนรถ ดอกเบี้ย ค่างวด ดอกเบี้ยคงที่ ลดต้นลดดอก' },
+            { id: 'savings',    group: 'finance', category: 'all', menuTitle: 'เงินออม & เกษียณ', headerTitle: 'เครื่องคำนวณเงินออม', usesSharedKeypad: true, keywords: 'savings เงินออม เกษียณ ดอกเบี้ยทบต้น เงินเฟ้อ ออมทรัพย์' },
+            { id: 'currency',   group: 'finance', category: 'fav', menuTitle: 'แปลงสกุลเงิน', headerTitle: 'ตัวแปลงสกุลเงิน', usesSharedKeypad: true, keywords: 'currency สกุลเงิน แลกเงิน ดอลลาร์ บาท เยน ยูโร exchange rate forex' },
+
+            // หมวดหมู่ที่ 4: เวลา & สำนักงาน
+            { id: 'date_work',  group: 'work', category: 'all', menuTitle: 'นับวันทำการ (Workdays)', headerTitle: 'นับวันทำการ', usesSharedKeypad: false, keywords: 'date work วันทำการ วันทำงาน sla วันหยุด ส่งงาน วันครบกำหนด' },
+            { id: 'date_calc',  group: 'work', category: 'all', menuTitle: 'คำนวณวันที่ & อายุ', headerTitle: 'เครื่องคำนวณวันที่', usesSharedKeypad: false, keywords: 'date calc วันที่ บวกวัน ลบวัน คำนวณอายุ ระยะห่างวัน' },
+            { id: 'world_time', group: 'work', category: 'all', menuTitle: 'เวลาโลก & นัดหมาย', headerTitle: 'นาฬิกาเวลาโลก', usesSharedKeypad: false, keywords: 'world time เวลาโลก timezone ข้ามเขตเวลา โตเกียว นิวยอร์ก ลอนดอน นัดประชุม' },
+            { id: 'gpa',        group: 'work', category: 'all', menuTitle: 'เกรดเฉลี่ย (GPA)', headerTitle: 'คำนวณเกรดเฉลี่ย (GPA)', usesSharedKeypad: false, keywords: 'gpa เกรด เฉลี่ย หน่วยกิต ผลการเรียน ตัดเกรด' },
+
+            // หมวดหมู่ที่ 5: สุขภาพ & พิเศษ
+            { id: 'health',     group: 'special', category: 'all', menuTitle: 'ตัวชี้วัดร่างกาย (BMI/BMR)', headerTitle: 'คำนวณตัวชี้วัดร่างกาย (BMI/BMR)', usesSharedKeypad: true, keywords: 'health สุขภาพ bmi bmr ส่วนสูง น้ำหนัก แคลอรี่ อ้วน ผอม' },
+            { id: 'ovulation',  group: 'special', category: 'all', menuTitle: 'วันตกไข่ & รอบเดือน', headerTitle: 'คำนวณวันตกไข่และรอบเดือน', usesSharedKeypad: false, keywords: 'ovulation ตกไข่ ประจำเดือน รอบเดือน ภาวะเจริญพันธุ์ มีลูก' },
+            { id: 'fuel_cost',  group: 'special', category: 'all', menuTitle: 'ค่าใช้จ่ายเชื้อเพลิง', headerTitle: 'คำนวณค่าใช้จ่ายเชื้อเพลิง', usesSharedKeypad: true, keywords: 'fuel cost น้ำมัน ค่าน้ำมัน ระยะทาง ทริป เที่ยว ค่าน้ำมันไปกลับ' },
+            { id: 'fuel_eff',   group: 'special', category: 'all', menuTitle: 'ประสิทธิภาพเชื้อเพลิง', headerTitle: 'คำนวณประสิทธิภาพเชื้อเพลิง', usesSharedKeypad: true, keywords: 'fuel efficiency ประสิทธิภาพน้ำมัน อัตราสิ้นเปลือง กิโลเมตรต่อลิตร l/100km' },
+            { id: 'area_cost',  group: 'special', category: 'all', menuTitle: 'ต้นทุนต่อพื้นที่ (ที่ดิน)', headerTitle: 'คำนวณต้นทุนต่อพื้นที่', usesSharedKeypad: false, keywords: 'area cost ต้นทุน ที่ดิน ไร่ งาน ตารางวา เกษตร ค่าปุ๋ย ค่าไถ' },
+            { id: 'hex',        group: 'special', category: 'all', menuTitle: 'แปลงเลขฐาน (HEX/BIN)', headerTitle: 'แปลงเลขฐาน (DEC/HEX/BIN/OCT)', usesSharedKeypad: false, keywords: 'hex bin oct dec เลขฐาน ฐานสิบ ฐานสิบหก ฐานสอง ไบนารี โปรแกรมเมอร์' },
+            { id: 'calc',       group: 'special', category: 'fav', menuTitle: 'เครื่องคิดเลขทั่วไป', headerTitle: 'เครื่องคิดเลข', usesSharedKeypad: false, keywords: 'calc เครื่องคิดเลข คิดเลข บวก ลบ คูณ หาร' }
         ];
 
         /**************************************************************
@@ -1574,37 +1609,106 @@
         }
 
         function renderSidebarMenu() {
+            const favSection = document.getElementById('sidebarFavSection');
             const favContainer = document.getElementById('sidebarFavList');
+            const categoriesContainer = document.getElementById('sidebarCategoriesContainer');
+            const searchResults = document.getElementById('sidebarSearchResults');
+            const searchResultList = document.getElementById('sidebarSearchResultList');
+            const searchResultHeader = document.getElementById('sidebarSearchResultHeader');
+            const searchInput = document.getElementById('sidebarSearchInput');
+            const searchClearBtn = document.getElementById('sidebarSearchClearBtn');
             const allContainer = document.getElementById('sidebarAllList');
-            const pinned = JSON.parse(localStorage.getItem('calc_pwa_favorites') || '[]');
-            favContainer.innerHTML = '';
-            allContainer.innerHTML = '';
 
-            TOOLS_CATALOG.forEach(tool => {
+            const query = (searchInput?.value || '').trim().toLowerCase();
+            const stored = JSON.parse(localStorage.getItem('calc_pwa_favorites') || '[]');
+            const pinned = stored.length ? stored : TOOLS_CATALOG.filter(item => item.category === 'fav').map(item => item.id);
+
+            // Update Dynamic Count in Drawer & Footer
+            const brandCountEl = document.getElementById('sidebarBrandCount');
+            if (brandCountEl) brandCountEl.textContent = TOOLS_CATALOG.length;
+            const footerCountEl = document.getElementById('footerCatalogCount');
+            if (footerCountEl) footerCountEl.textContent = `${TOOLS_CATALOG.length} in 1`;
+
+            function createToolButton(tool) {
                 const btn = document.createElement('button');
+                btn.type = 'button';
                 const isActive = appState.activeToolId === tool.id;
                 btn.className = `sidebar-item ${isActive ? 'active-tool' : ''}`;
-                const isPinned = pinned.length ? pinned.includes(tool.id) : tool.category === 'fav';
-                btn.innerHTML = `<span>${tool.menuTitle}</span><span class="ml-auto text-xs opacity-70" data-pin="${tool.id}" title="ปักหมุด">${isPinned ? '♥' : '♡'}</span>`;
+                const isPinned = pinned.includes(tool.id);
+                btn.innerHTML = `<span>${escapeHTML(tool.menuTitle)}</span><button type="button" class="ml-auto p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center text-sm opacity-70 hover:opacity-100 transition rounded-full hover:bg-black/5" data-pin="${tool.id}" title="${isPinned ? 'เลิกปักหมุด' : 'ปักหมุด'}" aria-label="${isPinned ? 'เลิกปักหมุด' : 'ปักหมุด'} ${escapeHTML(tool.menuTitle)}">${isPinned ? '♥' : '♡'}</button>`;
                 btn.addEventListener('click', () => {
                     selectTool(tool.id);
                     closeSidebar();
                 });
                 btn.querySelector('[data-pin]').addEventListener('click', (event) => {
                     event.stopPropagation();
-                    const stored = JSON.parse(localStorage.getItem('calc_pwa_favorites') || '[]');
-                    const current = stored.length ? stored : TOOLS_CATALOG.filter(item => item.category === 'fav').map(item => item.id);
-                    const next = current.includes(tool.id) ? current.filter(id => id !== tool.id) : [...current, tool.id];
+                    const next = pinned.includes(tool.id) ? pinned.filter(id => id !== tool.id) : [...pinned, tool.id];
                     localStorage.setItem('calc_pwa_favorites', JSON.stringify(next));
                     renderSidebarMenu();
                 });
+                return btn;
+            }
 
-                if (isPinned) {
-                    favContainer.appendChild(btn);
-                } else {
-                    allContainer.appendChild(btn);
+            if (favContainer) favContainer.innerHTML = '';
+            if (allContainer) allContainer.innerHTML = '';
+            if (categoriesContainer) categoriesContainer.innerHTML = '';
+            if (searchResultList) searchResultList.innerHTML = '';
+
+            if (query) {
+                // Search Mode
+                if (searchClearBtn) searchClearBtn.classList.remove('hidden');
+                if (favSection) favSection.classList.add('hidden');
+                if (categoriesContainer) categoriesContainer.classList.add('hidden');
+                if (searchResults) searchResults.classList.remove('hidden');
+
+                const matches = TOOLS_CATALOG.filter(tool => {
+                    const text = `${tool.menuTitle} ${tool.headerTitle} ${tool.id} ${tool.keywords || ''}`.toLowerCase();
+                    return text.includes(query);
+                });
+
+                if (searchResultHeader) searchResultHeader.textContent = `ผลการค้นหา (${matches.length})`;
+
+                if (matches.length > 0) {
+                    matches.forEach(tool => searchResultList?.appendChild(createToolButton(tool)));
+                } else if (searchResultList) {
+                    searchResultList.innerHTML = `<div class="px-4 py-6 text-center text-xs text-[var(--color-muted)]">ไม่พบเครื่องมือที่ตรงกับ "${escapeHTML(query)}"</div>`;
                 }
-            });
+            } else {
+                // Normal Categorized Mode
+                if (searchClearBtn) searchClearBtn.classList.add('hidden');
+                if (favSection) favSection.classList.remove('hidden');
+                if (categoriesContainer) categoriesContainer.classList.remove('hidden');
+                if (searchResults) searchResults.classList.add('hidden');
+
+                // 1. Render Pinned Favorites
+                const favTools = TOOLS_CATALOG.filter(tool => pinned.includes(tool.id));
+                if (favTools.length > 0) {
+                    favTools.forEach(tool => favContainer?.appendChild(createToolButton(tool)));
+                    if (favSection) favSection.classList.remove('hidden');
+                } else if (favSection) {
+                    favSection.classList.add('hidden');
+                }
+
+                // 2. Render 5 Job-based Categories
+                if (categoriesContainer) {
+                    TOOL_GROUPS.forEach(group => {
+                        const groupTools = TOOLS_CATALOG.filter(tool => tool.group === group.id);
+                        if (!groupTools.length) return;
+
+                        const header = document.createElement('div');
+                        header.className = 'sidebar-category-header mt-2';
+                        header.textContent = group.name;
+                        categoriesContainer.appendChild(header);
+
+                        const list = document.createElement('div');
+                        groupTools.forEach(tool => {
+                            const btn = createToolButton(tool);
+                            list.appendChild(btn);
+                        });
+                        categoriesContainer.appendChild(list);
+                    });
+                }
+            }
         }
 
         function selectTool(toolId) {
@@ -1614,8 +1718,182 @@
             renderActiveTool();
         }
 
+        function getToolSummaryText(toolId) {
+            const tool = TOOLS_CATALOG.find(t => t.id === toolId) || { menuTitle: toolId };
+            const title = tool.headerTitle || tool.menuTitle;
+            const divider = '----------------------------------';
+
+            switch (toolId) {
+                case 'vat_wht': {
+                    const st = appState.vat_wht;
+                    const amt = parseNumericInput(st.amount) || 0;
+                    const rate = parseNumericInput(st.vatRate) || 7;
+                    const wht = parseNumericInput(st.whtRate) || 3;
+                    const vatAmt = amt * (rate / 100);
+                    const whtAmt = amt * (wht / 100);
+                    const net = amt + vatAmt - whtAmt;
+                    return `📄 สรุปยอด VAT + หัก ณ ที่จ่าย\n${divider}\n• ยอดค่าบริการ/สินค้า: ${formatMoney(amt)} บาท\n• ภาษีมูลค่าเพิ่ม (VAT ${rate}%): +${formatMoney(vatAmt)} บาท\n• หักภาษี ณ ที่จ่าย (${wht}%): -${formatMoney(whtAmt)} บาท\n${divider}\n💰 ยอดโอนสุทธิ: ${formatMoney(net)} บาท\n(คำนวณโดย Multitools Calculator)`;
+                }
+                case 'vat': {
+                    const st = appState.vat;
+                    const amt = parseNumericInput(st.amount) || 0;
+                    const rate = parseNumericInput(st.rate) || 7;
+                    const isInclude = st.mode === 'include';
+                    const baseAmt = isInclude ? amt / (1 + rate / 100) : amt;
+                    const vatAmt = isInclude ? amt - baseAmt : amt * (rate / 100);
+                    const totalAmt = isInclude ? amt : amt + vatAmt;
+                    return `📄 สรุปภาษีมูลค่าเพิ่ม (VAT)\n${divider}\n• โหมด: ${isInclude ? 'ถอด VAT จากยอดรวม' : 'บวก VAT เพิ่ม'}\n• ยอดก่อน VAT: ${formatMoney(baseAmt)} บาท\n• ภาษี VAT (${rate}%): ${formatMoney(vatAmt)} บาท\n${divider}\n💰 ยอดรวมสุทธิ: ${formatMoney(totalAmt)} บาท\n(คำนวณโดย Multitools Calculator)`;
+                }
+                case 'discount': {
+                    const st = appState.discount;
+                    const p = numberOrDefault(st.price, 0);
+                    const d1 = numberOrDefault(st.discountPct, 0);
+                    const d2 = numberOrDefault(st.extraPct, 0);
+                    const safeD1 = Math.min(Math.max(d1, 0), 100);
+                    const safeD2 = Math.min(Math.max(d2, 0), 100);
+                    const afterFirst = p * (1 - safeD1 / 100);
+                    const finalPrice = afterFirst * (1 - safeD2 / 100);
+                    const saved = p - finalPrice;
+                    const extraStr = d2 > 0 ? ` + On-top ${d2}%` : '';
+                    return `🏷️ สรุปส่วนลดสินค้า\n${divider}\n• ราคาปกติ: ${formatMoney(p)} บาท\n• ส่วนลด: ${d1}%${extraStr}\n• ประหยัดไป: ${formatMoney(saved)} บาท\n${divider}\n💰 ราคาสุทธิ: ${formatMoney(finalPrice)} บาท\n(คำนวณโดย Multitools Calculator)`;
+                }
+                case 'unit_price': {
+                    const rows = appState.unit_price.rows;
+                    const valid = rows
+                        .map(r => ({ id: r.id, p: parseNumericInput(r.price), q: parseNumericInput(r.qty) }))
+                        .filter(r => Number.isFinite(r.p) && Number.isFinite(r.q) && r.p > 0 && r.q > 0)
+                        .map(r => ({ ...r, unitPrice: r.p / r.q }));
+                    if (!valid.length) return '🛒 สรุปราคาต่อหน่วย\n(กรุณากรอกราคาและจำนวนเพื่อเปรียบเทียบ)';
+                    const minPrice = Math.min(...valid.map(v => v.unitPrice));
+                    const best = valid.find(v => Math.abs(v.unitPrice - minPrice) < 1e-7);
+                    const rowTexts = valid.map(v => `• ตัวเลือก ${v.id}: ${formatMoney(v.p)} บาท / ${formatMoney(v.q)} หน่วย = ${formatNum(v.unitPrice, 3)} บาท/หน่วย`);
+                    let comparison = `⭐ ตัวเลือกที่คุ้มที่สุด: ตัวเลือก ${best.id} (${formatNum(best.unitPrice, 3)} บาท/หน่วย)`;
+                    const second = [...valid].sort((a,b) => a.unitPrice - b.unitPrice).find(v => v.unitPrice > minPrice + 1e-7);
+                    if (second) {
+                        const pct = (((second.unitPrice - best.unitPrice) / second.unitPrice) * 100).toFixed(1);
+                        comparison += `\n(ประหยัดกว่าตัวเลือก ${second.id} ${pct}%)`;
+                    }
+                    return `🛒 สรุปเปรียบเทียบราคาต่อหน่วย\n${divider}\n${rowTexts.join('\n')}\n${divider}\n${comparison}\n(คำนวณโดย Multitools Calculator)`;
+                }
+                case 'date_work': {
+                    const st = appState.date_work;
+                    return `📅 สรุปวันทำการ (Workdays)\n${divider}\n• วันเริ่มต้น: ${st.startDate}\n• วันสิ้นสุด: ${st.endDate}\n• กติกา: ทำงาน จันทร์-ศุกร์ (ตัดวันหยุดไทย)\n(คำนวณโดย Multitools Calculator)`;
+                }
+                case 'date_calc': {
+                    const st = appState.date_calc;
+                    return `📅 สรุปคำนวณวันที่\n${divider}\n• วันที่เริ่มต้น: ${st.startDate}\n• วันที่สิ้นสุด: ${st.endDate}\n(คำนวณโดย Multitools Calculator)`;
+                }
+                case 'loan': {
+                    const st = appState.loan;
+                    const p = parseNumericInput(st.principal) || 0;
+                    const r = parseNumericInput(st.interestRate) || 0;
+                    const m = integerOrDefault(st.months, 0);
+                    return `🏦 สรุปยอดผ่อนเงินกู้\n${divider}\n• วงเงินกู้: ${formatMoney(p)} บาท\n• อัตราดอกเบี้ย: ${r}% ต่อปี\n• ระยะเวลา: ${m} เดือน\n(คำนวณโดย Multitools Calculator)`;
+                }
+                case 'savings': {
+                    const st = appState.savings;
+                    const init = parseNumericInput(st.initial) || 0;
+                    const mo = parseNumericInput(st.monthly) || 0;
+                    const r = parseNumericInput(st.interestRate) || 0;
+                    const y = integerOrDefault(st.years, 0);
+                    return `💰 สรุปการออมเงิน\n${divider}\n• เงินก้อนเริ่มต้น: ${formatMoney(init)} บาท\n• เงินฝากรายเดือน: ${formatMoney(mo)} บาท\n• ระยะเวลา: ${y} ปี (ผลตอบแทน ${r}% ต่อปี)\n(คำนวณโดย Multitools Calculator)`;
+                }
+                case 'currency': {
+                    const st = appState.currency;
+                    const amt = parseNumericInput(st.amount) || 0;
+                    const fromRate = st.ratesInTHB[st.from] || 1;
+                    const toRate = st.ratesInTHB[st.to] || 1;
+                    const customRate = parseNumericInput(st.customRateToTHB);
+                    const effectiveRate = (!isNaN(customRate) && customRate > 0) ? customRate : (fromRate / toRate);
+                    const converted = amt * effectiveRate;
+                    return `💱 สรุปอัตราแลกเปลี่ยนสกุลเงิน\n${divider}\n• ${formatNum(amt, 2)} ${st.from} = ${formatMoney(converted)} ${st.to}\n• เรทที่ใช้: 1 ${st.from} = ${formatNum(effectiveRate, 4)} ${st.to}\n• แหล่งข้อมูล: ${st.rateSource || 'Frankfurter'}\n(คำนวณโดย Multitools Calculator)`;
+                }
+                case 'tip': {
+                    const st = appState.tip;
+                    const bill = parseNumericInput(st.bill) || 0;
+                    const tipPct = parseNumericInput(st.tipPct) || 0;
+                    const people = Math.max(1, integerOrDefault(st.people, 1));
+                    const tipAmt = bill * (tipPct / 100);
+                    const total = bill + tipAmt;
+                    const perPerson = total / people;
+                    return `🍽️ สรุปหารค่าอาหาร / ทิป\n${divider}\n• ยอดบิล: ${formatMoney(bill)} บาท\n• ทิป (${tipPct}%): ${formatMoney(tipAmt)} บาท\n• ยอดรวมทั้งสิ้น: ${formatMoney(total)} บาท\n• จำนวนคน: ${people} คน\n${divider}\n💰 จ่ายคนละ: ${formatMoney(perPerson)} บาท\n(คำนวณโดย Multitools Calculator)`;
+                }
+                case 'salary': {
+                    const st = appState.salary;
+                    const income = parseNumericInput(st.income) || 0;
+                    const needs = income * (numberOrDefault(st.needsPct, 50) / 100);
+                    const wants = income * (numberOrDefault(st.wantsPct, 30) / 100);
+                    const savings = income * (numberOrDefault(st.savingsPct, 20) / 100);
+                    return `💼 สรุปจัดสรรเงินเดือน (50/30/20)\n${divider}\n• เงินเดือนสุทธิ: ${formatMoney(income)} บาท\n• รายจ่ายจำเป็น (50%): ${formatMoney(needs)} บาท\n• เพื่อความสุข/ไลฟ์สไตล์ (30%): ${formatMoney(wants)} บาท\n• เงินออม/ลงทุน (20%): ${formatMoney(savings)} บาท\n(คำนวณโดย Multitools Calculator)`;
+                }
+                case 'fuel_cost': {
+                    const st = appState.fuel_cost;
+                    const dist = parseNumericInput(st.distance) || 0;
+                    const eff = parseNumericInput(st.efficiency) || 15;
+                    const price = parseNumericInput(st.oilPrice) || 35.5;
+                    const liters = eff > 0 ? dist / eff : 0;
+                    const totalCost = liters * price;
+                    return `⛽ สรุปค่าน้ำมันเดินทาง\n${divider}\n• ระยะทาง: ${formatNum(dist, 1)} กม.\n• อัตราสิ้นเปลือง: ${formatNum(eff, 1)} กม./ลิตร\n• ราคาน้ำมัน: ${formatMoney(price)} บาท/ลิตร\n• ปริมาณน้ำมัน: ${formatNum(liters, 2)} ลิตร\n${divider}\n💰 ค่าน้ำมันรวม: ${formatMoney(totalCost)} บาท\n(คำนวณโดย Multitools Calculator)`;
+                }
+                default: {
+                    const statusText = document.getElementById('sharedStatusText')?.innerText?.trim();
+                    return `📋 สรุปผล: ${title}\n${divider}\n${statusText || 'คำนวณเรียบร้อยแล้ว'}\n(คำนวณโดย Multitools Calculator)`;
+                }
+            }
+        }
+
+        async function copyCurrentToolSummary() {
+            const text = getToolSummaryText(appState.activeToolId);
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                }
+                const btn = document.getElementById('headerCopyBtn');
+                const btnText = document.getElementById('headerCopyText');
+                if (btnText && btn) {
+                    btnText.textContent = '✓ คัดลอกแล้ว';
+                    btn.classList.add('!bg-green-100', '!border-green-500', '!text-green-700');
+                    setTimeout(() => {
+                        btnText.textContent = 'คัดลอกสรุป';
+                        btn.classList.remove('!bg-green-100', '!border-green-500', '!text-green-700');
+                    }, 2000);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        document.getElementById('headerCopyBtn')?.addEventListener('click', copyCurrentToolSummary);
         document.getElementById('hamburgerBtn').addEventListener('click', openSidebar);
         sidebarBackdrop.addEventListener('click', closeSidebar);
+
+        const sidebarSearchInput = document.getElementById('sidebarSearchInput');
+        if (sidebarSearchInput) {
+            sidebarSearchInput.addEventListener('input', () => renderSidebarMenu());
+            sidebarSearchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    sidebarSearchInput.value = '';
+                    renderSidebarMenu();
+                    sidebarSearchInput.blur();
+                }
+            });
+        }
+        document.getElementById('sidebarSearchClearBtn')?.addEventListener('click', () => {
+            if (sidebarSearchInput) {
+                sidebarSearchInput.value = '';
+                renderSidebarMenu();
+                sidebarSearchInput.focus();
+            }
+        });
 
         /**************************************************************
          * 5. SHARED KEYPAD FIELD MAPPING FOR NUMERIC TOOLS
@@ -2634,9 +2912,12 @@
             const p = numberOrDefault(st.price, 0);
             const d1 = numberOrDefault(st.discountPct, 0);
             const d2 = numberOrDefault(st.extraPct, 0);
+            const isOver100 = d1 > 100 || d2 > 100;
+            const safeD1 = Math.min(Math.max(d1, 0), 100);
+            const safeD2 = Math.min(Math.max(d2, 0), 100);
 
-            const afterFirst = p * (1 - d1 / 100);
-            const finalPrice = afterFirst * (1 - d2 / 100);
+            const afterFirst = p * (1 - safeD1 / 100);
+            const finalPrice = afterFirst * (1 - safeD2 / 100);
             const saved = p - finalPrice;
 
             container.innerHTML = `
@@ -2663,6 +2944,8 @@
 
             if (p <= 0) {
                 setStatusBanner('empty', 'กรุณาป้อนราคาสินค้าและเปอร์เซ็นต์ส่วนลด');
+            } else if (isOver100) {
+                setStatusBanner('error', `⚠️ ส่วนลดไม่ควรเกิน 100% (คำนวณสูงสุดที่ 100%) | ราคาสุทธิ: ${formatMoney(finalPrice)} บาท`);
             } else {
                 setStatusBanner('success', `🏷️ ราคาสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(finalPrice)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">ประหยัดไป ${formatMoney(saved)} บาท</span>`);
             }
@@ -3847,7 +4130,7 @@
             ctx.font = `bold ${Math.floor(size * 0.22)}px sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('18 in 1', size / 2, size * 0.36);
+            ctx.fillText(`${TOOLS_CATALOG.length} in 1`, size / 2, size * 0.36);
 
             const cols = [0.3, 0.5, 0.7];
             const rows = [0.62, 0.76];
