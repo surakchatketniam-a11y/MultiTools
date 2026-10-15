@@ -8,7 +8,9 @@
     const App = {
         currentTab: 'tickets', // 'tickets', 'check', 'stats'
         historicalResults: [],
+        builtInResults: [],
         resultsMap: {},
+        syncInProgress: false,
 
         async init() {
             console.log('[LottoBook] Initializing application...');
@@ -18,6 +20,16 @@
             this.initNavigation();
             this.handleHashChange();
             this.registerServiceWorker();
+            this.maybeSyncResults();
+            window.setInterval(() => this.maybeSyncResults(), 15 * 60 * 1000);
+            window.setInterval(() => {
+                const countdown = document.getElementById('nextDrawCountdown');
+                if (countdown) {
+                    const nextDraw = root.LottoDraws.next();
+                    if (countdown.closest('[data-next-draw]')?.dataset.nextDraw !== nextDraw.date) this.renderCurrentView();
+                    else countdown.textContent = root.LottoDraws.formatRemaining(nextDraw.remainingMs);
+                }
+            }, 60 * 1000);
 
             // Listen to browser hash changes
             window.addEventListener('hashchange', () => {
@@ -29,13 +41,22 @@
             try {
                 // Fetch curated historical results JSON
                 const res = await fetch('./data/glo_results.json');
-                const builtInResults = await res.json();
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                this.builtInResults = await res.json();
 
-                // Merge with any custom results saved by user
+                this.mergeResults();
+                console.log(`[LottoBook] Loaded ${this.historicalResults.length} historical draw records.`);
+            } catch (err) {
+                console.error('[LottoBook] Failed to load historical results:', err);
+                this.showToast('ไม่สามารถโหลดข้อมูลสถิติผลรางวัลย้อนหลังได้', 'error');
+            }
+        },
+
+        mergeResults() {
                 const customResults = root.LottoStorage ? root.LottoStorage.getCustomResults() : [];
 
                 const mergedMap = new Map();
-                builtInResults.forEach(r => mergedMap.set(r.drawDate, r));
+                this.builtInResults.forEach(r => mergedMap.set(r.drawDate, r));
                 customResults.forEach(r => mergedMap.set(r.drawDate, r));
 
                 this.historicalResults = Array.from(mergedMap.values()).sort((a, b) => b.drawDate.localeCompare(a.drawDate));
@@ -45,10 +66,41 @@
                     this.resultsMap[r.drawDate] = r;
                 });
 
-                console.log(`[LottoBook] Loaded ${this.historicalResults.length} historical draw records.`);
+        },
+
+        async syncLatestResult(manual = false) {
+            if (this.syncInProgress) return;
+            this.syncInProgress = true;
+            try {
+                const result = await root.LottoSync.fetchLatest();
+                const today = root.LottoDraws.thailandNow();
+                const todayIso = `${today.year}-${String(today.month).padStart(2, '0')}-${String(today.day).padStart(2, '0')}`;
+                if (result.drawDate > todayIso) throw new Error('GLO ส่งข้อมูลงวดอนาคต');
+                const previous = this.resultsMap[result.drawDate];
+                if (!previous || JSON.stringify(previous.prizes) !== JSON.stringify(result.prizes)) {
+                    root.LottoStorage.saveCustomResult(result);
+                    this.mergeResults();
+                    if (this.currentTab === 'check') root.LottoCheckResultsView.selectedDrawDate = result.drawDate;
+                    this.renderCurrentView();
+                    this.showToast(`อัปเดตผลรางวัลงวด ${result.dateFormatted} แล้ว`, 'success');
+                } else if (manual) {
+                    this.showToast('ผลรางวัลล่าสุดตรงกับข้อมูลในเครื่องแล้ว', 'info');
+                }
             } catch (err) {
-                console.error('[LottoBook] Failed to load historical results:', err);
-                this.showToast('ไม่สามารถโหลดข้อมูลสถิติผลรางวัลย้อนหลังได้', 'error');
+                console.error('[LottoBook] GLO sync failed:', err);
+                if (manual) this.showToast(`อัปเดตผลไม่ได้: ${err.message}`, 'error');
+            } finally {
+                this.syncInProgress = false;
+            }
+        },
+
+        maybeSyncResults() {
+            if (!navigator.onLine) return;
+            const now = root.LottoDraws.thailandNow();
+            const today = `${now.year}-${String(now.month).padStart(2, '0')}-${String(now.day).padStart(2, '0')}`;
+            const isDrawDay = root.LottoDraws.upcoming(1)[0] === today;
+            if (isDrawDay && (now.hour > 16 || now.hour === 16 && now.minute >= 30)) {
+                this.syncLatestResult(false);
             }
         },
 

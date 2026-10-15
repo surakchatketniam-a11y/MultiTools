@@ -35,6 +35,10 @@
             const resultsList = root.LottoApp.historicalResults || [];
             const resultsMap = root.LottoApp.resultsMap || {};
             const userTickets = root.LottoStorage.getTickets();
+            const selectableDates = Array.from(new Set([
+                ...resultsList.slice(0, 48).map(r => r.drawDate),
+                ...userTickets.map(t => t.drawDate), this.selectedDrawDate
+            ].filter(Boolean))).sort((a, b) => b.localeCompare(a));
 
             // Auto-select latest draw in dataset if not set
             if (!this.selectedDrawDate) {
@@ -70,10 +74,12 @@
 
                             <!-- Draw Date Picker Dropdown -->
                             <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <button type="button" id="btnSyncResults" class="px-3 py-2 bg-action rounded-lg font-semibold whitespace-nowrap">↻ อัปเดตผล GLO</button>
+                                <a href="https://www.glo.or.th/mission/reward-payment/check-reward" target="_blank" rel="noopener noreferrer" class="text-accent underline whitespace-nowrap">ตรวจที่ GLO ↗</a>
                                 <select aria-label="งวดที่ต้องการตรวจผล" id="checkDrawSelect" class="bg-surface  border border-line  rounded-lg px-3 py-2 text-base text-ink  font-medium focus:ring-2 focus:ring-accent focus:outline-none w-full sm:w-auto">
-                                    ${resultsList.slice(0, 48).map(r => `
-                                        <option value="${r.drawDate}" ${r.drawDate === this.selectedDrawDate ? 'selected' : ''}>
-                                            งวด ${r.dateFormatted || formatThaiDate(r.drawDate)}
+                                    ${selectableDates.map(d => `
+                                        <option value="${d}" ${d === this.selectedDrawDate ? 'selected' : ''}>
+                                            งวด ${formatThaiDate(d)}
                                         </option>
                                     `).join('')}
                                 </select>
@@ -133,7 +139,7 @@
                                     </h3>
                                 </div>
                                 <span class="text-base bg-success-soft  text-success  px-2.5 py-1 rounded-full font-semibold">
-                                    ✓ ฐานข้อมูล GLO
+                                    ✓ ${currentDrawResult.source === 'GLO' ? 'อัปเดตจาก GLO' : 'ข้อมูลในเครื่อง'}
                                 </span>
                             </div>
 
@@ -349,6 +355,7 @@
         },
 
         bindEvents(container) {
+            container.querySelector('#btnSyncResults')?.addEventListener('click', () => root.LottoApp.syncLatestResult(true));
             // Check draw select change
             const drawSelect = container.querySelector('#checkDrawSelect');
             if (drawSelect) {

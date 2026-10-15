@@ -25,30 +25,7 @@
      * Generates upcoming draw dates (1st and 16th of current and upcoming months).
      */
     function getUpcomingDrawDates(count = 6) {
-        const dates = [];
-        const today = new Date();
-        let year = today.getFullYear();
-        let month = today.getMonth(); // 0-indexed
-
-        for (let i = 0; i < count; i++) {
-            // First draw of month: 1st (or 2nd in May)
-            const d1 = new Date(year, month, month === 4 ? 2 : 1);
-            const iso1 = d1.toISOString().slice(0, 10);
-
-            // Second draw of month: 16th (or 17th in Jan)
-            const d2 = new Date(year, month, month === 0 ? 17 : 16);
-            const iso2 = d2.toISOString().slice(0, 10);
-
-            if (iso1 >= today.toISOString().slice(0, 10)) dates.push(iso1);
-            if (iso2 >= today.toISOString().slice(0, 10)) dates.push(iso2);
-
-            month++;
-            if (month > 11) {
-                month = 0;
-                year++;
-            }
-        }
-        return dates.sort().slice(0, count);
+        return root.LottoDraws.upcoming(count);
     }
 
     const MyTicketsView = {
@@ -61,7 +38,7 @@
             const tickets = root.LottoStorage.getTickets();
             const spendingSummary = root.LottoStorage.getSpendingSummary();
             const upcomingDates = getUpcomingDrawDates(4);
-            const defaultDrawDate = upcomingDates[0] || new Date().toISOString().slice(0, 10);
+            const defaultDrawDate = root.LottoDraws.next().date;
 
             // Distinct draw dates from recorded tickets + upcoming dates
             const drawDateSet = new Set(upcomingDates);
@@ -70,8 +47,12 @@
 
             // Selected draw budget
             const currentSelectedDraw = this.selectedDrawFilter === 'all' 
-                ? (availableDrawDates[0] || defaultDrawDate)
+                ? defaultDrawDate
                 : this.selectedDrawFilter;
+
+            const nextDraw = root.LottoDraws.next();
+            const nextBudget = root.LottoStorage.getBudgetForDraw(nextDraw.date);
+            const nextSpent = spendingSummary.drawStats[nextDraw.date]?.totalCost || 0;
 
             const drawBudget = root.LottoStorage.getBudgetForDraw(currentSelectedDraw);
             const drawStats = spendingSummary.drawStats[currentSelectedDraw] || { totalCost: 0, ticketCount: 0 };
@@ -85,6 +66,19 @@
 
             container.innerHTML = `
                 <div class="space-y-6">
+                    <section class="color-panel tone-yellow bg-surface p-4 rounded-lg border border-line" aria-label="งวดถัดไป" data-next-draw="${nextDraw.date}">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h2 class="font-bold text-ink">งวดถัดไป ${formatShortThaiDate(nextDraw.date)}</h2>
+                                <p class="text-muted">นับถอยหลังถึงเวลา 16:00 น. ตามเวลาประเทศไทย (กำหนดวันอาจเปลี่ยนตามประกาศ GLO)</p>
+                            </div>
+                            <strong id="nextDrawCountdown" class="text-xl text-warning">${root.LottoDraws.formatRemaining(nextDraw.remainingMs)}</strong>
+                        </div>
+                        <p class="mt-2 text-ink">${nextBudget > 0
+                            ? `งบคงเหลือ ฿${Math.max(0, nextBudget - nextSpent).toLocaleString()} จาก ฿${nextBudget.toLocaleString()}${nextSpent > nextBudget ? ' (เกินงบแล้ว)' : ''}`
+                            : 'ยังไม่ได้ตั้งงบสำหรับงวดนี้'}
+                        </p>
+                    </section>
                     <!-- Top Summary & Budget Card -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <!-- Total All-time Spent -->
@@ -152,6 +146,7 @@
                                 <span>▤</span> บันทึกสลากใหม่
                             </h2>
                             <div class="flex gap-1.5 text-base">
+                                <button type="button" id="btnScanTicket" class="px-2.5 py-1 bg-raised text-ink rounded-lg font-medium transition">⌗ สแกนสลาก</button>
                                 <button type="button" id="btnExportData" class="px-2.5 py-1 bg-raised hover:bg-raised   text-ink  rounded-lg font-medium transition">
                                     ↑ สำรองข้อมูล
                                 </button>
@@ -320,6 +315,8 @@
         },
 
         bindEvents(container) {
+            container.querySelector('#btnScanTicket')?.addEventListener('click', () =>
+                root.LottoScanUI.open(container.querySelector('#addTicketForm')));
             // Quick quantity buttons
             container.querySelectorAll('.btn-qty-quick').forEach(btn => {
                 btn.addEventListener('click', () => {
