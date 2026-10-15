@@ -1,11 +1,4 @@
 /* LottoBook: DESIGN.md surfaces, type and spacing, powered by tokens.css. */
-:root {
-    color-scheme: dark;
-    --book-accent-soft: color-mix(in srgb, var(--color-product-waypoint) 10%, var(--color-surface-1));
-    --book-success-soft: color-mix(in srgb, var(--color-semantic-success) 10%, var(--color-surface-1));
-    --book-warning-soft: color-mix(in srgb, var(--color-semantic-warning) 10%, var(--color-surface-1));
-    --book-error-soft: color-mix(in srgb, var(--color-product-boundary) 10%, var(--color-surface-1));
-}
 * { box-sizing: border-box; }
 html { scroll-padding-top: 96px; }
 body { margin: 0; min-height: 100vh; background: var(--color-canvas); color: var(--color-ink); font-family: var(--font-body); font-size: var(--text-body-size); line-height: 1.7; -webkit-font-smoothing: antialiased; overflow-wrap: break-word; }
@@ -15,7 +8,7 @@ a { text-decoration: none; }
 button, a { touch-action: manipulation; }
 button { cursor: pointer; min-height: 44px; }
 button:disabled { cursor: not-allowed; opacity: .5; }
-:focus-visible { outline: 2px solid var(--color-product-waypoint); outline-offset: 4px; }
+:focus-visible { outline: 2px solid var(--book-accent); outline-offset: 4px; }
 input:not([type=file]), select, textarea { min-width: 0; min-height: 48px; border-radius: var(--radius-md); background: var(--color-surface-2); color: var(--color-ink); font-size: 16px; }
 input::placeholder { color: var(--color-ink-muted); opacity: .8; }
 input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offset: 2px; }
@@ -23,16 +16,16 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offs
 .site-header { position: sticky; top: 0; z-index: 40; background: var(--color-canvas); border-bottom: 1px solid var(--color-hairline-soft); }
 .header-inner { min-height: 80px; display: flex; align-items: center; justify-content: space-between; gap: 32px; }
 .brand { display: flex; align-items: center; gap: 12px; color: var(--color-ink); font-size: 20px; font-weight: 600; line-height: 1.4; flex-shrink: 0; }
-.brand-mark { color: var(--color-product-waypoint); }
+.brand-mark { color: var(--book-accent); }
 .brand-byline { display: block; font-size: 10px; letter-spacing: 1.3px; color: var(--color-ink-muted); font-weight: 600; margin-top: 3px; }
 .desktop-nav { display: flex; gap: 28px; align-self: stretch; }
 .desktop-nav a { display: flex; align-items: center; color: var(--color-ink-muted); border-bottom: 2px solid transparent; padding: 8px 0; font-weight: 500; }
-.desktop-nav a[aria-current] { border-color: var(--color-product-waypoint); color: var(--color-ink); }
+.desktop-nav a[aria-current] { border-color: var(--book-accent); color: var(--color-ink); }
 .calculator-link { padding: 10px 16px; border: 1px solid var(--color-hairline); border-radius: var(--radius-md); color: var(--color-ink); white-space: nowrap; font-size: 16px; }
-.calculator-link span { margin-left: 12px; color: var(--color-product-waypoint); }
+.calculator-link > span:last-child { margin-left: 12px; color: var(--book-accent); }
 .main-content { padding-top: 56px; padding-bottom: 64px; }
 .page-intro { padding-bottom: 40px; }
-.eyebrow { display: flex; align-items: center; gap: 10px; color: var(--color-product-waypoint); font-size: 16px; font-weight: 500; margin: 0 0 16px; }
+.eyebrow { display: flex; align-items: center; gap: 10px; color: var(--book-accent); font-size: 16px; font-weight: 500; margin: 0 0 16px; }
 .status-dot { width: 6px; height: 6px; background: currentColor; display: inline-block; }
 .page-intro h1 { font-family: var(--font-display); font-size: clamp(32px, 4vw, 56px); font-weight: 600; line-height: 1.35; margin: 0 0 16px; }
 #pageDescription { font-size: 18px; color: var(--color-ink-muted); max-width: 650px; margin: 0; }
@@ -44,14 +37,14 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offs
 #viewContainer > .space-y-6 > .border, #viewContainer > .space-y-6 > .grid > .border { border-radius: var(--radius-lg); }
 #viewContainer .font-lotto { font-family: var(--font-body); font-variant-numeric: tabular-nums; letter-spacing: .08em; }
 #viewContainer .font-lotto input, #viewContainer input.font-lotto { letter-spacing: .14em; }
-#viewContainer .bg-action { color: var(--color-inverse-ink); border-color: var(--color-inverse-canvas); }
+#viewContainer .bg-action { color: var(--book-action-ink); border-color: var(--book-action); }
 #viewContainer button.bg-action { font-weight: 600; }
 #viewContainer [data-stats-tab] { white-space: normal; text-align: left; flex: 1; min-width: 0; border-radius: 0; }
-#viewContainer [data-stats-tab][aria-pressed=true] { color: var(--color-product-waypoint); }
+#viewContainer [data-stats-tab][aria-pressed=true] { color: var(--book-accent); }
 #viewContainer .w-12.text-right { width: 112px; flex-shrink: 0; }
 #viewContainer .flex > * { min-width: 0; }
 #viewContainer .tracking-wider:not(.font-lotto), #viewContainer .tracking-widest:not(.font-lotto) { letter-spacing: 0; }
-#viewContainer .transition { transition: color 160ms ease-out, background-color 160ms ease-out, border-color 160ms ease-out; }
+#viewContainer .transition { transition: transform 160ms ease-out; }
 #viewContainer .card-hover { transition: border-color 160ms ease-out; }
 #viewContainer button:active { transform: scale(.98); }
 .no-scrollbar { scrollbar-width: none; }
@@ -74,16 +67,16 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offs
 #viewContainer .flex:has(> #ticketCount) > div,
 #viewContainer .flex:has(> #ticketCostPerUnit) > div { flex-shrink: 0; }
 #viewContainer .btn-qty-quick, #viewContainer .btn-cost-quick { min-width: 44px; white-space: nowrap; }
-.bg-action { color: var(--color-inverse-ink); }
+.bg-action { color: var(--book-action-ink); }
 .text-base { line-height: 1.7; }
-.bg-action.text-white { color: var(--color-inverse-ink); }
+.bg-action.text-white { color: var(--book-action-ink); }
 
 .book-dialog { width: min(448px, calc(100% - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: 0; border: 0; border-radius: var(--radius-lg); background: var(--color-surface-1); color: var(--color-ink); overflow-y: auto; }
 .book-dialog::backdrop { background: rgb(0 0 0 / .8); }
 .book-dialog .btn-close-modal { min-width: 44px; }
 
 @media (hover: hover) and (pointer: fine) {
-    .desktop-nav a:hover, .site-footer a:hover { color: var(--color-product-waypoint); }
+    .desktop-nav a:hover, .site-footer a:hover { color: var(--book-accent); }
     .calculator-link:hover { background: var(--color-surface-2); }
     .card-hover:hover { border-color: var(--color-hairline); }
 }
@@ -98,7 +91,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offs
     .mobile-nav { display: grid; grid-template-columns: repeat(3, 1fr); position: fixed; inset: auto 0 0; z-index: 40; background: var(--color-surface-1); border-top: 1px solid var(--color-hairline); padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); }
     .mobile-nav a { display: flex; flex-direction: column; align-items: center; color: var(--color-ink-muted); font-size: 16px; line-height: 1.5; padding: 4px; border-radius: var(--radius-md); }
     .mobile-nav a span { font-size: 22px; line-height: 1.3; }
-    .mobile-nav a[aria-current] { color: var(--color-product-waypoint); background: var(--book-accent-soft); }
+    .mobile-nav a[aria-current] { color: var(--book-accent); background: var(--book-accent-soft); }
     .toast-container { bottom: calc(92px + env(safe-area-inset-bottom)); right: 16px; }
     .main-content { padding-top: 32px; }
     .site-footer { flex-direction: column; gap: 12px; }
@@ -110,7 +103,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offs
     .brand { font-size: 18px; }
     .brand-mark { width: 26px; }
     .calculator-link { padding: 8px 10px; }
-    .calculator-link span { margin-left: 4px; }
+    .calculator-link > span:last-child { margin-left: 4px; }
     .page-intro { padding-bottom: 32px; }
     .intro-meta { gap: 4px; flex-direction: column; margin-top: 16px; }
     .intro-meta span + span::before { content: none; }
@@ -131,3 +124,47 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offs
     #viewContainer button:active { transform: none; }
 }
 @media (max-width: 480px) { .book-dialog .grid-cols-2 { grid-template-columns: 1fr; } }
+
+/* Color is tied to content: spending, budget, prizes and data series. */
+.header-actions { display: flex; align-items: center; gap: 12px; }
+.theme-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--color-hairline); border-radius: var(--radius-md); background: var(--color-surface-1); color: var(--color-ink); white-space: nowrap; font-size: 16px; }
+#themeIcon { font-size: 22px; line-height: 1; }
+.switch-track { display: inline-flex; align-items: center; width: 30px; height: 18px; border-radius: var(--radius-pill); padding: 3px; background: var(--color-hairline); }
+.switch-track > span { width: 12px; height: 12px; border-radius: 50%; background: var(--color-surface-1); }
+.theme-toggle[aria-checked=true] .switch-track { background: var(--book-accent); }
+.theme-toggle[aria-checked=true] .switch-track > span { transform: translateX(12px); background: var(--color-canvas); }
+.color-panel { --panel-color: var(--book-blue); --book-accent: var(--panel-color); --book-accent-soft: color-mix(in srgb, var(--panel-color) 12%, var(--color-surface-1)); background: var(--book-accent-soft); border-color: color-mix(in srgb, var(--panel-color) 30%, var(--color-hairline-soft)); }
+.tone-purple { --panel-color: var(--book-purple); }
+.tone-yellow { --panel-color: var(--book-yellow); }
+.tone-cyan { --panel-color: var(--book-cyan); }
+.tone-blue { --panel-color: var(--book-blue); }
+#viewContainer .color-panel { background: var(--book-accent-soft); border-top: 3px solid var(--panel-color); }
+#viewContainer .color-panel .text-accent { color: var(--panel-color); }
+#viewContainer .color-panel .text-2xl, #viewContainer .color-panel .text-3xl { color: var(--panel-color); }
+#viewContainer .form-panel { border-top: 3px solid var(--book-cyan); }
+.page-intro { position: relative; border-left: 3px solid var(--book-accent); padding-left: 24px; margin-bottom: 32px; padding-bottom: 8px; }
+.page-intro h1 { color: var(--book-accent); }
+.intro-meta span { border: 1px solid var(--color-hairline-soft); border-radius: var(--radius-pill); padding: 4px 12px; background: var(--color-surface-1); }
+.intro-meta span + span::before { content: none; }
+.intro-meta span:first-child { color: var(--book-accent); background: var(--book-accent-soft); border-color: transparent; }
+.desktop-nav a[data-nav-tab=tickets], .mobile-nav a[data-mobile-nav=tickets] { --book-accent: var(--book-purple); }
+.desktop-nav a[data-nav-tab=check], .mobile-nav a[data-mobile-nav=check] { --book-accent: var(--book-cyan); }
+.desktop-nav a[data-nav-tab=stats], .mobile-nav a[data-mobile-nav=stats] { --book-accent: var(--book-blue); }
+.mobile-nav a[aria-current] { background: color-mix(in srgb, var(--book-accent) 12%, var(--color-surface-1)); }
+#viewContainer .chart-bar { background: var(--book-blue); }
+#viewContainer .space-y-2:nth-child(even) .chart-bar { background: var(--book-purple); }
+#viewContainer .bg-budget { background: var(--book-yellow); }
+#viewContainer .frequency-card { border-top: 3px solid var(--book-blue); }
+#viewContainer .frequency-card:nth-child(3n + 2) { --book-accent: var(--book-purple); border-top-color: var(--book-purple); }
+#viewContainer .frequency-card:nth-child(3n) { --book-accent: var(--book-cyan); border-top-color: var(--book-cyan); }
+#viewContainer .grid-cols-4 > [title] { border-bottom: 2px solid var(--book-accent); }
+@media (hover: hover) and (pointer: fine) { .theme-toggle:hover { background: var(--color-surface-2); } }
+@media (max-width: 1100px) { .theme-label { display: none; } .header-actions { gap: 8px; } }
+@media (max-width: 600px) {
+    .theme-toggle { width: 44px; padding: 8px; flex-shrink: 0; }
+    .theme-toggle #themeIcon, .calculator-label { display: none; }
+    .calculator-link { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; }
+    .calculator-link > span:last-child { margin: 0; }
+    .page-intro { padding-left: 16px; margin-bottom: 24px; padding-bottom: 4px; }
+    .intro-meta { align-items: flex-start; gap: 8px; }
+}

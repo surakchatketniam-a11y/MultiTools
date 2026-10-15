@@ -13,6 +13,7 @@
         async init() {
             console.log('[LottoBook] Initializing application...');
 
+            root.LottoTheme.init();
             await this.loadHistoricalData();
             this.initNavigation();
             this.handleHashChange();
@@ -66,6 +67,7 @@
             const validTabs = ['tickets', 'check', 'stats'];
             this.currentTab = validTabs.includes(hash) ? hash : 'tickets';
 
+            document.documentElement.dataset.page = this.currentTab;
             document.querySelectorAll('[data-nav-tab], [data-mobile-nav]').forEach(link => {
                 const active = (link.dataset.navTab || link.dataset.mobileNav) === this.currentTab;
                 if (active) link.setAttribute('aria-current', 'page');

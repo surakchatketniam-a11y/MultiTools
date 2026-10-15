@@ -140,7 +140,7 @@
                             <!-- Primary Prizes Grid -->
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                                 <!-- First Prize -->
-                                <div class="bg-surface  p-3.5 rounded-lg border border-line   sm:col-span-2 flex flex-col justify-between">
+                                <div class="color-panel tone-purple bg-surface p-3.5 rounded-lg border border-line sm:col-span-2 flex flex-col justify-between">
                                     <div class="flex justify-between items-center text-base text-muted  mb-1">
                                         <span class="font-bold text-accent">★ รางวัลที่ 1</span>
                                         <span>รางวัลละ 6,000,000 บาท</span>
@@ -156,7 +156,7 @@
                                 </div>
 
                                 <!-- Back 2 Digits Prize (Highlighted) -->
-                                <div class="bg-surface  p-3.5 rounded-lg border border-line   flex flex-col justify-between">
+                                <div class="color-panel tone-yellow bg-surface p-3.5 rounded-lg border border-line flex flex-col justify-between">
                                     <div class="flex justify-between items-center text-base text-muted  mb-1">
                                         <span class="font-bold text-warning ">◎ เลขท้าย 2 ตัว</span>
                                         <span>2,000 บ.</span>
@@ -172,7 +172,7 @@
                                 </div>
 
                                 <!-- Front 3 & Back 3 Digits -->
-                                <div class="bg-surface  p-3.5 rounded-lg border border-line   flex flex-col justify-between">
+                                <div class="color-panel tone-blue bg-surface p-3.5 rounded-lg border border-line flex flex-col justify-between">
                                     <div class="text-base text-muted  mb-1 flex justify-between">
                                         <span class="font-bold text-accent ">เลขหน้า 3 ตัว (4,000 บ.)</span>
                                     </div>

@@ -584,3 +584,16 @@ The fonts above have no Thai glyphs. When the page content is Thai, pair them wi
 - Set `<html lang="th">`. Body line-height 1.7 or more (Thai tone marks need room); headings 1.3 or more, even if the Latin value above is tighter.
 - Never apply letter-spacing (positive or negative) to Thai text; ignore the tracking values above for Thai. Do not use `text-transform: uppercase` or italics on Thai.
 - Keep body text at 16px or larger. Thai has no spaces between words, so let the browser wrap lines (`overflow-wrap: break-word`) and avoid fixed-width truncation.
+
+
+## LottoBook application adaptation
+
+User-directed extension: this app supports both light and dark modes and uses multiple palette identities together. These application rules take priority over the original marketing-only restrictions above.
+
+- Purple (Terraform): spending summaries, saved tickets, and recording actions.
+- Yellow (Vault): budgets and two-digit prize highlights; use amber-200 for readable text on light surfaces.
+- Cyan (Waypoint): checking results and form accents; darken text in light mode.
+- Blue (Vagrant): historical statistics, front-three-digit results, and chart series.
+- Green / coral: success and error states. Color is paired with text labels.
+- Preserve the original product palette. Semantic `--book-*` roles and light surface overrides live in `tokens.css`.
+- Theme follows the device until a user selects Light or Dark; save the choice in `lotto_theme`. Apply it before paint, synchronize other tabs, and support unavailable local storage.

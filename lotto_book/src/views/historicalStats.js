@@ -186,7 +186,7 @@
                             ${b2.top10.map((item, idx) => {
                                 const pct = totalDraws > 0 ? ((item.count / totalDraws) * 100).toFixed(1) : 0;
                                 return `
-                                    <div class="bg-surface  p-3.5 rounded-lg border border-line   flex flex-col items-center justify-between text-center relative overflow-hidden">
+                                    <div class="frequency-card bg-surface p-3.5 rounded-lg border border-line flex flex-col items-center justify-between text-center relative overflow-hidden">
                                         <div class="absolute top-1.5 left-2 text-base font-bold text-muted">#${idx + 1}</div>
                                         <div class="font-lotto text-3xl font-extrabold text-accent mt-2 mb-1">
                                             ${item.number}
@@ -211,7 +211,7 @@
                         <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
                             ${b2.cold10.map((item, idx) => {
                                 return `
-                                    <div class="bg-surface  p-3.5 rounded-lg border border-line   flex flex-col items-center justify-between text-center relative overflow-hidden">
+                                    <div class="frequency-card bg-surface p-3.5 rounded-lg border border-line flex flex-col items-center justify-between text-center relative overflow-hidden">
                                         <div class="absolute top-1.5 left-2 text-base font-bold text-muted">#${idx + 1}</div>
                                         <div class="font-lotto text-3xl font-extrabold text-accent  mt-2 mb-1">
                                             ${item.number}
@@ -272,7 +272,7 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <!-- Official 2-digit Prize -->
-                            <div class="p-4 rounded-lg bg-accent-soft  border border-line  space-y-3">
+                            <div class="color-panel tone-cyan p-4 rounded-lg bg-accent-soft border border-line space-y-3">
                                 <div class="flex items-center justify-between">
                                     <span class="font-bold text-base text-accent">◎ รางวัลเลขท้าย 2 ตัว (รางวัลเฉพาะ)</span>
                                     <span class="text-base bg-accent-soft  text-accent  px-2 py-0.5 rounded-full font-bold">หมุนวงล้อเฉพาะ</span>
@@ -294,7 +294,7 @@
                             </div>
 
                             <!-- 1st Prize 2-digit Tail -->
-                            <div class="p-4 rounded-lg bg-accent-soft  border border-line  space-y-3">
+                            <div class="color-panel tone-purple p-4 rounded-lg bg-accent-soft border border-line space-y-3">
                                 <div class="flex items-center justify-between">
                                     <span class="font-bold text-base text-accent ">★ เลข 2 ตัวท้ายที่ตัดจากรางวัลที่ 1</span>
                                     <span class="text-base bg-accent-soft  text-accent  px-2 py-0.5 rounded-full font-bold">ตัดจาก 6 หลัก</span>
@@ -365,7 +365,7 @@
                                                     <div class="flex items-center gap-2 text-base">
                                                         <span class="w-4 font-mono font-bold text-ink  text-center">${digit}</span>
                                                         <div class="flex-1 bg-raised  rounded-full h-2 overflow-hidden">
-                                                            <div class="h-2 rounded-full bg-action" style="width: ${barPct}%"></div>
+                                                            <div class="chart-bar h-2 rounded-full" style="width: ${barPct}%"></div>
                                                         </div>
                                                         <span class="w-12 text-right text-base text-muted ">${count} ครั้ง (${pct}%)</span>
                                                     </div>
@@ -388,7 +388,7 @@
             return `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Front 3 Digits Top 10 -->
-                    <div class="bg-surface  p-5 rounded-lg border border-line   space-y-3">
+                    <div class="color-panel tone-blue bg-surface  p-5 rounded-lg border border-line   space-y-3">
                         <div class="flex items-center justify-between pb-2 border-b border-line ">
                             <h3 class="text-base font-bold text-accent ">
                                 · เลขหน้า 3 ตัวที่ออกบ่อยสุด (Top 10)
@@ -409,7 +409,7 @@
                     </div>
 
                     <!-- Back 3 Digits Top 10 -->
-                    <div class="bg-surface  p-5 rounded-lg border border-line   space-y-3">
+                    <div class="color-panel tone-purple bg-surface  p-5 rounded-lg border border-line   space-y-3">
                         <div class="flex items-center justify-between pb-2 border-b border-line ">
                             <h3 class="text-base font-bold text-accent ">
                                 · เลขท้าย 3 ตัวที่ออกบ่อยสุด (Top 10)

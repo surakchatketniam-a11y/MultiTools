@@ -6,6 +6,7 @@
     <title>สมุดสลากและสถิติย้อนหลัง | Multitools</title>
     <meta name="description" content="บันทึกสลากกินแบ่งรัฐบาลไทย ตั้งงวดและงบประมาณ ตรวจผลรางวัล และดูสถิติย้อนหลังตามจริง">
     <meta name="theme-color" content="#000000">
+    <script src="./src/theme.js"></script>
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/svg+xml" href="./favicon.svg">
     <link rel="alternate icon" href="./favicon.ico">
@@ -20,11 +21,11 @@
                 colors: {
                     canvas: 'var(--color-canvas)', surface: 'var(--color-surface-1)', raised: 'var(--color-surface-2)',
                     ink: 'var(--color-ink)', muted: 'var(--color-ink-muted)', line: 'var(--color-hairline-soft)',
-                    accent: 'var(--color-product-waypoint)', 'accent-soft': 'var(--book-accent-soft)',
-                    action: 'var(--color-inverse-canvas)', 'action-hover': 'var(--color-ink-muted)',
-                    success: 'var(--color-semantic-success)', 'success-soft': 'var(--book-success-soft)',
-                    warning: 'var(--color-semantic-warning)', 'warning-soft': 'var(--book-warning-soft)',
-                    error: 'var(--color-product-boundary)', 'error-soft': 'var(--book-error-soft)'
+                    accent: 'var(--book-accent)', 'accent-soft': 'var(--book-accent-soft)',
+                    action: 'var(--book-action)', 'action-hover': 'var(--book-action-hover)',
+                    success: 'var(--book-success)', 'success-soft': 'var(--book-success-soft)',
+                    warning: 'var(--book-warning)', 'warning-soft': 'var(--book-warning-soft)',
+                    error: 'var(--book-error)', 'error-soft': 'var(--book-error-soft)'
                 },
                 borderRadius: { lg: 'var(--radius-md)' },
                 fontFamily: { sans: ['Inter', 'Anuphan', 'Noto Sans Thai', 'system-ui', 'sans-serif'] }
@@ -46,7 +47,12 @@
                 <a href="#check" data-nav-tab="check">ตรวจผลรางวัล</a>
                 <a href="#stats" data-nav-tab="stats">สถิติย้อนหลัง</a>
             </nav>
-            <a href="../calculator_AIO/" class="calculator-link">เครื่องคำนวณ <span aria-hidden="true">↗</span></a>
+            <div class="header-actions">
+                <button id="themeToggleBtn" type="button" class="theme-toggle" role="switch" aria-checked="false" aria-label="โหมดมืด">
+                    <span id="themeIcon" aria-hidden="true">☼</span><span id="themeLabel" class="theme-label">โหมดสว่าง</span><span class="switch-track" aria-hidden="true"><span></span></span>
+                </button>
+                <a href="../calculator_AIO/" class="calculator-link" aria-label="เปิดเครื่องคำนวณ"><span class="calculator-label">เครื่องคำนวณ</span><span aria-hidden="true">↗</span></a>
+            </div>
         </div>
     </header>
     <main id="mainContent" class="shell main-content" tabindex="-1">

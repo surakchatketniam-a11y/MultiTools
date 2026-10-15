@@ -88,7 +88,7 @@
                     <!-- Top Summary & Budget Card -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <!-- Total All-time Spent -->
-                        <div class="bg-surface  p-4 rounded-lg border border-line   flex flex-col justify-between">
+                        <div class="color-panel tone-purple bg-surface p-4 rounded-lg border border-line flex flex-col justify-between">
                             <div class="flex items-center justify-between">
                                 <span class="text-base font-medium text-muted ">ค่าใช้จ่ายสะสมทั้งหมด</span>
                                 <span class="p-1.5 bg-accent-soft  text-accent rounded-lg text-base">฿</span>
@@ -104,7 +104,7 @@
                         </div>
 
                         <!-- Current Draw Budget Card -->
-                        <div class="bg-surface  p-4 rounded-lg border border-line   md:col-span-2 flex flex-col justify-between">
+                        <div class="color-panel tone-yellow bg-surface p-4 rounded-lg border border-line md:col-span-2 flex flex-col justify-between">
                             <div class="flex items-center justify-between flex-wrap gap-2">
                                 <div class="flex items-center gap-2">
                                     <span class="p-1.5 bg-warning-soft  text-warning rounded-lg text-base">◎</span>
@@ -134,7 +134,7 @@
                                 
                                 ${drawBudget > 0 ? `
                                     <div class="w-full bg-raised  rounded-full h-2.5 overflow-hidden">
-                                        <div class="h-2.5 rounded-full transition ${isOverBudget ? 'bg-error' : (budgetPercent > 80 ? 'bg-warning' : 'bg-action')}" style="width: ${budgetPercent}%"></div>
+                                        <div class="h-2.5 rounded-full transition ${isOverBudget ? 'bg-error' : (budgetPercent > 80 ? 'bg-warning' : 'bg-budget')}" style="width: ${budgetPercent}%"></div>
                                     </div>
                                 ` : `
                                     <div class="text-base text-muted  ">
@@ -146,7 +146,7 @@
                     </div>
 
                     <!-- Add Ticket Form -->
-                    <div class="bg-surface  p-5 rounded-lg border border-line  ">
+                    <div class="form-panel bg-surface p-5 rounded-lg border border-line  ">
                         <div class="flex flex-wrap gap-3 items-center justify-between pb-3 border-b border-line  mb-4">
                             <h2 class="text-base font-bold text-ink  flex items-center gap-2">
                                 <span>▤</span> บันทึกสลากใหม่

@@ -88,3 +88,51 @@
   --font-thai-display: 'Anuphan', 'Noto Sans Thai', sans-serif;
   --font-thai-body: 'Anuphan', 'Noto Sans Thai', sans-serif;
 }
+/* LottoBook semantic roles. Original palette values above remain the source. */
+:root {
+  --book-purple: color-mix(in srgb, var(--color-product-terraform) 65%, white);
+  --book-blue: color-mix(in srgb, var(--color-accent-blue) 80%, white);
+  --book-cyan: var(--color-product-waypoint);
+  --book-yellow: var(--color-product-vault);
+  --book-success: var(--color-semantic-success);
+  --book-warning: var(--color-semantic-warning);
+  --book-error: var(--color-product-boundary);
+  --book-accent: var(--book-purple);
+  --book-action: var(--color-product-terraform);
+  --book-action-ink: #ffffff;
+  --book-action-hover: color-mix(in srgb, var(--book-action) 85%, black);
+  --book-accent-soft: color-mix(in srgb, var(--book-accent) 12%, var(--color-surface-1));
+  --book-success-soft: color-mix(in srgb, var(--book-success) 10%, var(--color-surface-1));
+  --book-warning-soft: color-mix(in srgb, var(--book-warning) 10%, var(--color-surface-1));
+  --book-error-soft: color-mix(in srgb, var(--book-error) 10%, var(--color-surface-1));
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-canvas: #f7f8fc;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #eef0f6;
+  --color-surface-3: #dfe3ec;
+  --color-ink: #15181e;
+  --color-ink-muted: #525968;
+  --color-ink-subtle: #656a76;
+  --color-hairline: #c7cdd9;
+  --color-hairline-soft: #dfe3ec;
+  --color-inverse-canvas: #15181e;
+  --color-inverse-ink: #ffffff;
+  --book-purple: var(--color-product-terraform);
+  --book-blue: color-mix(in srgb, var(--color-product-vagrant) 90%, black);
+  --book-cyan: color-mix(in srgb, var(--color-product-waypoint) 55%, black);
+  --book-yellow: color-mix(in srgb, var(--color-amber-200) 85%, black);
+  --book-success: color-mix(in srgb, var(--color-semantic-success) 55%, black);
+  --book-warning: color-mix(in srgb, var(--color-amber-200) 85%, black);
+  --book-error: color-mix(in srgb, var(--color-semantic-error) 85%, black);
+}
+:root[data-page="check"] {
+  --book-accent: var(--book-cyan);
+  --book-action: var(--color-product-waypoint);
+  --book-action-ink: #000000;
+}
+:root[data-page="stats"] {
+  --book-accent: var(--book-blue);
+  --book-action: var(--color-product-vagrant);
+}
