@@ -25,7 +25,9 @@ function context(extra = {}) {
     for (const name of ['normalizeThaiDigits', 'parseNumericInput', 'numberOrDefault', 'integerOrDefault',
         'formatLocalDate', 'addCalendarDays', 'parseDateInputThai', 'parseFrankfurterRates',
         'evaluateArithmeticExpression', 'escapeHTML', 'formatInputDisplay', 'formatCalcExpr', 'formatNum', 'formatUnitPrice', 'formatMoney',
-        'validateCalendarDate', 'countWorkingDays', 'offsetWorkingDays', 'normalizeWorkDays', 'formatDateInTimezone']) {
+        'validateCalendarDate', 'countWorkingDays', 'offsetWorkingDays', 'normalizeWorkDays', 'formatDateInTimezone',
+        'generateLoanSchedule', 'aggregateLoanScheduleByYear', 'rowsToCSV', 'buildLoanAmortizationCSV',
+        'generateSavingsSchedule', 'buildSavingsScheduleCSV', 'getCSVFilename']) {
         vm.runInContext(source(name), ctx);
     }
     return ctx;
@@ -417,5 +419,94 @@ test('all 22 tools have complete and valid clear and demo data mappings', () => 
         assert.ok(clearedState, `Tool ${tool.id} should have state after clear`);
     }
 });
+
+test('loan amortization schedule generates accurate monthly/yearly breakdown and valid CSV with UTF-8 BOM', () => {
+    const ctx = context();
+
+    // 1. 30-year mortgage test (360 months)
+    const mortgage = { principal: '1,000,000', interestRate: '3.6', months: '360', extra: '0', calcMethod: 'reducing', rateType: 'fixed' };
+    const schedule = ctx.generateLoanSchedule(mortgage);
+    assert.equal(schedule.length, 360);
+    assert.equal(schedule[0].month, 1);
+    assert.equal(schedule[0].year, 1);
+    assert.ok(schedule[0].interest > 0);
+    assert.ok(schedule[0].principal > 0);
+    assert.equal(schedule[359].month, 360);
+    assert.equal(schedule[359].year, 30);
+    assert.equal(schedule[359].balance, 0);
+
+    // 2. Yearly schedule aggregation
+    const yearly = ctx.aggregateLoanScheduleByYear(schedule);
+    assert.equal(yearly.length, 30);
+    assert.equal(yearly[0].year, 1);
+    assert.equal(yearly[0].paymentsCount, 12);
+    assert.equal(yearly[0].balance, schedule[11].balance);
+    assert.equal(yearly[29].year, 30);
+    assert.equal(yearly[29].balance, 0);
+
+    // 3. Monthly CSV export
+    const csvMonthly = ctx.buildLoanAmortizationCSV(schedule, 'monthly');
+    assert.ok(csvMonthly.startsWith('\uFEFF'), 'CSV must start with UTF-8 BOM for Microsoft Excel');
+    assert.ok(csvMonthly.includes('งวดที่,ปีที่,ค่างวด (บาท),ดอกเบี้ย (บาท),ตัดเงินต้น (บาท),หนี้คงเหลือ (บาท),อัตราดอกเบี้ย (% ต่อปี)'));
+    const monthlyLines = csvMonthly.split('\r\n').filter(Boolean);
+    assert.equal(monthlyLines.length, 362); // Header + 360 rows + Total
+    assert.ok(monthlyLines[monthlyLines.length - 1].startsWith('รวมทั้งหมด'));
+
+    // 4. Yearly CSV export
+    const csvYearly = ctx.buildLoanAmortizationCSV(schedule, 'yearly');
+    assert.ok(csvYearly.startsWith('\uFEFF'));
+    assert.ok(csvYearly.includes('ปีที่,จำนวนงวดในปี,ยอดผ่อนทั้งปี (บาท),ดอกเบี้ยทั้งปี (บาท),ตัดเงินต้นทั้งปี (บาท),หนี้คงเหลือปลายปี (บาท)'));
+    const yearlyLines = csvYearly.split('\r\n').filter(Boolean);
+    assert.equal(yearlyLines.length, 32); // Header + 30 rows + Total
+    assert.ok(yearlyLines[yearlyLines.length - 1].startsWith('รวมทั้งหมด,360'));
+
+    // 5. Prepayment / Extra payment reduces duration
+    const extraLoan = { principal: '500,000', interestRate: '5', months: '60', extra: '5000', calcMethod: 'reducing' };
+    const extraSchedule = ctx.generateLoanSchedule(extraLoan);
+    assert.ok(extraSchedule.length < 60, 'Extra payment must shorten total loan duration');
+    assert.equal(extraSchedule[extraSchedule.length - 1].balance, 0);
+
+    // 6. Filename generator
+    const fnMonthly = ctx.getCSVFilename('loan_amortization', 'monthly');
+    assert.match(fnMonthly, /^loan_amortization_monthly_\d{8}\.csv$/);
+});
+
+test('savings schedule generates accurate monthly/yearly growth breakdown and valid CSV with UTF-8 BOM', () => {
+    const ctx = context();
+
+    // 1. Compound savings test (5 years, 60 months)
+    const savings = { initial: '50,000', monthly: '5,000', interestRate: '4', years: '5', annualIncrease: '0', inflationRate: '2', mode: 'growth' };
+    const data = ctx.generateSavingsSchedule(savings);
+    assert.equal(data.monthlyRows.length, 60);
+    assert.equal(data.yearlyRows.length, 5);
+    assert.equal(data.totalPrincipal, 50000 + 60 * 5000);
+    assert.ok(data.totalBalance > data.totalPrincipal, 'Balance must exceed principal from compound interest');
+    assert.ok(data.interestEarned > 0);
+
+    // Sum of annual deposits equals total principal
+    const sumAnnualDeposits = data.yearlyRows.reduce((sum, r) => sum + r.depositThisYear, 0);
+    assert.equal(sumAnnualDeposits, data.totalPrincipal);
+
+    // 2. Monthly CSV export
+    const csvMonthly = ctx.buildSavingsScheduleCSV(data, 'monthly');
+    assert.ok(csvMonthly.startsWith('\uFEFF'), 'CSV must start with UTF-8 BOM for Microsoft Excel');
+    assert.ok(csvMonthly.includes('งวดที่,ปีที่,เงินฝากในงวด (บาท),ดอกเบี้ยในงวด (บาท),เงินต้นสะสม (บาท),ดอกเบี้ยสะสม (บาท),ยอดเงินรวมสะสม (บาท)'));
+    const monthlyLines = csvMonthly.split('\r\n').filter(Boolean);
+    assert.equal(monthlyLines.length, 62); // Header + 60 rows + Total
+    assert.ok(monthlyLines[monthlyLines.length - 1].startsWith('รวมทั้งหมด'));
+
+    // 3. Yearly CSV export
+    const csvYearly = ctx.buildSavingsScheduleCSV(data, 'yearly');
+    assert.ok(csvYearly.startsWith('\uFEFF'));
+    assert.ok(csvYearly.includes('ปีที่,เงินฝากในปี (บาท),ดอกเบี้ยในปี (บาท),เงินต้นสะสม (บาท),ดอกเบี้ยสะสม (บาท),ยอดเงินรวมสะสม (บาท),มูลค่าหลังเงินเฟ้อ (บาท)'));
+    const yearlyLines = csvYearly.split('\r\n').filter(Boolean);
+    assert.equal(yearlyLines.length, 7); // Header + 5 rows + Total
+    assert.ok(yearlyLines[yearlyLines.length - 1].startsWith('รวมทั้งหมด,350000.00'));
+
+    // 4. Filename generator
+    const fnYearly = ctx.getCSVFilename('savings_schedule', 'yearly');
+    assert.match(fnYearly, /^savings_schedule_yearly_\d{8}\.csv$/);
+});
+
 
 

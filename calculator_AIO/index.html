@@ -1669,6 +1669,301 @@
             return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         }
 
+        /* -----------------------------------------------------------
+         * AMORTIZATION & SCHEDULE CSV EXPORT HELPERS
+         * ----------------------------------------------------------- */
+        function generateLoanSchedule(params) {
+            const P = numberOrDefault(params.principal, 0);
+            const annualRate = numberOrDefault(params.interestRate, 0);
+            const n = integerOrDefault(params.months, 0);
+            const extra = numberOrDefault(params.extra, 0);
+            const rateType = params.rateType || 'fixed';
+            const rateAfter = numberOrDefault(params.rateAfter, annualRate);
+            const promoMonths = Math.max(0, integerOrDefault(params.promoMonths, 0));
+            const calcMethod = params.calcMethod || 'reducing';
+
+            const schedule = [];
+            if (P <= 0 || n <= 0) return schedule;
+
+            let bal = P, m = 0, payment = 0, previousRate = null;
+            while (bal > 0.01 && m < 1200 && m < n + 120) {
+                const currentRate = rateType === 'step' && m >= promoMonths ? rateAfter : annualRate;
+                const r = (currentRate / 100) / 12;
+                const remaining = Math.max(1, n - m);
+                if (payment === 0 || previousRate !== currentRate) {
+                    payment = calcMethod === 'flat' 
+                        ? (P / n) + (P * currentRate / 100 / 12) 
+                        : (r === 0 ? bal / remaining : bal * (r * Math.pow(1 + r, remaining)) / (Math.pow(1 + r, remaining) - 1));
+                    previousRate = currentRate;
+                }
+                const interest = calcMethod === 'flat' ? (P * currentRate / 100 / 12) : (bal * r);
+                const principalPart = Math.min(bal, Math.max(0, payment + extra - interest));
+                if (principalPart <= 0) break;
+                const actualPayment = interest + principalPart;
+                bal -= principalPart;
+                schedule.push({
+                    month: m + 1,
+                    year: Math.ceil((m + 1) / 12),
+                    payment: actualPayment,
+                    interest: interest,
+                    principal: principalPart,
+                    balance: Math.max(0, bal),
+                    rate: currentRate
+                });
+                m++;
+            }
+            return schedule;
+        }
+
+        function aggregateLoanScheduleByYear(schedule) {
+            const yearlyMap = new Map();
+            for (const row of schedule) {
+                const y = row.year;
+                if (!yearlyMap.has(y)) {
+                    yearlyMap.set(y, {
+                        year: y,
+                        paymentsCount: 0,
+                        payment: 0,
+                        interest: 0,
+                        principal: 0,
+                        balance: row.balance
+                    });
+                }
+                const yr = yearlyMap.get(y);
+                yr.paymentsCount++;
+                yr.payment += row.payment;
+                yr.interest += row.interest;
+                yr.principal += row.principal;
+                yr.balance = row.balance;
+            }
+            return Array.from(yearlyMap.values());
+        }
+
+        function rowsToCSV(rows) {
+            return rows.map(row =>
+                row.map(cell => {
+                    const str = (cell === null || cell === undefined) ? '' : String(cell);
+                    if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+                        return `"${str.replace(/"/g, '""')}"`;
+                    }
+                    return str;
+                }).join(',')
+            ).join('\r\n');
+        }
+
+        function buildLoanAmortizationCSV(schedule, type = 'monthly') {
+            const rows = [];
+            if (!Array.isArray(schedule) || schedule.length === 0) {
+                return '\uFEFF';
+            }
+            if (type === 'yearly') {
+                const yearly = aggregateLoanScheduleByYear(schedule);
+                rows.push(['ปีที่', 'จำนวนงวดในปี', 'ยอดผ่อนทั้งปี (บาท)', 'ดอกเบี้ยทั้งปี (บาท)', 'ตัดเงินต้นทั้งปี (บาท)', 'หนี้คงเหลือปลายปี (บาท)']);
+                let totalPay = 0, totalInt = 0, totalPrin = 0;
+                for (const yr of yearly) {
+                    rows.push([
+                        yr.year,
+                        yr.paymentsCount,
+                        yr.payment.toFixed(2),
+                        yr.interest.toFixed(2),
+                        yr.principal.toFixed(2),
+                        yr.balance.toFixed(2)
+                    ]);
+                    totalPay += yr.payment;
+                    totalInt += yr.interest;
+                    totalPrin += yr.principal;
+                }
+                const finalBal = yearly[yearly.length - 1]?.balance || 0;
+                rows.push(['รวมทั้งหมด', schedule.length, totalPay.toFixed(2), totalInt.toFixed(2), totalPrin.toFixed(2), finalBal.toFixed(2)]);
+            } else {
+                rows.push(['งวดที่', 'ปีที่', 'ค่างวด (บาท)', 'ดอกเบี้ย (บาท)', 'ตัดเงินต้น (บาท)', 'หนี้คงเหลือ (บาท)', 'อัตราดอกเบี้ย (% ต่อปี)']);
+                let totalPay = 0, totalInt = 0, totalPrin = 0;
+                for (const row of schedule) {
+                    rows.push([
+                        row.month,
+                        row.year,
+                        row.payment.toFixed(2),
+                        row.interest.toFixed(2),
+                        row.principal.toFixed(2),
+                        row.balance.toFixed(2),
+                        row.rate.toFixed(2)
+                    ]);
+                    totalPay += row.payment;
+                    totalInt += row.interest;
+                    totalPrin += row.principal;
+                }
+                const finalBal = schedule[schedule.length - 1]?.balance || 0;
+                rows.push(['รวมทั้งหมด', '', totalPay.toFixed(2), totalInt.toFixed(2), totalPrin.toFixed(2), finalBal.toFixed(2), '']);
+            }
+            return '\uFEFF' + rowsToCSV(rows);
+        }
+
+        function generateSavingsSchedule(params) {
+            const init = numberOrDefault(params.initial, 0);
+            const monthly = numberOrDefault(params.monthly, 0);
+            const rate = numberOrDefault(params.interestRate, 0);
+            const retirementYears = Math.max(0, numberOrDefault(params.retirementAge, 0) - numberOrDefault(params.currentAge, 0));
+            const years = params.mode === 'retirement' ? retirementYears : numberOrDefault(params.years, 0);
+            const annualIncrease = numberOrDefault(params.annualIncrease, 0);
+            const inflationRate = numberOrDefault(params.inflationRate, 0);
+
+            const months = Math.round(years * 12);
+            const r = (rate / 100) / 12;
+            let totalBalance = init;
+            let totalPrincipal = init;
+            const monthlyRows = [];
+            const yearlyRows = [];
+
+            if (months <= 0 || (init <= 0 && monthly <= 0)) {
+                return { monthlyRows, yearlyRows, totalBalance, totalPrincipal, interestEarned: 0 };
+            }
+
+            let yearlyDepositAcc = init;
+            let yearlyInterestAcc = 0;
+
+            for (let m = 0; m < months; m++) {
+                const prevBal = totalBalance;
+                const currentMonthly = monthly * Math.pow(1 + annualIncrease / 100, Math.floor(m / 12));
+                const monthInterest = (prevBal + currentMonthly) * r;
+                totalBalance = (prevBal + currentMonthly) + monthInterest;
+                totalPrincipal += currentMonthly;
+
+                yearlyDepositAcc += currentMonthly;
+                yearlyInterestAcc += monthInterest;
+
+                monthlyRows.push({
+                    month: m + 1,
+                    year: Math.ceil((m + 1) / 12),
+                    deposit: currentMonthly,
+                    interest: monthInterest,
+                    principal: totalPrincipal,
+                    cumulativeInterest: totalBalance - totalPrincipal,
+                    balance: totalBalance
+                });
+
+                if ((m + 1) % 12 === 0 || m === months - 1) {
+                    const y = Math.ceil((m + 1) / 12);
+                    yearlyRows.push({
+                        year: y,
+                        depositThisYear: yearlyDepositAcc,
+                        interestThisYear: yearlyInterestAcc,
+                        principal: totalPrincipal,
+                        interest: totalBalance - totalPrincipal,
+                        cumulativeInterest: totalBalance - totalPrincipal,
+                        balance: totalBalance,
+                        realValue: totalBalance / Math.pow(1 + inflationRate / 100, y)
+                    });
+                    yearlyDepositAcc = 0;
+                    yearlyInterestAcc = 0;
+                }
+            }
+            return {
+                monthlyRows,
+                yearlyRows,
+                totalBalance,
+                totalPrincipal,
+                interestEarned: Math.max(0, totalBalance - totalPrincipal)
+            };
+        }
+
+        function buildSavingsScheduleCSV(scheduleData, type = 'yearly') {
+            const rows = [];
+            const data = scheduleData || {};
+            const monthlyRows = Array.isArray(data.monthlyRows) ? data.monthlyRows : [];
+            const yearlyRows = Array.isArray(data.yearlyRows) ? data.yearlyRows : [];
+            if (!monthlyRows.length && !yearlyRows.length) {
+                return '\uFEFF';
+            }
+            if (type === 'monthly') {
+                rows.push(['งวดที่', 'ปีที่', 'เงินฝากในงวด (บาท)', 'ดอกเบี้ยในงวด (บาท)', 'เงินต้นสะสม (บาท)', 'ดอกเบี้ยสะสม (บาท)', 'ยอดเงินรวมสะสม (บาท)']);
+                let totalDeposits = 0, totalInterest = 0;
+                for (const row of monthlyRows) {
+                    rows.push([
+                        row.month,
+                        row.year,
+                        row.deposit.toFixed(2),
+                        row.interest.toFixed(2),
+                        row.principal.toFixed(2),
+                        row.cumulativeInterest.toFixed(2),
+                        row.balance.toFixed(2)
+                    ]);
+                    totalDeposits += row.deposit;
+                    totalInterest += row.interest;
+                }
+                const lastRow = monthlyRows[monthlyRows.length - 1];
+                rows.push(['รวมทั้งหมด', '', totalDeposits.toFixed(2), totalInterest.toFixed(2), lastRow ? lastRow.principal.toFixed(2) : '0.00', lastRow ? lastRow.cumulativeInterest.toFixed(2) : '0.00', lastRow ? lastRow.balance.toFixed(2) : '0.00']);
+            } else {
+                rows.push(['ปีที่', 'เงินฝากในปี (บาท)', 'ดอกเบี้ยในปี (บาท)', 'เงินต้นสะสม (บาท)', 'ดอกเบี้ยสะสม (บาท)', 'ยอดเงินรวมสะสม (บาท)', 'มูลค่าหลังเงินเฟ้อ (บาท)']);
+                let totalDeposits = 0, totalInterest = 0;
+                for (const row of yearlyRows) {
+                    const depInYear = row.depositThisYear !== undefined ? row.depositThisYear : 0;
+                    const intInYear = row.interestThisYear !== undefined ? row.interestThisYear : 0;
+                    const cumInt = row.cumulativeInterest !== undefined ? row.cumulativeInterest : (row.interest || 0);
+                    rows.push([
+                        row.year,
+                        depInYear.toFixed(2),
+                        intInYear.toFixed(2),
+                        row.principal.toFixed(2),
+                        cumInt.toFixed(2),
+                        row.balance.toFixed(2),
+                        (row.realValue !== undefined ? row.realValue : row.balance).toFixed(2)
+                    ]);
+                    totalDeposits += depInYear;
+                    totalInterest += intInYear;
+                }
+                const lastRow = yearlyRows[yearlyRows.length - 1];
+                const finalCumInt = lastRow ? (lastRow.cumulativeInterest !== undefined ? lastRow.cumulativeInterest : (lastRow.interest || 0)) : 0;
+                const finalReal = lastRow ? (lastRow.realValue !== undefined ? lastRow.realValue : lastRow.balance) : 0;
+                rows.push(['รวมทั้งหมด', totalDeposits.toFixed(2), totalInterest.toFixed(2), lastRow ? lastRow.principal.toFixed(2) : '0.00', finalCumInt.toFixed(2), lastRow ? lastRow.balance.toFixed(2) : '0.00', finalReal.toFixed(2)]);
+            }
+            return '\uFEFF' + rowsToCSV(rows);
+        }
+
+        function getCSVFilename(prefix, type) {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            return `${prefix}_${type}_${y}${m}${d}.csv`;
+        }
+
+        function downloadCSV(filename, csvContent) {
+            if (typeof window === 'undefined' || typeof document === 'undefined') return;
+            const contentWithBom = csvContent.startsWith('\uFEFF') ? csvContent : ('\uFEFF' + csvContent);
+            const blob = new Blob([contentWithBom], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filename);
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 300);
+        }
+
+        function triggerButtonFeedback(btn, successText = '✓ โหลดแล้ว') {
+            if (!btn) return;
+            const origHtml = btn.innerHTML;
+            btn.innerHTML = successText;
+            const hadBgAccent = btn.classList.contains('bg-[var(--app-accent)]');
+            if (hadBgAccent) {
+                btn.classList.remove('bg-[var(--app-accent)]');
+                btn.classList.add('bg-emerald-600');
+            } else {
+                btn.classList.add('!bg-emerald-100', '!text-emerald-800', '!border-emerald-400');
+            }
+            setTimeout(() => {
+                btn.innerHTML = origHtml;
+                if (hadBgAccent) {
+                    btn.classList.remove('bg-emerald-600');
+                    btn.classList.add('bg-[var(--app-accent)]');
+                } else {
+                    btn.classList.remove('!bg-emerald-100', '!text-emerald-800', '!border-emerald-400');
+                }
+            }, 1800);
+        }
+
         /**************************************************************
          * 4. SIDEBAR MENU RENDERING & NAVIGATION
          **************************************************************/
@@ -3934,30 +4229,13 @@
             const rateAfter = numberOrDefault(st.rateAfter, annualRate);
             const promoMonths = Math.max(0, integerOrDefault(st.promoMonths, 0));
             let monthlyPay = 0, totalPay = 0, totalInterest = 0, extraInterest = 0, extraMonths = n;
-            const schedule = [];
-            if (P > 0 && n > 0) {
-                let bal = P, m = 0, payment = 0, previousRate = null;
-                while (bal > 0.01 && m < 1200 && m < n + 120) {
-                    const currentRate = st.rateType === 'step' && m >= promoMonths ? rateAfter : annualRate;
-                    const r = (currentRate / 100) / 12;
-                    const remaining = Math.max(1, n - m);
-                    if (payment === 0 || previousRate !== currentRate) {
-                        payment = st.calcMethod === 'flat' ? (P / n) + (P * currentRate / 100 / 12) : (r === 0 ? bal / remaining : bal * (r * Math.pow(1 + r, remaining)) / (Math.pow(1 + r, remaining) - 1));
-                        previousRate = currentRate;
-                    }
-                    const interest = st.calcMethod === 'flat' ? (P * currentRate / 100 / 12) : (bal * r);
-                    const principalPart = Math.min(bal, Math.max(0, payment + extra - interest));
-                    if (principalPart <= 0) break;
-                    const actualPayment = interest + principalPart;
-                    schedule.push({ month: m + 1, payment: actualPayment, interest, principal: principalPart, balance: Math.max(0, bal - principalPart), rate: currentRate });
-                    totalPay += actualPayment;
-                    totalInterest += interest;
-                    bal -= principalPart;
-                    m++;
-                }
+            const schedule = generateLoanSchedule(st);
+            if (schedule.length) {
                 monthlyPay = schedule[0]?.payment || 0;
                 extraMonths = schedule.length;
-                extraInterest = schedule.reduce((sum, item) => sum + item.interest, 0);
+                totalPay = schedule.reduce((sum, item) => sum + item.payment, 0);
+                totalInterest = schedule.reduce((sum, item) => sum + item.interest, 0);
+                extraInterest = totalInterest;
             }
             const calculateLoanPlan = (extraPayment) => {
                 let balance = P, month = 0, interestTotal = 0, payment = 0, previousRate = null;
@@ -3999,8 +4277,41 @@
             if (schedule.length) {
                 const table = document.createElement('div');
                 table.className = 'bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 mt-2 overflow-auto';
-                table.innerHTML = `<div class="text-xs font-semibold text-[#6a6a6a] mb-2">ตารางผ่อนรายเดือน</div><table class="w-full text-xs"><thead><tr class="border-b"><th class="text-left py-1">งวด</th><th class="text-right py-1">จ่าย</th><th class="text-right py-1">ดอกเบี้ย</th><th class="text-right py-1">เงินต้น</th><th class="text-right py-1">คงเหลือ</th></tr></thead><tbody>${schedule.slice(0, 120).map(item => `<tr class="border-b border-[#eee]"><td class="py-1">${item.month}</td><td class="text-right">${formatMoney(item.payment)}</td><td class="text-right">${formatMoney(item.interest)}</td><td class="text-right">${formatMoney(item.principal)}</td><td class="text-right">${formatMoney(item.balance)}</td></tr>`).join('')}</tbody></table>`;
+                table.innerHTML = `
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <div class="text-xs font-semibold text-[#6a6a6a]">ตารางผ่อนชำระ (${schedule.length} งวด)</div>
+                        <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                            <button id="btnExportLoanMonthly" type="button" title="ดาวน์โหลดตารางผ่อนรายเดือนทุกงวดเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition-all shadow-sm flex items-center gap-1 cursor-pointer">
+                                📥 รายงวด (.CSV)
+                            </button>
+                            <button id="btnExportLoanYearly" type="button" title="ดาวน์โหลดสรุปยอดผ่อนรายปีเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2 py-1 text-xs font-medium rounded-lg border border-[var(--app-hairline)] text-[#4a4a4a] bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
+                                📥 สรุปรายปี (.CSV)
+                            </button>
+                        </div>
+                    </div>
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="border-b"><th class="text-left py-1">งวด</th><th class="text-right py-1">จ่าย</th><th class="text-right py-1">ดอกเบี้ย</th><th class="text-right py-1">เงินต้น</th><th class="text-right py-1">คงเหลือ</th></tr>
+                        </thead>
+                        <tbody>${schedule.slice(0, 120).map(item => `<tr class="border-b border-[#eee]"><td class="py-1">${item.month}</td><td class="text-right">${formatMoney(item.payment)}</td><td class="text-right">${formatMoney(item.interest)}</td><td class="text-right">${formatMoney(item.principal)}</td><td class="text-right">${formatMoney(item.balance)}</td></tr>`).join('')}</tbody>
+                    </table>
+                    ${schedule.length > 120 ? `<div class="text-[11px] text-[#888] text-center mt-2">แสดงบนหน้าจอ 120 งวดแรก · ดาวน์โหลดไฟล์ CSV เพื่อดูครบทั้ง ${schedule.length} งวด</div>` : ''}
+                `;
                 loanRoot.appendChild(table);
+
+                table.querySelector('#btnExportLoanMonthly')?.addEventListener('click', (e) => {
+                    const btn = e.currentTarget;
+                    const csv = buildLoanAmortizationCSV(schedule, 'monthly');
+                    downloadCSV(getCSVFilename('loan_amortization', 'monthly'), csv);
+                    triggerButtonFeedback(btn, '✓ โหลดแล้ว');
+                });
+
+                table.querySelector('#btnExportLoanYearly')?.addEventListener('click', (e) => {
+                    const btn = e.currentTarget;
+                    const csv = buildLoanAmortizationCSV(schedule, 'yearly');
+                    downloadCSV(getCSVFilename('loan_amortization', 'yearly'), csv);
+                    triggerButtonFeedback(btn, '✓ โหลดแล้ว');
+                });
             }
             container.querySelector('#loanRateType').addEventListener('change', (event) => { st.rateType = event.target.value; renderActiveTool(); });
             container.querySelector('#loanCalcMethod').addEventListener('change', (event) => { st.calcMethod = event.target.value; renderActiveTool(); });
@@ -4032,12 +4343,46 @@
             let totalBalance = init;
             let totalPrincipal = init;
             const yearlyRows = [];
+            const monthlyRows = [];
+
+            let yearlyDepositAcc = init;
+            let yearlyInterestAcc = 0;
 
             for (let m = 0; m < months; m++) {
+                const prevBal = totalBalance;
                 const currentMonthly = monthly * Math.pow(1 + annualIncrease / 100, Math.floor(m / 12));
-                totalBalance = (totalBalance + currentMonthly) * (1 + r);
+                const monthInterest = (prevBal + currentMonthly) * r;
+                totalBalance = (prevBal + currentMonthly) + monthInterest;
                 totalPrincipal += currentMonthly;
-                if ((m + 1) % 12 === 0 || m === months - 1) yearlyRows.push({ year: Math.ceil((m + 1) / 12), principal: totalPrincipal, balance: totalBalance, interest: totalBalance - totalPrincipal });
+
+                yearlyDepositAcc += currentMonthly;
+                yearlyInterestAcc += monthInterest;
+
+                monthlyRows.push({
+                    month: m + 1,
+                    year: Math.ceil((m + 1) / 12),
+                    deposit: currentMonthly,
+                    interest: monthInterest,
+                    principal: totalPrincipal,
+                    cumulativeInterest: totalBalance - totalPrincipal,
+                    balance: totalBalance
+                });
+
+                if ((m + 1) % 12 === 0 || m === months - 1) {
+                    const y = Math.ceil((m + 1) / 12);
+                    yearlyRows.push({
+                        year: y,
+                        depositThisYear: yearlyDepositAcc,
+                        interestThisYear: yearlyInterestAcc,
+                        principal: totalPrincipal,
+                        balance: totalBalance,
+                        interest: totalBalance - totalPrincipal,
+                        cumulativeInterest: totalBalance - totalPrincipal,
+                        realValue: totalBalance / Math.pow(1 + inflationRate / 100, y)
+                    });
+                    yearlyDepositAcc = 0;
+                    yearlyInterestAcc = 0;
+                }
             }
             const interestEarned = Math.max(0, totalBalance - totalPrincipal);
             const realValue = totalBalance / Math.pow(1 + inflationRate / 100, years);
@@ -4094,10 +4439,43 @@
             saveField('savingsCurrentAge', 'currentAge');
             saveField('savingsRetirementAge', 'retirementAge');
             saveField('savingsRetirementMonthly', 'retirementMonthly');
-            const yearlyTable = document.createElement('div');
-            yearlyTable.className = 'bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 mt-2 overflow-auto';
-            yearlyTable.innerHTML = `<div class="text-xs font-semibold text-[#6a6a6a] mb-2">ตารางเงินออมรายปี</div><table class="w-full text-xs"><thead><tr class="border-b"><th class="text-left py-1">ปี</th><th class="text-right py-1">เงินต้นสะสม</th><th class="text-right py-1">ดอกเบี้ยสะสม</th><th class="text-right py-1">ยอดรวม</th></tr></thead><tbody>${yearlyRows.map(row => `<tr class="border-b border-[#eee]"><td class="py-1">${row.year}</td><td class="text-right">${formatMoney(row.principal)}</td><td class="text-right">${formatMoney(row.interest)}</td><td class="text-right">${formatMoney(row.balance)}</td></tr>`).join('')}</tbody></table>`;
-            savingsRoot.appendChild(yearlyTable);
+            if (yearlyRows.length) {
+                const yearlyTable = document.createElement('div');
+                yearlyTable.className = 'bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 mt-2 overflow-auto';
+                yearlyTable.innerHTML = `
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <div class="text-xs font-semibold text-[#6a6a6a]">ตารางเงินออมสะสม (${years} ปี)</div>
+                        <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                            <button id="btnExportSavingsMonthly" type="button" title="ดาวน์โหลดตารางเงินออมรายเดือนทุกงวดเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2 py-1 text-xs font-medium rounded-lg border border-[var(--app-hairline)] text-[#4a4a4a] bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
+                                📥 รายงวด (.CSV)
+                            </button>
+                            <button id="btnExportSavingsYearly" type="button" title="ดาวน์โหลดสรุปเงินออมรายปีเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition-all shadow-sm flex items-center gap-1 cursor-pointer">
+                                📥 รายปี (.CSV)
+                            </button>
+                        </div>
+                    </div>
+                    <table class="w-full text-xs">
+                        <thead><tr class="border-b"><th class="text-left py-1">ปี</th><th class="text-right py-1">เงินต้นสะสม</th><th class="text-right py-1">ดอกเบี้ยสะสม</th><th class="text-right py-1">ยอดรวม</th></tr></thead>
+                        <tbody>${yearlyRows.map(row => `<tr class="border-b border-[#eee]"><td class="py-1">${row.year}</td><td class="text-right">${formatMoney(row.principal)}</td><td class="text-right">${formatMoney(row.interest)}</td><td class="text-right">${formatMoney(row.balance)}</td></tr>`).join('')}</tbody>
+                    </table>
+                `;
+                savingsRoot.appendChild(yearlyTable);
+
+                const savingsData = { monthlyRows, yearlyRows, totalBalance, totalPrincipal, interestEarned };
+                yearlyTable.querySelector('#btnExportSavingsMonthly')?.addEventListener('click', (e) => {
+                    const btn = e.currentTarget;
+                    const csv = buildSavingsScheduleCSV(savingsData, 'monthly');
+                    downloadCSV(getCSVFilename('savings_schedule', 'monthly'), csv);
+                    triggerButtonFeedback(btn, '✓ โหลดแล้ว');
+                });
+
+                yearlyTable.querySelector('#btnExportSavingsYearly')?.addEventListener('click', (e) => {
+                    const btn = e.currentTarget;
+                    const csv = buildSavingsScheduleCSV(savingsData, 'yearly');
+                    downloadCSV(getCSVFilename('savings_schedule', 'yearly'), csv);
+                    triggerButtonFeedback(btn, '✓ โหลดแล้ว');
+                });
+            }
 
             attachFieldClickListeners(container);
 
