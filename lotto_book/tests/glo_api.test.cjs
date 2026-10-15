@@ -74,6 +74,33 @@ async function run() {
     assert.equal(badResponse.body.error, 'INVALID_DRAW_DATE');
     assert.equal(calls.length, 2);
 
+    const backfillCalls = [];
+    const backfillFetcher = async (url, options) => {
+        const body = JSON.parse(options.body);
+        backfillCalls.push({ url, body });
+        if (url.endsWith('/getPeriodList')) {
+            return {
+                ok: true,
+                json: async () => ({
+                    status: true,
+                    response: { list: ['2026-10-01', '2026-09-16'] }
+                })
+            };
+        }
+        return { ok: true, json: async () => detailedPayload };
+    };
+    const backfillResponse = mockResponse();
+    await Api.handle({ method: 'GET', query: { after: '2026-09-16' } }, backfillResponse, backfillFetcher);
+    assert.equal(backfillResponse.statusCode, 200);
+    assert.equal(backfillResponse.body.results.length, 1);
+    assert.equal(backfillResponse.body.results[0].drawDate, '2026-10-01');
+    assert.equal(backfillResponse.body.complete, true);
+    assert.match(backfillResponse.headers['Cache-Control'], /s-maxage=3600/);
+    assert.deepEqual(backfillCalls.map(call => call.body), [
+        {},
+        { date: '01', month: '10', year: '2026' }
+    ]);
+
     console.log('Vercel GLO proxy checks passed.');
 }
 

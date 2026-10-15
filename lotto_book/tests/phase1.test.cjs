@@ -39,5 +39,17 @@ Sync.fetchLatest(async (url, options) => {
     return { ok: true, json: async () => complete };
 }).then(result => {
     assert.equal(result.prizes.first, '000001');
+    return Sync.fetchSince('2025-03-16', async (url, options) => {
+        assert.equal(url, '/api/glo-results?after=2025-03-16');
+        assert.equal(options.method, 'GET');
+        return {
+            ok: true,
+            json: async () => ({ results: [complete], failedDates: [], complete: true })
+        };
+    });
+}).then(backfill => {
+    assert.equal(backfill.results.length, 1);
+    assert.equal(backfill.results[0].drawDate, '2026-10-16');
+    assert.equal(backfill.complete, true);
     console.log('Phase 1 date, scan, and result-validation checks passed.');
 }).catch(error => { console.error(error); process.exitCode = 1; });

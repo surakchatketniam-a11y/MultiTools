@@ -94,7 +94,35 @@
         return normalize(await response.json());
     }
 
-    const Sync = { ENDPOINT, normalize, fetchLatest };
+    async function fetchSince(after, fetcher = fetch) {
+        if (!isoDate(after)) throw new Error('วันที่เริ่มต้นสำหรับอัปเดตไม่ถูกต้อง');
+        if (typeof location !== 'undefined' && location.protocol === 'file:') {
+            throw new Error('กรุณาเปิด LottoBook ผ่านเว็บไซต์ HTTPS เพื่ออัปเดตผล GLO');
+        }
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 55000);
+        let response;
+        try {
+            response = await fetcher(`${ENDPOINT}?after=${encodeURIComponent(after)}`, {
+                method: 'GET', mode: 'cors', cache: 'no-store',
+                headers: { Accept: 'application/json' }, signal: controller.signal
+            });
+        } catch (error) {
+            throw new Error(error.name === 'AbortError'
+                ? 'การเติมข้อมูลงวดย้อนหลังใช้เวลานานเกินไป'
+                : 'เชื่อมต่อ API อัปเดตผลไม่ได้');
+        } finally { clearTimeout(timeout); }
+        if (!response.ok) throw new Error(`API อัปเดตผลตอบกลับ HTTP ${response.status}`);
+        const payload = await response.json();
+        if (!Array.isArray(payload.results)) throw new Error('รูปแบบข้อมูลย้อนหลังไม่ถูกต้อง');
+        return {
+            results: payload.results.map(normalize),
+            failedDates: Array.isArray(payload.failedDates) ? payload.failedDates : [],
+            complete: payload.complete !== false
+        };
+    }
+
+    const Sync = { ENDPOINT, normalize, fetchLatest, fetchSince };
     if (typeof module !== 'undefined' && module.exports) module.exports = Sync;
     else root.LottoSync = Sync;
 })(typeof window !== 'undefined' ? window : global);

@@ -72,19 +72,33 @@
             if (this.syncInProgress) return;
             this.syncInProgress = true;
             try {
-                const result = await root.LottoSync.fetchLatest();
+                const baseDate = this.builtInResults[0]?.drawDate;
+                const syncPayload = manual && baseDate
+                    ? await root.LottoSync.fetchSince(baseDate)
+                    : { results: [await root.LottoSync.fetchLatest()], failedDates: [], complete: true };
                 const today = root.LottoDraws.thailandNow();
                 const todayIso = `${today.year}-${String(today.month).padStart(2, '0')}-${String(today.day).padStart(2, '0')}`;
-                if (result.drawDate > todayIso) throw new Error('GLO ส่งข้อมูลงวดอนาคต');
-                const previous = this.resultsMap[result.drawDate];
-                if (!previous || JSON.stringify(previous.prizes) !== JSON.stringify(result.prizes)) {
-                    root.LottoStorage.saveCustomResult(result);
+                let changed = 0;
+                syncPayload.results.forEach(result => {
+                    if (result.drawDate > todayIso) throw new Error('GLO ส่งข้อมูลงวดอนาคต');
+                    const previous = this.resultsMap[result.drawDate];
+                    if (!previous || JSON.stringify(previous.prizes) !== JSON.stringify(result.prizes)) {
+                        root.LottoStorage.saveCustomResult(result);
+                        changed++;
+                    }
+                });
+                if (changed > 0) {
                     this.mergeResults();
-                    if (this.currentTab === 'check') root.LottoCheckResultsView.selectedDrawDate = result.drawDate;
+                    if (this.currentTab === 'check') {
+                        root.LottoCheckResultsView.selectedDrawDate = syncPayload.results[0].drawDate;
+                    }
                     this.renderCurrentView();
-                    this.showToast(`อัปเดตผลรางวัลงวด ${result.dateFormatted} แล้ว`, 'success');
+                    const failed = syncPayload.failedDates.length;
+                    this.showToast(failed
+                        ? `เพิ่มผลรางวัล ${changed} งวด ยังขาด ${failed} งวด ลองอัปเดตอีกครั้ง`
+                        : `อัปเดตผลรางวัลครบ ${changed} งวดแล้ว`, failed ? 'info' : 'success');
                 } else if (manual) {
-                    this.showToast('ผลรางวัลล่าสุดตรงกับข้อมูลในเครื่องแล้ว', 'info');
+                    this.showToast('ผลรางวัลทุกงวดเป็นข้อมูลล่าสุดแล้ว', 'info');
                 }
             } catch (err) {
                 console.error('[LottoBook] GLO sync failed:', err);

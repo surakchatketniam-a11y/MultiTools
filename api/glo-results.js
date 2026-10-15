@@ -2,6 +2,8 @@
 
 const GLO_BASE_URL = 'https://www.glo.or.th/api/lottery';
 const GLO_TIMEOUT_MS = 20000;
+const MAX_BACKFILL_DRAWS = 48;
+const BACKFILL_CONCURRENCY = 4;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const PRIZE_SHAPES = {
     first: 1,
@@ -98,10 +100,49 @@ async function getLatestDate(fetcher) {
     return date;
 }
 
+async function getDatesAfter(after, fetcher) {
+    const payload = await postGlo('getPeriodList', {}, fetcher);
+    const dates = payload?.response?.list;
+    if (!Array.isArray(dates)) throw new Error('GLO_PERIOD_LIST_INVALID');
+    return Array.from(new Set(dates.filter(date => isValidDate(date) && date > after)))
+        .sort((a, b) => a.localeCompare(b))
+        .slice(0, MAX_BACKFILL_DRAWS);
+}
+
 async function getDetailedResult(drawDate, fetcher) {
     const [year, month, day] = drawDate.split('-');
     const payload = await postGlo('getLotteryResult', { date: day, month, year }, fetcher);
     return normalizeDetailedResult(payload);
+}
+
+async function mapWithConcurrency(items, limit, mapper) {
+    const results = new Array(items.length);
+    let cursor = 0;
+    async function worker() {
+        while (cursor < items.length) {
+            const index = cursor++;
+            results[index] = await mapper(items[index]);
+        }
+    }
+    await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+    return results;
+}
+
+async function getBackfillResults(after, fetcher) {
+    const dates = await getDatesAfter(after, fetcher);
+    const failedDates = [];
+    const records = await mapWithConcurrency(dates, BACKFILL_CONCURRENCY, async drawDate => {
+        try {
+            return await getDetailedResult(drawDate, fetcher);
+        } catch (error) {
+            failedDates.push(drawDate);
+            console.error('[glo-results] backfill draw failed', { drawDate, message: error?.message });
+            return null;
+        }
+    });
+    const results = records.filter(Boolean).sort((a, b) => b.drawDate.localeCompare(a.drawDate));
+    if (dates.length && !results.length) throw new Error('GLO_BACKFILL_FAILED');
+    return { results, failedDates: failedDates.sort(), complete: failedDates.length === 0 };
 }
 
 function sendJson(response, status, body, cacheControl = 'no-store') {
@@ -119,11 +160,23 @@ async function handle(request, response, fetcher = fetch) {
     }
 
     const requestedDate = Array.isArray(request.query?.date) ? request.query.date[0] : request.query?.date;
+    const requestedAfter = Array.isArray(request.query?.after) ? request.query.after[0] : request.query?.after;
+    if (requestedDate && requestedAfter) {
+        return sendJson(response, 400, { ok: false, error: 'AMBIGUOUS_DATE_FILTER' });
+    }
     if (requestedDate && !isValidDate(requestedDate)) {
         return sendJson(response, 400, { ok: false, error: 'INVALID_DRAW_DATE' });
     }
+    if (requestedAfter && !isValidDate(requestedAfter)) {
+        return sendJson(response, 400, { ok: false, error: 'INVALID_AFTER_DATE' });
+    }
 
     try {
+        if (requestedAfter) {
+            const backfill = await getBackfillResults(requestedAfter, fetcher);
+            return sendJson(response, 200, backfill,
+                'public, s-maxage=3600, stale-while-revalidate=86400');
+        }
         const drawDate = requestedDate || await getLatestDate(fetcher);
         const result = await getDetailedResult(drawDate, fetcher);
         return sendJson(response, 200, result, 'public, s-maxage=300, stale-while-revalidate=86400');
@@ -145,3 +198,4 @@ module.exports = (request, response) => handle(request, response);
 module.exports.handle = handle;
 module.exports.isValidDate = isValidDate;
 module.exports.normalizeDetailedResult = normalizeDetailedResult;
+module.exports.getBackfillResults = getBackfillResults;
