@@ -36,6 +36,7 @@ function context(extra = {}) {
         'generateLoanSchedule', 'aggregateLoanScheduleByYear', 'rowsToCSV', 'buildLoanAmortizationCSV',
         'generateSavingsSchedule', 'buildSavingsScheduleCSV', 'getCSVFilename',
         'formatThaiFormalDate', 'generateFormalPrintHTML',
+        'getComparisonPresets', 'compareCalculations', 'generateComparePrintHTML',
         'getCalculationHistory', 'saveCalculationHistory', 'formatHistoryTime', 'extractShortSummary', 'extractDetailText',
         'recordCalculationHistory', 'pinCalculationHistory', 'unpinCalculationHistory', 'renameCalculationHistory',
         'deleteCalculationHistory', 'clearCalculationHistory', 'restoreCalculationHistory']) {
@@ -689,6 +690,84 @@ test('formal print-to-pdf: generates accurate Thai receipt documents for loan, s
     assert.ok(genericDoc.includes('เอกสารสรุปผลการคำนวณ'));
     assert.ok(genericDoc.includes('ข้อมูลและเงื่อนไขการคำนวณ'));
 });
+
+test('quick compare engine: side-by-side metrics, delta calculation, winner identification, and presets', () => {
+    const ctx = context();
+
+    // 1. Presets availability
+    for (const toolId of ['loan', 'savings', 'vat_wht', 'salary']) {
+        const presets = ctx.getComparisonPresets(toolId);
+        assert.ok(Array.isArray(presets) && presets.length >= 3, `Presets for ${toolId} must have at least 3 items`);
+        assert.ok(presets[0].label && presets[0].state, `Preset item must have label and state`);
+    }
+
+    // 2. Loan comparison
+    const loanA = {
+        label: 'ธนาคาร A (5.0%)',
+        state: { principal: '2,000,000', interestRate: '5.0', months: '360', extra: '0', rateType: 'fixed', calcMethod: 'reducing' }
+    };
+    const loanB = {
+        label: 'ธนาคาร B (3.8%)',
+        state: { principal: '2,000,000', interestRate: '3.8', months: '360', extra: '0', rateType: 'fixed', calcMethod: 'reducing' }
+    };
+    const loanComp = ctx.compareCalculations('loan', [loanA, loanB]);
+    assert.ok(loanComp);
+    assert.equal(loanComp.items.length, 2);
+    assert.equal(loanComp.winnerIndex, 1, 'Bank B with 3.8% must win over Bank A with 5.0% due to lower interest');
+    assert.ok(loanComp.deltaSummary.includes('ธนาคาร B (3.8%)'));
+    assert.ok(loanComp.deltaSummary.includes('ประหยัดดอกเบี้ยได้สูงสุด'));
+    assert.ok(loanComp.rows.length >= 7);
+
+    // 3. Savings comparison
+    const savingsA = {
+        label: 'เงินฝากประจำ 2.5%',
+        state: { initial: '10,000', monthly: '3,000', interestRate: '2.5', years: '5', annualIncrease: '0', inflationRate: '2.0', mode: 'growth' }
+    };
+    const savingsB = {
+        label: 'กองทุนรวมหุ้น 6.0%',
+        state: { initial: '10,000', monthly: '3,000', interestRate: '6.0', years: '5', annualIncrease: '0', inflationRate: '2.0', mode: 'growth' }
+    };
+    const savingsComp = ctx.compareCalculations('savings', [savingsA, savingsB]);
+    assert.ok(savingsComp);
+    assert.equal(savingsComp.winnerIndex, 1, 'Option B with 6% interest must win over Option A with 2.5%');
+    assert.ok(savingsComp.deltaSummary.includes('กองทุนรวมหุ้น 6.0%'));
+    assert.ok(savingsComp.deltaSummary.includes('มากกว่าถึง'));
+
+    // 4. VAT & WHT comparison
+    const vatA = {
+        label: 'ไม่หัก ณ ที่จ่าย',
+        state: { amount: '20,000', mode: 'before', vatRate: '7', whtRate: '0' }
+    };
+    const vatB = {
+        label: 'หัก ณ ที่จ่าย 3%',
+        state: { amount: '20,000', mode: 'before', vatRate: '7', whtRate: '3' }
+    };
+    const vatComp = ctx.compareCalculations('vat_wht', [vatA, vatB]);
+    assert.ok(vatComp);
+    assert.equal(vatComp.items.length, 2);
+
+    // 5. Salary comparison
+    const salaryA = {
+        label: 'แผนปกติ 50/30/20',
+        state: { income: '50,000', needsPct: '50', wantsPct: '30', savingsPct: '20' }
+    };
+    const salaryB = {
+        label: 'แผนออมหนัก 40/20/40',
+        state: { income: '50,000', needsPct: '40', wantsPct: '20', savingsPct: '40' }
+    };
+    const salaryComp = ctx.compareCalculations('salary', [salaryA, salaryB]);
+    assert.ok(salaryComp);
+    assert.equal(salaryComp.winnerIndex, 1, 'Salary plan B with 40% savings must win for highest savings');
+
+    // 6. Print Comparison Sheet Generator
+    const printHTML = ctx.generateComparePrintHTML(loanComp);
+    assert.ok(printHTML.includes('MULTITOOLS AIO'));
+    assert.ok(printHTML.includes('ตารางวิเคราะห์และเปรียบเทียบชุดคำนวณ'));
+    assert.ok(printHTML.includes('ธนาคาร A (5.0%)'));
+    assert.ok(printHTML.includes('ธนาคาร B (3.8%)'));
+    assert.ok(printHTML.includes('🏆 คุ้มค่าที่สุด'));
+});
+
 
 
 
