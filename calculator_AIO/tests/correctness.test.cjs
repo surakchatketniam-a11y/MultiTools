@@ -17,7 +17,7 @@ function context(extra = {}) {
     const ctx = vm.createContext({ persistAppState() {}, ...extra });
     for (const name of ['normalizeThaiDigits', 'parseNumericInput', 'numberOrDefault', 'integerOrDefault',
         'formatLocalDate', 'addCalendarDays', 'parseDateInputThai', 'parseFrankfurterRates',
-        'evaluateArithmeticExpression', 'escapeHTML', 'formatInputDisplay', 'formatNum', 'formatUnitPrice', 'formatMoney',
+        'evaluateArithmeticExpression', 'escapeHTML', 'formatInputDisplay', 'formatCalcExpr', 'formatNum', 'formatUnitPrice', 'formatMoney',
         'validateCalendarDate', 'countWorkingDays', 'offsetWorkingDays', 'normalizeWorkDays', 'formatDateInTimezone']) {
         vm.runInContext(source(name), ctx);
     }
@@ -48,6 +48,12 @@ test('numbers: grouping, Thai digits, decimals, signs and invalid/empty input', 
     assert.equal(ctx.integerOrDefault('๑,๒๐๐'), 1200);
     assert.ok(Number.isNaN(ctx.integerOrDefault('12.5')));
     assert.equal(ctx.formatInputDisplay('๑,๐๐๐.50'), '1,000.50');
+    assert.equal(ctx.formatInputDisplay('1000'), '1,000');
+    assert.equal(ctx.formatInputDisplay('1500.5'), '1,500.5');
+    assert.equal(ctx.formatInputDisplay('10000'), '10,000');
+    assert.equal(ctx.formatInputDisplay('-1500'), '-1,500');
+    assert.equal(ctx.formatCalcExpr('1250×12'), '1,250×12');
+    assert.equal(ctx.formatCalcExpr('1000+2500.50-300'), '1,000+2,500.50-300');
     assert.equal(ctx.formatMoney(NaN), '—');
     assert.equal(ctx.formatUnitPrice(18), '18.00');
     assert.equal(ctx.formatUnitPrice(17.28), '17.28');
