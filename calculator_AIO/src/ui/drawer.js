@@ -331,6 +331,27 @@ function getToolSummaryText(toolId, stateObj) {
             const totalCost = liters * price;
             return `⛽ สรุปค่าน้ำมันเดินทาง\n${divider}\n• ระยะทาง: ${formatNum(dist, 1)} กม.\n• อัตราสิ้นเปลือง: ${formatNum(eff, 1)} กม./ลิตร\n• ราคาน้ำมัน: ${formatMoney(price)} บาท/ลิตร\n• ปริมาณน้ำมัน: ${formatNum(liters, 2)} ลิตร\n${divider}\n💰 ค่าน้ำมันรวม: ${formatMoney(totalCost)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'lotto_calc': {
+            const st = state.lotto_calc || {};
+            const activeTab = st.activeTab || 'bet';
+            if (activeTab === 'claim') {
+                const claim = (typeof calculatePrizeClaim === 'function')
+                    ? calculatePrizeClaim(st.claimPrize, st.claimTicketCount, st.claimChannel, st.claimCustomRate)
+                    : { prizeLabel: 'สลากกินแบ่ง', ticketCount: 1, totalGrossPrize: 2000, deductionRate: 1.5, deductionAmount: 30, netPrize: 1970, channelLabel: 'ธนาคาร' };
+                return `🏆 สรุปขึ้นเงินรางวัลสลากกินแบ่ง\n${divider}\n• รางวัล: ${claim.prizeLabel}\n• จำนวน: ${claim.ticketCount} ใบ\n• ยอดรางวัลรวม: ${formatMoney(claim.totalGrossPrize)} บาท\n• หักภาษี/ค่าธรรมเนียม (${claim.deductionRate}%): -${formatMoney(claim.deductionAmount)} บาท\n${divider}\n💰 เงินสดสุทธิที่ได้รับจริง: ${formatMoney(claim.netPrize)} บาท\n• ช่องทาง: ${claim.channelLabel}\n(คำนวณโดย Multitools Calculator)`;
+            } else if (activeTab === 'reality') {
+                const sim = (typeof calculateLottoSavingsSimulation === 'function')
+                    ? calculateLottoSavingsSimulation(st.lottoSpendPerDraw, st.savingsYears, st.savingsRate)
+                    : { spendPerDraw: 500, monthlyDeposit: 1000, years: 10, annualReturnPct: 7, totalPrincipal: 120000, totalInterest: 53094, futureValue: 173094 };
+                return `💡 สรุปจำลองเปลี่ยนค่าหวยเป็นเงินล้าน\n${divider}\n• ซื้อหวยงวดละ: ${formatMoney(sim.spendPerDraw)} บาท (เดือนละ ${formatMoney(sim.monthlyDeposit)} บาท)\n• ระยะเวลา: ${sim.years} ปี (ผลตอบแทน ${sim.annualReturnPct}%)\n${divider}\n• เงินต้นสะสม: ${formatMoney(sim.totalPrincipal)} บาท\n• ดอกเบี้ยทบต้น: +${formatMoney(sim.totalInterest)} บาท\n💰 ยอดเงินออมรวม: ${formatMoney(sim.futureValue)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            } else {
+                const count = Array.isArray(st.numbersList) ? st.numbersList.length : 0;
+                const bet = (typeof calculateLottoBet === 'function')
+                    ? calculateLottoBet(count, st.pricePerNumber, st.payoutRate)
+                    : { count: 6, pricePerNumber: 20, payoutRate: 900, totalCost: 120, winningPayout: 18000, netProfit: 17880, roiPercent: 14900 };
+                return `🎯 สรุปคำนวณต้นทุน & หวยชุด\n${divider}\n• จำนวนเลขในชุด: ${bet.count} หาง\n• ราคาซื้อต่อหาง: ${formatMoney(bet.pricePerNumber)} บาท\n• อัตราจ่าย: บาทละ ${formatMoney(bet.payoutRate)}\n${divider}\n• ต้นทุนรวม: ${formatMoney(bet.totalCost)} บาท\n• เงินรางวัล (ถ้าถูก 1 หาง): ${formatMoney(bet.winningPayout)} บาท\n💰 กำไรสุทธิ: ${bet.netProfit >= 0 ? '+' : ''}${formatMoney(bet.netProfit)} บาท (ROI ${bet.roiPercent.toFixed(1)}%)\n(คำนวณโดย Multitools Calculator)`;
+            }
+        }
         default: {
             const statusText = document.getElementById('sharedStatusText')?.innerText?.trim();
             return `📋 สรุปผล: ${title}\n${divider}\n${statusText || 'คำนวณเรียบร้อยแล้ว'}\n(คำนวณโดย Multitools Calculator)`;

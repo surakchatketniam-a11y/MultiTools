@@ -14,6 +14,7 @@ const moduleFiles = [
     'src/core/export.js',
     'src/core/history.js',
     'src/core/compare.js',
+    'src/core/lotto.js',
     'src/ui/theme.js',
     'src/ui/drawer.js',
     'src/ui/keypad.js',
@@ -22,6 +23,7 @@ const moduleFiles = [
     'src/tools/finance.js',
     'src/tools/work.js',
     'src/tools/special.js',
+    'src/tools/lotto.js',
     'src/ui/actions.js',
     'src/ui/modals.js'
 ];
@@ -277,11 +279,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 22 tools classified into 5 valid groups with search keywords', () => {
+test('catalog contains exactly 23 tools classified into 5 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 5);
-    assert.equal(TOOLS_CATALOG.length, 22);
+    assert.equal(TOOLS_CATALOG.length, 23);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -407,7 +409,7 @@ test('thai official holidays: Songkran, fixed holidays and lunar Buddhist observ
     assert.equal(ctx.isThaiOfficialHoliday(new Date('2026-10-14T00:00:00')), false);
 });
 
-test('all 22 tools have complete and valid clear and demo data mappings', () => {
+test('all 23 tools have complete and valid clear and demo data mappings', () => {
     const rawAppStateMatch = html.match(/const appState = \{[\s\S]*?\n        \};/);
     assert.ok(rawAppStateMatch, 'appState must be defined');
 
@@ -423,7 +425,7 @@ test('all 22 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 22);
+    assert.equal(ctx.TOOLS_CATALOG.length, 23);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -775,7 +777,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('🏆 คุ้มค่าที่สุด'));
 });
 
-test('all 22 tool renderers are modularized and exported across the 5 tool groups', () => {
+test('all 23 tool renderers are modularized and exported across the 5 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price: 'renderUnitPriceTool',
@@ -799,10 +801,11 @@ test('all 22 tool renderers are modularized and exported across the 5 tool group
         fuel_eff:   'renderFuelEffTool',
         area_cost:  'renderAreaCostTool',
         hex:        'renderHexTool',
-        calc:       'renderStandardCalcTool'
+        calc:       'renderStandardCalcTool',
+        lotto_calc: 'renderLottoTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 22);
+    assert.equal(Object.keys(rendererMap).length, 23);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -841,6 +844,98 @@ test('actions and modals modules export all expected functions', () => {
         assert.equal(typeof ctx[fn], 'function', `Modal function ${fn} must be exported and callable`);
     }
 });
+
+test('thai lottery engine: permutations, payouts, GLO prize claim, stats and savings simulation', () => {
+    const ctx = context();
+
+    // 1. 6-doors permutations (3-digit)
+    const perm6 = ctx.expand6Doors('579');
+    assert.equal(perm6.length, 6);
+    assert.equal(perm6.join(','), '579,597,759,795,957,975');
+    const permDouble = ctx.expand6Doors('787');
+    assert.equal(permDouble.length, 3);
+    assert.equal(permDouble.join(','), '778,787,877');
+    const permTriple = ctx.expand6Doors('999');
+    assert.equal(permTriple.length, 1);
+    assert.equal(permTriple.join(','), '999');
+
+    // 2. 19-doors expansion (digit 8)
+    const doors19 = ctx.expand19Doors('8');
+    assert.equal(doors19.length, 19);
+    assert.ok(doors19.includes('08'));
+    assert.ok(doors19.includes('80'));
+    assert.ok(doors19.includes('88'));
+    assert.ok(doors19.includes('98'));
+
+    // 3. 2-doors reverse
+    const rev2 = ctx.expandTwoDigitReverse('28');
+    assert.equal(rev2.join(','), '28,82');
+    assert.equal(ctx.expandTwoDigitReverse('55').join(','), '55');
+
+    // 4. Double numbers & Runs
+    const doubles = ctx.expandDoubleNumbers();
+    assert.equal(doubles.length, 10);
+    assert.equal(doubles[0], '00');
+    assert.equal(doubles[9], '99');
+
+    const frontRun = ctx.expandFrontRun('7');
+    assert.equal(frontRun.length, 10);
+    assert.equal(frontRun[0], '70');
+    assert.equal(frontRun[9], '79');
+
+    // 5. Bet calculation
+    const bet = ctx.calculateLottoBet(6, 20, 900);
+    assert.equal(bet.count, 6);
+    assert.equal(bet.totalCost, 120);
+    assert.equal(bet.winningPayout, 18000);
+    assert.equal(bet.netProfit, 17880);
+    assert.equal(bet.roiPercent, 14900);
+
+    // 6. Prize claim & deduction
+    // 1st prize at bank (1.5% fee)
+    const claim1 = ctx.calculatePrizeClaim('first', 1, 'bank');
+    assert.equal(claim1.totalGrossPrize, 6000000);
+    assert.equal(claim1.deductionRate, 1.5);
+    assert.equal(claim1.deductionAmount, 90000);
+    assert.equal(claim1.netPrize, 5910000);
+
+    // 2-digit at GLO regular (0.5% duty stamp)
+    const claim2 = ctx.calculatePrizeClaim('back2', 5, 'glo_regular');
+    assert.equal(claim2.totalGrossPrize, 10000);
+    assert.equal(claim2.deductionRate, 0.5);
+    assert.equal(claim2.deductionAmount, 50);
+    assert.equal(claim2.netPrize, 9950);
+
+    // 7. GLO statistics & expected value
+    const stats = ctx.calculateLottoStats(80);
+    assert.equal(stats.expectedValue, 48);
+    assert.equal(stats.winChancePercent.toFixed(4), '1.4168');
+    assert.equal(stats.loseChancePercent.toFixed(4), '98.5832');
+
+    // 8. Lotto to wealth compound savings simulation
+    const sim = ctx.calculateLottoSavingsSimulation(500, 10, 7);
+    assert.equal(sim.spendPerDraw, 500);
+    assert.equal(sim.monthlyDeposit, 1000);
+    assert.equal(sim.totalPrincipal, 120000); // 1,000 * 120 months
+    assert.ok(sim.futureValue > 170000 && sim.futureValue < 175000);
+    assert.ok(sim.totalInterest > 50000);
+
+    // 9. Tool summary generation for drawer / history
+    const summaryBet = ctx.getToolSummaryText('lotto_calc', {
+        lotto_calc: { activeTab: 'bet', numbersList: ['579', '597'], pricePerNumber: '20', payoutRate: '900' }
+    });
+    assert.match(summaryBet, /สรุปคำนวณต้นทุน & หวยชุด/);
+    assert.match(summaryBet, /2 หาง/);
+    assert.match(summaryBet, /40\.00 บาท/);
+
+    const summaryClaim = ctx.getToolSummaryText('lotto_calc', {
+        lotto_calc: { activeTab: 'claim', claimPrize: 'first', claimTicketCount: '1', claimChannel: 'bank' }
+    });
+    assert.match(summaryClaim, /สรุปขึ้นเงินรางวัลสลากกินแบ่ง/);
+    assert.match(summaryClaim, /รางวัลที่ 1/);
+    assert.match(summaryClaim, /5,910,000\.00 บาท/);
+});
+
 
 
 

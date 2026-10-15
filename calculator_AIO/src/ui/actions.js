@@ -99,6 +99,23 @@ function clearCurrentTool() {
         appState.tip.bill = '';
     } else if (id === 'hex') {
         appState.hex.decValue = 0;
+    } else if (id === 'lotto_calc') {
+        appState.lotto_calc = {
+            activeTab: 'bet',
+            betNumberInput: '',
+            numbersList: [],
+            pricePerNumber: '20',
+            payoutRate: '900',
+            claimPrize: 'back2',
+            claimTicketCount: '1',
+            claimChannel: 'bank',
+            claimCustomRate: '2.0',
+            lottoSpendPerDraw: '500',
+            savingsYears: '10',
+            savingsRate: '7',
+            luckyType: '3digit',
+            luckyResult: ''
+        };
     }
     rememberToolClear(snapshot);
     renderActiveTool();
@@ -163,6 +180,23 @@ function loadDemoForCurrentTool() {
     } else if (id === 'calc') {
         appState.calc.expr = '1,250 × 12 + 3,500';
         appState.calc.result = '18,500';
+    } else if (id === 'lotto_calc') {
+        appState.lotto_calc = {
+            activeTab: 'bet',
+            betNumberInput: '579',
+            numbersList: ['579', '597', '759', '795', '957', '975'],
+            pricePerNumber: '20',
+            payoutRate: '900',
+            claimPrize: 'back2',
+            claimTicketCount: '2',
+            claimChannel: 'bank',
+            claimCustomRate: '2.0',
+            lottoSpendPerDraw: '500',
+            savingsYears: '10',
+            savingsRate: '7',
+            luckyType: '3digit',
+            luckyResult: '579'
+        };
     }
     renderActiveTool();
 }

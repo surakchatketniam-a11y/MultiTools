@@ -1356,6 +1356,7 @@
     <script src="src/core/export.js"></script>
     <script src="src/core/history.js"></script>
     <script src="src/core/compare.js"></script>
+    <script src="src/core/lotto.js"></script>
 
     <!-- UI Modules (Phase 2 Refactoring) -->
     <script src="src/ui/theme.js"></script>
@@ -1368,6 +1369,7 @@
     <script src="src/tools/finance.js"></script>
     <script src="src/tools/work.js"></script>
     <script src="src/tools/special.js"></script>
+    <script src="src/tools/lotto.js"></script>
 
     <!-- Actions & Modals (Phase 4 Refactoring) -->
     <script src="src/ui/actions.js"></script>
@@ -1588,6 +1590,24 @@
                 use24h: true,
                 favoriteCities: ['Asia/Bangkok'],
                 meetingTime: '09:00'
+            },
+
+            // 19. Thai Lottery & GLO Calculator
+            lotto_calc: {
+                activeTab: 'bet',
+                betNumberInput: '579',
+                numbersList: ['579', '597', '759', '795', '957', '975'],
+                pricePerNumber: '20',
+                payoutRate: '900',
+                claimPrize: 'back2',
+                claimTicketCount: '1',
+                claimChannel: 'bank',
+                claimCustomRate: '2.0',
+                lottoSpendPerDraw: '500',
+                savingsYears: '10',
+                savingsRate: '7',
+                luckyType: '3digit',
+                luckyResult: '579'
             }
         };
 
@@ -1654,6 +1674,7 @@
                 case 'salary':     renderSalaryTool(topPanel); break;
                 case 'hex':        renderHexTool(topPanel); break;
                 case 'world_time': renderWorldTimeTool(topPanel); break;
+                case 'lotto_calc': renderLottoTool(topPanel); break;
             }
             if (editing) {
                 const replacement = topPanel.querySelector(`input[data-shared-field="${editing.index}"]`);

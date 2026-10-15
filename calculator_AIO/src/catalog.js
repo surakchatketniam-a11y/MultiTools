@@ -37,6 +37,7 @@ var TOOLS_CATALOG = [
     { id: 'loan',       group: 'finance', category: 'all', menuTitle: 'เงินกู้ & ผ่อนชำระ', headerTitle: 'เครื่องคำนวณเงินกู้', usesSharedKeypad: true, keywords: 'loan เงินกู้ ผ่อนบ้าน ผ่อนรถ ดอกเบี้ย ค่างวด ดอกเบี้ยคงที่ ค่างวดผ่อน' },
     { id: 'savings',    group: 'finance', category: 'all', menuTitle: 'เงินออม & เกษียณ', headerTitle: 'เครื่องคำนวณเงินออม', usesSharedKeypad: true, keywords: 'savings เงินออม เกษียณ ดอกเบี้ยทบต้น เงินเฟ้อ ออมทรัพย์' },
     { id: 'currency',   group: 'finance', category: 'fav', menuTitle: 'แปลงสกุลเงิน', headerTitle: 'ตัวแปลงสกุลเงิน', usesSharedKeypad: true, keywords: 'currency สกุลเงิน แลกเงิน ดอลลาร์ บาท เยน ยูโร exchange rate forex' },
+    { id: 'lotto_calc', group: 'finance', category: 'fav', menuTitle: 'หวย & สลากไทย', headerTitle: 'เครื่องคำนวณหวย & สลากไทย', usesSharedKeypad: false, keywords: 'lotto หวย สลากกินแบ่งรัฐบาล สลากออมสิน สลาก n3 เลขเด็ด 6 ประตู 19 ประตู 2 ตัว 3 ตัว รางวัลที่ 1 โต๊ด ขึ้นเงินรางวัล ภาษีสลาก' },
 
     // หมวดหมู่ที่ 4: เวลา & สำนักงาน
     { id: 'date_work',  group: 'work', category: 'all', menuTitle: 'นับวันทำการ (Workdays)', headerTitle: 'นับวันทำการ', usesSharedKeypad: false, keywords: 'date work วันทำการ วันทำงาน sla วันหยุด ส่งงาน วันครบกำหนด' },

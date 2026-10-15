@@ -1,4 +1,4 @@
-const CACHE_NAME = 'multitools-calculator-v10';
+const CACHE_NAME = 'multitools-calculator-v11';
 const STATIC_ASSETS = [
     './',
     './index.html',
@@ -10,6 +10,7 @@ const STATIC_ASSETS = [
     './src/core/export.js',
     './src/core/history.js',
     './src/core/compare.js',
+    './src/core/lotto.js',
     './src/ui/theme.js',
     './src/ui/drawer.js',
     './src/ui/keypad.js',
@@ -18,6 +19,7 @@ const STATIC_ASSETS = [
     './src/tools/finance.js',
     './src/tools/work.js',
     './src/tools/special.js',
+    './src/tools/lotto.js',
     './src/ui/actions.js',
     './src/ui/modals.js'
 ];
