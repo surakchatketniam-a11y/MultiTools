@@ -210,4 +210,19 @@ const importRes = Storage.importDataJSON(exportedJSON, 'merge');
 assert.strictEqual(importRes.success, true);
 console.log('✓ Test 6 Passed: Export and import verified.');
 
-console.log('\n🎉 ALL 6 CORE ENGINE TESTS PASSED PERFECTLY!\n');
+// ----------------------------------------------------
+// TEST 7: Automatic GLO sync settings
+// ----------------------------------------------------
+console.log('\n--- Test 7: Automatic GLO sync settings ---');
+const savedSettings = Storage.setSettings({
+    gloBackfillBaseDate: '2025-03-16',
+    gloLastSyncedDrawDate: '2026-10-01'
+});
+assert.strictEqual(savedSettings.gloBackfillBaseDate, '2025-03-16');
+assert.strictEqual(Storage.getSettings().gloLastSyncedDrawDate, '2026-10-01');
+
+Storage.clearAllData();
+assert.deepStrictEqual(Storage.getSettings(), {}, 'Clear all data must remove sync state');
+console.log('✓ Test 7 Passed: Automatic sync state persists and clears correctly.');
+
+console.log('\n🎉 ALL 7 CORE ENGINE TESTS PASSED PERFECTLY!\n');

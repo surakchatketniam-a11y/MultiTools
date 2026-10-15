@@ -20,8 +20,9 @@
             this.initNavigation();
             this.handleHashChange();
             this.registerServiceWorker();
-            this.maybeSyncResults();
+            if (navigator.onLine) this.syncLatestResult(false);
             window.setInterval(() => this.maybeSyncResults(), 15 * 60 * 1000);
+            window.addEventListener('online', () => this.syncLatestResult(false));
             window.setInterval(() => {
                 const countdown = document.getElementById('nextDrawCountdown');
                 if (countdown) {
@@ -73,9 +74,14 @@
             this.syncInProgress = true;
             try {
                 const baseDate = this.builtInResults[0]?.drawDate;
-                const syncPayload = manual && baseDate
-                    ? await root.LottoSync.fetchSince(baseDate)
-                    : { results: [await root.LottoSync.fetchLatest()], failedDates: [], complete: true };
+                const settings = root.LottoStorage.getSettings();
+                const hasCompletedBackfill = Boolean(baseDate && settings.gloBackfillBaseDate === baseDate);
+                const latestLocalDate = this.historicalResults[0]?.drawDate || baseDate;
+                const afterDate = manual || !hasCompletedBackfill ? baseDate : latestLocalDate;
+
+                if (!afterDate) throw new Error('ไม่พบงวดตั้งต้นสำหรับตรวจสอบผล GLO');
+
+                const syncPayload = await root.LottoSync.fetchSince(afterDate);
                 const today = root.LottoDraws.thailandNow();
                 const todayIso = `${today.year}-${String(today.month).padStart(2, '0')}-${String(today.day).padStart(2, '0')}`;
                 let changed = 0;
@@ -99,6 +105,17 @@
                         : `อัปเดตผลรางวัลครบ ${changed} งวดแล้ว`, failed ? 'info' : 'success');
                 } else if (manual) {
                     this.showToast('ผลรางวัลทุกงวดเป็นข้อมูลล่าสุดแล้ว', 'info');
+                }
+
+                if (syncPayload.complete) {
+                    root.LottoStorage.setSettings({
+                        gloBackfillBaseDate: baseDate,
+                        gloBackfillCompletedAt: hasCompletedBackfill
+                            ? settings.gloBackfillCompletedAt
+                            : new Date().toISOString(),
+                        gloLastSyncAt: new Date().toISOString(),
+                        gloLastSyncedDrawDate: syncPayload.results[0]?.drawDate || latestLocalDate
+                    });
                 }
             } catch (err) {
                 console.error('[LottoBook] GLO sync failed:', err);

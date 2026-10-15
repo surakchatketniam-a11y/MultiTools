@@ -166,6 +166,30 @@
         },
 
         // ----------------------------------------------------
+        // APPLICATION SETTINGS
+        // ----------------------------------------------------
+        getSettings() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+                if (!data) return {};
+                const parsed = JSON.parse(data);
+                return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+            } catch (e) {
+                console.error('[Storage] Error loading settings:', e);
+                return {};
+            }
+        },
+
+        setSettings(patch) {
+            if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+                return this.getSettings();
+            }
+            const settings = { ...this.getSettings(), ...patch };
+            localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+            return settings;
+        },
+
+        // ----------------------------------------------------
         // EXPORT & IMPORT
         // ----------------------------------------------------
         exportDataJSON() {
@@ -257,6 +281,7 @@
             localStorage.removeItem(STORAGE_KEYS.TICKETS);
             localStorage.removeItem(STORAGE_KEYS.BUDGETS);
             localStorage.removeItem(STORAGE_KEYS.CUSTOM_RESULTS);
+            localStorage.removeItem(STORAGE_KEYS.SETTINGS);
             return true;
         }
     };
