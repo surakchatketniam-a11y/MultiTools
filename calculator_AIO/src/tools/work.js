@@ -88,190 +88,165 @@ function renderWorkdayTool(container) {
  * TOOL 13: วันที่ (Date Difference & Add/Subtract Days)
  * ----------------------------------------------------------- */
 function renderDateCalcTool(container) {
-    const st = appState.date_calc;
-    const d1 = new Date(st.startDate + 'T00:00:00');
-    const d2 = new Date(st.endDate + 'T00:00:00');
-    const diffDays = Math.round(Math.abs(d2 - d1) / 86400000);
+            const st = appState.date_calc;
+            const d1 = new Date(st.startDate + 'T00:00:00');
+            const d2 = new Date(st.endDate + 'T00:00:00');
+            const diffDays = Math.round(Math.abs(d2 - d1) / 86400000);
 
-    const offset = integerOrDefault(st.daysOffset, 0);
-    const targetDate = addCalendarDays(d1, st.op === 'add' ? offset : -offset);
-    const isBusinessDay = (date) => {
-        const day = date.getDay();
-        return day !== 0 && day !== 6 && (!st.includeThaiHolidays || !isThaiOfficialHoliday(date));
-    };
-    let countedDiffDays = NaN, adjustedTargetDate = new Date(NaN), calculationError = '';
-    try {
-        if (st.mode === 'diff') countedDiffDays = st.workdays
-            ? countWorkingDays(d1, d2, isBusinessDay) - (!st.inclusive && isBusinessDay(d1) ? 1 : 0)
-            : diffDays + (st.inclusive ? 1 : 0);
-        if (st.mode === 'add_sub') {
-            if (!Number.isSafeInteger(offset)) throw new RangeError('จำนวนวันต้องเป็นจำนวนเต็ม');
-            adjustedTargetDate = st.workdays ? offsetWorkingDays(d1, st.op === 'add' ? offset : -offset, isBusinessDay) : targetDate;
-            validateCalendarDate(adjustedTargetDate);
-        }
-    } catch (error) { calculationError = error.message; }
-    const birthDate = new Date(st.birthDate + 'T00:00:00');
-    const referenceDate = new Date(st.referenceDate + 'T00:00:00');
-    let ageText = 'กรุณาเลือกวันเกิด';
-    if (birthDate <= referenceDate) {
-        let years = referenceDate.getFullYear() - birthDate.getFullYear();
-        let months = referenceDate.getMonth() - birthDate.getMonth();
-        let days = referenceDate.getDate() - birthDate.getDate();
-        if (days < 0) { months--; days += new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 0).getDate(); }
-        if (months < 0) { years--; months += 12; }
-        ageText = `${years} ปี ${months} เดือน ${days} วัน`;
-    }
-
-    container.innerHTML = `
-        <div class="flex flex-col gap-3 p-1">
-            <div class="segment-group grid-cols-3">
-                <button class="segment-btn date-mode ${st.mode === 'diff' ? 'active' : ''}" data-m="diff">ระยะห่าง</button>
-                <button class="segment-btn date-mode ${st.mode === 'add_sub' ? 'active' : ''}" data-m="add_sub">บวก / ลบวัน</button>
-                <button class="segment-btn date-mode ${st.mode === 'age' ? 'active' : ''}" data-m="age">คำนวณอายุ</button>
-            </div>
-            <div class="segment-group grid-cols-2">
-                <button class="segment-btn era-btn ${st.calendarEra === 'BE' ? 'active' : ''}" data-era="BE">พ.ศ.</button>
-                <button class="segment-btn era-btn ${st.calendarEra === 'CE' ? 'active' : ''}" data-era="CE">ค.ศ.</button>
-            </div>
-            ${st.mode !== 'age' ? `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2"><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="dateInclusive" ${st.inclusive ? 'checked' : ''}> นับรวมวันเริ่มต้น</label><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="dateWorkdays" ${st.workdays ? 'checked' : ''}> นับเฉพาะวันทำการ (ตัดเสาร์-อาทิตย์)</label><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="dateThaiHolidays" ${st.includeThaiHolidays ? 'checked' : ''}> ตัดวันหยุดไทยพื้นฐาน</label></div>` : ''}
-
-            ${st.mode === 'age' ? `
-                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow: var(--app-elevation);">
-                    <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันเกิด</label>
-                        <input id="birthDateInput" type="date" value="${st.birthDate}" class="airbnb-input w-full">
-                    </div>
-                    <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">เทียบกับวันที่</label>
-                        <input id="refDateInput" type="date" value="${st.referenceDate}" class="airbnb-input w-full">
-                    </div>
-                </div>
-
-                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-5 text-center" style="box-shadow: var(--app-elevation);">
-                    <div class="text-xs text-[#6a6a6a]">อายุของคุณคือ</div>
-                    <div class="text-2xl font-bold text-[var(--app-accent)] mt-1">${ageText}</div>
-                </div>
-            ` : (st.mode === 'diff' ? `
-                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow: var(--app-elevation);">
-                    <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่เริ่มต้น</label>
-                        <input id="startDateInput" type="date" value="${st.startDate}" class="airbnb-input w-full">
-                    </div>
-                    <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่สิ้นสุด</label>
-                        <input id="endDateInput" type="date" value="${st.endDate}" class="airbnb-input w-full">
-                    </div>
-                </div>
-
-                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-5 text-center" style="box-shadow: var(--app-elevation);">
-                    <div class="text-xs text-[#6a6a6a]">ระยะห่างระหว่างสองวัน</div>
-                    <div class="text-3xl font-bold text-[var(--app-accent)] mt-1">${calculationError ? '—' : Number(countedDiffDays).toLocaleString('th-TH') + ' วัน'}</div>
-                </div>
-            ` : `
-                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow: var(--app-elevation);">
-                    <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่ตั้งต้น</label>
-                        <input id="baseDateInput" type="date" value="${st.startDate}" class="airbnb-input w-full">
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">การคำนวณ</label>
-                            <select id="dateOpSel" class="airbnb-input w-full">
-                                <option value="add" ${st.op === 'add' ? 'selected' : ''}>บวก (+) เพิ่มวัน</option>
-                                <option value="sub" ${st.op === 'sub' ? 'selected' : ''}>ลบ (-) ย้อนหลัง</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">จำนวนวัน</label>
-                            <input id="dateDaysOffset" type="number" min="0" value="${st.daysOffset}" class="airbnb-input w-full">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-5 text-center" style="box-shadow: var(--app-elevation);">
-                    <div class="text-xs text-[#6a6a6a]">ผลลัพธ์วันที่</div>
-                    <div class="text-2xl font-bold text-[var(--app-accent)] mt-1">${calculationError ? '—' : formatThaiDate(formatLocalDate(adjustedTargetDate))}</div>
-                </div>
-            `)}
-        </div>
-    `;
-
-    if (calculationError) {
-        const message = document.createElement('p');
-        message.className = 'text-sm p-3 text-red-600';
-        message.setAttribute('role', 'alert');
-        message.textContent = calculationError;
-        container.querySelector('.segment-group').parentElement.appendChild(message);
-    }
-    const modeButtons = container.querySelectorAll('.date-mode');
-    modeButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            st.mode = btn.getAttribute('data-m');
-            renderActiveTool();
-        });
-    });
-    container.querySelectorAll('.era-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            st.calendarEra = btn.dataset.era;
-            renderActiveTool();
-        });
-    });
-
-    const bindThaiDateField = (id, key) => {
-        const field = document.getElementById(id);
-        if (!field) return;
-        field.type = 'text';
-        field.inputMode = 'numeric';
-        field.placeholder = 'วว/ดด/ปปปป';
-        field.value = formatDateInputThai(st[key], st.calendarEra);
-        field.addEventListener('change', (e) => {
-            const parsed = parseDateInputThai(e.target.value, st.calendarEra);
-            if (parsed) {
-                st[key] = parsed;
-                renderActiveTool();
+            const offset = integerOrDefault(st.daysOffset, 0);
+            const targetDate = addCalendarDays(d1, st.op === 'add' ? offset : -offset);
+            const isBusinessDay = (date) => {
+                const day = date.getDay();
+                return day !== 0 && day !== 6 && (!st.includeThaiHolidays || !isThaiOfficialHoliday(date));
+            };
+            let countedDiffDays = NaN, adjustedTargetDate = new Date(NaN), calculationError = '';
+            try {
+                if (st.mode === 'diff') countedDiffDays = st.workdays
+                    ? countWorkingDays(d1, d2, isBusinessDay) - (!st.inclusive && isBusinessDay(d1) ? 1 : 0)
+                    : diffDays + (st.inclusive ? 1 : 0);
+                if (st.mode === 'add_sub') {
+                    if (!Number.isSafeInteger(offset)) throw new RangeError('จำนวนวันต้องเป็นจำนวนเต็ม');
+                    adjustedTargetDate = st.workdays ? offsetWorkingDays(d1, st.op === 'add' ? offset : -offset, isBusinessDay) : targetDate;
+                    validateCalendarDate(adjustedTargetDate);
+                }
+            } catch (error) { calculationError = error.message; }
+            const birthDate = new Date(st.birthDate + 'T00:00:00');
+            const referenceDate = new Date(st.referenceDate + 'T00:00:00');
+            let ageText = 'กรุณาเลือกวันเกิด';
+            if (birthDate <= referenceDate) {
+                let years = referenceDate.getFullYear() - birthDate.getFullYear();
+                let months = referenceDate.getMonth() - birthDate.getMonth();
+                let days = referenceDate.getDate() - birthDate.getDate();
+                if (days < 0) { months--; days += new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 0).getDate(); }
+                if (months < 0) { years--; months += 12; }
+                ageText = `${years} ปี ${months} เดือน ${days} วัน`;
             }
-        });
-    };
-    bindThaiDateField('birthDateInput', 'birthDate');
-    bindThaiDateField('refDateInput', 'referenceDate');
-    bindThaiDateField('startDateInput', 'startDate');
-    bindThaiDateField('endDateInput', 'endDate');
-    bindThaiDateField('baseDateInput', 'startDate');
 
-    document.getElementById('dateOpSel')?.addEventListener('change', (e) => {
-        st.op = e.target.value;
-        renderActiveTool();
-    });
-    document.getElementById('dateDaysOffset')?.addEventListener('change', (e) => {
-        st.daysOffset = parseInt(e.target.value, 10) || 0;
-        renderActiveTool();
-    });
-    document.getElementById('dateInclusive')?.addEventListener('change', (e) => { st.inclusive = e.target.checked; renderActiveTool(); });
-    document.getElementById('dateWorkdays')?.addEventListener('change', (e) => { st.workdays = e.target.checked; renderActiveTool(); });
-    document.getElementById('dateThaiHolidays')?.addEventListener('change', (e) => { st.includeThaiHolidays = e.target.checked; renderActiveTool(); });
-    const dateFields = [...container.querySelectorAll('input:not([type="checkbox"]), select')];
-    dateFields.forEach((field, index) => {
-        field.addEventListener('keydown', event => {
-            if (event.key !== 'Tab' && event.key !== 'Enter') return;
-            const nextField = dateFields[index + (event.shiftKey ? -1 : 1)];
-            if (!nextField) {
-                if (event.key === 'Enter' && !event.shiftKey) {
+            container.innerHTML = `
+                <div class="flex flex-col gap-3 p-1">
+<div class="segment-group grid-cols-3">
+                        <button class="segment-btn date-mode ${st.mode === 'diff' ? 'active' : ''}" data-m="diff">ระยะห่าง</button>
+                        <button class="segment-btn date-mode ${st.mode === 'add_sub' ? 'active' : ''}" data-m="add_sub">บวก / ลบวัน</button>
+                        <button class="segment-btn date-mode ${st.mode === 'age' ? 'active' : ''}" data-m="age">คำนวณอายุ</button>
+                    </div>
+                    <div class="segment-group grid-cols-2">
+                        <button class="segment-btn era-btn ${st.calendarEra === 'BE' ? 'active' : ''}" data-era="BE">พ.ศ.</button>
+                        <button class="segment-btn era-btn ${st.calendarEra === 'CE' ? 'active' : ''}" data-era="CE">ค.ศ.</button>
+                    </div>
+                    ${st.mode !== 'age' ? `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2"><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="dateInclusive" ${st.inclusive ? 'checked' : ''}> นับรวมวันเริ่มต้น</label><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="dateWorkdays" ${st.workdays ? 'checked' : ''}> นับเฉพาะวันทำการ (ตัดเสาร์-อาทิตย์)</label><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="dateThaiHolidays" ${st.includeThaiHolidays ? 'checked' : ''}> ตัดวันหยุดไทยพื้นฐาน</label></div>` : ''}
+
+                    ${st.mode === 'age' ? `
+                        <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3">
+                            <div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันเกิด (วัน/เดือน/ปี)</label><input type="text" inputmode="numeric" id="birthDateInp" value="${formatDateInputThai(st.birthDate, st.calendarEra)}" placeholder="เช่น 01/01/2533" class="airbnb-input w-full"></div>
+                            <div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">คำนวณถึงวันที่ (วัน/เดือน/ปี)</label><input type="text" inputmode="numeric" id="referenceDateInp" value="${formatDateInputThai(st.referenceDate, st.calendarEra)}" placeholder="เช่น 14/10/2569" class="airbnb-input w-full"></div>
+                        </div>
+                        <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-5 text-center"><div class="text-xs text-[#6a6a6a]">อายุ</div><div id="ageResult" class="text-2xl font-bold text-[var(--app-accent)]">${ageText}</div></div>
+                    ` : st.mode === 'diff' ? `
+                        <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow: var(--app-elevation);">
+                            <div>
+                                <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่เริ่มต้น</label>
+                                <input type="text" inputmode="numeric" id="dateStartInp" value="${formatDateInputThai(st.startDate, st.calendarEra)}" placeholder="วว/ดด/ปปปป" class="airbnb-input w-full">
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่สิ้นสุด</label>
+                                <input type="text" inputmode="numeric" id="dateEndInp" value="${formatDateInputThai(st.endDate, st.calendarEra)}" placeholder="วว/ดด/ปปปป" class="airbnb-input w-full">
+                            </div>
+                        </div>
+                        <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-5 text-center space-y-1" style="box-shadow: var(--app-elevation);">
+                            <div class="text-xs text-[#6a6a6a]">ระยะห่างทั้งหมด</div>
+                            <div class="text-3xl font-bold text-[var(--app-accent)]">${formatNum(countedDiffDays)} วัน</div>
+                            <div class="text-xs text-[#6a6a6a]">${st.workdays ? 'นับตามวันทำงานและวันหยุดที่เลือก' : (Number.isFinite(countedDiffDays) ? `(${Math.floor(countedDiffDays / 7)} สัปดาห์ กับ ${countedDiffDays % 7} วัน)` : '')}</div>
+                        </div>
+                    ` : `
+                        <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow: var(--app-elevation);">
+                            <div>
+                                <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่ตั้งต้น</label>
+                                <input type="text" inputmode="numeric" id="dateStartInp" value="${formatDateInputThai(st.startDate, st.calendarEra)}" placeholder="วว/ดด/ปปปป" class="airbnb-input w-full">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">การคำนวณ</label>
+                                    <select id="dateOpSel" class="airbnb-input w-full">
+                                        <option value="add" ${st.op === 'add' ? 'selected' : ''}>+ บวกเพิ่ม (วันข้างหน้า)</option>
+                                        <option value="sub" ${st.op === 'sub' ? 'selected' : ''}>- ลบออก (ย้อนหลัง)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">จำนวนวัน</label>
+                                    <input type="number" id="dateOffsetInp" value="${st.daysOffset}" min="0" class="airbnb-input w-full">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-5 text-center space-y-1" style="box-shadow: var(--app-elevation);">
+                            <div class="text-xs text-[#6a6a6a]">ตรงกับวันที่</div>
+                            <div class="text-xl font-bold text-[var(--app-accent)]">${formatThaiDate(formatLocalDate(adjustedTargetDate))}</div>
+                        </div>
+                    `}
+                </div>
+            `;
+
+            if (calculationError) {
+                const message = document.createElement('p');
+                message.setAttribute('role', 'alert');
+                message.className = 'text-sm p-3';
+                message.textContent = calculationError;
+                container.firstElementChild.appendChild(message);
+            }
+            container.querySelectorAll('.date-mode').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    st.mode = btn.getAttribute('data-m');
+                    renderActiveTool();
+                });
+            });
+            container.querySelectorAll('.era-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    st.calendarEra = btn.getAttribute('data-era');
+                    renderActiveTool();
+                });
+            });
+            document.getElementById('dateStartInp')?.addEventListener('change', (e) => {
+                const parsed = parseDateInputThai(e.target.value, st.calendarEra);
+                if (parsed) st.startDate = parsed;
+            });
+            document.getElementById('dateEndInp')?.addEventListener('change', (e) => {
+                const parsed = parseDateInputThai(e.target.value, st.calendarEra);
+                if (parsed) st.endDate = parsed;
+            });
+            document.getElementById('dateOpSel')?.addEventListener('change', (e) => {
+                st.op = e.target.value; renderActiveTool();
+            });
+            document.getElementById('dateOffsetInp')?.addEventListener('change', (e) => {
+                st.daysOffset = e.target.value;
+            });
+            document.getElementById('dateInclusive')?.addEventListener('change', (e) => { st.inclusive = e.target.checked; renderActiveTool(); });
+            document.getElementById('dateWorkdays')?.addEventListener('change', (e) => { st.workdays = e.target.checked; renderActiveTool(); });
+            document.getElementById('dateThaiHolidays')?.addEventListener('change', (e) => { st.includeThaiHolidays = e.target.checked; renderActiveTool(); });
+            document.getElementById('birthDateInp')?.addEventListener('change', (e) => { const parsed = parseDateInputThai(e.target.value, st.calendarEra); if (parsed) st.birthDate = parsed; });
+            document.getElementById('referenceDateInp')?.addEventListener('change', (e) => { const parsed = parseDateInputThai(e.target.value, st.calendarEra); if (parsed) st.referenceDate = parsed; });
+            const dateNavigationFields = [...container.querySelectorAll('input:not([type="checkbox"]), select')];
+            dateNavigationFields.forEach((field, index) => {
+                field.addEventListener('keydown', (event) => {
+                    if (event.key !== 'Tab' && event.key !== 'Enter') return;
+                    const nextIndex = index + (event.shiftKey ? -1 : 1);
+                    const nextField = dateNavigationFields[nextIndex];
+                    if (!nextField) {
+                        if (event.key === 'Enter' && !event.shiftKey) {
+                            event.preventDefault();
+                            field.dispatchEvent(new Event('change', { bubbles: true }));
+                            renderActiveTool();
+                        }
+                        return;
+                    }
                     event.preventDefault();
                     field.dispatchEvent(new Event('change', { bubbles: true }));
-                    renderActiveTool();
-                }
-                return;
-            }
-            event.preventDefault();
-            field.dispatchEvent(new Event('change', { bubbles: true }));
-            nextField.focus();
-            if (typeof nextField.select === 'function') nextField.select();
-        });
-    });
-    container.onfocusout = () => setTimeout(() => {
-        if (appState.activeToolId === 'date_calc' && !container.contains(document.activeElement)) renderActiveTool();
-    }, 0);
-}
+                    nextField.focus();
+                    if (typeof nextField.select === 'function') nextField.select();
+                });
+            });
+            container.onfocusout = () => setTimeout(() => {
+                if (appState.activeToolId === 'date_calc' && !container.contains(document.activeElement)) renderActiveTool();
+            }, 0);
+        }
 
 /* -----------------------------------------------------------
  * TOOL 14: เกรดเฉลี่ย (GPA Calculator - Uses Airbnb Rating Display 64px)
