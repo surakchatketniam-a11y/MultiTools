@@ -16,7 +16,12 @@ const moduleFiles = [
     'src/core/compare.js',
     'src/ui/theme.js',
     'src/ui/drawer.js',
-    'src/ui/keypad.js'
+    'src/ui/keypad.js',
+    'src/tools/shop.js',
+    'src/tools/biz.js',
+    'src/tools/finance.js',
+    'src/tools/work.js',
+    'src/tools/special.js'
 ];
 const moduleContents = moduleFiles.map(file => fs.readFileSync(path.join(__dirname, '../', file), 'utf8'));
 
@@ -50,7 +55,7 @@ function context(extra = {}) {
 
 function calculation(ctx, name, state, result) {
     // Renderers currently contain the calculations before their first DOM write.
-    const prefix = source(name).split('            container.innerHTML =')[0];
+    const prefix = source(name).split(/\s*container\.innerHTML\s*=/)[0];
     return vm.runInContext(`(${prefix}\nreturn (${result});\n})`, ctx)();
 }
 
@@ -767,6 +772,40 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('ธนาคาร A (5.0%)'));
     assert.ok(printHTML.includes('ธนาคาร B (3.8%)'));
     assert.ok(printHTML.includes('🏆 คุ้มค่าที่สุด'));
+});
+
+test('all 22 tool renderers are modularized and exported across the 5 tool groups', () => {
+    const ctx = context();
+    const rendererMap = {
+        unit_price: 'renderUnitPriceTool',
+        discount:   'renderDiscountTool',
+        tip:        'renderTipTool',
+        unit:       'renderUnitConverterTool',
+        vat:        'renderVatTool',
+        vat_wht:    'renderVatWhtTool',
+        percent:    'renderPercentTool',
+        salary:     'renderSalaryTool',
+        loan:       'renderLoanTool',
+        savings:    'renderSavingsTool',
+        currency:   'renderCurrencyTool',
+        date_work:  'renderWorkdayTool',
+        date_calc:  'renderDateCalcTool',
+        world_time: 'renderWorldTimeTool',
+        gpa:        'renderGpaTool',
+        health:     'renderHealthTool',
+        ovulation:  'renderOvulationTool',
+        fuel_cost:  'renderFuelCostTool',
+        fuel_eff:   'renderFuelEffTool',
+        area_cost:  'renderAreaCostTool',
+        hex:        'renderHexTool',
+        calc:       'renderStandardCalcTool'
+    };
+
+    assert.equal(Object.keys(rendererMap).length, 22);
+
+    for (const [toolId, fnName] of Object.entries(rendererMap)) {
+        assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
+    }
 });
 
 
