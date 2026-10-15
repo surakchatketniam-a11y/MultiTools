@@ -867,6 +867,156 @@ function generateFormalPrintHTML(toolId, stateObj) {
             </div>
         `;
 
+    } else if (curToolId === 'car_loan') {
+        docTitle = 'เอกสารประมาณการสินเชื่อเช่าซื้อรถยนต์และตารางปิดบัญชีล่วงหน้า (เกณฑ์ สคบ.)';
+        docSubtitle = 'Auto Hire-Purchase Loan & Early Payoff Settlement Statement';
+        const st = state.car_loan || {};
+        const calc = (typeof calculateCarLoan === 'function')
+            ? calculateCarLoan(st)
+            : { vehicleType: 'car', condition: 'new', price: 850000, downPaymentAmount: 170000, downPaymentPercent: 20, principal: 680000, interestRate: 2.59, periodMonths: 60, years: 5, totalInterest: 88060, monthlyPaymentPreVat: 12801, isVatAdded: false, vatMonthly: 0, monthlyPayment: 12801, totalVat: 0, totalRepayment: 768060, effectiveRateApprox: 4.95, payoffMonth: 30, remainingMonths: 30, discountTierPercent: 70, discountTierText: '1/3 ถึง 2/3 ของสัญญา (ลด 70%)', unearnedInterest: 22455, interestDiscount: 15718, totalSavedByEarlyPayoff: 15718, totalPayoffAmount: 368312 };
+
+        paramsRows = [
+            ['ประเภทยานพาหนะและสภาพรถ', `${calc.vehicleType === 'motorcycle' ? 'มอเตอร์ไซค์' : 'รถยนต์'} (${calc.condition === 'used' ? 'รถมือสอง (มี VAT 7%)' : 'รถใหม่ป้ายแดง'})`],
+            ['ราคารถยนต์ / ยานพาหนะ', `${formatMoney(calc.price)} บาท`],
+            ['เงินดาวน์ที่ชำระ', `${formatMoney(calc.downPaymentAmount)} บาท (${formatNum(calc.downPaymentPercent, 1)}%)`],
+            ['ยอดจัดเช่าซื้อ (เงินต้น)', `${formatMoney(calc.principal)} บาท`],
+            ['อัตราดอกเบี้ยคงที่ (Flat Rate)', `${formatNum(calc.interestRate, 2)}% ต่อปี`],
+            ['อัตราดอกเบี้ยแท้จริง (EIR ประมาณการ)', `${formatNum(calc.effectiveRateApprox, 2)}% ต่อปี`],
+            ['ระยะเวลาผ่อนชำระตามสัญญา', `${calc.periodMonths} งวด (${calc.years} ปี)`],
+            ['งวดที่จำลองปิดบัญชีก่อนกำหนด', `งวดที่ ${calc.payoffMonth} (คงเหลือ ${calc.remainingMonths} งวด)`]
+        ];
+
+        resultCards = [
+            { label: 'ค่างวดผ่อนชำระรายเดือน', value: `${formatMoney(calc.monthlyPayment)} บาท/งวด`, highlight: true },
+            { label: 'ยอดชำระเพื่อปิดบัญชีในงวดนี้', value: `${formatMoney(calc.totalPayoffAmount)} บาท` },
+            { label: 'ส่วนลดดอกเบี้ยตามเกณฑ์ สคบ. ใหม่', value: `${formatMoney(calc.totalSavedByEarlyPayoff)} บาท`, highlight: true },
+            { label: 'ยอดผ่อนชำระรวมตลอดสัญญา', value: `${formatMoney(calc.totalRepayment)} บาท` }
+        ];
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    สรุปโครงสร้างสินเชื่อเช่าซื้อและเกณฑ์ส่วนลดปิดบัญชี สคบ.
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 6px 8px; text-align: left;">รายการโครงสร้างสินเชื่อ</th>
+                            <th style="padding: 6px 8px; text-align: right;">มูลค่า (บาท)</th>
+                            <th style="padding: 6px 8px; text-align: left;">หมายเหตุ / เกณฑ์ที่ใช้</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;"><b>ยอดจัดเช่าซื้อ (เงินต้น)</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.principal)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">ราคารถหักเงินดาวน์</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">ดอกเบี้ยเช่าซื้อรวมทั้งสัญญา</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #dc2626;">+${formatMoney(calc.totalInterest)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">Flat Rate ${formatNum(calc.interestRate, 2)}% × ${calc.years} ปี</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">ภาษีมูลค่าเพิ่ม (VAT 7%) ตลอดสัญญา</td>
+                            <td style="padding: 6px 8px; text-align: right;">${calc.isVatAdded ? `+${formatMoney(calc.totalVat)}` : 'รวมในตัวรถแล้ว'}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">${calc.isVatAdded ? 'รถมือสองคิด VAT 7% ในค่างวด' : 'รถใหม่ราคารวม VAT แล้ว'}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                            <td style="padding: 6px 8px;"><b>ดอกเบี้ยที่ยังไม่ถึงกำหนด (ณ งวดที่ ${calc.payoffMonth})</b></td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.unearnedInterest)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">วิธีคำนวณสัดส่วน Rule of 78</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: #f0fdf4;">
+                            <td style="padding: 6px 8px; color: #166534;"><b>ส่วนลดดอกเบี้ยที่ได้รับจริง (${calc.discountTierPercent}%)</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #166534;">-${formatMoney(calc.interestDiscount)}</td>
+                            <td style="padding: 6px 8px; color: #166534;">เกณฑ์ สคบ. ใหม่: ${calc.discountTierText}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                            <td style="padding: 8px;">ยอดเงินสุทธิที่ต้องชำระเพื่อปิดบัญชี:</td>
+                            <td style="padding: 8px; text-align: right; color: #0284c7; font-size: 12px;">${formatMoney(calc.totalPayoffAmount)} บาท</td>
+                            <td style="padding: 8px; color: #64748b;">ประหยัดเงินได้ ${formatMoney(calc.totalSavedByEarlyPayoff)} บาท</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+
+    } else if (curToolId === 'social_security') {
+        docTitle = 'เอกสารประมาณการสิทธิประโยชน์เงินบำนาญและเงินชราภาพประกันสังคม';
+        docSubtitle = 'Social Security Pension & Old-Age Lump Sum Statement';
+        const st = state.social_security || {};
+        const calc = (typeof calculateSocialSecurity === 'function')
+            ? calculateSocialSecurity(st)
+            : { section: 'm33', wageMonthly: 35000, cappedWage: 15000, contributionMonths: 240, yearsContributed: 20, m40Plan: 'plan2', m40ExtraSavings: 0, monthlyContribution: 750, employerContribution: 750, govtContribution: 412.5, oldAgeSavingsMonthly: 450, isPension: true, pensionRatePercent: 27.5, monthlyPension: 4125, yearlyPension: 49500, lumpSumTotal: 0, totalWorkerContributed: 180000, totalFundAccumulated: 216000 };
+
+        paramsRows = [
+            ['มาตราผู้ประกันตน', calc.section === 'm39' ? 'มาตรา 39 (ผู้ประกันตนโดยสมัครใจ)' : (calc.section === 'm40' ? `มาตรา 40 (${calc.m40Plan.toUpperCase()})` : 'มาตรา 33 (พนักงานเอกชนภาคบังคับ)')],
+            ['ฐานค่าจ้างในการคำนวณ', `${formatMoney(calc.cappedWage)} บาท/เดือน (เพดานกฎหมาย)`],
+            ['จำนวนเดือนที่ส่งเงินสมทบ', `${calc.contributionMonths} เดือน (${formatNum(calc.yearsContributed, 1)} ปี)`],
+            ['เงินสมทบผู้ประกันตนรายเดือน', `${formatMoney(calc.monthlyContribution)} บาท/เดือน`],
+            ['เงินสมทบนายจ้างร่วมสมทบ', `${formatMoney(calc.employerContribution)} บาท/เดือน`],
+            ['เงินสะสมเฉพาะกองทุนชราภาพ', `${formatMoney(calc.oldAgeSavingsMonthly)} บาท/เดือน`],
+            ['รวมเงินสมทบที่ผู้ประกันตนจ่ายสะสม', `${formatMoney(calc.totalWorkerContributed)} บาท`]
+        ];
+
+        if (calc.isPension) {
+            resultCards = [
+                { label: '💰 เงินบำนาญชราภาพรายเดือน (ตลอดชีพ)', value: `${formatMoney(calc.monthlyPension)} บาท/เดือน`, highlight: true },
+                { label: 'ประมาณการเงินบำนาญรวมต่อปี', value: `${formatMoney(calc.yearlyPension)} บาท/ปี` },
+                { label: 'อัตราบำนาญที่ได้รับ', value: `${formatNum(calc.pensionRatePercent, 2)}% ของค่าจ้างเฉลี่ย` },
+                { label: 'รวมเงินสมทบสะสมกองทุนชราภาพ', value: `${formatMoney(calc.totalFundAccumulated)} บาท` }
+            ];
+        } else {
+            resultCards = [
+                { label: '💰 เงินบำเหน็จชราภาพ (รับก้อนเดียว)', value: `${formatMoney(calc.lumpSumTotal)} บาท`, highlight: true },
+                { label: 'รวมเงินสมทบสะสมกองทุนชราภาพ', value: `${formatMoney(calc.totalFundAccumulated)} บาท` },
+                { label: 'รวมเงินสมทบที่ลูกจ้างจ่ายสะสม', value: `${formatMoney(calc.totalWorkerContributed)} บาท` },
+                { label: 'เงื่อนไขการรับสิทธิ์', value: 'ส่งเงินสมทบน้อยกว่า 180 เดือน' }
+            ];
+        }
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    เกณฑ์สิทธิประโยชน์ชราภาพและการจัดสรรเงินสมทบ
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 6px 8px; text-align: left;">รายการจัดสรร</th>
+                            <th style="padding: 6px 8px; text-align: right;">เงินต่อเดือน (บาท)</th>
+                            <th style="padding: 6px 8px; text-align: left;">หลักเกณฑ์และสัดส่วนตามกฎหมาย</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;"><b>เงินสมทบผู้ประกันตน</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.monthlyContribution)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">${calc.section === 'm33' ? 'หัก 5% ของค่าจ้าง (สูงสุด 750 บ.)' : (calc.section === 'm39' ? 'หัก 9% ของฐาน 4,800 บ. (432 บ.)' : 'ตามแพ็กเกจ ม.40')}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">เงินสมทบนายจ้าง</td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.employerContribution)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">${calc.section === 'm33' ? 'นายจ้างสมทบเท่ากัน 5%' : 'ไม่มีนายจ้างร่วมสมทบ'}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: #f0fdf4;">
+                            <td style="padding: 6px 8px; color: #166534;"><b>เงินสะสมเข้ากองทุนชราภาพ</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #166534;">${formatMoney(calc.oldAgeSavingsMonthly)}</td>
+                            <td style="padding: 6px 8px; color: #166534;">${calc.section === 'm33' ? 'ส่วนลูกจ้าง 3% (กองทุนรวม 6% = 900 บ./ด.)' : 'เข้ากองทุนบำเหน็จชราภาพ'}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">ประเภทสิทธิประโยชน์ชราภาพ</td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600; color: #0284c7;">${calc.isPension ? 'บำนาญรายเดือน' : 'บำเหน็จก้อนเดียว'}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">${calc.isPension ? `ครบ 180 งวด (20% + 1.5% ต่อ 12 งวดที่เกิน = ${calc.pensionRatePercent}%)` : 'ส่งไม่ครบ 180 งวด รับเงินก้อนพร้อมผลประโยชน์ตอบแทน'}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+
     } else {
         // Generic Fallback for other calculators
         const summary = (typeof getToolSummaryText === 'function') ? getToolSummaryText(curToolId) : '';

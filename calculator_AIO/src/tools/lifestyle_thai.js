@@ -309,52 +309,49 @@ function renderGoldThaiTool(container) {
 
     const calc = calculateGoldThai(st);
 
-    let modeTitle = '🛒 คำนวณราคาซื้อทองคำ';
-    if (st.mode === 'sell') modeTitle = '💰 คำนวณราคารับซื้อคืน (สคบ./เยาวราช)';
-    else if (st.mode === 'savings') modeTitle = '📈 จำลองกำไร/ขาดทุนการออมทอง';
+    let modeTitle = 'คำนวณราคาซื้อทองคำ';
+    if (st.mode === 'sell') modeTitle = 'คำนวณราคารับซื้อคืน';
+    else if (st.mode === 'savings') modeTitle = 'จำลองผลตอบแทนการออมทอง';
 
     container.innerHTML = `
-        <div class="flex flex-col gap-3 p-1">
+        <div class="gold-tool flex flex-col gap-3 p-1">
             <!-- Mode Switcher Tabs -->
             <div class="segment-group grid-cols-3 balanced-segment-modes" role="tablist" aria-label="โหมดราคาทองคำ">
-                <button type="button" class="segment-btn ${st.mode === 'buy' ? 'active' : ''}" data-gold-mode="buy">🛒 ซื้อทอง</button>
-                <button type="button" class="segment-btn ${st.mode === 'sell' ? 'active' : ''}" data-gold-mode="sell">💰 ขายคืน</button>
-                <button type="button" class="segment-btn ${st.mode === 'savings' ? 'active' : ''}" data-gold-mode="savings">📈 ออมทอง</button>
+                <button type="button" role="tab" aria-selected="${st.mode === 'buy'}" tabindex="${st.mode === 'buy' ? '0' : '-1'}" class="segment-btn ${st.mode === 'buy' ? 'active' : ''}" data-gold-mode="buy">ซื้อทอง</button>
+                <button type="button" role="tab" aria-selected="${st.mode === 'sell'}" tabindex="${st.mode === 'sell' ? '0' : '-1'}" class="segment-btn ${st.mode === 'sell' ? 'active' : ''}" data-gold-mode="sell">ขายคืน</button>
+                <button type="button" role="tab" aria-selected="${st.mode === 'savings'}" tabindex="${st.mode === 'savings' ? '0' : '-1'}" class="segment-btn ${st.mode === 'savings' ? 'active' : ''}" data-gold-mode="savings">ออมทอง</button>
             </div>
 
-            <!-- Reference Prices Banner (Gold Association Bar) -->
-            <div class="bg-amber-500/10 border border-amber-500/30 rounded-[var(--app-card-radius)] p-3 text-xs text-amber-900 dark:text-amber-200 space-y-1.5" style="box-shadow:var(--app-elevation)">
-                <div class="flex justify-between items-center font-bold">
-                    <span class="flex items-center gap-1.5 truncate">
-                        👑 ราคาทองสมาคมค้าทองคำ (96.5%)
-                    </span>
-                    <div class="flex items-center gap-2 shrink-0">
-                        <button id="btnFetchGoldRates" type="button" class="flex items-center gap-1 text-[11px] font-semibold text-amber-800 dark:text-amber-300 hover:underline cursor-pointer ${goldFetchInFlight ? 'opacity-50 pointer-events-none' : ''}">
-                            <span class="${goldFetchInFlight ? 'animate-spin inline-block' : ''}">🔄</span> ${goldFetchInFlight ? 'กำลังดึง...' : 'ดึงราคาวันนี้'}
-                        </button>
-                        <span class="text-neutral-300 dark:text-neutral-700">|</span>
-                        <button id="btnToggleCustomGoldRates" type="button" class="text-[11px] underline text-neutral-500 hover:text-neutral-700 dark:text-neutral-400">ปรับราคาเอง</button>
-                    </div>
+            <!-- Reference Prices -->
+            <div class="themed-tool-card gold-reference-card p-3 text-xs space-y-3">
+                <div class="flex flex-col gap-1">
+                    <div class="font-bold text-[var(--app-ink)]">ราคาทองอ้างอิง 96.5%</div>
+                    <div class="text-[11px] text-[var(--app-muted)]">ข้อมูลจาก ${escapeHTML(st.rateSource || 'สมาคมค้าทองคำ')} ${st.apiUpdateTime ? `เวลา ${escapeHTML(st.apiUpdateTime)} น.` : ''}</div>
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-[11px]">
-                    <div class="bg-white/80 dark:bg-black/20 p-2 rounded-lg">
-                        <span class="text-neutral-500 block">ทองคำแท่ง 96.5%</span>
-                        <b>รับซื้อ: ${formatMoney(calc.prices.priceBarBuy)} | ขายออก: ${formatMoney(calc.prices.priceBarSell)}</b>
+                    <div class="themed-subcard p-2.5 space-y-1">
+                        <div class="font-semibold text-[var(--app-ink)]">ทองคำแท่ง</div>
+                        <div class="flex justify-between gap-2 text-[var(--app-muted)]"><span>รับซื้อ</span><b class="text-[var(--app-ink)]">${formatMoney(calc.prices.priceBarBuy)}</b></div>
+                        <div class="flex justify-between gap-2 text-[var(--app-muted)]"><span>ขายออก</span><b class="text-[var(--app-ink)]">${formatMoney(calc.prices.priceBarSell)}</b></div>
                     </div>
-                    <div class="bg-white/80 dark:bg-black/20 p-2 rounded-lg">
-                        <span class="text-neutral-500 block">ทองรูปพรรณ 96.5%</span>
-                        <b>รับซื้อ: ${formatMoney(calc.prices.priceOrnamentBuy)} | ขายออก: ${formatMoney(calc.prices.priceOrnamentSell)}</b>
+                    <div class="themed-subcard p-2.5 space-y-1">
+                        <div class="font-semibold text-[var(--app-ink)]">ทองรูปพรรณ</div>
+                        <div class="flex justify-between gap-2 text-[var(--app-muted)]"><span>รับซื้อ</span><b class="text-[var(--app-ink)]">${formatMoney(calc.prices.priceOrnamentBuy)}</b></div>
+                        <div class="flex justify-between gap-2 text-[var(--app-muted)]"><span>ขายออก</span><b class="text-[var(--app-ink)]">${formatMoney(calc.prices.priceOrnamentSell)}</b></div>
                     </div>
                 </div>
 
-                <div class="flex justify-between items-center text-[10px] text-neutral-500 dark:text-neutral-400 pt-0.5">
-                    <span>แหล่งข้อมูล: ${escapeHTML(st.rateSource || 'สมาคมค้าทองคำ')} ${st.apiUpdateTime ? `(${escapeHTML(st.apiUpdateTime)})` : ''}</span>
-                    ${st.lastUpdated ? `<span>อัปเดต: ${new Date(st.lastUpdated).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.</span>` : ''}
+                <div class="flex flex-wrap items-center justify-between gap-1 border-t border-[var(--app-hairline)] pt-1">
+                    <button id="btnFetchGoldRates" type="button" aria-busy="${goldFetchInFlight}" class="tool-text-btn text-[11px] ${goldFetchInFlight ? 'opacity-50 pointer-events-none' : ''}">
+                        ${goldFetchInFlight ? 'กำลังอัปเดต...' : 'อัปเดตราคาวันนี้'}
+                    </button>
+                    <button id="btnToggleCustomGoldRates" type="button" class="tool-text-btn text-[11px]">กำหนดราคาเอง</button>
+                    ${st.lastUpdated ? `<span class="w-full text-[10px] text-[var(--app-muted)]">อัปเดตในเครื่อง ${new Date(st.lastUpdated).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.</span>` : ''}
                 </div>
 
                 <!-- Custom Rates Inputs (Hidden by default) -->
-                <div id="goldCustomRatesPanel" class="hidden pt-2 border-t border-amber-300 dark:border-amber-800 space-y-2">
-                    <div class="text-[11px] font-semibold text-neutral-600 dark:text-neutral-300">กำหนดราคาทองตามประกาศปัจจุบัน (บาทละ):</div>
+                <div id="goldCustomRatesPanel" class="hidden pt-2 border-t border-[var(--app-hairline)] space-y-2">
+                    <div class="text-[11px] font-semibold text-[var(--app-body)]">กำหนดราคาทองตามประกาศปัจจุบัน (บาทละ)</div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="text-[10px] block">แท่ง ขายออก</label>
@@ -379,8 +376,8 @@ function renderGoldThaiTool(container) {
             </div>
 
             <!-- Main Input Form -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6] flex items-center justify-between">
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)] flex items-center justify-between">
                     <span>${modeTitle}</span>
                 </div>
 
@@ -423,72 +420,72 @@ function renderGoldThaiTool(container) {
                 </div>
 
                 <!-- Weight Equivalent Pill Badges -->
-                <div class="flex flex-wrap gap-1.5 pt-1 text-[11px] text-neutral-600 dark:text-neutral-300">
-                    <span class="bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full font-medium">
-                        ⚖️ เทียบเท่า: <b>${formatNum(calc.bahtWeight, 4)} บาท</b>
+                <div class="flex flex-wrap gap-1.5 pt-1" aria-label="น้ำหนักทองเทียบเท่า">
+                    <span class="tool-metric-chip">
+                        <b>${formatNum(calc.bahtWeight, 4)} บาททองคำ</b>
                     </span>
-                    <span class="bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full font-medium">
-                        🪙 <b>${formatNum(calc.salungWeight, 2)} สลึง</b>
+                    <span class="tool-metric-chip">
+                        <b>${formatNum(calc.salungWeight, 2)} สลึง</b>
                     </span>
-                    <span class="bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full font-medium">
-                        🏷️ <b>${formatNum(calc.totalGrams, 3)} กรัม</b> (${formatNum(calc.gramsPerBaht, 3)}g/บาท)
+                    <span class="tool-metric-chip">
+                        <b>${formatNum(calc.totalGrams, 3)} กรัม</b>&nbsp;(${formatNum(calc.gramsPerBaht, 3)} กรัม/บาท)
                     </span>
                 </div>
             </div>
 
             <!-- Big Result Card -->
             ${st.mode === 'buy' ? `
-                <div class="border rounded-[var(--app-card-radius)] p-4 text-center border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 space-y-1" style="box-shadow:var(--app-elevation)">
-                    <div class="text-xs font-semibold uppercase tracking-wider">💰 ราคาซื้อสุทธิที่หน้าร้าน</div>
-                    <div class="text-2xl md:text-3xl font-extrabold text-[var(--app-accent)]">${formatMoney(calc.totalBuyPrice)} บาท</div>
-                    <div class="text-xs opacity-90">
-                        (ราคาทองคำ: ${formatMoney(calc.rawGoldValue)} บ. + ค่ากำเหน็จ: ${formatMoney(calc.craftFee)} บ.)
+                <div class="themed-result-card theme-result-highlight p-5 text-center space-y-1">
+                    <div class="text-xs font-semibold text-[var(--app-muted)]">ราคาซื้อสุทธิที่หน้าร้าน</div>
+                    <div class="themed-result-value text-2xl md:text-3xl font-extrabold">${formatMoney(calc.totalBuyPrice)} บาท</div>
+                    <div class="text-xs text-[var(--app-body)]">
+                        ราคาทอง ${formatMoney(calc.rawGoldValue)} บาท + ค่ากำเหน็จ ${formatMoney(calc.craftFee)} บาท
                     </div>
                 </div>
             ` : (st.mode === 'sell' ? `
-                <div class="border rounded-[var(--app-card-radius)] p-4 text-center border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200 space-y-1" style="box-shadow:var(--app-elevation)">
-                    <div class="text-xs font-semibold uppercase tracking-wider">💵 ราคารับซื้อคืนขั้นต่ำ (ตามเกณฑ์ สคบ.)</div>
-                    <div class="text-2xl md:text-3xl font-extrabold text-emerald-700 dark:text-emerald-300">${formatMoney(calc.sellBackValue)} บาท</div>
-                    <div class="text-xs opacity-90">
-                        เรทรับซื้อ: ${formatMoney(calc.officialSellBackRate)} ฿/บาท | หักจากราคาขายออกประมาณ: ${formatMoney(calc.deductionFromSellPrice)} ฿
+                <div class="themed-result-card theme-result-highlight p-5 text-center space-y-1">
+                    <div class="text-xs font-semibold text-[var(--app-muted)]">ราคารับซื้อคืนขั้นต่ำตามเกณฑ์ สคบ.</div>
+                    <div class="themed-result-value text-2xl md:text-3xl font-extrabold">${formatMoney(calc.sellBackValue)} บาท</div>
+                    <div class="text-xs text-[var(--app-body)]">
+                        เรทรับซื้อ ${formatMoney(calc.officialSellBackRate)} บาท/บาททอง · ส่วนต่างประมาณ ${formatMoney(calc.deductionFromSellPrice)} บาท
                     </div>
                 </div>
             ` : `
-                <div class="border rounded-[var(--app-card-radius)] p-4 text-center ${calc.isProfit ? 'border-emerald-400 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200' : 'border-rose-400 bg-rose-50 text-rose-900 dark:bg-rose-950/30 dark:text-rose-200'} space-y-1" style="box-shadow:var(--app-elevation)">
-                    <div class="text-xs font-semibold uppercase tracking-wider">
-                        ${calc.isProfit ? '🎉 ผลกำไรจากการออมทอง' : '⚠️ ผลขาดทุนจากการออมทอง'}
+                <div class="themed-result-card ${calc.isProfit ? 'is-profit' : 'is-loss'} p-5 text-center space-y-1">
+                    <div class="text-xs font-semibold text-[var(--app-muted)]">
+                        ${calc.isProfit ? 'กำไรจากการออมทอง' : 'ขาดทุนจากการออมทอง'}
                     </div>
-                    <div class="text-2xl md:text-3xl font-extrabold">
+                    <div class="themed-result-value text-2xl md:text-3xl font-extrabold">
                         ${calc.isProfit ? '+' : ''}${formatMoney(calc.profitLoss)} บาท (${calc.isProfit ? '+' : ''}${formatNum(calc.profitLossPercent, 2)}%)
                     </div>
-                    <div class="text-xs opacity-90">
-                        มูลค่าตลาดปัจจุบัน: ${formatMoney(calc.currentMarketValue)} บ. | ต้นทุนที่ซื้อ: ${formatMoney(calc.totalInvested)} บ.
+                    <div class="text-xs text-[var(--app-body)]">
+                        มูลค่าปัจจุบัน ${formatMoney(calc.currentMarketValue)} บาท · ต้นทุน ${formatMoney(calc.totalInvested)} บาท
                     </div>
                 </div>
             `)}
 
             <!-- Breakdown & Comparison Details -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
-                <div class="font-bold text-neutral-800 dark:text-neutral-200 mb-1">สรุปข้อมูลเชิงเปรียบเทียบการซื้อ-ขาย</div>
-                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                    <span class="text-neutral-600 dark:text-neutral-400">ราคาขายออกสมาคม (${st.goldType === 'bar' ? 'ทองแท่ง' : 'รูปพรรณ'})</span>
+            <div class="themed-tool-card p-4 space-y-1 text-xs">
+                <div class="font-bold text-[var(--app-ink)] pb-1">สรุปราคาและส่วนต่าง</div>
+                <div class="tool-summary-row flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">ราคาขายออก (${st.goldType === 'bar' ? 'ทองแท่ง' : 'รูปพรรณ'})</span>
                     <b>${formatMoney(calc.baseBuyRate)} บาท/บาททอง</b>
                 </div>
-                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                    <span class="text-neutral-600 dark:text-neutral-400">ราคารับซื้อคืนสมาคม</span>
+                <div class="tool-summary-row flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">ราคารับซื้อคืนสมาคม</span>
                     <b>${formatMoney(calc.officialSellBackRate)} บาท/บาททอง</b>
                 </div>
-                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                    <span class="text-neutral-600 dark:text-neutral-400">ส่วนต่างรับซื้อ-ขายออกต่อ 1 บาท</span>
-                    <b class="text-rose-600 dark:text-rose-400">-${formatMoney(calc.baseBuyRate - calc.officialSellBackRate)} บาท</b>
+                <div class="tool-summary-row flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">ส่วนต่างต่อ 1 บาททอง</span>
+                    <b>-${formatMoney(calc.baseBuyRate - calc.officialSellBackRate)} บาท</b>
                 </div>
-                <div class="flex justify-between py-1">
-                    <span class="text-neutral-600 dark:text-neutral-400">ค่ากำเหน็จเฉลี่ยที่ตั้งไว้</span>
+                <div class="tool-summary-row flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">ค่ากำเหน็จที่กำหนด</span>
                     <b>${formatMoney(calc.craftFee)} บาท</b>
                 </div>
-                <div class="flex justify-end pt-2">
-                    <button id="btnPrintGoldThaiSummary" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer">
-                        🖨️ พิมพ์ใบสรุปราคาทอง / PDF
+                <div class="flex justify-end pt-3">
+                    <button id="btnPrintGoldThaiSummary" type="button" class="tool-action-btn text-xs">
+                        พิมพ์ใบสรุปราคาทอง / PDF
                     </button>
                 </div>
             </div>
@@ -590,17 +587,17 @@ function renderElectricityBillTool(container) {
     const appCalc = calculateApplianceEnergy(st.appliances, calc.avgRatePerUnit || 4.5);
 
     container.innerHTML = `
-        <div class="flex flex-col gap-3 p-1">
+        <div class="electricity-tool flex flex-col gap-3 p-1">
             <!-- Mode Selector Tabs -->
             <div class="segment-group grid-cols-2 balanced-segment-modes" role="tablist" aria-label="โหมดคำนวณค่าไฟ">
-                <button type="button" class="segment-btn ${!isApplianceMode ? 'active' : ''}" data-elec-mode="bill">⚡ คำนวณจากหน่วยในบิล</button>
-                <button type="button" class="segment-btn ${isApplianceMode ? 'active' : ''}" data-elec-mode="appliance">🔌 คำนวณตามเครื่องใช้ไฟฟ้า</button>
+                <button type="button" role="tab" aria-selected="${!isApplianceMode}" tabindex="${!isApplianceMode ? '0' : '-1'}" class="segment-btn ${!isApplianceMode ? 'active' : ''}" data-elec-mode="bill">คำนวณจากหน่วยในบิล</button>
+                <button type="button" role="tab" aria-selected="${isApplianceMode}" tabindex="${isApplianceMode ? '0' : '-1'}" class="segment-btn ${isApplianceMode ? 'active' : ''}" data-elec-mode="appliance">คำนวณตามเครื่องใช้ไฟฟ้า</button>
             </div>
 
             ${!isApplianceMode ? `
                 <!-- TAB 1: บิลค่าไฟ & ขั้นบันได -->
-                <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
-                    <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">🏠 ข้อมูลประเภทบ้านและหน่วยไฟ (กฟน. / กฟภ.)</div>
+                <div class="themed-tool-card p-4 space-y-3">
+                    <div class="text-xs font-bold text-[var(--app-ink)]">ข้อมูลประเภทบ้านและหน่วยไฟ (กฟน. / กฟภ.)</div>
                     
                     <div class="grid grid-cols-2 gap-2 text-xs">
                         <div>
@@ -623,50 +620,50 @@ function renderElectricityBillTool(container) {
                 </div>
 
                 <!-- Big Result Card -->
-                <div class="border rounded-[var(--app-card-radius)] p-4 text-center border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 space-y-1" style="box-shadow:var(--app-elevation)">
-                    <div class="text-xs font-semibold uppercase tracking-wider">⚡ ประมาณการยอดค่าไฟฟ้ารวมทั้งสิ้น</div>
-                    <div class="text-2xl md:text-3xl font-extrabold text-[var(--app-accent)]">${formatMoney(calc.totalBill)} บาท</div>
-                    <div class="text-xs opacity-90">
+                <div class="themed-result-card theme-result-highlight p-5 text-center space-y-1">
+                    <div class="text-xs font-semibold text-[var(--app-muted)]">ประมาณการค่าไฟฟ้ารวม</div>
+                    <div class="themed-result-value text-2xl md:text-3xl font-extrabold">${formatMoney(calc.totalBill)} บาท</div>
+                    <div class="text-xs text-[var(--app-body)]">
                         หน่วยไฟ ${formatNum(calc.units, 0)} หน่วย · เฉลี่ยหน่วยละ <b>${formatNum(calc.avgRatePerUnit, 2)} บาท</b>
                     </div>
                 </div>
 
                 <!-- Bill Component Breakdown -->
-                <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
-                    <div class="font-bold text-neutral-800 dark:text-neutral-200 mb-1">ส่วนประกอบค่าไฟฟ้าตามบิลทางการ</div>
-                    <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                        <span class="text-neutral-600 dark:text-neutral-400">1. ค่าไฟฟ้าฐาน (ตามขั้นบันได)</span>
+                <div class="themed-tool-card p-4 space-y-1 text-xs">
+                    <div class="font-bold text-[var(--app-ink)] pb-1">ส่วนประกอบค่าไฟฟ้าตามบิล</div>
+                    <div class="tool-summary-row flex justify-between gap-3 py-2">
+                        <span class="text-[var(--app-muted)]">ค่าไฟฟ้าฐาน (ตามขั้นบันได)</span>
                         <b>${formatMoney(calc.baseEnergyCharge)} บาท</b>
                     </div>
-                    <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                        <span class="text-neutral-600 dark:text-neutral-400">2. ค่าบริการรายเดือน</span>
+                    <div class="tool-summary-row flex justify-between gap-3 py-2">
+                        <span class="text-[var(--app-muted)]">ค่าบริการรายเดือน</span>
                         <b>${formatMoney(calc.serviceFee)} บาท</b>
                     </div>
-                    <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                        <span class="text-neutral-600 dark:text-neutral-400">3. ค่าไฟฟ้าผันแปร Ft (${formatNum(calc.ftRate, 4)} ฿/หน่วย)</span>
+                    <div class="tool-summary-row flex justify-between gap-3 py-2">
+                        <span class="text-[var(--app-muted)]">ค่าไฟฟ้าผันแปร Ft (${formatNum(calc.ftRate, 4)} บาท/หน่วย)</span>
                         <b>${formatMoney(calc.ftCharge)} บาท</b>
                     </div>
-                    <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800 font-semibold">
+                    <div class="tool-summary-row flex justify-between gap-3 py-2 font-semibold">
                         <span>ยอดก่อน VAT</span>
                         <b>${formatMoney(calc.preVatTotal)} บาท</b>
                     </div>
-                    <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                        <span class="text-neutral-600 dark:text-neutral-400">4. ภาษีมูลค่าเพิ่ม (VAT 7%)</span>
+                    <div class="tool-summary-row flex justify-between gap-3 py-2">
+                        <span class="text-[var(--app-muted)]">ภาษีมูลค่าเพิ่ม (VAT 7%)</span>
                         <b>+${formatMoney(calc.vat7)} บาท</b>
                     </div>
-                    <div class="flex justify-between py-1 text-sm font-bold text-[var(--app-accent)]">
+                    <div class="tool-summary-row flex justify-between gap-3 py-2 text-sm font-bold text-[var(--app-accent)]">
                         <span>รวมค่าไฟฟ้าสุทธิ</span>
                         <b>${formatMoney(calc.totalBill)} บาท</b>
                     </div>
                 </div>
 
                 <!-- Progressive Tier Table -->
-                <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
-                    <div class="font-semibold text-neutral-800 dark:text-neutral-200">แจกแจงค่าไฟตามขั้นบันไดอัตราก้าวหน้า</div>
+                <div class="themed-tool-card p-4 space-y-2 text-xs">
+                    <div class="font-semibold text-[var(--app-ink)]">ค่าไฟตามขั้นบันไดอัตราก้าวหน้า</div>
                     <div class="overflow-x-auto thin-scroll">
                         <table class="w-full text-left border-collapse text-[11px]">
                             <thead>
-                                <tr class="border-b border-neutral-200 dark:border-neutral-700 text-[#6a6a6a] dark:text-neutral-400">
+                                <tr class="border-b border-[var(--app-hairline)] text-[var(--app-muted)]">
                                     <th class="py-1">ขั้นหน่วยไฟฟ้า</th>
                                     <th class="py-1 text-center">อัตราต่อหน่วย</th>
                                     <th class="py-1 text-right">จำนวนหน่วยที่ใช้</th>
@@ -675,7 +672,7 @@ function renderElectricityBillTool(container) {
                             </thead>
                             <tbody>
                                 ${calc.tierBreakdown.map(t => `
-                                    <tr class="border-b border-neutral-100 dark:border-neutral-800 ${t.units > 0 ? 'font-semibold text-neutral-900 dark:text-neutral-100' : 'text-neutral-400 dark:text-neutral-600'}">
+                                    <tr class="border-b border-[var(--app-hairline)] ${t.units > 0 ? 'font-semibold text-[var(--app-ink)]' : 'text-[var(--app-muted)]'}">
                                         <td class="py-1">${t.label}</td>
                                         <td class="py-1 text-center">${formatNum(t.rate, 4)} ฿</td>
                                         <td class="py-1 text-right">${formatNum(t.units, 1)} หน่วย</td>
@@ -685,41 +682,41 @@ function renderElectricityBillTool(container) {
                             </tbody>
                         </table>
                     </div>
-                    <div class="flex justify-end pt-1">
-                        <button id="btnPrintElectricitySummary" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer">
-                            🖨️ พิมพ์ใบสรุปค่าไฟฟ้า / PDF
+                    <div class="flex justify-end pt-3">
+                        <button id="btnPrintElectricitySummary" type="button" class="tool-action-btn text-xs">
+                            พิมพ์ใบสรุปค่าไฟฟ้า / PDF
                         </button>
                     </div>
                 </div>
             ` : `
                 <!-- TAB 2: เครื่องใช้ไฟฟ้าเฉพาะตัว (Wattage Calculator) -->
-                <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
-                    <div class="flex justify-between items-center text-xs">
-                        <span class="font-bold text-[#1f2937] dark:text-[#f3f4f6]">รายการเครื่องใช้ไฟฟ้าในบ้าน</span>
-                        <button id="btnApplyApplianceUnitsToBill" class="px-2.5 py-1 text-[11px] font-semibold bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition">
-                            ⚡ นำยอดหน่วยไฟไปคำนวณบิล
+                <div class="themed-tool-card p-4 space-y-3">
+                    <div class="flex flex-col gap-2 text-xs">
+                        <span class="font-bold text-[var(--app-ink)]">รายการเครื่องใช้ไฟฟ้าในบ้าน</span>
+                        <button id="btnApplyApplianceUnitsToBill" type="button" class="tool-action-btn w-full text-[11px]">
+                            นำยอดหน่วยไฟไปคำนวณบิล
                         </button>
                     </div>
 
                     <!-- Preset Quick Pickers -->
                     <div class="space-y-1.5">
-                        <div class="text-[11px] text-[#6a6a6a] dark:text-neutral-400 font-medium">+ เพิ่มเครื่องใช้ไฟฟ้ายอดนิยม:</div>
-                        <div class="flex flex-wrap gap-1 text-[11px]">
-                            <button type="button" data-add-preset="air18k" class="px-2 py-0.5 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800">แอร์ 18,000 BTU (1,400W)</button>
-                            <button type="button" data-add-preset="air9k" class="px-2 py-0.5 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800">แอร์ 9,000 BTU (600W)</button>
-                            <button type="button" data-add-preset="pc" class="px-2 py-0.5 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800">คอมพิวเตอร์ PC (250W)</button>
-                            <button type="button" data-add-preset="iron" class="px-2 py-0.5 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800">เตารีด (1,000W)</button>
-                            <button type="button" data-add-preset="fryer" class="px-2 py-0.5 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800">หม้อทอดไร้น้ำมัน (1,400W)</button>
+                        <div class="text-[11px] text-[var(--app-muted)] font-medium">เพิ่มเครื่องใช้ไฟฟ้ายอดนิยม</div>
+                        <div class="flex flex-wrap gap-1.5">
+                            <button type="button" data-add-preset="air18k" class="tool-chip-btn">แอร์ 18,000 BTU · 1,400W</button>
+                            <button type="button" data-add-preset="air9k" class="tool-chip-btn">แอร์ 9,000 BTU · 600W</button>
+                            <button type="button" data-add-preset="pc" class="tool-chip-btn">คอมพิวเตอร์ PC · 250W</button>
+                            <button type="button" data-add-preset="iron" class="tool-chip-btn">เตารีด · 1,000W</button>
+                            <button type="button" data-add-preset="fryer" class="tool-chip-btn">หม้อทอดไร้น้ำมัน · 1,400W</button>
                         </div>
                     </div>
 
                     <!-- Appliance Rows List -->
                     <div class="space-y-2 pt-2">
-                        ${appCalc.items.map((item, idx) => `
-                            <div class="border border-neutral-200 dark:border-neutral-700 rounded-lg p-2.5 text-xs space-y-2 bg-neutral-50/50 dark:bg-neutral-800/20">
+                        ${appCalc.items.length ? appCalc.items.map((item, idx) => `
+                            <div class="themed-subcard p-3 text-xs space-y-2">
                                 <div class="flex justify-between items-center font-semibold">
                                     <span>${item.name}</span>
-                                    <button type="button" data-remove-appliance="${idx}" class="text-rose-500 hover:text-rose-700 text-xs">✕ ลบ</button>
+                                    <button type="button" data-remove-appliance="${idx}" class="tool-danger-btn text-xs" aria-label="ลบ ${escapeHTML(item.name)}">ลบ</button>
                                 </div>
                                 <div class="grid grid-cols-3 gap-2">
                                     <div>
@@ -735,23 +732,23 @@ function renderElectricityBillTool(container) {
                                         <input type="number" step="0.5" min="0" max="24" data-app-field="hoursPerDay" data-app-idx="${idx}" value="${item.hours}" class="airbnb-input w-full text-xs">
                                     </div>
                                 </div>
-                                <div class="flex justify-between text-[11px] text-neutral-600 dark:text-neutral-400 pt-1 border-t border-neutral-200 dark:border-neutral-700">
+                                <div class="flex flex-wrap justify-between gap-1 text-[11px] text-[var(--app-muted)] pt-2 border-t border-[var(--app-hairline)]">
                                     <span>ใช้ไฟ: <b>${formatNum(item.monthlyKwh, 1)} หน่วย/เดือน</b></span>
                                     <span>ค่าไฟประมาณ: <b class="text-[var(--app-accent)]">${formatMoney(item.monthlyCost)} ฿/เดือน</b></span>
                                 </div>
                             </div>
-                        `).join('')}
+                        `).join('') : `<div class="themed-subcard p-4 text-center text-xs text-[var(--app-muted)]">ยังไม่มีรายการ เลือกเครื่องใช้ไฟฟ้าจากด้านบนเพื่อเริ่มคำนวณ</div>`}
                     </div>
 
                     <!-- Appliance Total Summary Card -->
-                    <div class="border rounded-xl p-3 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900 text-xs space-y-1">
-                        <div class="flex justify-between">
-                            <span class="text-blue-900 dark:text-blue-300">รวมการใช้ไฟทุกอุปกรณ์:</span>
-                            <b class="text-blue-900 dark:text-blue-200">${formatNum(appCalc.totalMonthlyKwh, 1)} หน่วย/เดือน (${formatNum(appCalc.totalDailyKwh, 2)} หน่วย/วัน)</b>
+                    <div class="themed-result-card theme-result-highlight p-4 text-xs space-y-2">
+                        <div class="flex justify-between gap-3">
+                            <span class="text-[var(--app-muted)]">รวมการใช้ไฟทุกอุปกรณ์</span>
+                            <b class="text-right">${formatNum(appCalc.totalMonthlyKwh, 1)} หน่วย/เดือน<br><span class="font-normal text-[var(--app-muted)]">${formatNum(appCalc.totalDailyKwh, 2)} หน่วย/วัน</span></b>
                         </div>
-                        <div class="flex justify-between text-sm font-bold text-blue-900 dark:text-blue-200">
-                            <span>ประมาณการค่าไฟฟ้ารวม:</span>
-                            <span class="text-[var(--app-accent)]">${formatMoney(appCalc.totalMonthlyCost)} บาท/เดือน</span>
+                        <div class="flex justify-between items-end gap-3 pt-2 border-t border-[var(--app-hairline)] text-sm font-bold">
+                            <span>ค่าไฟโดยประมาณ</span>
+                            <span class="themed-result-value text-right text-lg">${formatMoney(appCalc.totalMonthlyCost)} บาท/เดือน</span>
                         </div>
                     </div>
                 </div>

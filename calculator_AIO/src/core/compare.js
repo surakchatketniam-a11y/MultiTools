@@ -118,6 +118,34 @@ function getComparisonPresets(toolId) {
                 label: 'ทางเลือก 3: ใช้ไฟ 600 หน่วย/ด. (บ้านขนาดใหญ่)',
                 state: { mode: 'bill', tariffType: 'type1_2', units: '600', ftRate: '0.3972' }
             }
+        ],
+        car_loan: [
+            {
+                label: 'ทางเลือก 1: ผ่อน 48 งวด (4 ปี) ดอกเบี้ย 2.39%',
+                state: { vehicleType: 'car', condition: 'new', price: '850000', downPaymentType: 'percent', downPaymentValue: '25', interestRate: '2.39', periodMonths: '48', payoffMonth: '24' }
+            },
+            {
+                label: 'ทางเลือก 2: ผ่อน 60 งวด (5 ปี) ดอกเบี้ย 2.59%',
+                state: { vehicleType: 'car', condition: 'new', price: '850000', downPaymentType: 'percent', downPaymentValue: '25', interestRate: '2.59', periodMonths: '60', payoffMonth: '30' }
+            },
+            {
+                label: 'ทางเลือก 3: ผ่อน 72 งวด (6 ปี) ดอกเบี้ย 2.99%',
+                state: { vehicleType: 'car', condition: 'new', price: '850000', downPaymentType: 'percent', downPaymentValue: '25', interestRate: '2.99', periodMonths: '72', payoffMonth: '36' }
+            }
+        ],
+        social_security: [
+            {
+                label: 'ทางเลือก 1: ม.33 ส่ง 15 ปี (180 งวด) ฐาน 15,000 บ.',
+                state: { section: 'm33', wageMonthly: '35000', contributionMonths: '180', m40Plan: 'plan2', m40ExtraSavings: '0' }
+            },
+            {
+                label: 'ทางเลือก 2: ม.33 ส่ง 20 ปี (240 งวด) ฐาน 15,000 บ.',
+                state: { section: 'm33', wageMonthly: '35000', contributionMonths: '240', m40Plan: 'plan2', m40ExtraSavings: '0' }
+            },
+            {
+                label: 'ทางเลือก 3: ม.33 ส่ง 25 ปี (300 งวด) ฐาน 15,000 บ.',
+                state: { section: 'm33', wageMonthly: '35000', contributionMonths: '300', m40Plan: 'plan2', m40ExtraSavings: '0' }
+            }
         ]
     };
     return presets[toolId] || [];
@@ -528,6 +556,132 @@ function compareCalculations(toolId, itemsList) {
         const maxBill = Math.max(...results.map(r => r.totalBill));
         const diffBill = maxBill - minBillRes.totalBill;
         deltaSummary = `🏆 ทางเลือกที่มียอดค่าไฟฟ้ารวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดสุทธิเพียง ${formatMoney(minBillRes.totalBill)} บาท${diffBill > 0 ? ` (ประหยัดได้ ${formatMoney(diffBill)} บาท/เดือน)` : ''}`;
+
+    } else if (toolId === 'car_loan') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const calc = (typeof calculateCarLoan === 'function')
+                ? calculateCarLoan(st)
+                : { price: 0, downPaymentAmount: 0, downPaymentPercent: 0, principal: 0, interestRate: 0, periodMonths: 0, years: 0, monthlyPayment: 0, totalRepayment: 0, totalInterest: 0, effectiveRateApprox: 0, totalPayoffAmount: 0, totalSavedByEarlyPayoff: 0, discountTierPercent: 0 };
+            return calc;
+        });
+
+        rows.push({
+            label: 'ราคารถยนต์ / ยานพาหนะ',
+            values: results.map(r => `${formatMoney(r.price)} ฿`)
+        });
+        rows.push({
+            label: 'เงินดาวน์ (Down Payment)',
+            values: results.map(r => `${formatMoney(r.downPaymentAmount)} ฿ (${formatNum(r.downPaymentPercent, 1)}%)`)
+        });
+        rows.push({
+            label: 'ยอดจัดเช่าซื้อ (Principal)',
+            values: results.map(r => `${formatMoney(r.principal)} ฿`)
+        });
+        rows.push({
+            label: 'อัตราดอกเบี้ย Flat Rate (ต่อปี)',
+            values: results.map(r => `${formatNum(r.interestRate, 2)}% (EIR ≈ ${formatNum(r.effectiveRateApprox, 2)}%)`)
+        });
+        rows.push({
+            label: 'ระยะเวลาผ่อนชำระ',
+            values: results.map(r => `${r.periodMonths} งวด (${r.years} ปี)`)
+        });
+        rows.push({
+            label: 'ดอกเบี้ยรวมตลอดสัญญา',
+            values: results.map(r => `${formatMoney(r.totalInterest)} ฿`)
+        });
+        rows.push({
+            label: 'ค่างวดผ่อนชำระรายเดือน',
+            values: results.map(r => `${formatMoney(r.monthlyPayment)} ฿/งวด`)
+        });
+
+        const minRepaymentRes = results.reduce((min, cur) => cur.totalRepayment < min.totalRepayment ? cur : min, results[0]);
+        const minRepaymentIdx = results.indexOf(minRepaymentRes);
+
+        rows.push({
+            label: 'ยอดผ่อนชำระรวมทั้งสัญญา',
+            values: results.map(r => `${formatMoney(r.totalRepayment)} ฿`),
+            bestIndex: minRepaymentIdx,
+            highlight: true
+        });
+        rows.push({
+            label: 'ส่วนลดดอกเบี้ยปิดบัญชี (งวดที่กำหนด)',
+            values: results.map(r => `${formatMoney(r.totalSavedByEarlyPayoff)} ฿ (${r.discountTierPercent}%)`)
+        });
+
+        winnerIndex = minRepaymentIdx;
+        const maxRepayment = Math.max(...results.map(r => r.totalRepayment));
+        const diffRepayment = maxRepayment - minRepaymentRes.totalRepayment;
+        deltaSummary = `🏆 ทางเลือกที่มียอดผ่อนชำระรวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดรวมเพียง ${formatMoney(minRepaymentRes.totalRepayment)} บาท${diffRepayment > 0 ? ` (ประหยัดกว่าทางเลือกอื่น ${formatMoney(diffRepayment)} บาท)` : ''}`;
+
+    } else if (toolId === 'social_security') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const calc = (typeof calculateSocialSecurity === 'function')
+                ? calculateSocialSecurity(st)
+                : { section: 'm33', cappedWage: 0, contributionMonths: 0, yearsContributed: 0, monthlyContribution: 0, totalWorkerContributed: 0, isPension: true, pensionRatePercent: 0, monthlyPension: 0, yearlyPension: 0, lumpSumTotal: 0, totalFundAccumulated: 0 };
+            return calc;
+        });
+
+        rows.push({
+            label: 'สิทธิผู้ประกันตน',
+            values: results.map(r => r.section === 'm39' ? 'ม.39' : (r.section === 'm40' ? 'ม.40' : 'ม.33'))
+        });
+        rows.push({
+            label: 'ฐานค่าจ้างในการคำนวณ',
+            values: results.map(r => `${formatMoney(r.cappedWage)} ฿`)
+        });
+        rows.push({
+            label: 'จำนวนเดือนที่ส่งเงินสมทบ',
+            values: results.map(r => `${r.contributionMonths} งวด (${formatNum(r.yearsContributed, 1)} ปี)`)
+        });
+        rows.push({
+            label: 'เงินสมทบผู้ประกันตนจ่ายต่อเดือน',
+            values: results.map(r => `${formatMoney(r.monthlyContribution)} ฿`)
+        });
+        rows.push({
+            label: 'รวมเงินสมทบที่จ่ายสะสม',
+            values: results.map(r => `${formatMoney(r.totalWorkerContributed)} ฿`)
+        });
+        rows.push({
+            label: 'รูปแบบสิทธิประโยชน์ชราภาพ',
+            values: results.map(r => r.isPension ? `บำนาญตลอดชีพ (${formatNum(r.pensionRatePercent, 1)}%)` : 'บำเหน็จเงินก้อน')
+        });
+
+        const pensionCandidates = results.filter(r => r.isPension);
+        if (pensionCandidates.length > 0) {
+            const maxPensionRes = pensionCandidates.reduce((max, cur) => cur.monthlyPension > max.monthlyPension ? cur : max, pensionCandidates[0]);
+            const maxPensionIdx = results.indexOf(maxPensionRes);
+
+            rows.push({
+                label: 'เงินบำนาญชราภาพรายเดือน (ตลอดชีพ)',
+                values: results.map(r => r.isPension ? `${formatMoney(r.monthlyPension)} ฿/ด.` : '-'),
+                bestIndex: maxPensionIdx,
+                highlight: true
+            });
+            rows.push({
+                label: 'เงินบำนาญสะสมต่อปี',
+                values: results.map(r => r.isPension ? `${formatMoney(r.yearlyPension)} ฿/ปี` : '-')
+            });
+
+            winnerIndex = maxPensionIdx;
+            const minPension = Math.min(...pensionCandidates.map(r => r.monthlyPension));
+            const diffPension = maxPensionRes.monthlyPension - minPension;
+            deltaSummary = `🏆 ทางเลือกที่ได้รับเงินบำนาญชราภาพรายเดือนสูงสุดคือ "${items[winnerIndex].label}" ได้รับ ${formatMoney(maxPensionRes.monthlyPension)} บาท/เดือนตลอดชีพ${diffPension > 0 ? ` (มากกว่าทางเลือกอื่น ${formatMoney(diffPension)} บาท/เดือน)` : ''}`;
+        } else {
+            const maxLumpRes = results.reduce((max, cur) => cur.lumpSumTotal > max.lumpSumTotal ? cur : max, results[0]);
+            const maxLumpIdx = results.indexOf(maxLumpRes);
+
+            rows.push({
+                label: 'เงินบำเหน็จชราภาพ (รับก้อนเดียว)',
+                values: results.map(r => `${formatMoney(r.lumpSumTotal)} ฿`),
+                bestIndex: maxLumpIdx,
+                highlight: true
+            });
+
+            winnerIndex = maxLumpIdx;
+            deltaSummary = `🏆 ทางเลือกที่ได้รับเงินบำเหน็จชราภาพสูงสุดคือ "${items[winnerIndex].label}" ได้รับ ${formatMoney(maxLumpRes.lumpSumTotal)} บาท`;
+        }
 
     } else {
         rows.push({

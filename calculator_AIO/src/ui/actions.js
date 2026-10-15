@@ -178,6 +178,25 @@ function clearCurrentTool() {
                 { id: 'water', name: 'เครื่องทำน้ำอุ่น', watts: 3500, qty: 1, hoursPerDay: 0.5 }
             ]
         };
+    } else if (id === 'car_loan') {
+        appState.car_loan = {
+            vehicleType: 'car',
+            condition: 'new',
+            price: '',
+            downPaymentType: 'percent',
+            downPaymentValue: '20',
+            interestRate: '2.59',
+            periodMonths: '60',
+            payoffMonth: '30'
+        };
+    } else if (id === 'social_security') {
+        appState.social_security = {
+            section: 'm33',
+            wageMonthly: '',
+            contributionMonths: '180',
+            m40Plan: 'plan2',
+            m40ExtraSavings: ''
+        };
     }
     rememberToolClear(snapshot);
     renderActiveTool();
@@ -320,6 +339,25 @@ function loadDemoForCurrentTool() {
                 { id: 'tv', name: 'สมาร์ททีวี 55 นิ้ว', watts: 100, qty: 1, hoursPerDay: 4 },
                 { id: 'water', name: 'เครื่องทำน้ำอุ่น', watts: 3500, qty: 1, hoursPerDay: 0.5 }
             ]
+        };
+    } else if (id === 'car_loan') {
+        appState.car_loan = {
+            vehicleType: 'car',
+            condition: 'new',
+            price: '850000',
+            downPaymentType: 'percent',
+            downPaymentValue: '25',
+            interestRate: '2.49',
+            periodMonths: '60',
+            payoffMonth: '36'
+        };
+    } else if (id === 'social_security') {
+        appState.social_security = {
+            section: 'm33',
+            wageMonthly: '35000',
+            contributionMonths: '240',
+            m40Plan: 'plan2',
+            m40ExtraSavings: '500'
         };
     }
     renderActiveTool();

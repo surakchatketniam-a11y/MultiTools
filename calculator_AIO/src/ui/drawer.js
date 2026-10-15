@@ -391,6 +391,26 @@ function getToolSummaryText(toolId, stateObj) {
                 : { units: 350, baseEnergyCharge: 1250, serviceFee: 24.62, ftCharge: 139, vat7: 98.95, totalBill: 1512.57, avgRatePerUnit: 4.32, ftRate: 0.3972 };
             return `⚡ สรุปค่าไฟฟ้าบ้าน (กฟน./กฟภ.)\n${divider}\n• จำนวนหน่วยไฟฟ้า: ${formatNum(calc.units, 1)} หน่วย (kWh)\n• ค่าไฟฟ้าฐาน (ขั้นบันได): ${formatMoney(calc.baseEnergyCharge)} บาท\n• ค่าบริการรายเดือน: ${formatMoney(calc.serviceFee)} บาท\n• ค่าไฟฟ้าผันแปร Ft (${formatNum(calc.ftRate, 4)} ฿): ${formatMoney(calc.ftCharge)} บาท\n• ภาษีมูลค่าเพิ่ม (VAT 7%): +${formatMoney(calc.vat7)} บาท\n${divider}\n💰 ยอดชำระสุทธิ: ${formatMoney(calc.totalBill)} บาท (เฉลี่ย ${formatNum(calc.avgRatePerUnit, 2)} ฿/หน่วย)\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'car_loan': {
+            const st = state.car_loan || {};
+            const calc = (typeof calculateCarLoan === 'function')
+                ? calculateCarLoan(st)
+                : { vehicleType: 'car', condition: 'new', price: 850000, downPaymentAmount: 170000, downPaymentPercent: 20, principal: 680000, interestRate: 2.59, periodMonths: 60, years: 5, monthlyPayment: 12801, totalRepayment: 768060, effectiveRateApprox: 4.95 };
+            const typeLabel = calc.vehicleType === 'motorcycle' ? 'มอเตอร์ไซค์' : 'รถยนต์';
+            const condLabel = calc.condition === 'used' ? 'รถมือสอง (มี VAT 7%)' : 'รถใหม่ป้ายแดง';
+            return `🚗 สรุปสินเชื่อเช่าซื้อยานพาหนะ\n${divider}\n• ประเภท: ${typeLabel} (${condLabel})\n• ราคารถ: ${formatMoney(calc.price)} บาท\n• เงินดาวน์: ${formatMoney(calc.downPaymentAmount)} บาท (${formatNum(calc.downPaymentPercent, 1)}%)\n• ยอดจัดเช่าซื้อ: ${formatMoney(calc.principal)} บาท\n• อัตราดอกเบี้ย: ${formatNum(calc.interestRate, 2)}% คงที่/ปี (EIR ≈ ${formatNum(calc.effectiveRateApprox, 2)}%)\n• ระยะเวลาผ่อน: ${calc.periodMonths} งวด (${calc.years} ปี)\n${divider}\n💰 ค่างวดรายเดือน: ${formatMoney(calc.monthlyPayment)} บาท/งวด\n• ยอดผ่อนรวมทั้งสัญญา: ${formatMoney(calc.totalRepayment)} บาท\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'social_security': {
+            const st = state.social_security || {};
+            const calc = (typeof calculateSocialSecurity === 'function')
+                ? calculateSocialSecurity(st)
+                : { section: 'm33', wageMonthly: 35000, contributionMonths: 240, isPension: true, monthlyPension: 4125, yearlyPension: 49500, lumpSumTotal: 0, monthlyContribution: 750, totalWorkerContributed: 180000 };
+            const secName = calc.section === 'm39' ? 'มาตรา 39 (ผู้ประกันตนภาคสมัครใจ)' : (calc.section === 'm40' ? 'มาตรา 40 (อาชีพอิสระ/ฟรีแลนซ์)' : 'มาตรา 33 (พนักงานเอกชน)');
+            const benefitLine = calc.isPension
+                ? `💰 เงินบำนาญชราภาพตลอดชีพ: ${formatMoney(calc.monthlyPension)} บาท/เดือน (ปีละ ${formatMoney(calc.yearlyPension)} บ.)`
+                : `💰 เงินบำเหน็จชราภาพ (ก้อนเดียว): ${formatMoney(calc.lumpSumTotal)} บาท`;
+            return `🛡️ สรุปสิทธิประโยชน์ประกันสังคม\n${divider}\n• สิทธิ์: ${secName}\n• ส่งเงินสมทบ: ${calc.contributionMonths} งวด (${(calc.contributionMonths / 12).toFixed(1)} ปี)\n• เงินสมทบรายเดือน: ${formatMoney(calc.monthlyContribution)} บาท/เดือน\n• รวมเงินสมทบที่จ่ายสะสม: ${formatMoney(calc.totalWorkerContributed)} บาท\n${divider}\n${benefitLine}\n(คำนวณโดย Multitools Calculator)`;
+        }
         default: {
             const statusText = document.getElementById('sharedStatusText')?.innerText?.trim();
             return `📋 สรุปผล: ${title}\n${divider}\n${statusText || 'คำนวณเรียบร้อยแล้ว'}\n(คำนวณโดย Multitools Calculator)`;

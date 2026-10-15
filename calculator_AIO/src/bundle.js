@@ -45,10 +45,12 @@ var TOOLS_CATALOG = [
     { id: 'savings',           group: 'finance', category: 'all', menuTitle: 'เงินออม & เกษียณ', headerTitle: 'เครื่องคำนวณเงินออม', usesSharedKeypad: true, keywords: 'savings เงินออม เกษียณ ดอกเบี้ยทบต้น เงินเฟ้อ ออมทรัพย์' },
     { id: 'tax_personal',      group: 'finance', category: 'fav', menuTitle: 'ภาษีบุคคล (ภ.ง.ด.90/91)', headerTitle: 'คำนวณภาษีเงินได้บุคคลธรรมดา (ภ.ง.ด. 90/91)', usesSharedKeypad: false, keywords: 'tax personal ภาษี เงินได้ บุคคลธรรมดา ภงด 90 91 เงินเดือน ลดหย่อน ประกัน กองทุน บริจาค ขอคืนภาษี คืนเงิน ภาษีรายได้' },
     { id: 'property_transfer', group: 'finance', category: 'fav', menuTitle: 'ค่าโอนที่ดิน & อสังหาฯ', headerTitle: 'ค่าธรรมเนียมโอนที่ดิน & ภาษีซื้อขายอสังหาฯ', usesSharedKeypad: false, keywords: 'property transfer ค่าโอน ที่ดิน คอนโด บ้าน ภาษีอสังหา ธุรกิจเฉพาะ อากรแสตมป์ กรมที่ดิน จำนอง ค่าธรรมเนียมโอน ซื้อขาย' },
+    { id: 'car_loan',          group: 'finance', category: 'fav', menuTitle: 'สินเชื่อเช่าซื้อรถ (Car Loan)', headerTitle: 'คำนวณสินเชื่อเช่าซื้อรถยนต์ & มอเตอร์ไซค์', usesSharedKeypad: false, keywords: 'car loan รถ เช่าซื้อ ผ่อนรถ รถยนต์ มอเตอร์ไซค์ ปิดบัญชีก่อนกำหนด สคบ ดอกเบี้ยคงที่ flat rate vat รถมือสอง เงินดาวน์ ค่างวด' },
     { id: 'currency',          group: 'finance', category: 'fav', menuTitle: 'แปลงสกุลเงิน', headerTitle: 'ตัวแปลงสกุลเงิน', usesSharedKeypad: true, keywords: 'currency สกุลเงิน แลกเงิน ดอลลาร์ บาท เยน ยูโร exchange rate forex' },
     { id: 'lotto_calc',        group: 'finance', category: 'fav', menuTitle: 'หวย & สลากไทย', headerTitle: 'เครื่องคำนวณหวย & สลากไทย', usesSharedKeypad: false, keywords: 'lotto หวย สลากกินแบ่งรัฐบาล สลากออมสิน สลาก n3 เลขเด็ด 6 ประตู 19 ประตู 2 ตัว 3 ตัว รางวัลที่ 1 โต๊ด ขึ้นเงินรางวัล ภาษีสลาก' },
 
     // หมวดหมู่ที่ 4: เวลา & สำนักงาน
+    { id: 'social_security',   group: 'work', category: 'fav', menuTitle: 'ประกันสังคม & บำนาญ', headerTitle: 'คำนวณเงินสมทบ & บำนาญชราภาพ ประกันสังคม (ม.33/39/40)', usesSharedKeypad: false, keywords: 'social security ประกันสังคม บำนาญ บำเหน็จ ชราภาพ ม33 ม39 ม40 เงินสมทบ เงินออมเกษียณ สปส เกษียณอายุ 55 ปี 60 เดือนสุดท้าย' },
     { id: 'date_work',  group: 'work', category: 'all', menuTitle: 'นับวันทำการ (Workdays)', headerTitle: 'นับวันทำการ', usesSharedKeypad: false, keywords: 'date work วันทำการ วันทำงาน sla วันหยุด ส่งงาน วันครบกำหนด' },
     { id: 'date_calc',  group: 'work', category: 'all', menuTitle: 'คำนวณวันที่ & อายุ', headerTitle: 'เครื่องคำนวณวันที่', usesSharedKeypad: false, keywords: 'date calc วันที่ บวกวัน ลบวัน คำนวณอายุ ระยะห่างวัน' },
     { id: 'world_time', group: 'work', category: 'all', menuTitle: 'เวลาโลก & นัดหมาย', headerTitle: 'นาฬิกาเวลาโลก', usesSharedKeypad: false, keywords: 'world time เวลาโลก timezone ข้ามเขตเวลา โตเกียว นิวยอร์ก ลอนดอน นัดประชุม' },
@@ -1321,6 +1323,156 @@ function generateFormalPrintHTML(toolId, stateObj) {
             </div>
         `;
 
+    } else if (curToolId === 'car_loan') {
+        docTitle = 'เอกสารประมาณการสินเชื่อเช่าซื้อรถยนต์และตารางปิดบัญชีล่วงหน้า (เกณฑ์ สคบ.)';
+        docSubtitle = 'Auto Hire-Purchase Loan & Early Payoff Settlement Statement';
+        const st = state.car_loan || {};
+        const calc = (typeof calculateCarLoan === 'function')
+            ? calculateCarLoan(st)
+            : { vehicleType: 'car', condition: 'new', price: 850000, downPaymentAmount: 170000, downPaymentPercent: 20, principal: 680000, interestRate: 2.59, periodMonths: 60, years: 5, totalInterest: 88060, monthlyPaymentPreVat: 12801, isVatAdded: false, vatMonthly: 0, monthlyPayment: 12801, totalVat: 0, totalRepayment: 768060, effectiveRateApprox: 4.95, payoffMonth: 30, remainingMonths: 30, discountTierPercent: 70, discountTierText: '1/3 ถึง 2/3 ของสัญญา (ลด 70%)', unearnedInterest: 22455, interestDiscount: 15718, totalSavedByEarlyPayoff: 15718, totalPayoffAmount: 368312 };
+
+        paramsRows = [
+            ['ประเภทยานพาหนะและสภาพรถ', `${calc.vehicleType === 'motorcycle' ? 'มอเตอร์ไซค์' : 'รถยนต์'} (${calc.condition === 'used' ? 'รถมือสอง (มี VAT 7%)' : 'รถใหม่ป้ายแดง'})`],
+            ['ราคารถยนต์ / ยานพาหนะ', `${formatMoney(calc.price)} บาท`],
+            ['เงินดาวน์ที่ชำระ', `${formatMoney(calc.downPaymentAmount)} บาท (${formatNum(calc.downPaymentPercent, 1)}%)`],
+            ['ยอดจัดเช่าซื้อ (เงินต้น)', `${formatMoney(calc.principal)} บาท`],
+            ['อัตราดอกเบี้ยคงที่ (Flat Rate)', `${formatNum(calc.interestRate, 2)}% ต่อปี`],
+            ['อัตราดอกเบี้ยแท้จริง (EIR ประมาณการ)', `${formatNum(calc.effectiveRateApprox, 2)}% ต่อปี`],
+            ['ระยะเวลาผ่อนชำระตามสัญญา', `${calc.periodMonths} งวด (${calc.years} ปี)`],
+            ['งวดที่จำลองปิดบัญชีก่อนกำหนด', `งวดที่ ${calc.payoffMonth} (คงเหลือ ${calc.remainingMonths} งวด)`]
+        ];
+
+        resultCards = [
+            { label: 'ค่างวดผ่อนชำระรายเดือน', value: `${formatMoney(calc.monthlyPayment)} บาท/งวด`, highlight: true },
+            { label: 'ยอดชำระเพื่อปิดบัญชีในงวดนี้', value: `${formatMoney(calc.totalPayoffAmount)} บาท` },
+            { label: 'ส่วนลดดอกเบี้ยตามเกณฑ์ สคบ. ใหม่', value: `${formatMoney(calc.totalSavedByEarlyPayoff)} บาท`, highlight: true },
+            { label: 'ยอดผ่อนชำระรวมตลอดสัญญา', value: `${formatMoney(calc.totalRepayment)} บาท` }
+        ];
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    สรุปโครงสร้างสินเชื่อเช่าซื้อและเกณฑ์ส่วนลดปิดบัญชี สคบ.
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 6px 8px; text-align: left;">รายการโครงสร้างสินเชื่อ</th>
+                            <th style="padding: 6px 8px; text-align: right;">มูลค่า (บาท)</th>
+                            <th style="padding: 6px 8px; text-align: left;">หมายเหตุ / เกณฑ์ที่ใช้</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;"><b>ยอดจัดเช่าซื้อ (เงินต้น)</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.principal)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">ราคารถหักเงินดาวน์</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">ดอกเบี้ยเช่าซื้อรวมทั้งสัญญา</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #dc2626;">+${formatMoney(calc.totalInterest)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">Flat Rate ${formatNum(calc.interestRate, 2)}% × ${calc.years} ปี</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">ภาษีมูลค่าเพิ่ม (VAT 7%) ตลอดสัญญา</td>
+                            <td style="padding: 6px 8px; text-align: right;">${calc.isVatAdded ? `+${formatMoney(calc.totalVat)}` : 'รวมในตัวรถแล้ว'}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">${calc.isVatAdded ? 'รถมือสองคิด VAT 7% ในค่างวด' : 'รถใหม่ราคารวม VAT แล้ว'}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                            <td style="padding: 6px 8px;"><b>ดอกเบี้ยที่ยังไม่ถึงกำหนด (ณ งวดที่ ${calc.payoffMonth})</b></td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.unearnedInterest)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">วิธีคำนวณสัดส่วน Rule of 78</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: #f0fdf4;">
+                            <td style="padding: 6px 8px; color: #166534;"><b>ส่วนลดดอกเบี้ยที่ได้รับจริง (${calc.discountTierPercent}%)</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #166534;">-${formatMoney(calc.interestDiscount)}</td>
+                            <td style="padding: 6px 8px; color: #166534;">เกณฑ์ สคบ. ใหม่: ${calc.discountTierText}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                            <td style="padding: 8px;">ยอดเงินสุทธิที่ต้องชำระเพื่อปิดบัญชี:</td>
+                            <td style="padding: 8px; text-align: right; color: #0284c7; font-size: 12px;">${formatMoney(calc.totalPayoffAmount)} บาท</td>
+                            <td style="padding: 8px; color: #64748b;">ประหยัดเงินได้ ${formatMoney(calc.totalSavedByEarlyPayoff)} บาท</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+
+    } else if (curToolId === 'social_security') {
+        docTitle = 'เอกสารประมาณการสิทธิประโยชน์เงินบำนาญและเงินชราภาพประกันสังคม';
+        docSubtitle = 'Social Security Pension & Old-Age Lump Sum Statement';
+        const st = state.social_security || {};
+        const calc = (typeof calculateSocialSecurity === 'function')
+            ? calculateSocialSecurity(st)
+            : { section: 'm33', wageMonthly: 35000, cappedWage: 15000, contributionMonths: 240, yearsContributed: 20, m40Plan: 'plan2', m40ExtraSavings: 0, monthlyContribution: 750, employerContribution: 750, govtContribution: 412.5, oldAgeSavingsMonthly: 450, isPension: true, pensionRatePercent: 27.5, monthlyPension: 4125, yearlyPension: 49500, lumpSumTotal: 0, totalWorkerContributed: 180000, totalFundAccumulated: 216000 };
+
+        paramsRows = [
+            ['มาตราผู้ประกันตน', calc.section === 'm39' ? 'มาตรา 39 (ผู้ประกันตนโดยสมัครใจ)' : (calc.section === 'm40' ? `มาตรา 40 (${calc.m40Plan.toUpperCase()})` : 'มาตรา 33 (พนักงานเอกชนภาคบังคับ)')],
+            ['ฐานค่าจ้างในการคำนวณ', `${formatMoney(calc.cappedWage)} บาท/เดือน (เพดานกฎหมาย)`],
+            ['จำนวนเดือนที่ส่งเงินสมทบ', `${calc.contributionMonths} เดือน (${formatNum(calc.yearsContributed, 1)} ปี)`],
+            ['เงินสมทบผู้ประกันตนรายเดือน', `${formatMoney(calc.monthlyContribution)} บาท/เดือน`],
+            ['เงินสมทบนายจ้างร่วมสมทบ', `${formatMoney(calc.employerContribution)} บาท/เดือน`],
+            ['เงินสะสมเฉพาะกองทุนชราภาพ', `${formatMoney(calc.oldAgeSavingsMonthly)} บาท/เดือน`],
+            ['รวมเงินสมทบที่ผู้ประกันตนจ่ายสะสม', `${formatMoney(calc.totalWorkerContributed)} บาท`]
+        ];
+
+        if (calc.isPension) {
+            resultCards = [
+                { label: '💰 เงินบำนาญชราภาพรายเดือน (ตลอดชีพ)', value: `${formatMoney(calc.monthlyPension)} บาท/เดือน`, highlight: true },
+                { label: 'ประมาณการเงินบำนาญรวมต่อปี', value: `${formatMoney(calc.yearlyPension)} บาท/ปี` },
+                { label: 'อัตราบำนาญที่ได้รับ', value: `${formatNum(calc.pensionRatePercent, 2)}% ของค่าจ้างเฉลี่ย` },
+                { label: 'รวมเงินสมทบสะสมกองทุนชราภาพ', value: `${formatMoney(calc.totalFundAccumulated)} บาท` }
+            ];
+        } else {
+            resultCards = [
+                { label: '💰 เงินบำเหน็จชราภาพ (รับก้อนเดียว)', value: `${formatMoney(calc.lumpSumTotal)} บาท`, highlight: true },
+                { label: 'รวมเงินสมทบสะสมกองทุนชราภาพ', value: `${formatMoney(calc.totalFundAccumulated)} บาท` },
+                { label: 'รวมเงินสมทบที่ลูกจ้างจ่ายสะสม', value: `${formatMoney(calc.totalWorkerContributed)} บาท` },
+                { label: 'เงื่อนไขการรับสิทธิ์', value: 'ส่งเงินสมทบน้อยกว่า 180 เดือน' }
+            ];
+        }
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    เกณฑ์สิทธิประโยชน์ชราภาพและการจัดสรรเงินสมทบ
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 6px 8px; text-align: left;">รายการจัดสรร</th>
+                            <th style="padding: 6px 8px; text-align: right;">เงินต่อเดือน (บาท)</th>
+                            <th style="padding: 6px 8px; text-align: left;">หลักเกณฑ์และสัดส่วนตามกฎหมาย</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;"><b>เงินสมทบผู้ประกันตน</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.monthlyContribution)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">${calc.section === 'm33' ? 'หัก 5% ของค่าจ้าง (สูงสุด 750 บ.)' : (calc.section === 'm39' ? 'หัก 9% ของฐาน 4,800 บ. (432 บ.)' : 'ตามแพ็กเกจ ม.40')}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">เงินสมทบนายจ้าง</td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.employerContribution)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">${calc.section === 'm33' ? 'นายจ้างสมทบเท่ากัน 5%' : 'ไม่มีนายจ้างร่วมสมทบ'}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: #f0fdf4;">
+                            <td style="padding: 6px 8px; color: #166534;"><b>เงินสะสมเข้ากองทุนชราภาพ</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #166534;">${formatMoney(calc.oldAgeSavingsMonthly)}</td>
+                            <td style="padding: 6px 8px; color: #166534;">${calc.section === 'm33' ? 'ส่วนลูกจ้าง 3% (กองทุนรวม 6% = 900 บ./ด.)' : 'เข้ากองทุนบำเหน็จชราภาพ'}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">ประเภทสิทธิประโยชน์ชราภาพ</td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600; color: #0284c7;">${calc.isPension ? 'บำนาญรายเดือน' : 'บำเหน็จก้อนเดียว'}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">${calc.isPension ? `ครบ 180 งวด (20% + 1.5% ต่อ 12 งวดที่เกิน = ${calc.pensionRatePercent}%)` : 'ส่งไม่ครบ 180 งวด รับเงินก้อนพร้อมผลประโยชน์ตอบแทน'}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+
     } else {
         // Generic Fallback for other calculators
         const summary = (typeof getToolSummaryText === 'function') ? getToolSummaryText(curToolId) : '';
@@ -2012,6 +2164,34 @@ function getComparisonPresets(toolId) {
                 label: 'ทางเลือก 3: ใช้ไฟ 600 หน่วย/ด. (บ้านขนาดใหญ่)',
                 state: { mode: 'bill', tariffType: 'type1_2', units: '600', ftRate: '0.3972' }
             }
+        ],
+        car_loan: [
+            {
+                label: 'ทางเลือก 1: ผ่อน 48 งวด (4 ปี) ดอกเบี้ย 2.39%',
+                state: { vehicleType: 'car', condition: 'new', price: '850000', downPaymentType: 'percent', downPaymentValue: '25', interestRate: '2.39', periodMonths: '48', payoffMonth: '24' }
+            },
+            {
+                label: 'ทางเลือก 2: ผ่อน 60 งวด (5 ปี) ดอกเบี้ย 2.59%',
+                state: { vehicleType: 'car', condition: 'new', price: '850000', downPaymentType: 'percent', downPaymentValue: '25', interestRate: '2.59', periodMonths: '60', payoffMonth: '30' }
+            },
+            {
+                label: 'ทางเลือก 3: ผ่อน 72 งวด (6 ปี) ดอกเบี้ย 2.99%',
+                state: { vehicleType: 'car', condition: 'new', price: '850000', downPaymentType: 'percent', downPaymentValue: '25', interestRate: '2.99', periodMonths: '72', payoffMonth: '36' }
+            }
+        ],
+        social_security: [
+            {
+                label: 'ทางเลือก 1: ม.33 ส่ง 15 ปี (180 งวด) ฐาน 15,000 บ.',
+                state: { section: 'm33', wageMonthly: '35000', contributionMonths: '180', m40Plan: 'plan2', m40ExtraSavings: '0' }
+            },
+            {
+                label: 'ทางเลือก 2: ม.33 ส่ง 20 ปี (240 งวด) ฐาน 15,000 บ.',
+                state: { section: 'm33', wageMonthly: '35000', contributionMonths: '240', m40Plan: 'plan2', m40ExtraSavings: '0' }
+            },
+            {
+                label: 'ทางเลือก 3: ม.33 ส่ง 25 ปี (300 งวด) ฐาน 15,000 บ.',
+                state: { section: 'm33', wageMonthly: '35000', contributionMonths: '300', m40Plan: 'plan2', m40ExtraSavings: '0' }
+            }
         ]
     };
     return presets[toolId] || [];
@@ -2422,6 +2602,132 @@ function compareCalculations(toolId, itemsList) {
         const maxBill = Math.max(...results.map(r => r.totalBill));
         const diffBill = maxBill - minBillRes.totalBill;
         deltaSummary = `🏆 ทางเลือกที่มียอดค่าไฟฟ้ารวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดสุทธิเพียง ${formatMoney(minBillRes.totalBill)} บาท${diffBill > 0 ? ` (ประหยัดได้ ${formatMoney(diffBill)} บาท/เดือน)` : ''}`;
+
+    } else if (toolId === 'car_loan') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const calc = (typeof calculateCarLoan === 'function')
+                ? calculateCarLoan(st)
+                : { price: 0, downPaymentAmount: 0, downPaymentPercent: 0, principal: 0, interestRate: 0, periodMonths: 0, years: 0, monthlyPayment: 0, totalRepayment: 0, totalInterest: 0, effectiveRateApprox: 0, totalPayoffAmount: 0, totalSavedByEarlyPayoff: 0, discountTierPercent: 0 };
+            return calc;
+        });
+
+        rows.push({
+            label: 'ราคารถยนต์ / ยานพาหนะ',
+            values: results.map(r => `${formatMoney(r.price)} ฿`)
+        });
+        rows.push({
+            label: 'เงินดาวน์ (Down Payment)',
+            values: results.map(r => `${formatMoney(r.downPaymentAmount)} ฿ (${formatNum(r.downPaymentPercent, 1)}%)`)
+        });
+        rows.push({
+            label: 'ยอดจัดเช่าซื้อ (Principal)',
+            values: results.map(r => `${formatMoney(r.principal)} ฿`)
+        });
+        rows.push({
+            label: 'อัตราดอกเบี้ย Flat Rate (ต่อปี)',
+            values: results.map(r => `${formatNum(r.interestRate, 2)}% (EIR ≈ ${formatNum(r.effectiveRateApprox, 2)}%)`)
+        });
+        rows.push({
+            label: 'ระยะเวลาผ่อนชำระ',
+            values: results.map(r => `${r.periodMonths} งวด (${r.years} ปี)`)
+        });
+        rows.push({
+            label: 'ดอกเบี้ยรวมตลอดสัญญา',
+            values: results.map(r => `${formatMoney(r.totalInterest)} ฿`)
+        });
+        rows.push({
+            label: 'ค่างวดผ่อนชำระรายเดือน',
+            values: results.map(r => `${formatMoney(r.monthlyPayment)} ฿/งวด`)
+        });
+
+        const minRepaymentRes = results.reduce((min, cur) => cur.totalRepayment < min.totalRepayment ? cur : min, results[0]);
+        const minRepaymentIdx = results.indexOf(minRepaymentRes);
+
+        rows.push({
+            label: 'ยอดผ่อนชำระรวมทั้งสัญญา',
+            values: results.map(r => `${formatMoney(r.totalRepayment)} ฿`),
+            bestIndex: minRepaymentIdx,
+            highlight: true
+        });
+        rows.push({
+            label: 'ส่วนลดดอกเบี้ยปิดบัญชี (งวดที่กำหนด)',
+            values: results.map(r => `${formatMoney(r.totalSavedByEarlyPayoff)} ฿ (${r.discountTierPercent}%)`)
+        });
+
+        winnerIndex = minRepaymentIdx;
+        const maxRepayment = Math.max(...results.map(r => r.totalRepayment));
+        const diffRepayment = maxRepayment - minRepaymentRes.totalRepayment;
+        deltaSummary = `🏆 ทางเลือกที่มียอดผ่อนชำระรวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดรวมเพียง ${formatMoney(minRepaymentRes.totalRepayment)} บาท${diffRepayment > 0 ? ` (ประหยัดกว่าทางเลือกอื่น ${formatMoney(diffRepayment)} บาท)` : ''}`;
+
+    } else if (toolId === 'social_security') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const calc = (typeof calculateSocialSecurity === 'function')
+                ? calculateSocialSecurity(st)
+                : { section: 'm33', cappedWage: 0, contributionMonths: 0, yearsContributed: 0, monthlyContribution: 0, totalWorkerContributed: 0, isPension: true, pensionRatePercent: 0, monthlyPension: 0, yearlyPension: 0, lumpSumTotal: 0, totalFundAccumulated: 0 };
+            return calc;
+        });
+
+        rows.push({
+            label: 'สิทธิผู้ประกันตน',
+            values: results.map(r => r.section === 'm39' ? 'ม.39' : (r.section === 'm40' ? 'ม.40' : 'ม.33'))
+        });
+        rows.push({
+            label: 'ฐานค่าจ้างในการคำนวณ',
+            values: results.map(r => `${formatMoney(r.cappedWage)} ฿`)
+        });
+        rows.push({
+            label: 'จำนวนเดือนที่ส่งเงินสมทบ',
+            values: results.map(r => `${r.contributionMonths} งวด (${formatNum(r.yearsContributed, 1)} ปี)`)
+        });
+        rows.push({
+            label: 'เงินสมทบผู้ประกันตนจ่ายต่อเดือน',
+            values: results.map(r => `${formatMoney(r.monthlyContribution)} ฿`)
+        });
+        rows.push({
+            label: 'รวมเงินสมทบที่จ่ายสะสม',
+            values: results.map(r => `${formatMoney(r.totalWorkerContributed)} ฿`)
+        });
+        rows.push({
+            label: 'รูปแบบสิทธิประโยชน์ชราภาพ',
+            values: results.map(r => r.isPension ? `บำนาญตลอดชีพ (${formatNum(r.pensionRatePercent, 1)}%)` : 'บำเหน็จเงินก้อน')
+        });
+
+        const pensionCandidates = results.filter(r => r.isPension);
+        if (pensionCandidates.length > 0) {
+            const maxPensionRes = pensionCandidates.reduce((max, cur) => cur.monthlyPension > max.monthlyPension ? cur : max, pensionCandidates[0]);
+            const maxPensionIdx = results.indexOf(maxPensionRes);
+
+            rows.push({
+                label: 'เงินบำนาญชราภาพรายเดือน (ตลอดชีพ)',
+                values: results.map(r => r.isPension ? `${formatMoney(r.monthlyPension)} ฿/ด.` : '-'),
+                bestIndex: maxPensionIdx,
+                highlight: true
+            });
+            rows.push({
+                label: 'เงินบำนาญสะสมต่อปี',
+                values: results.map(r => r.isPension ? `${formatMoney(r.yearlyPension)} ฿/ปี` : '-')
+            });
+
+            winnerIndex = maxPensionIdx;
+            const minPension = Math.min(...pensionCandidates.map(r => r.monthlyPension));
+            const diffPension = maxPensionRes.monthlyPension - minPension;
+            deltaSummary = `🏆 ทางเลือกที่ได้รับเงินบำนาญชราภาพรายเดือนสูงสุดคือ "${items[winnerIndex].label}" ได้รับ ${formatMoney(maxPensionRes.monthlyPension)} บาท/เดือนตลอดชีพ${diffPension > 0 ? ` (มากกว่าทางเลือกอื่น ${formatMoney(diffPension)} บาท/เดือน)` : ''}`;
+        } else {
+            const maxLumpRes = results.reduce((max, cur) => cur.lumpSumTotal > max.lumpSumTotal ? cur : max, results[0]);
+            const maxLumpIdx = results.indexOf(maxLumpRes);
+
+            rows.push({
+                label: 'เงินบำเหน็จชราภาพ (รับก้อนเดียว)',
+                values: results.map(r => `${formatMoney(r.lumpSumTotal)} ฿`),
+                bestIndex: maxLumpIdx,
+                highlight: true
+            });
+
+            winnerIndex = maxLumpIdx;
+            deltaSummary = `🏆 ทางเลือกที่ได้รับเงินบำเหน็จชราภาพสูงสุดคือ "${items[winnerIndex].label}" ได้รับ ${formatMoney(maxLumpRes.lumpSumTotal)} บาท`;
+        }
 
     } else {
         rows.push({
@@ -3589,6 +3895,26 @@ function getToolSummaryText(toolId, stateObj) {
                 ? calculateElectricityBill(st)
                 : { units: 350, baseEnergyCharge: 1250, serviceFee: 24.62, ftCharge: 139, vat7: 98.95, totalBill: 1512.57, avgRatePerUnit: 4.32, ftRate: 0.3972 };
             return `⚡ สรุปค่าไฟฟ้าบ้าน (กฟน./กฟภ.)\n${divider}\n• จำนวนหน่วยไฟฟ้า: ${formatNum(calc.units, 1)} หน่วย (kWh)\n• ค่าไฟฟ้าฐาน (ขั้นบันได): ${formatMoney(calc.baseEnergyCharge)} บาท\n• ค่าบริการรายเดือน: ${formatMoney(calc.serviceFee)} บาท\n• ค่าไฟฟ้าผันแปร Ft (${formatNum(calc.ftRate, 4)} ฿): ${formatMoney(calc.ftCharge)} บาท\n• ภาษีมูลค่าเพิ่ม (VAT 7%): +${formatMoney(calc.vat7)} บาท\n${divider}\n💰 ยอดชำระสุทธิ: ${formatMoney(calc.totalBill)} บาท (เฉลี่ย ${formatNum(calc.avgRatePerUnit, 2)} ฿/หน่วย)\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'car_loan': {
+            const st = state.car_loan || {};
+            const calc = (typeof calculateCarLoan === 'function')
+                ? calculateCarLoan(st)
+                : { vehicleType: 'car', condition: 'new', price: 850000, downPaymentAmount: 170000, downPaymentPercent: 20, principal: 680000, interestRate: 2.59, periodMonths: 60, years: 5, monthlyPayment: 12801, totalRepayment: 768060, effectiveRateApprox: 4.95 };
+            const typeLabel = calc.vehicleType === 'motorcycle' ? 'มอเตอร์ไซค์' : 'รถยนต์';
+            const condLabel = calc.condition === 'used' ? 'รถมือสอง (มี VAT 7%)' : 'รถใหม่ป้ายแดง';
+            return `🚗 สรุปสินเชื่อเช่าซื้อยานพาหนะ\n${divider}\n• ประเภท: ${typeLabel} (${condLabel})\n• ราคารถ: ${formatMoney(calc.price)} บาท\n• เงินดาวน์: ${formatMoney(calc.downPaymentAmount)} บาท (${formatNum(calc.downPaymentPercent, 1)}%)\n• ยอดจัดเช่าซื้อ: ${formatMoney(calc.principal)} บาท\n• อัตราดอกเบี้ย: ${formatNum(calc.interestRate, 2)}% คงที่/ปี (EIR ≈ ${formatNum(calc.effectiveRateApprox, 2)}%)\n• ระยะเวลาผ่อน: ${calc.periodMonths} งวด (${calc.years} ปี)\n${divider}\n💰 ค่างวดรายเดือน: ${formatMoney(calc.monthlyPayment)} บาท/งวด\n• ยอดผ่อนรวมทั้งสัญญา: ${formatMoney(calc.totalRepayment)} บาท\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'social_security': {
+            const st = state.social_security || {};
+            const calc = (typeof calculateSocialSecurity === 'function')
+                ? calculateSocialSecurity(st)
+                : { section: 'm33', wageMonthly: 35000, contributionMonths: 240, isPension: true, monthlyPension: 4125, yearlyPension: 49500, lumpSumTotal: 0, monthlyContribution: 750, totalWorkerContributed: 180000 };
+            const secName = calc.section === 'm39' ? 'มาตรา 39 (ผู้ประกันตนภาคสมัครใจ)' : (calc.section === 'm40' ? 'มาตรา 40 (อาชีพอิสระ/ฟรีแลนซ์)' : 'มาตรา 33 (พนักงานเอกชน)');
+            const benefitLine = calc.isPension
+                ? `💰 เงินบำนาญชราภาพตลอดชีพ: ${formatMoney(calc.monthlyPension)} บาท/เดือน (ปีละ ${formatMoney(calc.yearlyPension)} บ.)`
+                : `💰 เงินบำเหน็จชราภาพ (ก้อนเดียว): ${formatMoney(calc.lumpSumTotal)} บาท`;
+            return `🛡️ สรุปสิทธิประโยชน์ประกันสังคม\n${divider}\n• สิทธิ์: ${secName}\n• ส่งเงินสมทบ: ${calc.contributionMonths} งวด (${(calc.contributionMonths / 12).toFixed(1)} ปี)\n• เงินสมทบรายเดือน: ${formatMoney(calc.monthlyContribution)} บาท/เดือน\n• รวมเงินสมทบที่จ่ายสะสม: ${formatMoney(calc.totalWorkerContributed)} บาท\n${divider}\n${benefitLine}\n(คำนวณโดย Multitools Calculator)`;
         }
         default: {
             const statusText = document.getElementById('sharedStatusText')?.innerText?.trim();
@@ -7100,21 +7426,19 @@ function renderTaxPersonalTool(container) {
     const calc = calculatePersonalTax(st);
 
     let html = `
-        <div class="flex flex-col gap-3 p-1">
+        <div class="personal-tax-tool flex flex-col gap-3 p-1">
             <!-- Segmented Control Tabs -->
             <div class="segment-group grid-cols-3 balanced-segment-modes" role="tablist" aria-label="หมวดคำนวณภาษี">
-                <button type="button" role="tab" id="tax-tab-income" aria-selected="${activeTab === 'income'}" class="segment-btn ${activeTab === 'income' ? 'active' : ''}" data-tax-tab="income">1. รายได้ทั้งปี</button>
-                <button type="button" role="tab" id="tax-tab-deduct" aria-selected="${activeTab === 'deduct'}" class="segment-btn ${activeTab === 'deduct' ? 'active' : ''}" data-tax-tab="deduct">2. สิทธิลดหย่อน</button>
-                <button type="button" role="tab" id="tax-tab-summary" aria-selected="${activeTab === 'summary'}" class="segment-btn ${activeTab === 'summary' ? 'active' : ''}" data-tax-tab="summary">3. สรุปภาษี & วางแผน</button>
+                <button type="button" role="tab" id="tax-tab-income" aria-selected="${activeTab === 'income'}" tabindex="${activeTab === 'income' ? '0' : '-1'}" class="segment-btn ${activeTab === 'income' ? 'active' : ''}" data-tax-tab="income">1. รายได้ทั้งปี</button>
+                <button type="button" role="tab" id="tax-tab-deduct" aria-selected="${activeTab === 'deduct'}" tabindex="${activeTab === 'deduct' ? '0' : '-1'}" class="segment-btn ${activeTab === 'deduct' ? 'active' : ''}" data-tax-tab="deduct">2. สิทธิลดหย่อน</button>
+                <button type="button" role="tab" id="tax-tab-summary" aria-selected="${activeTab === 'summary'}" tabindex="${activeTab === 'summary' ? '0' : '-1'}" class="segment-btn ${activeTab === 'summary' ? 'active' : ''}" data-tax-tab="summary">3. สรุปภาษี</button>
             </div>
     `;
 
     if (activeTab === 'income') {
         html += `
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6] flex items-center gap-1.5">
-                    <span>💼 ข้อมูลรายได้พึงประเมินทั้งปี</span>
-                </div>
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">ข้อมูลรายได้พึงประเมินทั้งปี</div>
                 <div>
                     <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">เงินเดือนประจำ (บาท/เดือน)</label>
                     <input id="taxSalaryMonthly" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.salaryMonthly))}" placeholder="เช่น 50,000" class="airbnb-input w-full">
@@ -7137,17 +7461,18 @@ function renderTaxPersonalTool(container) {
             </div>
 
             <!-- Mini Preview Card -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
-                <div class="flex justify-between">
-                    <span class="text-neutral-600 dark:text-neutral-400">รายได้รวมทั้งปี</span>
+            <div class="themed-tool-card p-4 space-y-1 text-xs">
+                <div class="font-bold text-[var(--app-ink)] pb-1">สรุปรายได้เบื้องต้น</div>
+                <div class="tool-summary-row flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">รายได้รวมทั้งปี</span>
                     <b class="text-sm font-semibold">${formatMoney(calc.grossIncome)} บาท</b>
                 </div>
-                <div class="flex justify-between">
-                    <span class="text-neutral-600 dark:text-neutral-400">หักค่าใช้จ่ายตามกฎหมาย (50% ไม่เกิน 1 แสน)</span>
-                    <b class="text-emerald-600 dark:text-emerald-400">- ${formatMoney(calc.expenses)} บาท</b>
+                <div class="tool-summary-row flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">หักค่าใช้จ่ายตามกฎหมาย</span>
+                    <b>- ${formatMoney(calc.expenses)} บาท</b>
                 </div>
-                <div class="flex justify-between pt-1 border-t border-neutral-100 dark:border-neutral-800">
-                    <span class="text-neutral-700 dark:text-neutral-300 font-medium">เงินได้หลังหักค่าใช้จ่าย</span>
+                <div class="tool-summary-row flex justify-between gap-3 py-2 font-semibold">
+                    <span>เงินได้หลังหักค่าใช้จ่าย</span>
                     <b>${formatMoney(calc.incomeAfterExpenses)} บาท</b>
                 </div>
             </div>
@@ -7155,9 +7480,9 @@ function renderTaxPersonalTool(container) {
     } else if (activeTab === 'deduct') {
         html += `
             <!-- กลุ่มที่ 1: ส่วนตัวและครอบครัว -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-2.5" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">👨‍👩‍👧 1. สิทธิส่วนตัวและครอบครัว</div>
-                <div class="text-[11px] text-[#6a6a6a] dark:text-neutral-400">ผู้มีเงินได้ลดหย่อนอัตโนมัติ 60,000 บาท</div>
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">1. สิทธิส่วนตัวและครอบครัว</div>
+                <div class="text-[11px] text-[var(--app-muted)]">ผู้มีเงินได้ลดหย่อนอัตโนมัติ 60,000 บาท</div>
                 
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <div>
@@ -7186,8 +7511,8 @@ function renderTaxPersonalTool(container) {
             </div>
 
             <!-- กลุ่มที่ 2: ประกัน เงินออม และการลงทุน -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-2.5" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">🛡️ 2. ประกัน กองทุน & การออม</div>
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">2. ประกัน กองทุน และการออม</div>
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <div>
                         <label class="font-semibold block mb-1">ประกันสังคม (สูงสุด 9,000)</label>
@@ -7231,8 +7556,8 @@ function renderTaxPersonalTool(container) {
             </div>
 
             <!-- กลุ่มที่ 3: เงินบริจาค -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-2.5" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">🤝 3. เงินบริจาค</div>
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">3. เงินบริจาค</div>
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <div>
                         <label class="font-semibold block mb-1">บริจาคการศึกษา/กีฬา/รพ. (ลดหย่อน 2 เท่า)</label>
@@ -7248,44 +7573,37 @@ function renderTaxPersonalTool(container) {
     } else {
         // TAB: สรุปผลภาษี & วางแผน
         const isRefund = calc.isRefund;
-        const resultColor = isRefund
-            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300'
-            : (calc.payableAmount > 0
-                ? 'border-rose-400 bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-300'
-                : 'border-blue-400 bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300');
+        const resultStateClass = isRefund ? 'is-profit' : (calc.payableAmount > 0 ? 'is-loss' : '');
+        const resultLabel = isRefund ? 'ได้รับเงินคืนภาษี' : (calc.payableAmount > 0 ? 'ต้องชำระภาษีเพิ่มเติม' : 'ไม่มียอดค้างชำระ');
 
         html += `
             <!-- Big Result Card -->
-            <div class="border rounded-[var(--app-card-radius)] p-4 text-center ${resultColor} space-y-1" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-semibold uppercase tracking-wider">
-                    ${isRefund ? '🎉 ได้รับเงินคืนภาษี (TAX REFUND)' : (calc.payableAmount > 0 ? '⚠️ ต้องชำระภาษีเพิ่มเติม' : '✓ ภาษีพอดี ไม่มียอดค้างชำระ')}
-                </div>
-                <div class="text-2xl md:text-3xl font-extrabold">
+            <div class="themed-result-card ${resultStateClass} p-5 text-center space-y-1">
+                <div class="text-xs font-semibold text-[var(--app-muted)]">${resultLabel}</div>
+                <div class="themed-result-value text-2xl md:text-3xl font-extrabold">
                     ${formatMoney(isRefund ? calc.refundAmount : calc.payableAmount)} บาท
                 </div>
-                <div class="text-xs opacity-90">
-                    ภาษีทั้งปีที่คำนวณได้: ${formatMoney(calc.totalTax)} บาท | หัก ณ ที่จ่ายแล้ว: ${formatMoney(calc.withholdingTax)} บาท
+                <div class="text-xs text-[var(--app-body)]">
+                    ภาษีทั้งปี ${formatMoney(calc.totalTax)} บาท · หัก ณ ที่จ่ายแล้ว ${formatMoney(calc.withholdingTax)} บาท
                 </div>
             </div>
 
             <!-- Tax Metrics Grid -->
             <div class="grid grid-cols-2 gap-2 text-xs">
-                <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-3">
-                    <span class="text-[#6a6a6a] dark:text-neutral-400 block mb-0.5">เงินได้สุทธิ (Taxable)</span>
+                <div class="themed-subcard p-3">
+                    <span class="text-[var(--app-muted)] block mb-0.5">เงินได้สุทธิ</span>
                     <b class="text-sm">${formatMoney(calc.netTaxableIncome)} ฿</b>
                 </div>
-                <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-3">
-                    <span class="text-[#6a6a6a] dark:text-neutral-400 block mb-0.5">ฐานภาษีสูงสุด (Marginal Rate)</span>
+                <div class="themed-subcard p-3">
+                    <span class="text-[var(--app-muted)] block mb-0.5">ฐานภาษีสูงสุด</span>
                     <b class="text-sm text-[var(--app-accent)]">${calc.marginalRate}%</b>
                 </div>
             </div>
 
             <!-- Tax Savings Advisor Box -->
-            <div class="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-[var(--app-card-radius)] p-3 text-xs text-amber-900 dark:text-amber-200 space-y-1">
-                <div class="font-bold flex items-center gap-1">
-                    <span>💡 เคล็ดลับวางแผนประหยัดภาษี:</span>
-                </div>
-                <div>
+            <div class="themed-tool-card p-4 text-xs space-y-2">
+                <div class="font-bold text-[var(--app-ink)]">แนวทางวางแผนภาษี</div>
+                <div class="text-[var(--app-body)]">
                     ${calc.marginalRate > 0
                         ? `ปัจจุบันท่านอยู่ในฐานภาษี <b>${calc.marginalRate}%</b> การซื้อกองทุนลดหย่อนภาษี (SSF, RMF, Thai ESG) หรือประกันเพิ่ม <b>ทุก 10,000 บาท</b> จะช่วยประหยัดภาษีได้ถึง <b>${formatMoney(calc.savingsPer10k)} บาท</b>`
                         : 'ปัจจุบันรายได้สุทธิของท่านอยู่ในเกณฑ์ยกเว้นภาษี (0%) ยังไม่จำเป็นต้องซื้อกองทุนหรือประกันเพื่อลดหย่อนภาษีเพิ่มเติม'}
@@ -7293,12 +7611,12 @@ function renderTaxPersonalTool(container) {
             </div>
 
             <!-- Tax Brackets Table -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
-                <div class="font-semibold text-neutral-800 dark:text-neutral-200">ตารางภาษีแบบขั้นบันได 7 ขั้น</div>
+            <div class="themed-tool-card p-4 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ตารางภาษีแบบขั้นบันได 7 ขั้น</div>
                 <div class="overflow-x-auto thin-scroll">
                     <table class="w-full text-left border-collapse text-[11px]">
                         <thead>
-                            <tr class="border-b border-neutral-200 dark:border-neutral-700 text-[#6a6a6a] dark:text-neutral-400">
+                            <tr class="border-b border-[var(--app-hairline)] text-[var(--app-muted)]">
                                 <th class="py-1">ขั้นเงินได้สุทธิ</th>
                                 <th class="py-1 text-center">อัตรา</th>
                                 <th class="py-1 text-right">เงินได้ในขั้น</th>
@@ -7307,7 +7625,7 @@ function renderTaxPersonalTool(container) {
                         </thead>
                         <tbody>
                             ${calc.taxByBands.map(b => `
-                                <tr class="border-b border-neutral-100 dark:border-neutral-800 ${b.taxInBand > 0 ? 'font-semibold text-neutral-900 dark:text-neutral-100' : 'text-neutral-400 dark:text-neutral-600'}">
+                                <tr class="border-b border-[var(--app-hairline)] ${b.taxInBand > 0 ? 'font-semibold text-[var(--app-ink)]' : 'text-[var(--app-muted)]'}">
                                     <td class="py-1">${b.range}</td>
                                     <td class="py-1 text-center">${b.ratePercent}%</td>
                                     <td class="py-1 text-right">${formatMoney(b.taxableInBand)}</td>
@@ -7316,8 +7634,8 @@ function renderTaxPersonalTool(container) {
                             `).join('')}
                         </tbody>
                         <tfoot>
-                            <tr class="font-bold border-t border-neutral-300 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100">
-                                <td colspan="3" class="py-1.5 text-right">ภาษีรวมทั้งสิ้น:</td>
+                            <tr class="font-bold border-t border-[var(--app-hairline)] text-[var(--app-ink)]">
+                                <td colspan="3" class="py-1.5 text-right">ภาษีรวมทั้งสิ้น</td>
                                 <td class="py-1.5 text-right text-[var(--app-accent)]">${formatMoney(calc.totalTax)} ฿</td>
                             </tr>
                         </tfoot>
@@ -7327,8 +7645,8 @@ function renderTaxPersonalTool(container) {
 
             <!-- Print Actions -->
             <div class="flex justify-end pt-1">
-                <button id="btnPrintTaxPersonalSummary" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer">
-                    🖨️ พิมพ์ใบสรุปภาษี ภ.ง.ด. / PDF
+                <button id="btnPrintTaxPersonalSummary" type="button" class="tool-action-btn text-xs">
+                    พิมพ์ใบสรุปภาษี ภ.ง.ด. / PDF
                 </button>
             </div>
         `;
@@ -7395,11 +7713,11 @@ function renderTaxPersonalTool(container) {
     if (calc.grossIncome <= 0) {
         setStatusBanner('empty', 'กรุณาระบุเงินเดือนหรือรายได้ทั้งปีเพื่อคำนวณภาษีบุคคลธรรมดา');
     } else if (calc.isRefund) {
-        setStatusBanner('success', `🎉 ได้เงินคืนภาษี: <span class="text-lg text-emerald-600 font-bold underline">${formatMoney(calc.refundAmount)} บาท</span> · ฐานภาษี ${calc.marginalRate}%`);
+        setStatusBanner('success', `ได้รับเงินคืนภาษี: <b class="text-[var(--app-accent)]">${formatMoney(calc.refundAmount)} บาท</b> · ฐานภาษี ${calc.marginalRate}%`);
     } else if (calc.payableAmount > 0) {
-        setStatusBanner('success', `⚠️ ต้องชำระภาษีเพิ่ม: <span class="text-lg text-[var(--app-accent)] font-bold underline">${formatMoney(calc.payableAmount)} บาท</span> · ฐานภาษี ${calc.marginalRate}%`);
+        setStatusBanner('success', `ต้องชำระภาษีเพิ่ม: <b class="text-[var(--app-accent)]">${formatMoney(calc.payableAmount)} บาท</b> · ฐานภาษี ${calc.marginalRate}%`);
     } else {
-        setStatusBanner('success', `✓ ชำระภาษีครบถ้วนพอดี: ภาษีรวมทั้งสิ้น ${formatMoney(calc.totalTax)} บาท`);
+        setStatusBanner('success', `ชำระภาษีครบถ้วนพอดี: ภาษีรวมทั้งสิ้น ${formatMoney(calc.totalTax)} บาท`);
     }
 }
 
@@ -7421,10 +7739,10 @@ function renderPropertyTransferTool(container) {
     const calc = calculatePropertyTransfer(st);
 
     container.innerHTML = `
-        <div class="flex flex-col gap-3 p-1">
+        <div class="property-transfer-tool flex flex-col gap-3 p-1">
             <!-- Mode Settings & Measures -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2.5" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">⚙️ เงื่อนไขและมาตรการรัฐ</div>
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">เงื่อนไขและมาตรการรัฐ</div>
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <div>
                         <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">มาตรการค่าโอน-จำนอง</label>
@@ -7462,7 +7780,8 @@ function renderPropertyTransferTool(container) {
             </div>
 
             <!-- Price Inputs -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">ข้อมูลราคาทรัพย์และวงเงินจำนอง</div>
                 <div>
                     <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ราคาประเมินทุนทรัพย์ของกรมที่ดิน (บาท)</label>
                     <input id="propAppraisedValue" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.appraisedValue))}" placeholder="เช่น 3,000,000" class="airbnb-input w-full">
@@ -7480,34 +7799,38 @@ function renderPropertyTransferTool(container) {
                 </div>
             </div>
 
+            <!-- Primary Result -->
+            <div class="themed-result-card theme-result-highlight p-5 text-center space-y-1">
+                <div class="text-xs font-semibold text-[var(--app-muted)]">ประมาณการค่าใช้จ่ายวันโอนรวม</div>
+                <div class="themed-result-value text-2xl md:text-3xl font-extrabold">${formatMoney(calc.totalLandCost)} บาท</div>
+                <div class="text-xs text-[var(--app-body)]">แบ่งตามข้อตกลงการชำระที่เลือกไว้ด้านบน</div>
+            </div>
+
             <!-- Split Summary Cards -->
             <div class="grid grid-cols-2 gap-2">
-                <div class="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-[var(--app-card-radius)] p-3 space-y-1">
-                    <div class="text-xs font-bold text-blue-900 dark:text-blue-300">👤 ฝั่งผู้ซื้อต้องเตรียมชำระ</div>
-                    <div class="text-lg md:text-xl font-extrabold text-blue-800 dark:text-blue-200">${formatMoney(calc.buyerCost)} บาท</div>
-                    <div class="text-[11px] text-blue-700 dark:text-blue-400">
-                        ${st.splitMode === 'custom' ? '(ค่าโอน 50% + ค่าจดจำนอง)' : `(ตามข้อตกลง: ${st.splitMode})`}
+                <div class="themed-tool-card p-3 space-y-1">
+                    <div class="text-xs font-bold text-[var(--app-ink)]">ผู้ซื้อต้องเตรียมชำระ</div>
+                    <div class="text-lg md:text-xl font-extrabold text-[var(--app-accent)]">${formatMoney(calc.buyerCost)} บาท</div>
+                    <div class="text-[11px] text-[var(--app-muted)]">
+                        ${st.splitMode === 'custom' ? 'ค่าโอน 50% + ค่าจดจำนอง' : 'ตามข้อตกลงการแบ่งจ่าย'}
                     </div>
                 </div>
-                <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-[var(--app-card-radius)] p-3 space-y-1">
-                    <div class="text-xs font-bold text-amber-900 dark:text-amber-300">🏠 ฝั่งผู้ขายต้องเตรียมชำระ</div>
-                    <div class="text-lg md:text-xl font-extrabold text-amber-800 dark:text-amber-200">${formatMoney(calc.sellerCost)} บาท</div>
-                    <div class="text-[11px] text-amber-700 dark:text-amber-400">
-                        ${st.splitMode === 'custom' ? '(ค่าโอน 50% + ภาษี/อากร + หัก ณ ที่จ่าย)' : `(ตามข้อตกลง: ${st.splitMode})`}
+                <div class="themed-tool-card p-3 space-y-1">
+                    <div class="text-xs font-bold text-[var(--app-ink)]">ผู้ขายต้องเตรียมชำระ</div>
+                    <div class="text-lg md:text-xl font-extrabold text-[var(--app-accent)]">${formatMoney(calc.sellerCost)} บาท</div>
+                    <div class="text-[11px] text-[var(--app-muted)]">
+                        ${st.splitMode === 'custom' ? 'ค่าโอน 50% + ภาษี อากร และหัก ณ ที่จ่าย' : 'ตามข้อตกลงการแบ่งจ่าย'}
                     </div>
                 </div>
             </div>
 
             <!-- Detailed Breakdown Table -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
-                <div class="flex justify-between items-center text-xs">
-                    <span class="font-bold text-neutral-800 dark:text-neutral-200">แจกแจงค่าใช้จ่าย ณ สำนักงานที่ดิน</span>
-                    <span class="font-bold text-[var(--app-accent)] text-sm">รวมทั้งสิ้น ${formatMoney(calc.totalLandCost)} ฿</span>
-                </div>
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">แจกแจงค่าใช้จ่าย ณ สำนักงานที่ดิน</div>
                 <div class="overflow-x-auto thin-scroll">
                     <table class="w-full text-left border-collapse text-xs">
                         <thead>
-                            <tr class="border-b border-neutral-200 dark:border-neutral-700 text-[#6a6a6a] dark:text-neutral-400 text-[11px]">
+                            <tr class="border-b border-[var(--app-hairline)] text-[var(--app-muted)] text-[11px]">
                                 <th class="py-1.5">รายการ</th>
                                 <th class="py-1.5 text-center">อัตรา</th>
                                 <th class="py-1.5 text-right">ผู้ซื้อจ่าย</th>
@@ -7517,23 +7840,23 @@ function renderPropertyTransferTool(container) {
                         </thead>
                         <tbody>
                             ${calc.breakdown.map(row => `
-                                <tr class="border-b border-neutral-100 dark:border-neutral-800">
+                                <tr class="border-b border-[var(--app-hairline)]">
                                     <td class="py-2">
-                                        <div class="font-medium text-neutral-800 dark:text-neutral-200">${row.name}</div>
-                                        <div class="text-[10px] text-neutral-400">ฐาน: ${formatMoney(row.baseAmount)} บาท</div>
+                                        <div class="font-medium text-[var(--app-ink)]">${row.name}</div>
+                                        <div class="text-[10px] text-[var(--app-muted)]">ฐาน: ${formatMoney(row.baseAmount)} บาท</div>
                                     </td>
-                                    <td class="py-2 text-center text-neutral-600 dark:text-neutral-400 text-[11px]">${row.rateText}</td>
-                                    <td class="py-2 text-right font-medium text-blue-700 dark:text-blue-400">${formatMoney(row.buyer)}</td>
-                                    <td class="py-2 text-right font-medium text-amber-700 dark:text-amber-400">${formatMoney(row.seller)}</td>
-                                    <td class="py-2 text-right font-bold text-neutral-900 dark:text-neutral-100">${formatMoney(row.total)}</td>
+                                    <td class="py-2 text-center text-[var(--app-muted)] text-[11px]">${row.rateText}</td>
+                                    <td class="py-2 text-right font-medium text-[var(--app-ink)]">${formatMoney(row.buyer)}</td>
+                                    <td class="py-2 text-right font-medium text-[var(--app-ink)]">${formatMoney(row.seller)}</td>
+                                    <td class="py-2 text-right font-bold text-[var(--app-ink)]">${formatMoney(row.total)}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
                         <tfoot>
-                            <tr class="font-extrabold border-t-2 border-neutral-300 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100">
-                                <td colspan="2" class="py-2 text-right">รวมยอดแบ่งจ่าย:</td>
-                                <td class="py-2 text-right text-blue-700 dark:text-blue-400">${formatMoney(calc.buyerCost)}</td>
-                                <td class="py-2 text-right text-amber-700 dark:text-amber-400">${formatMoney(calc.sellerCost)}</td>
+                            <tr class="font-extrabold border-t-2 border-[var(--app-hairline)] text-[var(--app-ink)]">
+                                <td colspan="2" class="py-2 text-right">รวมยอดแบ่งจ่าย</td>
+                                <td class="py-2 text-right">${formatMoney(calc.buyerCost)}</td>
+                                <td class="py-2 text-right">${formatMoney(calc.sellerCost)}</td>
                                 <td class="py-2 text-right text-[var(--app-accent)]">${formatMoney(calc.totalLandCost)} ฿</td>
                             </tr>
                         </tfoot>
@@ -7541,8 +7864,8 @@ function renderPropertyTransferTool(container) {
                 </div>
 
                 <div class="flex justify-end pt-2">
-                    <button id="btnPrintPropertyTransferSummary" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer">
-                        🖨️ พิมพ์ใบสรุปค่าโอนที่ดิน / PDF
+                    <button id="btnPrintPropertyTransferSummary" type="button" class="tool-action-btn text-xs">
+                        พิมพ์ใบสรุปค่าโอนที่ดิน / PDF
                     </button>
                 </div>
             </div>
@@ -7922,52 +8245,49 @@ function renderGoldThaiTool(container) {
 
     const calc = calculateGoldThai(st);
 
-    let modeTitle = '🛒 คำนวณราคาซื้อทองคำ';
-    if (st.mode === 'sell') modeTitle = '💰 คำนวณราคารับซื้อคืน (สคบ./เยาวราช)';
-    else if (st.mode === 'savings') modeTitle = '📈 จำลองกำไร/ขาดทุนการออมทอง';
+    let modeTitle = 'คำนวณราคาซื้อทองคำ';
+    if (st.mode === 'sell') modeTitle = 'คำนวณราคารับซื้อคืน';
+    else if (st.mode === 'savings') modeTitle = 'จำลองผลตอบแทนการออมทอง';
 
     container.innerHTML = `
-        <div class="flex flex-col gap-3 p-1">
+        <div class="gold-tool flex flex-col gap-3 p-1">
             <!-- Mode Switcher Tabs -->
             <div class="segment-group grid-cols-3 balanced-segment-modes" role="tablist" aria-label="โหมดราคาทองคำ">
-                <button type="button" class="segment-btn ${st.mode === 'buy' ? 'active' : ''}" data-gold-mode="buy">🛒 ซื้อทอง</button>
-                <button type="button" class="segment-btn ${st.mode === 'sell' ? 'active' : ''}" data-gold-mode="sell">💰 ขายคืน</button>
-                <button type="button" class="segment-btn ${st.mode === 'savings' ? 'active' : ''}" data-gold-mode="savings">📈 ออมทอง</button>
+                <button type="button" role="tab" aria-selected="${st.mode === 'buy'}" tabindex="${st.mode === 'buy' ? '0' : '-1'}" class="segment-btn ${st.mode === 'buy' ? 'active' : ''}" data-gold-mode="buy">ซื้อทอง</button>
+                <button type="button" role="tab" aria-selected="${st.mode === 'sell'}" tabindex="${st.mode === 'sell' ? '0' : '-1'}" class="segment-btn ${st.mode === 'sell' ? 'active' : ''}" data-gold-mode="sell">ขายคืน</button>
+                <button type="button" role="tab" aria-selected="${st.mode === 'savings'}" tabindex="${st.mode === 'savings' ? '0' : '-1'}" class="segment-btn ${st.mode === 'savings' ? 'active' : ''}" data-gold-mode="savings">ออมทอง</button>
             </div>
 
-            <!-- Reference Prices Banner (Gold Association Bar) -->
-            <div class="bg-amber-500/10 border border-amber-500/30 rounded-[var(--app-card-radius)] p-3 text-xs text-amber-900 dark:text-amber-200 space-y-1.5" style="box-shadow:var(--app-elevation)">
-                <div class="flex justify-between items-center font-bold">
-                    <span class="flex items-center gap-1.5 truncate">
-                        👑 ราคาทองสมาคมค้าทองคำ (96.5%)
-                    </span>
-                    <div class="flex items-center gap-2 shrink-0">
-                        <button id="btnFetchGoldRates" type="button" class="flex items-center gap-1 text-[11px] font-semibold text-amber-800 dark:text-amber-300 hover:underline cursor-pointer ${goldFetchInFlight ? 'opacity-50 pointer-events-none' : ''}">
-                            <span class="${goldFetchInFlight ? 'animate-spin inline-block' : ''}">🔄</span> ${goldFetchInFlight ? 'กำลังดึง...' : 'ดึงราคาวันนี้'}
-                        </button>
-                        <span class="text-neutral-300 dark:text-neutral-700">|</span>
-                        <button id="btnToggleCustomGoldRates" type="button" class="text-[11px] underline text-neutral-500 hover:text-neutral-700 dark:text-neutral-400">ปรับราคาเอง</button>
-                    </div>
+            <!-- Reference Prices -->
+            <div class="themed-tool-card gold-reference-card p-3 text-xs space-y-3">
+                <div class="flex flex-col gap-1">
+                    <div class="font-bold text-[var(--app-ink)]">ราคาทองอ้างอิง 96.5%</div>
+                    <div class="text-[11px] text-[var(--app-muted)]">ข้อมูลจาก ${escapeHTML(st.rateSource || 'สมาคมค้าทองคำ')} ${st.apiUpdateTime ? `เวลา ${escapeHTML(st.apiUpdateTime)} น.` : ''}</div>
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-[11px]">
-                    <div class="bg-white/80 dark:bg-black/20 p-2 rounded-lg">
-                        <span class="text-neutral-500 block">ทองคำแท่ง 96.5%</span>
-                        <b>รับซื้อ: ${formatMoney(calc.prices.priceBarBuy)} | ขายออก: ${formatMoney(calc.prices.priceBarSell)}</b>
+                    <div class="themed-subcard p-2.5 space-y-1">
+                        <div class="font-semibold text-[var(--app-ink)]">ทองคำแท่ง</div>
+                        <div class="flex justify-between gap-2 text-[var(--app-muted)]"><span>รับซื้อ</span><b class="text-[var(--app-ink)]">${formatMoney(calc.prices.priceBarBuy)}</b></div>
+                        <div class="flex justify-between gap-2 text-[var(--app-muted)]"><span>ขายออก</span><b class="text-[var(--app-ink)]">${formatMoney(calc.prices.priceBarSell)}</b></div>
                     </div>
-                    <div class="bg-white/80 dark:bg-black/20 p-2 rounded-lg">
-                        <span class="text-neutral-500 block">ทองรูปพรรณ 96.5%</span>
-                        <b>รับซื้อ: ${formatMoney(calc.prices.priceOrnamentBuy)} | ขายออก: ${formatMoney(calc.prices.priceOrnamentSell)}</b>
+                    <div class="themed-subcard p-2.5 space-y-1">
+                        <div class="font-semibold text-[var(--app-ink)]">ทองรูปพรรณ</div>
+                        <div class="flex justify-between gap-2 text-[var(--app-muted)]"><span>รับซื้อ</span><b class="text-[var(--app-ink)]">${formatMoney(calc.prices.priceOrnamentBuy)}</b></div>
+                        <div class="flex justify-between gap-2 text-[var(--app-muted)]"><span>ขายออก</span><b class="text-[var(--app-ink)]">${formatMoney(calc.prices.priceOrnamentSell)}</b></div>
                     </div>
                 </div>
 
-                <div class="flex justify-between items-center text-[10px] text-neutral-500 dark:text-neutral-400 pt-0.5">
-                    <span>แหล่งข้อมูล: ${escapeHTML(st.rateSource || 'สมาคมค้าทองคำ')} ${st.apiUpdateTime ? `(${escapeHTML(st.apiUpdateTime)})` : ''}</span>
-                    ${st.lastUpdated ? `<span>อัปเดต: ${new Date(st.lastUpdated).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.</span>` : ''}
+                <div class="flex flex-wrap items-center justify-between gap-1 border-t border-[var(--app-hairline)] pt-1">
+                    <button id="btnFetchGoldRates" type="button" aria-busy="${goldFetchInFlight}" class="tool-text-btn text-[11px] ${goldFetchInFlight ? 'opacity-50 pointer-events-none' : ''}">
+                        ${goldFetchInFlight ? 'กำลังอัปเดต...' : 'อัปเดตราคาวันนี้'}
+                    </button>
+                    <button id="btnToggleCustomGoldRates" type="button" class="tool-text-btn text-[11px]">กำหนดราคาเอง</button>
+                    ${st.lastUpdated ? `<span class="w-full text-[10px] text-[var(--app-muted)]">อัปเดตในเครื่อง ${new Date(st.lastUpdated).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.</span>` : ''}
                 </div>
 
                 <!-- Custom Rates Inputs (Hidden by default) -->
-                <div id="goldCustomRatesPanel" class="hidden pt-2 border-t border-amber-300 dark:border-amber-800 space-y-2">
-                    <div class="text-[11px] font-semibold text-neutral-600 dark:text-neutral-300">กำหนดราคาทองตามประกาศปัจจุบัน (บาทละ):</div>
+                <div id="goldCustomRatesPanel" class="hidden pt-2 border-t border-[var(--app-hairline)] space-y-2">
+                    <div class="text-[11px] font-semibold text-[var(--app-body)]">กำหนดราคาทองตามประกาศปัจจุบัน (บาทละ)</div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="text-[10px] block">แท่ง ขายออก</label>
@@ -7992,8 +8312,8 @@ function renderGoldThaiTool(container) {
             </div>
 
             <!-- Main Input Form -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6] flex items-center justify-between">
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)] flex items-center justify-between">
                     <span>${modeTitle}</span>
                 </div>
 
@@ -8036,72 +8356,72 @@ function renderGoldThaiTool(container) {
                 </div>
 
                 <!-- Weight Equivalent Pill Badges -->
-                <div class="flex flex-wrap gap-1.5 pt-1 text-[11px] text-neutral-600 dark:text-neutral-300">
-                    <span class="bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full font-medium">
-                        ⚖️ เทียบเท่า: <b>${formatNum(calc.bahtWeight, 4)} บาท</b>
+                <div class="flex flex-wrap gap-1.5 pt-1" aria-label="น้ำหนักทองเทียบเท่า">
+                    <span class="tool-metric-chip">
+                        <b>${formatNum(calc.bahtWeight, 4)} บาททองคำ</b>
                     </span>
-                    <span class="bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full font-medium">
-                        🪙 <b>${formatNum(calc.salungWeight, 2)} สลึง</b>
+                    <span class="tool-metric-chip">
+                        <b>${formatNum(calc.salungWeight, 2)} สลึง</b>
                     </span>
-                    <span class="bg-neutral-100 dark:bg-neutral-800 px-2.5 py-1 rounded-full font-medium">
-                        🏷️ <b>${formatNum(calc.totalGrams, 3)} กรัม</b> (${formatNum(calc.gramsPerBaht, 3)}g/บาท)
+                    <span class="tool-metric-chip">
+                        <b>${formatNum(calc.totalGrams, 3)} กรัม</b>&nbsp;(${formatNum(calc.gramsPerBaht, 3)} กรัม/บาท)
                     </span>
                 </div>
             </div>
 
             <!-- Big Result Card -->
             ${st.mode === 'buy' ? `
-                <div class="border rounded-[var(--app-card-radius)] p-4 text-center border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 space-y-1" style="box-shadow:var(--app-elevation)">
-                    <div class="text-xs font-semibold uppercase tracking-wider">💰 ราคาซื้อสุทธิที่หน้าร้าน</div>
-                    <div class="text-2xl md:text-3xl font-extrabold text-[var(--app-accent)]">${formatMoney(calc.totalBuyPrice)} บาท</div>
-                    <div class="text-xs opacity-90">
-                        (ราคาทองคำ: ${formatMoney(calc.rawGoldValue)} บ. + ค่ากำเหน็จ: ${formatMoney(calc.craftFee)} บ.)
+                <div class="themed-result-card theme-result-highlight p-5 text-center space-y-1">
+                    <div class="text-xs font-semibold text-[var(--app-muted)]">ราคาซื้อสุทธิที่หน้าร้าน</div>
+                    <div class="themed-result-value text-2xl md:text-3xl font-extrabold">${formatMoney(calc.totalBuyPrice)} บาท</div>
+                    <div class="text-xs text-[var(--app-body)]">
+                        ราคาทอง ${formatMoney(calc.rawGoldValue)} บาท + ค่ากำเหน็จ ${formatMoney(calc.craftFee)} บาท
                     </div>
                 </div>
             ` : (st.mode === 'sell' ? `
-                <div class="border rounded-[var(--app-card-radius)] p-4 text-center border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200 space-y-1" style="box-shadow:var(--app-elevation)">
-                    <div class="text-xs font-semibold uppercase tracking-wider">💵 ราคารับซื้อคืนขั้นต่ำ (ตามเกณฑ์ สคบ.)</div>
-                    <div class="text-2xl md:text-3xl font-extrabold text-emerald-700 dark:text-emerald-300">${formatMoney(calc.sellBackValue)} บาท</div>
-                    <div class="text-xs opacity-90">
-                        เรทรับซื้อ: ${formatMoney(calc.officialSellBackRate)} ฿/บาท | หักจากราคาขายออกประมาณ: ${formatMoney(calc.deductionFromSellPrice)} ฿
+                <div class="themed-result-card theme-result-highlight p-5 text-center space-y-1">
+                    <div class="text-xs font-semibold text-[var(--app-muted)]">ราคารับซื้อคืนขั้นต่ำตามเกณฑ์ สคบ.</div>
+                    <div class="themed-result-value text-2xl md:text-3xl font-extrabold">${formatMoney(calc.sellBackValue)} บาท</div>
+                    <div class="text-xs text-[var(--app-body)]">
+                        เรทรับซื้อ ${formatMoney(calc.officialSellBackRate)} บาท/บาททอง · ส่วนต่างประมาณ ${formatMoney(calc.deductionFromSellPrice)} บาท
                     </div>
                 </div>
             ` : `
-                <div class="border rounded-[var(--app-card-radius)] p-4 text-center ${calc.isProfit ? 'border-emerald-400 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200' : 'border-rose-400 bg-rose-50 text-rose-900 dark:bg-rose-950/30 dark:text-rose-200'} space-y-1" style="box-shadow:var(--app-elevation)">
-                    <div class="text-xs font-semibold uppercase tracking-wider">
-                        ${calc.isProfit ? '🎉 ผลกำไรจากการออมทอง' : '⚠️ ผลขาดทุนจากการออมทอง'}
+                <div class="themed-result-card ${calc.isProfit ? 'is-profit' : 'is-loss'} p-5 text-center space-y-1">
+                    <div class="text-xs font-semibold text-[var(--app-muted)]">
+                        ${calc.isProfit ? 'กำไรจากการออมทอง' : 'ขาดทุนจากการออมทอง'}
                     </div>
-                    <div class="text-2xl md:text-3xl font-extrabold">
+                    <div class="themed-result-value text-2xl md:text-3xl font-extrabold">
                         ${calc.isProfit ? '+' : ''}${formatMoney(calc.profitLoss)} บาท (${calc.isProfit ? '+' : ''}${formatNum(calc.profitLossPercent, 2)}%)
                     </div>
-                    <div class="text-xs opacity-90">
-                        มูลค่าตลาดปัจจุบัน: ${formatMoney(calc.currentMarketValue)} บ. | ต้นทุนที่ซื้อ: ${formatMoney(calc.totalInvested)} บ.
+                    <div class="text-xs text-[var(--app-body)]">
+                        มูลค่าปัจจุบัน ${formatMoney(calc.currentMarketValue)} บาท · ต้นทุน ${formatMoney(calc.totalInvested)} บาท
                     </div>
                 </div>
             `)}
 
             <!-- Breakdown & Comparison Details -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
-                <div class="font-bold text-neutral-800 dark:text-neutral-200 mb-1">สรุปข้อมูลเชิงเปรียบเทียบการซื้อ-ขาย</div>
-                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                    <span class="text-neutral-600 dark:text-neutral-400">ราคาขายออกสมาคม (${st.goldType === 'bar' ? 'ทองแท่ง' : 'รูปพรรณ'})</span>
+            <div class="themed-tool-card p-4 space-y-1 text-xs">
+                <div class="font-bold text-[var(--app-ink)] pb-1">สรุปราคาและส่วนต่าง</div>
+                <div class="tool-summary-row flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">ราคาขายออก (${st.goldType === 'bar' ? 'ทองแท่ง' : 'รูปพรรณ'})</span>
                     <b>${formatMoney(calc.baseBuyRate)} บาท/บาททอง</b>
                 </div>
-                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                    <span class="text-neutral-600 dark:text-neutral-400">ราคารับซื้อคืนสมาคม</span>
+                <div class="tool-summary-row flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">ราคารับซื้อคืนสมาคม</span>
                     <b>${formatMoney(calc.officialSellBackRate)} บาท/บาททอง</b>
                 </div>
-                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                    <span class="text-neutral-600 dark:text-neutral-400">ส่วนต่างรับซื้อ-ขายออกต่อ 1 บาท</span>
-                    <b class="text-rose-600 dark:text-rose-400">-${formatMoney(calc.baseBuyRate - calc.officialSellBackRate)} บาท</b>
+                <div class="tool-summary-row flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">ส่วนต่างต่อ 1 บาททอง</span>
+                    <b>-${formatMoney(calc.baseBuyRate - calc.officialSellBackRate)} บาท</b>
                 </div>
-                <div class="flex justify-between py-1">
-                    <span class="text-neutral-600 dark:text-neutral-400">ค่ากำเหน็จเฉลี่ยที่ตั้งไว้</span>
+                <div class="tool-summary-row flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">ค่ากำเหน็จที่กำหนด</span>
                     <b>${formatMoney(calc.craftFee)} บาท</b>
                 </div>
-                <div class="flex justify-end pt-2">
-                    <button id="btnPrintGoldThaiSummary" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer">
-                        🖨️ พิมพ์ใบสรุปราคาทอง / PDF
+                <div class="flex justify-end pt-3">
+                    <button id="btnPrintGoldThaiSummary" type="button" class="tool-action-btn text-xs">
+                        พิมพ์ใบสรุปราคาทอง / PDF
                     </button>
                 </div>
             </div>
@@ -8203,17 +8523,17 @@ function renderElectricityBillTool(container) {
     const appCalc = calculateApplianceEnergy(st.appliances, calc.avgRatePerUnit || 4.5);
 
     container.innerHTML = `
-        <div class="flex flex-col gap-3 p-1">
+        <div class="electricity-tool flex flex-col gap-3 p-1">
             <!-- Mode Selector Tabs -->
             <div class="segment-group grid-cols-2 balanced-segment-modes" role="tablist" aria-label="โหมดคำนวณค่าไฟ">
-                <button type="button" class="segment-btn ${!isApplianceMode ? 'active' : ''}" data-elec-mode="bill">⚡ คำนวณจากหน่วยในบิล</button>
-                <button type="button" class="segment-btn ${isApplianceMode ? 'active' : ''}" data-elec-mode="appliance">🔌 คำนวณตามเครื่องใช้ไฟฟ้า</button>
+                <button type="button" role="tab" aria-selected="${!isApplianceMode}" tabindex="${!isApplianceMode ? '0' : '-1'}" class="segment-btn ${!isApplianceMode ? 'active' : ''}" data-elec-mode="bill">คำนวณจากหน่วยในบิล</button>
+                <button type="button" role="tab" aria-selected="${isApplianceMode}" tabindex="${isApplianceMode ? '0' : '-1'}" class="segment-btn ${isApplianceMode ? 'active' : ''}" data-elec-mode="appliance">คำนวณตามเครื่องใช้ไฟฟ้า</button>
             </div>
 
             ${!isApplianceMode ? `
                 <!-- TAB 1: บิลค่าไฟ & ขั้นบันได -->
-                <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
-                    <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">🏠 ข้อมูลประเภทบ้านและหน่วยไฟ (กฟน. / กฟภ.)</div>
+                <div class="themed-tool-card p-4 space-y-3">
+                    <div class="text-xs font-bold text-[var(--app-ink)]">ข้อมูลประเภทบ้านและหน่วยไฟ (กฟน. / กฟภ.)</div>
                     
                     <div class="grid grid-cols-2 gap-2 text-xs">
                         <div>
@@ -8236,50 +8556,50 @@ function renderElectricityBillTool(container) {
                 </div>
 
                 <!-- Big Result Card -->
-                <div class="border rounded-[var(--app-card-radius)] p-4 text-center border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 space-y-1" style="box-shadow:var(--app-elevation)">
-                    <div class="text-xs font-semibold uppercase tracking-wider">⚡ ประมาณการยอดค่าไฟฟ้ารวมทั้งสิ้น</div>
-                    <div class="text-2xl md:text-3xl font-extrabold text-[var(--app-accent)]">${formatMoney(calc.totalBill)} บาท</div>
-                    <div class="text-xs opacity-90">
+                <div class="themed-result-card theme-result-highlight p-5 text-center space-y-1">
+                    <div class="text-xs font-semibold text-[var(--app-muted)]">ประมาณการค่าไฟฟ้ารวม</div>
+                    <div class="themed-result-value text-2xl md:text-3xl font-extrabold">${formatMoney(calc.totalBill)} บาท</div>
+                    <div class="text-xs text-[var(--app-body)]">
                         หน่วยไฟ ${formatNum(calc.units, 0)} หน่วย · เฉลี่ยหน่วยละ <b>${formatNum(calc.avgRatePerUnit, 2)} บาท</b>
                     </div>
                 </div>
 
                 <!-- Bill Component Breakdown -->
-                <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
-                    <div class="font-bold text-neutral-800 dark:text-neutral-200 mb-1">ส่วนประกอบค่าไฟฟ้าตามบิลทางการ</div>
-                    <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                        <span class="text-neutral-600 dark:text-neutral-400">1. ค่าไฟฟ้าฐาน (ตามขั้นบันได)</span>
+                <div class="themed-tool-card p-4 space-y-1 text-xs">
+                    <div class="font-bold text-[var(--app-ink)] pb-1">ส่วนประกอบค่าไฟฟ้าตามบิล</div>
+                    <div class="tool-summary-row flex justify-between gap-3 py-2">
+                        <span class="text-[var(--app-muted)]">ค่าไฟฟ้าฐาน (ตามขั้นบันได)</span>
                         <b>${formatMoney(calc.baseEnergyCharge)} บาท</b>
                     </div>
-                    <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                        <span class="text-neutral-600 dark:text-neutral-400">2. ค่าบริการรายเดือน</span>
+                    <div class="tool-summary-row flex justify-between gap-3 py-2">
+                        <span class="text-[var(--app-muted)]">ค่าบริการรายเดือน</span>
                         <b>${formatMoney(calc.serviceFee)} บาท</b>
                     </div>
-                    <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                        <span class="text-neutral-600 dark:text-neutral-400">3. ค่าไฟฟ้าผันแปร Ft (${formatNum(calc.ftRate, 4)} ฿/หน่วย)</span>
+                    <div class="tool-summary-row flex justify-between gap-3 py-2">
+                        <span class="text-[var(--app-muted)]">ค่าไฟฟ้าผันแปร Ft (${formatNum(calc.ftRate, 4)} บาท/หน่วย)</span>
                         <b>${formatMoney(calc.ftCharge)} บาท</b>
                     </div>
-                    <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800 font-semibold">
+                    <div class="tool-summary-row flex justify-between gap-3 py-2 font-semibold">
                         <span>ยอดก่อน VAT</span>
                         <b>${formatMoney(calc.preVatTotal)} บาท</b>
                     </div>
-                    <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
-                        <span class="text-neutral-600 dark:text-neutral-400">4. ภาษีมูลค่าเพิ่ม (VAT 7%)</span>
+                    <div class="tool-summary-row flex justify-between gap-3 py-2">
+                        <span class="text-[var(--app-muted)]">ภาษีมูลค่าเพิ่ม (VAT 7%)</span>
                         <b>+${formatMoney(calc.vat7)} บาท</b>
                     </div>
-                    <div class="flex justify-between py-1 text-sm font-bold text-[var(--app-accent)]">
+                    <div class="tool-summary-row flex justify-between gap-3 py-2 text-sm font-bold text-[var(--app-accent)]">
                         <span>รวมค่าไฟฟ้าสุทธิ</span>
                         <b>${formatMoney(calc.totalBill)} บาท</b>
                     </div>
                 </div>
 
                 <!-- Progressive Tier Table -->
-                <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
-                    <div class="font-semibold text-neutral-800 dark:text-neutral-200">แจกแจงค่าไฟตามขั้นบันไดอัตราก้าวหน้า</div>
+                <div class="themed-tool-card p-4 space-y-2 text-xs">
+                    <div class="font-semibold text-[var(--app-ink)]">ค่าไฟตามขั้นบันไดอัตราก้าวหน้า</div>
                     <div class="overflow-x-auto thin-scroll">
                         <table class="w-full text-left border-collapse text-[11px]">
                             <thead>
-                                <tr class="border-b border-neutral-200 dark:border-neutral-700 text-[#6a6a6a] dark:text-neutral-400">
+                                <tr class="border-b border-[var(--app-hairline)] text-[var(--app-muted)]">
                                     <th class="py-1">ขั้นหน่วยไฟฟ้า</th>
                                     <th class="py-1 text-center">อัตราต่อหน่วย</th>
                                     <th class="py-1 text-right">จำนวนหน่วยที่ใช้</th>
@@ -8288,7 +8608,7 @@ function renderElectricityBillTool(container) {
                             </thead>
                             <tbody>
                                 ${calc.tierBreakdown.map(t => `
-                                    <tr class="border-b border-neutral-100 dark:border-neutral-800 ${t.units > 0 ? 'font-semibold text-neutral-900 dark:text-neutral-100' : 'text-neutral-400 dark:text-neutral-600'}">
+                                    <tr class="border-b border-[var(--app-hairline)] ${t.units > 0 ? 'font-semibold text-[var(--app-ink)]' : 'text-[var(--app-muted)]'}">
                                         <td class="py-1">${t.label}</td>
                                         <td class="py-1 text-center">${formatNum(t.rate, 4)} ฿</td>
                                         <td class="py-1 text-right">${formatNum(t.units, 1)} หน่วย</td>
@@ -8298,41 +8618,41 @@ function renderElectricityBillTool(container) {
                             </tbody>
                         </table>
                     </div>
-                    <div class="flex justify-end pt-1">
-                        <button id="btnPrintElectricitySummary" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer">
-                            🖨️ พิมพ์ใบสรุปค่าไฟฟ้า / PDF
+                    <div class="flex justify-end pt-3">
+                        <button id="btnPrintElectricitySummary" type="button" class="tool-action-btn text-xs">
+                            พิมพ์ใบสรุปค่าไฟฟ้า / PDF
                         </button>
                     </div>
                 </div>
             ` : `
                 <!-- TAB 2: เครื่องใช้ไฟฟ้าเฉพาะตัว (Wattage Calculator) -->
-                <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
-                    <div class="flex justify-between items-center text-xs">
-                        <span class="font-bold text-[#1f2937] dark:text-[#f3f4f6]">รายการเครื่องใช้ไฟฟ้าในบ้าน</span>
-                        <button id="btnApplyApplianceUnitsToBill" class="px-2.5 py-1 text-[11px] font-semibold bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition">
-                            ⚡ นำยอดหน่วยไฟไปคำนวณบิล
+                <div class="themed-tool-card p-4 space-y-3">
+                    <div class="flex flex-col gap-2 text-xs">
+                        <span class="font-bold text-[var(--app-ink)]">รายการเครื่องใช้ไฟฟ้าในบ้าน</span>
+                        <button id="btnApplyApplianceUnitsToBill" type="button" class="tool-action-btn w-full text-[11px]">
+                            นำยอดหน่วยไฟไปคำนวณบิล
                         </button>
                     </div>
 
                     <!-- Preset Quick Pickers -->
                     <div class="space-y-1.5">
-                        <div class="text-[11px] text-[#6a6a6a] dark:text-neutral-400 font-medium">+ เพิ่มเครื่องใช้ไฟฟ้ายอดนิยม:</div>
-                        <div class="flex flex-wrap gap-1 text-[11px]">
-                            <button type="button" data-add-preset="air18k" class="px-2 py-0.5 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800">แอร์ 18,000 BTU (1,400W)</button>
-                            <button type="button" data-add-preset="air9k" class="px-2 py-0.5 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800">แอร์ 9,000 BTU (600W)</button>
-                            <button type="button" data-add-preset="pc" class="px-2 py-0.5 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800">คอมพิวเตอร์ PC (250W)</button>
-                            <button type="button" data-add-preset="iron" class="px-2 py-0.5 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800">เตารีด (1,000W)</button>
-                            <button type="button" data-add-preset="fryer" class="px-2 py-0.5 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800">หม้อทอดไร้น้ำมัน (1,400W)</button>
+                        <div class="text-[11px] text-[var(--app-muted)] font-medium">เพิ่มเครื่องใช้ไฟฟ้ายอดนิยม</div>
+                        <div class="flex flex-wrap gap-1.5">
+                            <button type="button" data-add-preset="air18k" class="tool-chip-btn">แอร์ 18,000 BTU · 1,400W</button>
+                            <button type="button" data-add-preset="air9k" class="tool-chip-btn">แอร์ 9,000 BTU · 600W</button>
+                            <button type="button" data-add-preset="pc" class="tool-chip-btn">คอมพิวเตอร์ PC · 250W</button>
+                            <button type="button" data-add-preset="iron" class="tool-chip-btn">เตารีด · 1,000W</button>
+                            <button type="button" data-add-preset="fryer" class="tool-chip-btn">หม้อทอดไร้น้ำมัน · 1,400W</button>
                         </div>
                     </div>
 
                     <!-- Appliance Rows List -->
                     <div class="space-y-2 pt-2">
-                        ${appCalc.items.map((item, idx) => `
-                            <div class="border border-neutral-200 dark:border-neutral-700 rounded-lg p-2.5 text-xs space-y-2 bg-neutral-50/50 dark:bg-neutral-800/20">
+                        ${appCalc.items.length ? appCalc.items.map((item, idx) => `
+                            <div class="themed-subcard p-3 text-xs space-y-2">
                                 <div class="flex justify-between items-center font-semibold">
                                     <span>${item.name}</span>
-                                    <button type="button" data-remove-appliance="${idx}" class="text-rose-500 hover:text-rose-700 text-xs">✕ ลบ</button>
+                                    <button type="button" data-remove-appliance="${idx}" class="tool-danger-btn text-xs" aria-label="ลบ ${escapeHTML(item.name)}">ลบ</button>
                                 </div>
                                 <div class="grid grid-cols-3 gap-2">
                                     <div>
@@ -8348,23 +8668,23 @@ function renderElectricityBillTool(container) {
                                         <input type="number" step="0.5" min="0" max="24" data-app-field="hoursPerDay" data-app-idx="${idx}" value="${item.hours}" class="airbnb-input w-full text-xs">
                                     </div>
                                 </div>
-                                <div class="flex justify-between text-[11px] text-neutral-600 dark:text-neutral-400 pt-1 border-t border-neutral-200 dark:border-neutral-700">
+                                <div class="flex flex-wrap justify-between gap-1 text-[11px] text-[var(--app-muted)] pt-2 border-t border-[var(--app-hairline)]">
                                     <span>ใช้ไฟ: <b>${formatNum(item.monthlyKwh, 1)} หน่วย/เดือน</b></span>
                                     <span>ค่าไฟประมาณ: <b class="text-[var(--app-accent)]">${formatMoney(item.monthlyCost)} ฿/เดือน</b></span>
                                 </div>
                             </div>
-                        `).join('')}
+                        `).join('') : `<div class="themed-subcard p-4 text-center text-xs text-[var(--app-muted)]">ยังไม่มีรายการ เลือกเครื่องใช้ไฟฟ้าจากด้านบนเพื่อเริ่มคำนวณ</div>`}
                     </div>
 
                     <!-- Appliance Total Summary Card -->
-                    <div class="border rounded-xl p-3 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900 text-xs space-y-1">
-                        <div class="flex justify-between">
-                            <span class="text-blue-900 dark:text-blue-300">รวมการใช้ไฟทุกอุปกรณ์:</span>
-                            <b class="text-blue-900 dark:text-blue-200">${formatNum(appCalc.totalMonthlyKwh, 1)} หน่วย/เดือน (${formatNum(appCalc.totalDailyKwh, 2)} หน่วย/วัน)</b>
+                    <div class="themed-result-card theme-result-highlight p-4 text-xs space-y-2">
+                        <div class="flex justify-between gap-3">
+                            <span class="text-[var(--app-muted)]">รวมการใช้ไฟทุกอุปกรณ์</span>
+                            <b class="text-right">${formatNum(appCalc.totalMonthlyKwh, 1)} หน่วย/เดือน<br><span class="font-normal text-[var(--app-muted)]">${formatNum(appCalc.totalDailyKwh, 2)} หน่วย/วัน</span></b>
                         </div>
-                        <div class="flex justify-between text-sm font-bold text-blue-900 dark:text-blue-200">
-                            <span>ประมาณการค่าไฟฟ้ารวม:</span>
-                            <span class="text-[var(--app-accent)]">${formatMoney(appCalc.totalMonthlyCost)} บาท/เดือน</span>
+                        <div class="flex justify-between items-end gap-3 pt-2 border-t border-[var(--app-hairline)] text-sm font-bold">
+                            <span>ค่าไฟโดยประมาณ</span>
+                            <span class="themed-result-value text-right text-lg">${formatMoney(appCalc.totalMonthlyCost)} บาท/เดือน</span>
                         </div>
                     </div>
                 </div>
@@ -8487,6 +8807,732 @@ function renderElectricityBillTool(container) {
 })(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
 
 // <<< src/tools/lifestyle_thai.js <<<
+
+// >>> src/tools/finance_thai.js >>>
+// ==============================================================
+// Multitools Calculator - Thai Auto Hire-Purchase & Social Security Tools
+// (car_loan, social_security)
+// ==============================================================
+
+/* -----------------------------------------------------------
+ * PURE ENGINE: คำนวณสินเชื่อเช่าซื้อรถยนต์ & มอเตอร์ไซค์ (Car Hire Purchase)
+ * ----------------------------------------------------------- */
+function calculateCarLoan(params) {
+    const p = params || {};
+    const vehicleType = p.vehicleType || 'car'; // 'car' | 'motorcycle'
+    const condition = p.condition || 'new'; // 'new' (รถใหม่) | 'used' (รถมือสอง มี VAT 7%)
+    const price = Math.max(0, numberOrDefault(p.price, 850000));
+    const downPaymentType = p.downPaymentType || 'percent'; // 'percent' | 'amount'
+    const downVal = Math.max(0, numberOrDefault(p.downPaymentValue, 20));
+    const interestRate = Math.max(0, numberOrDefault(p.interestRate, condition === 'used' ? 4.5 : 2.59));
+    const periodMonths = Math.max(1, integerOrDefault(p.periodMonths, 60));
+    const payoffMonth = Math.max(1, Math.min(periodMonths, integerOrDefault(p.payoffMonth, Math.round(periodMonths / 2))));
+
+    // 1. คำนวณเงินดาวน์
+    let downPaymentAmount = 0;
+    let downPaymentPercent = 0;
+    if (downPaymentType === 'percent') {
+        downPaymentPercent = Math.min(100, downVal);
+        downPaymentAmount = price * (downPaymentPercent / 100);
+    } else {
+        downPaymentAmount = Math.min(price, downVal);
+        downPaymentPercent = price > 0 ? (downPaymentAmount / price) * 100 : 0;
+    }
+
+    // 2. ยอดจัดเช่าซื้อ (Principal)
+    const principal = Math.max(0, price - downPaymentAmount);
+    const years = periodMonths / 12;
+
+    // 3. ดอกเบี้ยคงที่ตลอดสัญญา (Flat Rate)
+    const totalInterest = principal * (interestRate / 100) * years;
+    const totalPayablePreVat = principal + totalInterest;
+    const monthlyPaymentPreVat = periodMonths > 0 ? (totalPayablePreVat / periodMonths) : 0;
+
+    // 4. ภาษีมูลค่าเพิ่ม (VAT 7%)
+    // รถใหม่: ราคารถรวม VAT 7% อยู่แล้ว ค่างวดไม่ต้องบวก VAT เพิ่ม
+    // รถมือสอง: กฎหมายกำหนดให้คิด VAT 7% เพิ่มในค่างวดเช่าซื้อทุกงวด
+    const isVatAdded = condition === 'used';
+    const vatMonthly = isVatAdded ? (monthlyPaymentPreVat * 0.07) : 0;
+    const monthlyPayment = monthlyPaymentPreVat + vatMonthly;
+    const totalVat = vatMonthly * periodMonths;
+    const totalRepayment = monthlyPayment * periodMonths;
+    const totalCostOfCar = downPaymentAmount + totalRepayment;
+
+    // 5. ประมาณการอัตราดอกเบี้ยที่แท้จริงแบบลดต้นลดดอก (Effective Interest Rate - EIR)
+    // สูตรประมาณการตามเกณฑ์ ธปท./สคบ. EIR ≈ Flat Rate * (2 * n) / (n + 1)
+    const effectiveRateApprox = periodMonths > 0 ? (interestRate * (2 * periodMonths) / (periodMonths + 1)) : 0;
+
+    // 6. การคำนวณส่วนลดปิดบัญชีก่อนกำหนดตามประกาศ สคบ. ใหม่ (มีผล 10 ม.ค. 2566)
+    // เกณฑ์ส่วนลดดอกเบี้ยที่ยังไม่ถึงกำหนด (Unearned Interest Discount):
+    // - ผ่อนชำระมาแล้ว < 1/3 ของสัญญา: ได้รับส่วนลดดอกเบี้ย 100%
+    // - ผ่อนชำระมาแล้ว 1/3 ถึง 2/3 ของสัญญา: ได้รับส่วนลดดอกเบี้ย 70%
+    // - ผ่อนชำระมาแล้ว > 2/3 ของสัญญา: ได้รับส่วนลดดอกเบี้ย 60%
+    const oneThirdMonths = Math.ceil(periodMonths / 3);
+    const twoThirdMonths = Math.floor((periodMonths * 2) / 3);
+
+    let discountTierPercent = 60;
+    let discountTierText = 'เกิน 2/3 ของสัญญา (ลด 60%)';
+    if (payoffMonth < oneThirdMonths) {
+        discountTierPercent = 100;
+        discountTierText = 'ไม่เกิน 1/3 ของสัญญา (ลด 100%)';
+    } else if (payoffMonth <= twoThirdMonths) {
+        discountTierPercent = 70;
+        discountTierText = '1/3 ถึง 2/3 ของสัญญา (ลด 70%)';
+    }
+
+    // คำนวณดอกเบี้ยที่ยังไม่ถึงกำหนดตามวิธี Rule of 78 (สัดส่วนลดต้นลดดอกตามเกณฑ์ สคบ.)
+    // Sum of digits: S = n * (n + 1) / 2
+    // Remaining sum: R = (n - m) * (n - m + 1) / 2
+    const remainingMonths = Math.max(0, periodMonths - payoffMonth);
+    const sumTotalDigits = (periodMonths * (periodMonths + 1)) / 2;
+    const sumRemainingDigits = (remainingMonths * (remainingMonths + 1)) / 2;
+    const unearnedInterestRatio = sumTotalDigits > 0 ? (sumRemainingDigits / sumTotalDigits) : 0;
+    const unearnedInterest = totalInterest * unearnedInterestRatio;
+
+    // ส่วนลดดอกเบี้ยที่ลูกค้าจะได้รับจริง
+    const interestDiscount = unearnedInterest * (discountTierPercent / 100);
+
+    // ยอดเงินที่ต้องเตรียมชำระเพื่อปิดบัญชีในงวดนั้น
+    // = ค่างวดคงเหลือตามสัญญา - ส่วนลดดอกเบี้ย
+    const remainingScheduledPaymentsPreVat = monthlyPaymentPreVat * remainingMonths;
+    const payoffAmountPreVat = Math.max(0, remainingScheduledPaymentsPreVat - interestDiscount);
+    const payoffVat = isVatAdded ? (payoffAmountPreVat * 0.07) : 0;
+    const totalPayoffAmount = payoffAmountPreVat + payoffVat;
+    const totalSavedByEarlyPayoff = isVatAdded ? (interestDiscount * 1.07) : interestDiscount;
+
+    return {
+        vehicleType,
+        condition,
+        price,
+        downPaymentType,
+        downPaymentValue: downVal,
+        downPaymentPercent,
+        downPaymentAmount,
+        principal,
+        interestRate,
+        periodMonths,
+        years,
+        totalInterest,
+        monthlyPaymentPreVat,
+        isVatAdded,
+        vatMonthly,
+        monthlyPayment,
+        totalVat,
+        totalRepayment,
+        totalCostOfCar,
+        effectiveRateApprox,
+        // Early Payoff
+        payoffMonth,
+        remainingMonths,
+        oneThirdMonths,
+        twoThirdMonths,
+        discountTierPercent,
+        discountTierText,
+        unearnedInterest,
+        interestDiscount,
+        totalSavedByEarlyPayoff,
+        totalPayoffAmount
+    };
+}
+
+/* -----------------------------------------------------------
+ * PURE ENGINE: ประกันสังคม & เงินบำนาญชราภาพ (Social Security Pension & Lump Sum)
+ * ----------------------------------------------------------- */
+function calculateSocialSecurity(params) {
+    const p = params || {};
+    const section = p.section || 'm33'; // 'm33' (มาตรา 33) | 'm39' (มาตรา 39) | 'm40' (มาตรา 40)
+    const wageMonthly = Math.max(0, numberOrDefault(p.wageMonthly, 35000));
+    const contributionMonths = Math.max(1, integerOrDefault(p.contributionMonths, 240)); // เช่น 20 ปี = 240 เดือน
+    const m40Plan = p.m40Plan || 'plan2'; // 'plan1' (70฿) | 'plan2' (100฿) | 'plan3' (300฿)
+    const m40ExtraSavings = Math.max(0, numberOrDefault(p.m40ExtraSavings, 0)); // เงินออมเพิ่ม ม.40 สูงสุด 1,000 บ./ด.
+
+    let cappedWage = 0;
+    let monthlyContribution = 0;
+    let employerContribution = 0;
+    let govtContribution = 0;
+    let oldAgeSavingsMonthly = 0; // เงินเข้ากองทุนชราภาพเฉพาะส่วน
+    let isPension = false;
+    let pensionRatePercent = 0;
+    let monthlyPension = 0;
+    let lumpSumTotal = 0;
+    let totalWorkerContributed = 0;
+    let totalFundAccumulated = 0;
+
+    const yearsContributed = contributionMonths / 12;
+
+    if (section === 'm33') {
+        // มาตรา 33: เพดานค่าจ้างขั้นต่ำ 1,650 บาท - สูงสุด 15,000 บาท
+        cappedWage = Math.min(15000, Math.max(1650, wageMonthly));
+        monthlyContribution = cappedWage * 0.05; // 5% สูงสุด 750 บ.
+        employerContribution = monthlyContribution; // นายจ้างสมทบเท่ากัน 5%
+        govtContribution = cappedWage * 0.0275; // รัฐบาลร่วมสมทบ 2.75%
+
+        // เงินสมทบเข้ากองทุนชราภาพ 3% (ลูกจ้าง 3% + นายจ้าง 3% = 6% หรือสูงสุด 900 บ./ด.)
+        oldAgeSavingsMonthly = cappedWage * 0.03;
+
+        totalWorkerContributed = monthlyContribution * contributionMonths;
+        totalFundAccumulated = (oldAgeSavingsMonthly * 2) * contributionMonths; // ลูกจ้าง + นายจ้าง
+
+        // บำนาญชราภาพ (จ่ายครบ 180 เดือนขึ้นไป):
+        // 180 เดือนแรกได้ 20% + เพิ่ม 1.5% ต่อทุก 12 เดือนที่เกิน 180 เดือน
+        if (contributionMonths >= 180) {
+            isPension = true;
+            const extraYears = Math.floor((contributionMonths - 180) / 12);
+            pensionRatePercent = 20 + (extraYears * 1.5);
+            monthlyPension = cappedWage * (pensionRatePercent / 100);
+        } else {
+            // บำเหน็จชราภาพ (จ่ายไม่ครบ 180 เดือน):
+            isPension = false;
+            if (contributionMonths < 12) {
+                // < 12 เดือน: ได้เฉพาะเงินที่ผู้ประกันตนสมทบเข้ากองทุนชราภาพ (3%)
+                lumpSumTotal = oldAgeSavingsMonthly * contributionMonths;
+            } else {
+                // 12-179 เดือน: ได้เงินลูกจ้าง (3%) + นายจ้าง (3%) + ดอกผลประมาณการ (สมมติเฉลี่ย 2.5% ต่อปี)
+                const baseLump = (oldAgeSavingsMonthly * 2) * contributionMonths;
+                const estimatedInterest = baseLump * 0.15; // ประมาณการดอกผลสะสม
+                lumpSumTotal = baseLump + estimatedInterest;
+            }
+        }
+
+    } else if (section === 'm39') {
+        // มาตรา 39: ฐานค่าจ้างคงที่ 4,800 บาทตามกฎหมาย
+        cappedWage = 4800;
+        monthlyContribution = 432; // 9% ของ 4,800 บาท
+        employerContribution = 0; // ไม่มีนายจ้าง
+        govtContribution = 4800 * 0.0325; // รัฐบาลร่วมสมทบ 3.25%
+
+        oldAgeSavingsMonthly = 4800 * 0.06; // 6% เข้าชราภาพ (288 บ./ด.)
+        totalWorkerContributed = monthlyContribution * contributionMonths;
+        totalFundAccumulated = oldAgeSavingsMonthly * contributionMonths;
+
+        if (contributionMonths >= 180) {
+            isPension = true;
+            const extraYears = Math.floor((contributionMonths - 180) / 12);
+            pensionRatePercent = 20 + (extraYears * 1.5);
+            monthlyPension = cappedWage * (pensionRatePercent / 100);
+        } else {
+            isPension = false;
+            lumpSumTotal = oldAgeSavingsMonthly * contributionMonths * (contributionMonths >= 12 ? 1.15 : 1.0);
+        }
+
+    } else {
+        // มาตรา 40: แรงงานนอกระบบ / ฟรีแลนซ์
+        let planCost = 70;
+        let planSavings = 0;
+        if (m40Plan === 'plan2') {
+            planCost = 100;
+            planSavings = 50;
+        } else if (m40Plan === 'plan3') {
+            planCost = 300;
+            planSavings = 150;
+        }
+        const extra = Math.min(1000, m40ExtraSavings);
+        const monthlyTotalSavings = planSavings + extra;
+
+        monthlyContribution = planCost + extra;
+        employerContribution = 0;
+        govtContribution = planSavings > 0 ? (planSavings * 0.5) : 0; // รัฐช่วยออมตามเกณฑ์
+        oldAgeSavingsMonthly = monthlyTotalSavings;
+
+        totalWorkerContributed = monthlyContribution * contributionMonths;
+        isPension = false; // ม.40 รับเป็นบำเหน็จเงินก้อนเมื่ออายุ 60 ปี
+        const baseLump = monthlyTotalSavings * contributionMonths;
+        const estimatedInterest = baseLump * 0.10; // ดอกผลสะสม
+        lumpSumTotal = baseLump + estimatedInterest;
+    }
+
+    return {
+        section,
+        wageMonthly,
+        cappedWage,
+        contributionMonths,
+        yearsContributed,
+        m40Plan,
+        m40ExtraSavings,
+        monthlyContribution,
+        employerContribution,
+        govtContribution,
+        oldAgeSavingsMonthly,
+        isPension,
+        pensionRatePercent,
+        monthlyPension,
+        yearlyPension: monthlyPension * 12,
+        lumpSumTotal,
+        totalWorkerContributed,
+        totalFundAccumulated
+    };
+}
+
+/* -----------------------------------------------------------
+ * UI RENDERER: สินเชื่อเช่าซื้อรถยนต์ & มอเตอร์ไซค์ (car_loan)
+ * ----------------------------------------------------------- */
+function renderCarLoanTool(container) {
+    if (!container) return;
+    const st = appState.car_loan = appState.car_loan || {
+        vehicleType: 'car', // 'car' | 'motorcycle'
+        condition: 'new', // 'new' | 'used'
+        price: '850000',
+        downPaymentType: 'percent', // 'percent' | 'amount'
+        downPaymentValue: '20',
+        interestRate: '2.59',
+        periodMonths: '60',
+        payoffMonth: '30'
+    };
+
+    const calc = calculateCarLoan(st);
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-3 p-1">
+            <!-- Vehicle Type & Condition Tabs -->
+            <div class="grid grid-cols-2 gap-2">
+                <div class="segment-group grid-cols-2 balanced-segment-modes" role="tablist" aria-label="ประเภทยานพาหนะ">
+                    <button type="button" class="segment-btn ${st.vehicleType === 'car' ? 'active' : ''}" data-vehicle="car">🚗 รถยนต์</button>
+                    <button type="button" class="segment-btn ${st.vehicleType === 'motorcycle' ? 'active' : ''}" data-vehicle="motorcycle">🏍️ มอเตอร์ไซค์</button>
+                </div>
+                <div class="segment-group grid-cols-2 balanced-segment-modes" role="tablist" aria-label="สภาพรถ">
+                    <button type="button" class="segment-btn ${st.condition === 'new' ? 'active' : ''}" data-condition="new">✨ รถใหม่ป้ายแดง</button>
+                    <button type="button" class="segment-btn ${st.condition === 'used' ? 'active' : ''}" data-condition="used">🚙 รถมือสอง (VAT 7%)</button>
+                </div>
+            </div>
+
+            <!-- Main Input Form -->
+            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
+                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">
+                    🚘 ข้อมูลราคารถและเงินดาวน์
+                </div>
+
+                <div>
+                    <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ราคารถยนต์ / ยานพาหนะ (บาท)</label>
+                    <input id="carPriceInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.price))}" placeholder="เช่น 850,000" class="airbnb-input w-full text-base font-semibold">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400">เงินดาวน์</label>
+                            <div class="flex gap-1 text-[11px]">
+                                <button type="button" id="btnDownPct" class="px-1.5 py-0.5 rounded ${st.downPaymentType === 'percent' ? 'bg-neutral-800 text-white dark:bg-neutral-200 dark:text-black font-bold' : 'text-neutral-500'}">ระบุเป็น %</button>
+                                <button type="button" id="btnDownAmt" class="px-1.5 py-0.5 rounded ${st.downPaymentType === 'amount' ? 'bg-neutral-800 text-white dark:bg-neutral-200 dark:text-black font-bold' : 'text-neutral-500'}">ระบุเป็นบาท</button>
+                            </div>
+                        </div>
+                        <input id="carDownValInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.downPaymentValue))}" placeholder="${st.downPaymentType === 'percent' ? 'เช่น 15 หรือ 20' : 'เช่น 150,000'}" class="airbnb-input w-full">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ยอดเงินดาวน์คำนวณได้</label>
+                        <div class="airbnb-input w-full bg-neutral-50 dark:bg-neutral-800 font-semibold text-neutral-800 dark:text-neutral-200 flex items-center">
+                            ${formatMoney(calc.downPaymentAmount)} บาท (${formatNum(calc.downPaymentPercent, 1)}%)
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">อัตราดอกเบี้ยต่อปี Flat Rate (%)</label>
+                        <input id="carInterestRateInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.interestRate))}" placeholder="เช่น 2.59 หรือ 4.5" class="airbnb-input w-full">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ระยะเวลาผ่อนชำระ (เดือน)</label>
+                        <select id="carPeriodSelect" class="airbnb-input w-full">
+                            <option value="24" ${st.periodMonths === '24' ? 'selected' : ''}>24 เดือน (2 ปี)</option>
+                            <option value="36" ${st.periodMonths === '36' ? 'selected' : ''}>36 เดือน (3 ปี)</option>
+                            <option value="48" ${st.periodMonths === '48' ? 'selected' : ''}>48 เดือน (4 ปี)</option>
+                            <option value="60" ${st.periodMonths === '60' ? 'selected' : ''}>60 เดือน (5 ปี)</option>
+                            <option value="72" ${st.periodMonths === '72' ? 'selected' : ''}>72 เดือน (6 ปี)</option>
+                            <option value="84" ${st.periodMonths === '84' ? 'selected' : ''}>84 เดือน (7 ปี)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Big Result Card -->
+            <div class="border rounded-[var(--app-card-radius)] p-4 text-center border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 space-y-1" style="box-shadow:var(--app-elevation)">
+                <div class="text-xs font-semibold uppercase tracking-wider">🚘 ค่างวดผ่อนชำระต่อเดือน (${st.condition === 'used' ? 'รวม VAT 7% แล้ว' : 'ราคารวม VAT แล้ว'})</div>
+                <div class="text-3xl md:text-4xl font-extrabold text-[var(--app-accent)]">${formatMoney(calc.monthlyPayment)} บาท/เดือน</div>
+                <div class="text-xs opacity-90">
+                    ยอดจัด: <b>${formatMoney(calc.principal)}</b> บ. · ดอกเบี้ยคงที่ <b>${formatNum(calc.interestRate, 2)}%</b> (เทียบเท่าลดต้นลดดอก ~${formatNum(calc.effectiveRateApprox, 2)}%)
+                </div>
+            </div>
+
+            <!-- Breakdown Detail Cards -->
+            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
+                <div class="font-bold text-neutral-800 dark:text-neutral-200 mb-1">สรุปโครงสร้างภาระหนี้ทั้งสัญญา</div>
+                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
+                    <span class="text-neutral-600 dark:text-neutral-400">ราคารถยนต์สุทธิ</span>
+                    <b>${formatMoney(calc.price)} บาท</b>
+                </div>
+                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
+                    <span class="text-neutral-600 dark:text-neutral-400">เงินดาวน์ (${formatNum(calc.downPaymentPercent, 1)}%)</span>
+                    <b class="text-emerald-600">-${formatMoney(calc.downPaymentAmount)} บาท</b>
+                </div>
+                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
+                    <span class="text-neutral-600 dark:text-neutral-400">ยอดจัดเช่าซื้อ (เงินต้น)</span>
+                    <b>${formatMoney(calc.principal)} บาท</b>
+                </div>
+                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
+                    <span class="text-neutral-600 dark:text-neutral-400">ดอกเบี้ยรวมทั้งสัญญา (${calc.years} ปี)</span>
+                    <b class="text-rose-600">+${formatMoney(calc.totalInterest)} บาท</b>
+                </div>
+                ${calc.isVatAdded ? `
+                    <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
+                        <span class="text-neutral-600 dark:text-neutral-400">ภาษีมูลค่าเพิ่มในค่างวด (VAT 7% รถมือสอง)</span>
+                        <b>+${formatMoney(calc.totalVat)} บาท (+${formatMoney(calc.vatMonthly)} บ./ด.)</b>
+                    </div>
+                ` : ''}
+                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800 font-semibold">
+                    <span>ยอดผ่อนชำระรวมทุกงวด (${calc.periodMonths} งวด)</span>
+                    <b>${formatMoney(calc.totalRepayment)} บาท</b>
+                </div>
+                <div class="flex justify-between py-1 text-sm font-bold text-[var(--app-accent)]">
+                    <span>ราคารวมที่จ่ายจริงทั้งหมด (ดาวน์ + ผ่อน)</span>
+                    <b>${formatMoney(calc.totalCostOfCar)} บาท</b>
+                </div>
+            </div>
+
+            <!-- Early Payoff Simulation Card (สคบ. เกณฑ์ใหม่) -->
+            <div class="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-800 rounded-[var(--app-card-radius)] p-4 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
+                <div class="flex justify-between items-center">
+                    <span class="font-bold text-emerald-950 dark:text-emerald-200">💰 จำลองการปิดบัญชีก่อนกำหนด (สคบ. เกณฑ์ใหม่ 2566)</span>
+                </div>
+                <div class="text-[11px] text-neutral-600 dark:text-neutral-400">
+                    กฎหมายใหม่ให้สิทธิส่วนลดดอกเบี้ยที่ยังไม่ถึงกำหนดแบบลดต้นลดดอก
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <div>
+                        <label class="text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 block mb-1">ต้องการปิดบัญชี ณ สิ้นงวดที่:</label>
+                        <select id="carPayoffMonthSelect" class="airbnb-input w-full text-xs">
+                            ${Array.from({ length: calc.periodMonths - 1 }, (_, i) => i + 1).map(m => `
+                                <option value="${m}" ${m === calc.payoffMonth ? 'selected' : ''}>งวดที่ ${m} (เหลืออีก ${calc.periodMonths - m} งวด)</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-semibold text-neutral-700 dark:text-neutral-300 block mb-1">เกณฑ์ส่วนลดตาม สคบ.</label>
+                        <div class="airbnb-input w-full bg-white dark:bg-neutral-800 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 flex items-center">
+                            ลดดอกเบี้ย ${calc.discountTierPercent}%
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white/80 dark:bg-black/30 rounded-lg p-2.5 space-y-1.5 mt-2 border border-emerald-200 dark:border-emerald-900">
+                    <div class="flex justify-between">
+                        <span class="text-neutral-600 dark:text-neutral-400">ดอกเบี้ยคงเหลือที่ยังไม่ถึงกำหนด</span>
+                        <b>${formatMoney(calc.unearnedInterest)} บาท</b>
+                    </div>
+                    <div class="flex justify-between text-emerald-700 dark:text-emerald-300 font-bold">
+                        <span>ส่วนลดดอกเบี้ยที่ได้รับ (${calc.discountTierPercent}%)</span>
+                        <b>-${formatMoney(calc.totalSavedByEarlyPayoff)} บาท</b>
+                    </div>
+                    <div class="flex justify-between pt-1 border-t border-neutral-200 dark:border-neutral-700 font-extrabold text-sm text-[var(--app-accent)]">
+                        <span>ยอดเงินสุทธิที่ต้องเตรียมปิดบัญชี</span>
+                        <b>${formatMoney(calc.totalPayoffAmount)} บาท</b>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button id="btnPrintCarLoanSummary" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer">
+                        🖨️ พิมพ์ใบสรุปสินเชื่อรถ / PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Bind Event Listeners
+    container.querySelectorAll('[data-vehicle]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.vehicleType = btn.getAttribute('data-vehicle');
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    container.querySelectorAll('[data-condition]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.condition = btn.getAttribute('data-condition');
+            if (st.condition === 'used' && st.interestRate === '2.59') st.interestRate = '4.5';
+            else if (st.condition === 'new' && st.interestRate === '4.5') st.interestRate = '2.59';
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    document.getElementById('btnDownPct')?.addEventListener('click', () => {
+        st.downPaymentType = 'percent';
+        st.downPaymentValue = Math.round(calc.downPaymentPercent).toString();
+        persistAppState();
+        renderActiveTool();
+    });
+
+    document.getElementById('btnDownAmt')?.addEventListener('click', () => {
+        st.downPaymentType = 'amount';
+        st.downPaymentValue = Math.round(calc.downPaymentAmount).toString();
+        persistAppState();
+        renderActiveTool();
+    });
+
+    const bindInput = (id, key) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('change', () => {
+            st[key] = el.value;
+            persistAppState();
+            renderActiveTool();
+        });
+        el.addEventListener('blur', () => {
+            const formatted = formatInputDisplay(el.value);
+            st[key] = formatted;
+            el.value = formatted;
+            persistAppState();
+        });
+    };
+    bindInput('carPriceInput', 'price');
+    bindInput('carDownValInput', 'downPaymentValue');
+    bindInput('carInterestRateInput', 'interestRate');
+
+    document.getElementById('carPeriodSelect')?.addEventListener('change', e => {
+        st.periodMonths = e.target.value;
+        persistAppState();
+        renderActiveTool();
+    });
+
+    document.getElementById('carPayoffMonthSelect')?.addEventListener('change', e => {
+        st.payoffMonth = e.target.value;
+        persistAppState();
+        renderActiveTool();
+    });
+
+    container.querySelector('#btnPrintCarLoanSummary')?.addEventListener('click', () => {
+        triggerPrintReceipt('car_loan');
+    });
+
+    if (calc.price <= 0) {
+        setStatusBanner('empty', 'กรุณาระบุราคารถยนต์เพื่อคำนวณค่างวด');
+    } else {
+        setStatusBanner('success', `ค่างวดผ่อน ${calc.periodMonths} เดือน: <b class="text-[var(--app-accent)]">${formatMoney(calc.monthlyPayment)} บาท/ด.</b> (ยอดจัด ${formatMoney(calc.principal)} บ. ดอกเบี้ย ${formatNum(calc.interestRate, 2)}%)`);
+    }
+}
+
+/* -----------------------------------------------------------
+ * UI RENDERER: ประกันสังคม & เงินบำนาญชราภาพ (social_security)
+ * ----------------------------------------------------------- */
+function renderSocialSecurityTool(container) {
+    if (!container) return;
+    const st = appState.social_security = appState.social_security || {
+        section: 'm33', // 'm33' | 'm39' | 'm40'
+        wageMonthly: '35000',
+        contributionMonths: '240', // 20 ปี
+        m40Plan: 'plan2',
+        m40ExtraSavings: '0'
+    };
+
+    const calc = calculateSocialSecurity(st);
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-3 p-1">
+            <!-- Section Selection Tabs (M.33, M.39, M.40) -->
+            <div class="segment-group grid-cols-3 balanced-segment-modes" role="tablist" aria-label="มาตราประกันสังคม">
+                <button type="button" class="segment-btn ${st.section === 'm33' ? 'active' : ''}" data-sec="m33">🏢 ม.33 (ลูกจ้างประจำ)</button>
+                <button type="button" class="segment-btn ${st.section === 'm39' ? 'active' : ''}" data-sec="m39">💼 ม.39 (ประกันตนเอง)</button>
+                <button type="button" class="segment-btn ${st.section === 'm40' ? 'active' : ''}" data-sec="m40">🛵 ม.40 (อิสระ/ฟรีแลนซ์)</button>
+            </div>
+
+            <!-- Main Input Form -->
+            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
+                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">
+                    📋 ข้อมูลเงินเดือนและระยะเวลาส่งเงินสมทบ
+                </div>
+
+                ${st.section === 'm33' ? `
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">เงินเดือน / ค่าจ้างเฉลี่ย (บาท)</label>
+                            <input id="ssWageInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.wageMonthly))}" placeholder="เช่น 35,000" class="airbnb-input w-full font-semibold">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ฐานคิดคำนวณ (เพดาน 15,000 บ.)</label>
+                            <div class="airbnb-input w-full bg-neutral-50 dark:bg-neutral-800 font-semibold text-neutral-800 dark:text-neutral-200 flex items-center">
+                                ${formatMoney(calc.cappedWage)} บาท
+                            </div>
+                        </div>
+                    </div>
+                ` : (st.section === 'm39' ? `
+                    <div class="p-2.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-xs space-y-1">
+                        <div class="font-bold text-neutral-800 dark:text-neutral-200">ℹ️ กฎหมายกำหนดฐานค่าจ้าง ม.39 ไว้คงที่: 4,800 บาท</div>
+                        <div class="text-neutral-600 dark:text-neutral-400 text-[11px]">ส่งเงินสมทบ 9% = เดือนละ 432 บาท (เข้าชราภาพ 288 บาท)</div>
+                    </div>
+                ` : `
+                    <div class="space-y-2">
+                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block">เลือกทางเลือกการคุ้มครอง ม.40</label>
+                        <select id="ssM40PlanSelect" class="airbnb-input w-full text-xs">
+                            <option value="plan1" ${st.m40Plan === 'plan1' ? 'selected' : ''}>ทางเลือก 1: จ่าย 70 บ./ด. (เจ็บป่วย/ทุพพลภาพ/เสียชีวิต - ไม่มีชราภาพ)</option>
+                            <option value="plan2" ${st.m40Plan === 'plan2' ? 'selected' : ''}>ทางเลือก 2: จ่าย 100 บ./ด. (มีออมชราภาพ 50 บ./ด.)</option>
+                            <option value="plan3" ${st.m40Plan === 'plan3' ? 'selected' : ''}>ทางเลือก 3: จ่าย 300 บ./ด. (มีออมชราภาพ 150 บ./ด. + สงเคราะห์บุตร)</option>
+                        </select>
+                        <div class="grid grid-cols-2 gap-2 pt-1">
+                            <div>
+                                <label class="text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 block mb-1">ออมเพิ่มโดยสมัครใจ (บาท/เดือน)</label>
+                                <input id="ssM40ExtraInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.m40ExtraSavings))}" placeholder="สูงสุด 1,000" class="airbnb-input w-full text-xs">
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 block mb-1">ยอดเงินส่งต่อเดือนรวม</label>
+                                <div class="airbnb-input w-full bg-neutral-50 dark:bg-neutral-800 font-semibold text-xs flex items-center">
+                                    ${formatMoney(calc.monthlyContribution)} บาท/เดือน
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `)}
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">จำนวนงวดที่ส่งเงินสมทบ (เดือน)</label>
+                        <input id="ssMonthsInput" type="text" inputmode="numeric" value="${escapeHTML(formatInputDisplay(st.contributionMonths))}" placeholder="เช่น 180 หรือ 240" class="airbnb-input w-full font-semibold">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ระยะเวลาส่งสะสม</label>
+                        <div class="airbnb-input w-full bg-neutral-50 dark:bg-neutral-800 font-semibold text-neutral-800 dark:text-neutral-200 flex items-center">
+                            ${formatNum(calc.yearsContributed, 1)} ปี (${formatNum(calc.contributionMonths, 0)} งวด)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fast Preset Month Buttons -->
+                <div class="flex flex-wrap gap-1.5 pt-1 text-[11px]">
+                    <span class="text-neutral-400 self-center">ลัด:</span>
+                    <button type="button" class="btnPresetMonths px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 text-neutral-700 dark:text-neutral-300" data-months="60">5 ปี (60 ด.)</button>
+                    <button type="button" class="btnPresetMonths px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 text-neutral-700 dark:text-neutral-300" data-months="120">10 ปี (120 ด.)</button>
+                    <button type="button" class="btnPresetMonths px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200 font-bold" data-months="180">⭐ 15 ปี (180 ด. บำนาญ)</button>
+                    <button type="button" class="btnPresetMonths px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 text-neutral-700 dark:text-neutral-300" data-months="240">20 ปี (240 ด.)</button>
+                    <button type="button" class="btnPresetMonths px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 text-neutral-700 dark:text-neutral-300" data-months="300">25 ปี (300 ด.)</button>
+                </div>
+            </div>
+
+            <!-- Big Result Card -->
+            ${calc.isPension ? `
+                <div class="border rounded-[var(--app-card-radius)] p-4 text-center border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200 space-y-1" style="box-shadow:var(--app-elevation)">
+                    <div class="text-xs font-semibold uppercase tracking-wider">🎉 ได้รับสิทธิเงินบำนาญชราภาพตลอดชีพ (ครบ 55 ปีบริบูรณ์)</div>
+                    <div class="text-3xl md:text-4xl font-extrabold text-emerald-700 dark:text-emerald-300">${formatMoney(calc.monthlyPension)} บาท/เดือน</div>
+                    <div class="text-xs opacity-90">
+                        คิดเป็นปีละ <b>${formatMoney(calc.yearlyPension)}</b> บ. · อัตราบำนาญ <b>${formatNum(calc.pensionRatePercent, 2)}%</b> (เกิน 180 เดือนมา ${formatNum(Math.floor((calc.contributionMonths - 180) / 12), 0)} ปี)
+                    </div>
+                </div>
+            ` : `
+                <div class="border rounded-[var(--app-card-radius)] p-4 text-center border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 space-y-1" style="box-shadow:var(--app-elevation)">
+                    <div class="text-xs font-semibold uppercase tracking-wider">💰 ได้รับสิทธิเงินบำเหน็จชราภาพ (เงินก้อนครั้งเดียว)</div>
+                    <div class="text-3xl md:text-4xl font-extrabold text-[var(--app-accent)]">${formatMoney(calc.lumpSumTotal)} บาท</div>
+                    <div class="text-xs opacity-90">
+                        ${st.section === 'm40' ? 'รับเงินก้อนพร้อมผลประโยชน์ตอบแทนเมื่ออายุครบ 60 ปีบริบูรณ์' : `ส่งเงินสมทบยังไม่ถึง 180 เดือน (${formatNum(calc.contributionMonths, 0)}/180 เดือน) จึงได้รับเป็นเงินบำเหน็จก้อนเดียว`}
+                    </div>
+                </div>
+            `}
+
+            <!-- Benefit Breakdown Details -->
+            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
+                <div class="font-bold text-neutral-800 dark:text-neutral-200 mb-1">สรุปยอดเงินสมทบและสิทธิประโยชน์</div>
+                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
+                    <span class="text-neutral-600 dark:text-neutral-400">เงินสมทบของผู้ประกันตนต่อเดือน</span>
+                    <b>${formatMoney(calc.monthlyContribution)} บาท/เดือน</b>
+                </div>
+                ${st.section === 'm33' ? `
+                    <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
+                        <span class="text-neutral-600 dark:text-neutral-400">เงินสมทบฝั่งนายจ้างช่วยจ่าย (5%)</span>
+                        <b class="text-emerald-600">+${formatMoney(calc.employerContribution)} บาท/เดือน</b>
+                    </div>
+                    <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
+                        <span class="text-neutral-600 dark:text-neutral-400">ยอดสะสมเฉพาะส่วนชราภาพ (ลูกจ้าง 3% + นายจ้าง 3%)</span>
+                        <b>${formatMoney(calc.oldAgeSavingsMonthly * 2)} บาท/เดือน</b>
+                    </div>
+                ` : ''}
+                <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
+                    <span class="text-neutral-600 dark:text-neutral-400">เงินที่ผู้ประกันตนจ่ายสะสมตลอด ${formatNum(calc.yearsContributed, 1)} ปี</span>
+                    <b>${formatMoney(calc.totalWorkerContributed)} บาท</b>
+                </div>
+                ${calc.isPension ? `
+                    <div class="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
+                        <span class="text-neutral-600 dark:text-neutral-400">จุดคุ้มทุน (รับบำนาญกี่ปีคืนทุนที่เคยจ่าย)</span>
+                        <b class="text-emerald-600">~${calc.monthlyPension > 0 ? (calc.totalWorkerContributed / (calc.monthlyPension * 12)).toFixed(1) : 0} ปี (${calc.monthlyPension > 0 ? Math.ceil(calc.totalWorkerContributed / calc.monthlyPension) : 0} เดือน)</b>
+                    </div>
+                ` : ''}
+                <div class="flex justify-end pt-2">
+                    <button id="btnPrintSocialSecuritySummary" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer">
+                        🖨️ พิมพ์ใบสรุปสิทธิประกันสังคม / PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Bind Event Listeners
+    container.querySelectorAll('[data-sec]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.section = btn.getAttribute('data-sec');
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    container.querySelectorAll('.btnPresetMonths').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.contributionMonths = btn.getAttribute('data-months');
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    const bindInput = (id, key) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('change', () => {
+            st[key] = el.value;
+            persistAppState();
+            renderActiveTool();
+        });
+        el.addEventListener('blur', () => {
+            const formatted = formatInputDisplay(el.value);
+            st[key] = formatted;
+            el.value = formatted;
+            persistAppState();
+        });
+    };
+    bindInput('ssWageInput', 'wageMonthly');
+    bindInput('ssMonthsInput', 'contributionMonths');
+    bindInput('ssM40ExtraInput', 'm40ExtraSavings');
+
+    document.getElementById('ssM40PlanSelect')?.addEventListener('change', e => {
+        st.m40Plan = e.target.value;
+        persistAppState();
+        renderActiveTool();
+    });
+
+    container.querySelector('#btnPrintSocialSecuritySummary')?.addEventListener('click', () => {
+        triggerPrintReceipt('social_security');
+    });
+
+    if (calc.isPension) {
+        setStatusBanner('success', `บำนาญชราภาพ (${calc.section.toUpperCase()} ส่ง ${formatNum(calc.contributionMonths, 0)} งวด): <b class="text-emerald-600">${formatMoney(calc.monthlyPension)} บาท/เดือนตลอดชีพ</b> (ปีละ ${formatMoney(calc.yearlyPension)} บ.)`);
+    } else {
+        setStatusBanner('success', `บำเหน็จชราภาพ (${calc.section.toUpperCase()} ส่ง ${formatNum(calc.contributionMonths, 0)} งวด): <b class="text-[var(--app-accent)]">${formatMoney(calc.lumpSumTotal)} บาท</b> (รับเงินก้อนครั้งเดียว)`);
+    }
+}
+
+// Module export definitions
+(function(root) {
+    const exportsObj = {
+        calculateCarLoan,
+        calculateSocialSecurity,
+        renderCarLoanTool,
+        renderSocialSecurityTool
+    };
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = exportsObj;
+    }
+    if (root) {
+        Object.assign(root, exportsObj);
+    }
+})(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
+// <<< src/tools/finance_thai.js <<<
 
 // >>> src/ui/actions.js >>>
 // ==============================================================
@@ -8669,6 +9715,25 @@ function clearCurrentTool() {
                 { id: 'water', name: 'เครื่องทำน้ำอุ่น', watts: 3500, qty: 1, hoursPerDay: 0.5 }
             ]
         };
+    } else if (id === 'car_loan') {
+        appState.car_loan = {
+            vehicleType: 'car',
+            condition: 'new',
+            price: '',
+            downPaymentType: 'percent',
+            downPaymentValue: '20',
+            interestRate: '2.59',
+            periodMonths: '60',
+            payoffMonth: '30'
+        };
+    } else if (id === 'social_security') {
+        appState.social_security = {
+            section: 'm33',
+            wageMonthly: '',
+            contributionMonths: '180',
+            m40Plan: 'plan2',
+            m40ExtraSavings: ''
+        };
     }
     rememberToolClear(snapshot);
     renderActiveTool();
@@ -8811,6 +9876,25 @@ function loadDemoForCurrentTool() {
                 { id: 'tv', name: 'สมาร์ททีวี 55 นิ้ว', watts: 100, qty: 1, hoursPerDay: 4 },
                 { id: 'water', name: 'เครื่องทำน้ำอุ่น', watts: 3500, qty: 1, hoursPerDay: 0.5 }
             ]
+        };
+    } else if (id === 'car_loan') {
+        appState.car_loan = {
+            vehicleType: 'car',
+            condition: 'new',
+            price: '850000',
+            downPaymentType: 'percent',
+            downPaymentValue: '25',
+            interestRate: '2.49',
+            periodMonths: '60',
+            payoffMonth: '36'
+        };
+    } else if (id === 'social_security') {
+        appState.social_security = {
+            section: 'm33',
+            wageMonthly: '35000',
+            contributionMonths: '240',
+            m40Plan: 'plan2',
+            m40ExtraSavings: '500'
         };
     }
     renderActiveTool();

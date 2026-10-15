@@ -358,21 +358,19 @@ function renderTaxPersonalTool(container) {
     const calc = calculatePersonalTax(st);
 
     let html = `
-        <div class="flex flex-col gap-3 p-1">
+        <div class="personal-tax-tool flex flex-col gap-3 p-1">
             <!-- Segmented Control Tabs -->
             <div class="segment-group grid-cols-3 balanced-segment-modes" role="tablist" aria-label="หมวดคำนวณภาษี">
-                <button type="button" role="tab" id="tax-tab-income" aria-selected="${activeTab === 'income'}" class="segment-btn ${activeTab === 'income' ? 'active' : ''}" data-tax-tab="income">1. รายได้ทั้งปี</button>
-                <button type="button" role="tab" id="tax-tab-deduct" aria-selected="${activeTab === 'deduct'}" class="segment-btn ${activeTab === 'deduct' ? 'active' : ''}" data-tax-tab="deduct">2. สิทธิลดหย่อน</button>
-                <button type="button" role="tab" id="tax-tab-summary" aria-selected="${activeTab === 'summary'}" class="segment-btn ${activeTab === 'summary' ? 'active' : ''}" data-tax-tab="summary">3. สรุปภาษี & วางแผน</button>
+                <button type="button" role="tab" id="tax-tab-income" aria-selected="${activeTab === 'income'}" tabindex="${activeTab === 'income' ? '0' : '-1'}" class="segment-btn ${activeTab === 'income' ? 'active' : ''}" data-tax-tab="income">1. รายได้ทั้งปี</button>
+                <button type="button" role="tab" id="tax-tab-deduct" aria-selected="${activeTab === 'deduct'}" tabindex="${activeTab === 'deduct' ? '0' : '-1'}" class="segment-btn ${activeTab === 'deduct' ? 'active' : ''}" data-tax-tab="deduct">2. สิทธิลดหย่อน</button>
+                <button type="button" role="tab" id="tax-tab-summary" aria-selected="${activeTab === 'summary'}" tabindex="${activeTab === 'summary' ? '0' : '-1'}" class="segment-btn ${activeTab === 'summary' ? 'active' : ''}" data-tax-tab="summary">3. สรุปภาษี</button>
             </div>
     `;
 
     if (activeTab === 'income') {
         html += `
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6] flex items-center gap-1.5">
-                    <span>💼 ข้อมูลรายได้พึงประเมินทั้งปี</span>
-                </div>
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">ข้อมูลรายได้พึงประเมินทั้งปี</div>
                 <div>
                     <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">เงินเดือนประจำ (บาท/เดือน)</label>
                     <input id="taxSalaryMonthly" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.salaryMonthly))}" placeholder="เช่น 50,000" class="airbnb-input w-full">
@@ -395,17 +393,18 @@ function renderTaxPersonalTool(container) {
             </div>
 
             <!-- Mini Preview Card -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
-                <div class="flex justify-between">
-                    <span class="text-neutral-600 dark:text-neutral-400">รายได้รวมทั้งปี</span>
+            <div class="themed-tool-card p-4 space-y-1 text-xs">
+                <div class="font-bold text-[var(--app-ink)] pb-1">สรุปรายได้เบื้องต้น</div>
+                <div class="tool-summary-row flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">รายได้รวมทั้งปี</span>
                     <b class="text-sm font-semibold">${formatMoney(calc.grossIncome)} บาท</b>
                 </div>
-                <div class="flex justify-between">
-                    <span class="text-neutral-600 dark:text-neutral-400">หักค่าใช้จ่ายตามกฎหมาย (50% ไม่เกิน 1 แสน)</span>
-                    <b class="text-emerald-600 dark:text-emerald-400">- ${formatMoney(calc.expenses)} บาท</b>
+                <div class="tool-summary-row flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">หักค่าใช้จ่ายตามกฎหมาย</span>
+                    <b>- ${formatMoney(calc.expenses)} บาท</b>
                 </div>
-                <div class="flex justify-between pt-1 border-t border-neutral-100 dark:border-neutral-800">
-                    <span class="text-neutral-700 dark:text-neutral-300 font-medium">เงินได้หลังหักค่าใช้จ่าย</span>
+                <div class="tool-summary-row flex justify-between gap-3 py-2 font-semibold">
+                    <span>เงินได้หลังหักค่าใช้จ่าย</span>
                     <b>${formatMoney(calc.incomeAfterExpenses)} บาท</b>
                 </div>
             </div>
@@ -413,9 +412,9 @@ function renderTaxPersonalTool(container) {
     } else if (activeTab === 'deduct') {
         html += `
             <!-- กลุ่มที่ 1: ส่วนตัวและครอบครัว -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-2.5" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">👨‍👩‍👧 1. สิทธิส่วนตัวและครอบครัว</div>
-                <div class="text-[11px] text-[#6a6a6a] dark:text-neutral-400">ผู้มีเงินได้ลดหย่อนอัตโนมัติ 60,000 บาท</div>
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">1. สิทธิส่วนตัวและครอบครัว</div>
+                <div class="text-[11px] text-[var(--app-muted)]">ผู้มีเงินได้ลดหย่อนอัตโนมัติ 60,000 บาท</div>
                 
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <div>
@@ -444,8 +443,8 @@ function renderTaxPersonalTool(container) {
             </div>
 
             <!-- กลุ่มที่ 2: ประกัน เงินออม และการลงทุน -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-2.5" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">🛡️ 2. ประกัน กองทุน & การออม</div>
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">2. ประกัน กองทุน และการออม</div>
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <div>
                         <label class="font-semibold block mb-1">ประกันสังคม (สูงสุด 9,000)</label>
@@ -489,8 +488,8 @@ function renderTaxPersonalTool(container) {
             </div>
 
             <!-- กลุ่มที่ 3: เงินบริจาค -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-2.5" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">🤝 3. เงินบริจาค</div>
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">3. เงินบริจาค</div>
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <div>
                         <label class="font-semibold block mb-1">บริจาคการศึกษา/กีฬา/รพ. (ลดหย่อน 2 เท่า)</label>
@@ -506,44 +505,37 @@ function renderTaxPersonalTool(container) {
     } else {
         // TAB: สรุปผลภาษี & วางแผน
         const isRefund = calc.isRefund;
-        const resultColor = isRefund
-            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300'
-            : (calc.payableAmount > 0
-                ? 'border-rose-400 bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-300'
-                : 'border-blue-400 bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300');
+        const resultStateClass = isRefund ? 'is-profit' : (calc.payableAmount > 0 ? 'is-loss' : '');
+        const resultLabel = isRefund ? 'ได้รับเงินคืนภาษี' : (calc.payableAmount > 0 ? 'ต้องชำระภาษีเพิ่มเติม' : 'ไม่มียอดค้างชำระ');
 
         html += `
             <!-- Big Result Card -->
-            <div class="border rounded-[var(--app-card-radius)] p-4 text-center ${resultColor} space-y-1" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-semibold uppercase tracking-wider">
-                    ${isRefund ? '🎉 ได้รับเงินคืนภาษี (TAX REFUND)' : (calc.payableAmount > 0 ? '⚠️ ต้องชำระภาษีเพิ่มเติม' : '✓ ภาษีพอดี ไม่มียอดค้างชำระ')}
-                </div>
-                <div class="text-2xl md:text-3xl font-extrabold">
+            <div class="themed-result-card ${resultStateClass} p-5 text-center space-y-1">
+                <div class="text-xs font-semibold text-[var(--app-muted)]">${resultLabel}</div>
+                <div class="themed-result-value text-2xl md:text-3xl font-extrabold">
                     ${formatMoney(isRefund ? calc.refundAmount : calc.payableAmount)} บาท
                 </div>
-                <div class="text-xs opacity-90">
-                    ภาษีทั้งปีที่คำนวณได้: ${formatMoney(calc.totalTax)} บาท | หัก ณ ที่จ่ายแล้ว: ${formatMoney(calc.withholdingTax)} บาท
+                <div class="text-xs text-[var(--app-body)]">
+                    ภาษีทั้งปี ${formatMoney(calc.totalTax)} บาท · หัก ณ ที่จ่ายแล้ว ${formatMoney(calc.withholdingTax)} บาท
                 </div>
             </div>
 
             <!-- Tax Metrics Grid -->
             <div class="grid grid-cols-2 gap-2 text-xs">
-                <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-3">
-                    <span class="text-[#6a6a6a] dark:text-neutral-400 block mb-0.5">เงินได้สุทธิ (Taxable)</span>
+                <div class="themed-subcard p-3">
+                    <span class="text-[var(--app-muted)] block mb-0.5">เงินได้สุทธิ</span>
                     <b class="text-sm">${formatMoney(calc.netTaxableIncome)} ฿</b>
                 </div>
-                <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-3">
-                    <span class="text-[#6a6a6a] dark:text-neutral-400 block mb-0.5">ฐานภาษีสูงสุด (Marginal Rate)</span>
+                <div class="themed-subcard p-3">
+                    <span class="text-[var(--app-muted)] block mb-0.5">ฐานภาษีสูงสุด</span>
                     <b class="text-sm text-[var(--app-accent)]">${calc.marginalRate}%</b>
                 </div>
             </div>
 
             <!-- Tax Savings Advisor Box -->
-            <div class="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-[var(--app-card-radius)] p-3 text-xs text-amber-900 dark:text-amber-200 space-y-1">
-                <div class="font-bold flex items-center gap-1">
-                    <span>💡 เคล็ดลับวางแผนประหยัดภาษี:</span>
-                </div>
-                <div>
+            <div class="themed-tool-card p-4 text-xs space-y-2">
+                <div class="font-bold text-[var(--app-ink)]">แนวทางวางแผนภาษี</div>
+                <div class="text-[var(--app-body)]">
                     ${calc.marginalRate > 0
                         ? `ปัจจุบันท่านอยู่ในฐานภาษี <b>${calc.marginalRate}%</b> การซื้อกองทุนลดหย่อนภาษี (SSF, RMF, Thai ESG) หรือประกันเพิ่ม <b>ทุก 10,000 บาท</b> จะช่วยประหยัดภาษีได้ถึง <b>${formatMoney(calc.savingsPer10k)} บาท</b>`
                         : 'ปัจจุบันรายได้สุทธิของท่านอยู่ในเกณฑ์ยกเว้นภาษี (0%) ยังไม่จำเป็นต้องซื้อกองทุนหรือประกันเพื่อลดหย่อนภาษีเพิ่มเติม'}
@@ -551,12 +543,12 @@ function renderTaxPersonalTool(container) {
             </div>
 
             <!-- Tax Brackets Table -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
-                <div class="font-semibold text-neutral-800 dark:text-neutral-200">ตารางภาษีแบบขั้นบันได 7 ขั้น</div>
+            <div class="themed-tool-card p-4 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ตารางภาษีแบบขั้นบันได 7 ขั้น</div>
                 <div class="overflow-x-auto thin-scroll">
                     <table class="w-full text-left border-collapse text-[11px]">
                         <thead>
-                            <tr class="border-b border-neutral-200 dark:border-neutral-700 text-[#6a6a6a] dark:text-neutral-400">
+                            <tr class="border-b border-[var(--app-hairline)] text-[var(--app-muted)]">
                                 <th class="py-1">ขั้นเงินได้สุทธิ</th>
                                 <th class="py-1 text-center">อัตรา</th>
                                 <th class="py-1 text-right">เงินได้ในขั้น</th>
@@ -565,7 +557,7 @@ function renderTaxPersonalTool(container) {
                         </thead>
                         <tbody>
                             ${calc.taxByBands.map(b => `
-                                <tr class="border-b border-neutral-100 dark:border-neutral-800 ${b.taxInBand > 0 ? 'font-semibold text-neutral-900 dark:text-neutral-100' : 'text-neutral-400 dark:text-neutral-600'}">
+                                <tr class="border-b border-[var(--app-hairline)] ${b.taxInBand > 0 ? 'font-semibold text-[var(--app-ink)]' : 'text-[var(--app-muted)]'}">
                                     <td class="py-1">${b.range}</td>
                                     <td class="py-1 text-center">${b.ratePercent}%</td>
                                     <td class="py-1 text-right">${formatMoney(b.taxableInBand)}</td>
@@ -574,8 +566,8 @@ function renderTaxPersonalTool(container) {
                             `).join('')}
                         </tbody>
                         <tfoot>
-                            <tr class="font-bold border-t border-neutral-300 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100">
-                                <td colspan="3" class="py-1.5 text-right">ภาษีรวมทั้งสิ้น:</td>
+                            <tr class="font-bold border-t border-[var(--app-hairline)] text-[var(--app-ink)]">
+                                <td colspan="3" class="py-1.5 text-right">ภาษีรวมทั้งสิ้น</td>
                                 <td class="py-1.5 text-right text-[var(--app-accent)]">${formatMoney(calc.totalTax)} ฿</td>
                             </tr>
                         </tfoot>
@@ -585,8 +577,8 @@ function renderTaxPersonalTool(container) {
 
             <!-- Print Actions -->
             <div class="flex justify-end pt-1">
-                <button id="btnPrintTaxPersonalSummary" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer">
-                    🖨️ พิมพ์ใบสรุปภาษี ภ.ง.ด. / PDF
+                <button id="btnPrintTaxPersonalSummary" type="button" class="tool-action-btn text-xs">
+                    พิมพ์ใบสรุปภาษี ภ.ง.ด. / PDF
                 </button>
             </div>
         `;
@@ -653,11 +645,11 @@ function renderTaxPersonalTool(container) {
     if (calc.grossIncome <= 0) {
         setStatusBanner('empty', 'กรุณาระบุเงินเดือนหรือรายได้ทั้งปีเพื่อคำนวณภาษีบุคคลธรรมดา');
     } else if (calc.isRefund) {
-        setStatusBanner('success', `🎉 ได้เงินคืนภาษี: <span class="text-lg text-emerald-600 font-bold underline">${formatMoney(calc.refundAmount)} บาท</span> · ฐานภาษี ${calc.marginalRate}%`);
+        setStatusBanner('success', `ได้รับเงินคืนภาษี: <b class="text-[var(--app-accent)]">${formatMoney(calc.refundAmount)} บาท</b> · ฐานภาษี ${calc.marginalRate}%`);
     } else if (calc.payableAmount > 0) {
-        setStatusBanner('success', `⚠️ ต้องชำระภาษีเพิ่ม: <span class="text-lg text-[var(--app-accent)] font-bold underline">${formatMoney(calc.payableAmount)} บาท</span> · ฐานภาษี ${calc.marginalRate}%`);
+        setStatusBanner('success', `ต้องชำระภาษีเพิ่ม: <b class="text-[var(--app-accent)]">${formatMoney(calc.payableAmount)} บาท</b> · ฐานภาษี ${calc.marginalRate}%`);
     } else {
-        setStatusBanner('success', `✓ ชำระภาษีครบถ้วนพอดี: ภาษีรวมทั้งสิ้น ${formatMoney(calc.totalTax)} บาท`);
+        setStatusBanner('success', `ชำระภาษีครบถ้วนพอดี: ภาษีรวมทั้งสิ้น ${formatMoney(calc.totalTax)} บาท`);
     }
 }
 
@@ -679,10 +671,10 @@ function renderPropertyTransferTool(container) {
     const calc = calculatePropertyTransfer(st);
 
     container.innerHTML = `
-        <div class="flex flex-col gap-3 p-1">
+        <div class="property-transfer-tool flex flex-col gap-3 p-1">
             <!-- Mode Settings & Measures -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2.5" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-[#1f2937] dark:text-[#f3f4f6]">⚙️ เงื่อนไขและมาตรการรัฐ</div>
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">เงื่อนไขและมาตรการรัฐ</div>
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <div>
                         <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">มาตรการค่าโอน-จำนอง</label>
@@ -720,7 +712,8 @@ function renderPropertyTransferTool(container) {
             </div>
 
             <!-- Price Inputs -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">ข้อมูลราคาทรัพย์และวงเงินจำนอง</div>
                 <div>
                     <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ราคาประเมินทุนทรัพย์ของกรมที่ดิน (บาท)</label>
                     <input id="propAppraisedValue" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.appraisedValue))}" placeholder="เช่น 3,000,000" class="airbnb-input w-full">
@@ -738,34 +731,38 @@ function renderPropertyTransferTool(container) {
                 </div>
             </div>
 
+            <!-- Primary Result -->
+            <div class="themed-result-card theme-result-highlight p-5 text-center space-y-1">
+                <div class="text-xs font-semibold text-[var(--app-muted)]">ประมาณการค่าใช้จ่ายวันโอนรวม</div>
+                <div class="themed-result-value text-2xl md:text-3xl font-extrabold">${formatMoney(calc.totalLandCost)} บาท</div>
+                <div class="text-xs text-[var(--app-body)]">แบ่งตามข้อตกลงการชำระที่เลือกไว้ด้านบน</div>
+            </div>
+
             <!-- Split Summary Cards -->
             <div class="grid grid-cols-2 gap-2">
-                <div class="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-[var(--app-card-radius)] p-3 space-y-1">
-                    <div class="text-xs font-bold text-blue-900 dark:text-blue-300">👤 ฝั่งผู้ซื้อต้องเตรียมชำระ</div>
-                    <div class="text-lg md:text-xl font-extrabold text-blue-800 dark:text-blue-200">${formatMoney(calc.buyerCost)} บาท</div>
-                    <div class="text-[11px] text-blue-700 dark:text-blue-400">
-                        ${st.splitMode === 'custom' ? '(ค่าโอน 50% + ค่าจดจำนอง)' : `(ตามข้อตกลง: ${st.splitMode})`}
+                <div class="themed-tool-card p-3 space-y-1">
+                    <div class="text-xs font-bold text-[var(--app-ink)]">ผู้ซื้อต้องเตรียมชำระ</div>
+                    <div class="text-lg md:text-xl font-extrabold text-[var(--app-accent)]">${formatMoney(calc.buyerCost)} บาท</div>
+                    <div class="text-[11px] text-[var(--app-muted)]">
+                        ${st.splitMode === 'custom' ? 'ค่าโอน 50% + ค่าจดจำนอง' : 'ตามข้อตกลงการแบ่งจ่าย'}
                     </div>
                 </div>
-                <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-[var(--app-card-radius)] p-3 space-y-1">
-                    <div class="text-xs font-bold text-amber-900 dark:text-amber-300">🏠 ฝั่งผู้ขายต้องเตรียมชำระ</div>
-                    <div class="text-lg md:text-xl font-extrabold text-amber-800 dark:text-amber-200">${formatMoney(calc.sellerCost)} บาท</div>
-                    <div class="text-[11px] text-amber-700 dark:text-amber-400">
-                        ${st.splitMode === 'custom' ? '(ค่าโอน 50% + ภาษี/อากร + หัก ณ ที่จ่าย)' : `(ตามข้อตกลง: ${st.splitMode})`}
+                <div class="themed-tool-card p-3 space-y-1">
+                    <div class="text-xs font-bold text-[var(--app-ink)]">ผู้ขายต้องเตรียมชำระ</div>
+                    <div class="text-lg md:text-xl font-extrabold text-[var(--app-accent)]">${formatMoney(calc.sellerCost)} บาท</div>
+                    <div class="text-[11px] text-[var(--app-muted)]">
+                        ${st.splitMode === 'custom' ? 'ค่าโอน 50% + ภาษี อากร และหัก ณ ที่จ่าย' : 'ตามข้อตกลงการแบ่งจ่าย'}
                     </div>
                 </div>
             </div>
 
             <!-- Detailed Breakdown Table -->
-            <div class="bg-white dark:bg-[#1f1f1f] border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
-                <div class="flex justify-between items-center text-xs">
-                    <span class="font-bold text-neutral-800 dark:text-neutral-200">แจกแจงค่าใช้จ่าย ณ สำนักงานที่ดิน</span>
-                    <span class="font-bold text-[var(--app-accent)] text-sm">รวมทั้งสิ้น ${formatMoney(calc.totalLandCost)} ฿</span>
-                </div>
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)]">แจกแจงค่าใช้จ่าย ณ สำนักงานที่ดิน</div>
                 <div class="overflow-x-auto thin-scroll">
                     <table class="w-full text-left border-collapse text-xs">
                         <thead>
-                            <tr class="border-b border-neutral-200 dark:border-neutral-700 text-[#6a6a6a] dark:text-neutral-400 text-[11px]">
+                            <tr class="border-b border-[var(--app-hairline)] text-[var(--app-muted)] text-[11px]">
                                 <th class="py-1.5">รายการ</th>
                                 <th class="py-1.5 text-center">อัตรา</th>
                                 <th class="py-1.5 text-right">ผู้ซื้อจ่าย</th>
@@ -775,23 +772,23 @@ function renderPropertyTransferTool(container) {
                         </thead>
                         <tbody>
                             ${calc.breakdown.map(row => `
-                                <tr class="border-b border-neutral-100 dark:border-neutral-800">
+                                <tr class="border-b border-[var(--app-hairline)]">
                                     <td class="py-2">
-                                        <div class="font-medium text-neutral-800 dark:text-neutral-200">${row.name}</div>
-                                        <div class="text-[10px] text-neutral-400">ฐาน: ${formatMoney(row.baseAmount)} บาท</div>
+                                        <div class="font-medium text-[var(--app-ink)]">${row.name}</div>
+                                        <div class="text-[10px] text-[var(--app-muted)]">ฐาน: ${formatMoney(row.baseAmount)} บาท</div>
                                     </td>
-                                    <td class="py-2 text-center text-neutral-600 dark:text-neutral-400 text-[11px]">${row.rateText}</td>
-                                    <td class="py-2 text-right font-medium text-blue-700 dark:text-blue-400">${formatMoney(row.buyer)}</td>
-                                    <td class="py-2 text-right font-medium text-amber-700 dark:text-amber-400">${formatMoney(row.seller)}</td>
-                                    <td class="py-2 text-right font-bold text-neutral-900 dark:text-neutral-100">${formatMoney(row.total)}</td>
+                                    <td class="py-2 text-center text-[var(--app-muted)] text-[11px]">${row.rateText}</td>
+                                    <td class="py-2 text-right font-medium text-[var(--app-ink)]">${formatMoney(row.buyer)}</td>
+                                    <td class="py-2 text-right font-medium text-[var(--app-ink)]">${formatMoney(row.seller)}</td>
+                                    <td class="py-2 text-right font-bold text-[var(--app-ink)]">${formatMoney(row.total)}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
                         <tfoot>
-                            <tr class="font-extrabold border-t-2 border-neutral-300 dark:border-neutral-600 text-neutral-900 dark:text-neutral-100">
-                                <td colspan="2" class="py-2 text-right">รวมยอดแบ่งจ่าย:</td>
-                                <td class="py-2 text-right text-blue-700 dark:text-blue-400">${formatMoney(calc.buyerCost)}</td>
-                                <td class="py-2 text-right text-amber-700 dark:text-amber-400">${formatMoney(calc.sellerCost)}</td>
+                            <tr class="font-extrabold border-t-2 border-[var(--app-hairline)] text-[var(--app-ink)]">
+                                <td colspan="2" class="py-2 text-right">รวมยอดแบ่งจ่าย</td>
+                                <td class="py-2 text-right">${formatMoney(calc.buyerCost)}</td>
+                                <td class="py-2 text-right">${formatMoney(calc.sellerCost)}</td>
                                 <td class="py-2 text-right text-[var(--app-accent)]">${formatMoney(calc.totalLandCost)} ฿</td>
                             </tr>
                         </tfoot>
@@ -799,8 +796,8 @@ function renderPropertyTransferTool(container) {
                 </div>
 
                 <div class="flex justify-end pt-2">
-                    <button id="btnPrintPropertyTransferSummary" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer">
-                        🖨️ พิมพ์ใบสรุปค่าโอนที่ดิน / PDF
+                    <button id="btnPrintPropertyTransferSummary" type="button" class="tool-action-btn text-xs">
+                        พิมพ์ใบสรุปค่าโอนที่ดิน / PDF
                     </button>
                 </div>
             </div>

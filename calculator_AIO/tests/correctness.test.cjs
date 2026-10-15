@@ -26,6 +26,7 @@ const moduleFiles = [
     'src/tools/lotto.js',
     'src/tools/tax_property.js',
     'src/tools/lifestyle_thai.js',
+    'src/tools/finance_thai.js',
     'src/ui/actions.js',
     'src/ui/modals.js'
 ];
@@ -281,11 +282,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 27 tools classified into 5 valid groups with search keywords', () => {
+test('catalog contains exactly 29 tools classified into 5 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 5);
-    assert.equal(TOOLS_CATALOG.length, 27);
+    assert.equal(TOOLS_CATALOG.length, 29);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -411,7 +412,7 @@ test('thai official holidays: Songkran, fixed holidays and lunar Buddhist observ
     assert.equal(ctx.isThaiOfficialHoliday(new Date('2026-10-14T00:00:00')), false);
 });
 
-test('all 27 tools have complete and valid clear and demo data mappings', () => {
+test('all 29 tools have complete and valid clear and demo data mappings', () => {
     const rawAppStateMatch = html.match(/const appState = \{[\s\S]*?\n        \};/);
     assert.ok(rawAppStateMatch, 'appState must be defined');
 
@@ -427,7 +428,7 @@ test('all 27 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 27);
+    assert.equal(ctx.TOOLS_CATALOG.length, 29);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -766,7 +767,43 @@ test('formal print-to-pdf: generates accurate Thai receipt documents for loan, s
     assert.ok(elecDoc.includes('ค่าไฟฟ้ารวมสุทธิ (Total Bill)'));
     assert.ok(elecDoc.includes('ตารางแจกแจงค่าพลังงานไฟฟ้าตามขั้นบันไดอัตราก้าวหน้า'));
 
-    // 10. Generic Calculator Fallback
+    // 10. Car Loan Formal Receipt
+    const carLoanState = {
+        activeToolId: 'car_loan',
+        car_loan: {
+            vehicleType: 'car',
+            condition: 'new',
+            price: '850000',
+            downPaymentType: 'percent',
+            downPaymentValue: '20',
+            interestRate: '2.59',
+            periodMonths: '60',
+            payoffMonth: '30'
+        }
+    };
+    const carLoanDoc = ctx.generateFormalPrintHTML('car_loan', carLoanState);
+    assert.ok(carLoanDoc.includes('เอกสารประมาณการสินเชื่อเช่าซื้อรถยนต์และตารางปิดบัญชีล่วงหน้า'));
+    assert.ok(carLoanDoc.includes('850,000.00 บาท'));
+    assert.ok(carLoanDoc.includes('ค่างวดผ่อนชำระรายเดือน'));
+    assert.ok(carLoanDoc.includes('สรุปโครงสร้างสินเชื่อเช่าซื้อและเกณฑ์ส่วนลดปิดบัญชี สคบ.'));
+
+    // 11. Social Security Formal Receipt
+    const ssState = {
+        activeToolId: 'social_security',
+        social_security: {
+            section: 'm33',
+            wageMonthly: '35000',
+            contributionMonths: '240',
+            m40Plan: 'plan2',
+            m40ExtraSavings: '0'
+        }
+    };
+    const ssDoc = ctx.generateFormalPrintHTML('social_security', ssState);
+    assert.ok(ssDoc.includes('เอกสารประมาณการสิทธิประโยชน์เงินบำนาญและเงินชราภาพประกันสังคม'));
+    assert.ok(ssDoc.includes('เงินบำนาญชราภาพรายเดือน'));
+    assert.ok(ssDoc.includes('เกณฑ์สิทธิประโยชน์ชราภาพและการจัดสรรเงินสมทบ'));
+
+    // 12. Generic Calculator Fallback
     const genericDoc = ctx.generateFormalPrintHTML('tip', { activeToolId: 'tip' });
     assert.ok(genericDoc.includes('MULTITOOLS AIO'));
     assert.ok(genericDoc.includes('เอกสารสรุปผลการคำนวณ'));
@@ -777,7 +814,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     const ctx = context();
 
     // 1. Presets availability
-    for (const toolId of ['loan', 'savings', 'vat_wht', 'salary', 'tax_personal', 'property_transfer', 'gold_thai', 'electricity_bill']) {
+    for (const toolId of ['loan', 'savings', 'vat_wht', 'salary', 'tax_personal', 'property_transfer', 'gold_thai', 'electricity_bill', 'car_loan', 'social_security']) {
         const presets = ctx.getComparisonPresets(toolId);
         assert.ok(Array.isArray(presets) && presets.length >= 3, `Presets for ${toolId} must have at least 3 items`);
         assert.ok(presets[0].label && presets[0].state, `Preset item must have label and state`);
@@ -897,7 +934,35 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.equal(elecComp.winnerIndex, 0, '250 units must yield lower total bill than 400 units');
     assert.ok(elecComp.deltaSummary.includes('ปกติ 250 หน่วย'));
 
-    // 10. Print Comparison Sheet Generator
+    // 10. Car Loan comparison
+    const carA = {
+        label: 'ผ่อน 48 งวด (2.39%)',
+        state: { vehicleType: 'car', condition: 'new', price: '850000', downPaymentType: 'percent', downPaymentValue: '25', interestRate: '2.39', periodMonths: '48', payoffMonth: '24' }
+    };
+    const carB = {
+        label: 'ผ่อน 72 งวด (2.99%)',
+        state: { vehicleType: 'car', condition: 'new', price: '850000', downPaymentType: 'percent', downPaymentValue: '25', interestRate: '2.99', periodMonths: '72', payoffMonth: '36' }
+    };
+    const carComp = ctx.compareCalculations('car_loan', [carA, carB]);
+    assert.ok(carComp);
+    assert.equal(carComp.winnerIndex, 0, '48 months term with lower rate must have lower total repayment');
+    assert.ok(carComp.deltaSummary.includes('ผ่อน 48 งวด (2.39%)'));
+
+    // 11. Social Security comparison
+    const ssA = {
+        label: 'ม.33 ส่ง 15 ปี (180 งวด)',
+        state: { section: 'm33', wageMonthly: '35000', contributionMonths: '180', m40Plan: 'plan2', m40ExtraSavings: '0' }
+    };
+    const ssB = {
+        label: 'ม.33 ส่ง 25 ปี (300 งวด)',
+        state: { section: 'm33', wageMonthly: '35000', contributionMonths: '300', m40Plan: 'plan2', m40ExtraSavings: '0' }
+    };
+    const ssComp = ctx.compareCalculations('social_security', [ssA, ssB]);
+    assert.ok(ssComp);
+    assert.equal(ssComp.winnerIndex, 1, '25 years contribution must yield higher monthly pension than 15 years');
+    assert.ok(ssComp.deltaSummary.includes('ม.33 ส่ง 25 ปี (300 งวด)'));
+
+    // 12. Print Comparison Sheet Generator
     const printHTML = ctx.generateComparePrintHTML(loanComp);
     assert.ok(printHTML.includes('MULTITOOLS AIO'));
     assert.ok(printHTML.includes('ตารางวิเคราะห์และเปรียบเทียบชุดคำนวณ'));
@@ -906,7 +971,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('🏆 คุ้มค่าที่สุด'));
 });
 
-test('all 27 tool renderers are modularized and exported across the 5 tool groups', () => {
+test('all 29 tool renderers are modularized and exported across the 5 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -934,11 +999,13 @@ test('all 27 tool renderers are modularized and exported across the 5 tool group
         lotto_calc:        'renderLottoTool',
         tax_personal:      'renderTaxPersonalTool',
         property_transfer: 'renderPropertyTransferTool',
-        gold_thai:        'renderGoldThaiTool',
-        electricity_bill: 'renderElectricityBillTool'
+        gold_thai:         'renderGoldThaiTool',
+        electricity_bill:  'renderElectricityBillTool',
+        car_loan:          'renderCarLoanTool',
+        social_security:   'renderSocialSecurityTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 27);
+    assert.equal(Object.keys(rendererMap).length, 29);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -1477,6 +1544,212 @@ test('thai gold live API parser and loader validates payload structure, updates 
     assert.equal(mockCtx.appState.gold_thai.priceBarSell, '65950'); // Preserves previous valid rates
     assert.equal(mockCtx.appState.gold_thai.rateSource, 'ค่าเดิมในเครื่อง (เชื่อมต่อ API ไม่สำเร็จ)');
 });
+
+test('auto hire-purchase loan engine (car_loan): new vs used car, VAT 7%, flat rate, EIR approximation and OCPB 2023 early payoff tiers', () => {
+    const ctx = context();
+
+    // 1. New Car Loan: 850,000 THB, 20% down, 2.59% flat rate, 60 months (5 yrs)
+    const newCar = ctx.calculateCarLoan({
+        vehicleType: 'car',
+        condition: 'new',
+        price: 850000,
+        downPaymentType: 'percent',
+        downPaymentValue: 20,
+        interestRate: 2.59,
+        periodMonths: 60,
+        payoffMonth: 30
+    });
+    assert.equal(newCar.downPaymentAmount, 170000);
+    assert.equal(newCar.principal, 680000);
+    assert.equal(newCar.years, 5);
+    assert.equal(Math.round(newCar.totalInterest), 88060); // 680,000 * 0.0259 * 5
+    assert.equal(Math.round(newCar.monthlyPaymentPreVat), 12801); // 768,060 / 60
+    assert.equal(newCar.isVatAdded, false);
+    assert.equal(newCar.vatMonthly, 0);
+    assert.equal(Math.round(newCar.monthlyPayment), 12801);
+    assert.equal(Math.round(newCar.totalRepayment), 768060);
+    assert.equal(Math.round(newCar.totalCostOfCar), 938060); // 170k + 768,060
+    assert.ok(newCar.effectiveRateApprox > 5.0 && newCar.effectiveRateApprox < 5.2, 'EIR approx should be around 5.1%');
+
+    // Early Payoff at Month 30 (between 20 and 40 months -> 70% discount)
+    assert.equal(newCar.oneThirdMonths, 20);
+    assert.equal(newCar.twoThirdMonths, 40);
+    assert.equal(newCar.discountTierPercent, 70);
+    assert.ok(newCar.unearnedInterest > 0);
+    assert.ok(newCar.interestDiscount > 0);
+    assert.ok(newCar.totalPayoffAmount < newCar.remainingMonths * newCar.monthlyPayment);
+
+    // Early Payoff at Month 10 (< 20 months -> 100% discount tier)
+    const newCarEarly = ctx.calculateCarLoan({
+        vehicleType: 'car',
+        condition: 'new',
+        price: 850000,
+        downPaymentType: 'percent',
+        downPaymentValue: 20,
+        interestRate: 2.59,
+        periodMonths: 60,
+        payoffMonth: 10
+    });
+    assert.equal(newCarEarly.discountTierPercent, 100);
+    assert.equal(newCarEarly.interestDiscount, newCarEarly.unearnedInterest);
+
+    // Early Payoff at Month 45 (> 40 months -> 60% discount tier)
+    const newCarLate = ctx.calculateCarLoan({
+        vehicleType: 'car',
+        condition: 'new',
+        price: 850000,
+        downPaymentType: 'percent',
+        downPaymentValue: 20,
+        interestRate: 2.59,
+        periodMonths: 60,
+        payoffMonth: 45
+    });
+    assert.equal(newCarLate.discountTierPercent, 60);
+
+    // 2. Used Car Loan: 400,000 THB, down 40,000 THB (fixed amount), 4.5% flat rate, 48 months (4 yrs)
+    const usedCar = ctx.calculateCarLoan({
+        vehicleType: 'car',
+        condition: 'used',
+        price: 400000,
+        downPaymentType: 'amount',
+        downPaymentValue: 40000,
+        interestRate: 4.5,
+        periodMonths: 48,
+        payoffMonth: 24
+    });
+    assert.equal(usedCar.downPaymentAmount, 40000);
+    assert.equal(usedCar.downPaymentPercent, 10);
+    assert.equal(usedCar.principal, 360000);
+    assert.equal(usedCar.totalInterest, 64800); // 360,000 * 0.045 * 4
+    assert.equal(usedCar.monthlyPaymentPreVat, 8850); // (360,000 + 64,800) / 48
+    assert.equal(usedCar.isVatAdded, true);
+    assert.ok(Math.abs(usedCar.vatMonthly - 619.5) < 1e-6);
+    assert.ok(Math.abs(usedCar.monthlyPayment - 9469.5) < 1e-6);
+    assert.ok(Math.abs(usedCar.totalRepayment - 454536) < 1e-4);
+
+    // 3. Summary text check
+    const summaryCar = ctx.getToolSummaryText('car_loan', {
+        car_loan: {
+            vehicleType: 'car',
+            condition: 'new',
+            price: '850000',
+            downPaymentType: 'percent',
+            downPaymentValue: '20',
+            interestRate: '2.59',
+            periodMonths: '60',
+            payoffMonth: '30'
+        }
+    });
+    assert.match(summaryCar, /สรุปสินเชื่อเช่าซื้อยานพาหนะ/);
+    assert.match(summaryCar, /850,000\.00 บาท/);
+    assert.match(summaryCar, /60 งวด/);
+    assert.match(summaryCar, /12,801\.00 บาท\/งวด/);
+});
+
+test('social security engine (social_security): Section 33, 39, 40, wage ceilings, pension formulas and lump sum returns', () => {
+    const ctx = context();
+
+    // 1. Section 33 (ม.33) with wage above ceiling (35,000 THB -> capped at 15,000 THB)
+    // 240 months (20 years) = 20% + 5 * 1.5% = 27.5% pension
+    const s33_20yrs = ctx.calculateSocialSecurity({
+        section: 'm33',
+        wageMonthly: 35000,
+        contributionMonths: 240
+    });
+    assert.equal(s33_20yrs.cappedWage, 15000);
+    assert.equal(s33_20yrs.monthlyContribution, 750);
+    assert.equal(s33_20yrs.employerContribution, 750);
+    assert.equal(s33_20yrs.oldAgeSavingsMonthly, 450); // 3%
+    assert.equal(s33_20yrs.isPension, true);
+    assert.equal(s33_20yrs.pensionRatePercent, 27.5);
+    assert.equal(s33_20yrs.monthlyPension, 4125); // 15,000 * 27.5%
+    assert.equal(s33_20yrs.yearlyPension, 49500); // 4,125 * 12
+    assert.equal(s33_20yrs.totalWorkerContributed, 180000); // 750 * 240
+
+    // Exactly 180 months (15 years) = 20% base
+    const s33_15yrs = ctx.calculateSocialSecurity({
+        section: 'm33',
+        wageMonthly: 20000,
+        contributionMonths: 180
+    });
+    assert.equal(s33_15yrs.isPension, true);
+    assert.equal(s33_15yrs.pensionRatePercent, 20);
+    assert.equal(s33_15yrs.monthlyPension, 3000); // 15,000 * 20%
+
+    // 300 months (25 years) = 20% + 10 * 1.5% = 35%
+    const s33_25yrs = ctx.calculateSocialSecurity({
+        section: 'm33',
+        wageMonthly: 50000,
+        contributionMonths: 300
+    });
+    assert.equal(s33_25yrs.pensionRatePercent, 35);
+    assert.equal(s33_25yrs.monthlyPension, 5250); // 15,000 * 35%
+
+    // Section 33 with minimum wage floor (1,200 THB -> floor at 1,650 THB)
+    const s33_floor = ctx.calculateSocialSecurity({
+        section: 'm33',
+        wageMonthly: 1200,
+        contributionMonths: 180
+    });
+    assert.equal(s33_floor.cappedWage, 1650);
+    assert.equal(s33_floor.monthlyContribution, 82.5);
+
+    // Section 33 Lump Sum: < 12 months (e.g. 8 months -> only employee 3%)
+    const s33_lump_short = ctx.calculateSocialSecurity({
+        section: 'm33',
+        wageMonthly: 15000,
+        contributionMonths: 8
+    });
+    assert.equal(s33_lump_short.isPension, false);
+    assert.equal(s33_lump_short.lumpSumTotal, 450 * 8); // 3,600 THB
+
+    // Section 33 Lump Sum: 120 months (10 years) -> employee (3%) + employer (3%) + interest returns
+    const s33_lump_long = ctx.calculateSocialSecurity({
+        section: 'm33',
+        wageMonthly: 15000,
+        contributionMonths: 120
+    });
+    assert.equal(s33_lump_long.isPension, false);
+    assert.ok(s33_lump_long.lumpSumTotal > (450 * 2 * 120)); // Base (108,000) + interest
+
+    // 2. Section 39 (ม.39) fixed statutory wage 4,800 THB, 432 THB monthly contribution
+    const s39 = ctx.calculateSocialSecurity({
+        section: 'm39',
+        contributionMonths: 240
+    });
+    assert.equal(s39.cappedWage, 4800);
+    assert.equal(s39.monthlyContribution, 432);
+    assert.equal(s39.oldAgeSavingsMonthly, 288); // 6% of 4,800
+    assert.equal(s39.isPension, true);
+    assert.equal(s39.pensionRatePercent, 27.5);
+    assert.equal(s39.monthlyPension, 1320); // 4,800 * 27.5%
+
+    // 3. Section 40 (ม.40) Plan 2 (100 THB/mo, 50 THB savings) + 500 THB voluntary savings
+    const s40 = ctx.calculateSocialSecurity({
+        section: 'm40',
+        m40Plan: 'plan2',
+        m40ExtraSavings: 500,
+        contributionMonths: 120
+    });
+    assert.equal(s40.monthlyContribution, 600);
+    assert.equal(s40.oldAgeSavingsMonthly, 550); // 50 + 500
+    assert.equal(s40.isPension, false);
+    assert.ok(s40.lumpSumTotal > (550 * 120)); // Total savings + returns
+
+    // 4. Summary text check
+    const summarySS = ctx.getToolSummaryText('social_security', {
+        social_security: {
+            section: 'm33',
+            wageMonthly: '35000',
+            contributionMonths: '240'
+        }
+    });
+    assert.match(summarySS, /สรุปสิทธิประโยชน์ประกันสังคม/);
+    assert.match(summarySS, /มาตรา 33/);
+    assert.match(summarySS, /240 งวด/);
+    assert.match(summarySS, /เงินบำนาญชราภาพตลอดชีพ: 4,125\.00 บาท\/เดือน/);
+});
+
 
 
 
