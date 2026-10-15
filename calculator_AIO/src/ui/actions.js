@@ -231,7 +231,7 @@ function setStatusBanner(stateType, htmlContent) {
     const isDark = appState.theme === 'dark' || appState.theme === 'ferrari';
     const isTogether = appState.theme === 'together';
 
-    const baseTextPad = 'pl-3 pr-24 sm:pr-28';
+    const baseTextPad = 'pl-3 pr-10';
 
     if (stateType === 'empty') {
         banner.className = 'status-banner';

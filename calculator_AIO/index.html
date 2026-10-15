@@ -1144,21 +1144,24 @@
 
             <!-- Shared Status / Result Summary Pill Banner -->
             <section id="sharedStatusBanner" class="status-banner">
-                <div id="sharedStatusText" class="text-[var(--app-muted)] text-[0.98rem] leading-snug w-full pl-3 pr-24 sm:pr-28">กรุณาป้อนข้อมูลของคุณ</div>
-                <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                <div id="sharedStatusText" class="text-[var(--app-muted)] text-[0.98rem] leading-snug w-full pl-3 pr-10">กรุณาป้อนข้อมูลของคุณ</div>
+                <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center">
                     <button id="bannerPrintBtn" type="button" class="p-1.5 rounded-[6px] border border-[var(--color-hairline-soft)] text-xs flex items-center justify-center text-[var(--app-muted)] hover:text-[var(--color-ink)] active:scale-95 transition bg-white/70 dark:bg-white/10" aria-label="พิมพ์หรือบันทึกเป็น PDF" title="พิมพ์หรือบันทึกผลลัพธ์เป็นเอกสาร PDF">
                         <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                         </svg>
                     </button>
-                    <button id="toggleKeypadBtn" type="button" class="px-2 py-1 rounded-[6px] border border-[var(--color-hairline-soft)] text-xs flex items-center gap-1 text-[var(--app-muted)] hover:text-[var(--color-ink)] active:scale-95 transition bg-white/70 dark:bg-white/10" aria-label="ย่อหรือขยายแป้นพิมพ์" title="ย่อ/ขยายแป้นพิมพ์">
-                        <svg id="toggleKeypadIcon" class="w-3.5 h-3.5 transition-transform duration-200" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                        </svg>
-                        <span id="toggleKeypadLabel">ย่อ</span>
-                    </button>
                 </div>
             </section>
+
+            <!-- Keypad Control Strip (Aligned right over Backspace column) -->
+            <div id="keypadToolbar" class="flex justify-end items-center pr-1 -my-0.5">
+                <button id="toggleKeypadBtn" type="button" class="w-7 h-6 rounded-md flex items-center justify-center text-[var(--app-muted)] hover:text-[var(--color-ink)] hover:bg-neutral-200/50 dark:hover:bg-white/10 active:scale-95 transition cursor-pointer" aria-label="ย่อหรือขยายแป้นพิมพ์" title="ย่อ/ขยายแป้นพิมพ์">
+                    <svg id="toggleKeypadIcon" class="w-4 h-4 transition-transform duration-200" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
 
             <!-- Shared Custom 4x4 On-Screen Keypad -->
             <section id="sharedKeypadSection" class="grid grid-cols-4 grid-rows-4 gap-2 flex-[1.42] pt-0.5 pb-1 shrink-0 min-h-[232px]">
@@ -1644,14 +1647,17 @@
             topPanel.dataset.toolId = appState.activeToolId;
             const statusBanner = document.getElementById('sharedStatusBanner');
             const keypadSection = document.getElementById('sharedKeypadSection');
+            const keypadToolbar = document.getElementById('keypadToolbar');
 
             if (toolMeta.usesSharedKeypad) {
                 statusBanner.classList.remove('hidden');
                 keypadSection.classList.remove('hidden');
+                keypadToolbar?.classList.remove('hidden');
                 updateKeypadCollapseUI(false);
             } else {
                 statusBanner.classList.add('hidden');
                 keypadSection.classList.add('hidden');
+                keypadToolbar?.classList.add('hidden');
             }
 
             switch (toolMeta.id) {
