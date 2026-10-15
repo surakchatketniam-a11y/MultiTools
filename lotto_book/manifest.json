@@ -1,0 +1,21 @@
+{
+  "name": "สมุดสลากและสถิติย้อนหลัง | Multitools",
+  "short_name": "สมุดสลาก",
+  "description": "บันทึกสลากกินแบ่งรัฐบาลไทย ตั้งงวด งบประมาณ ตรวจผลรางวัล และวิเคราะห์สถิติตามจริง",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FF385C",
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "./favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}

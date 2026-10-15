@@ -26,6 +26,26 @@
 
         let contentHTML = `
             <div class="space-y-4">
+                <!-- Banner link to standalone Lotto Book app -->
+                <div class="bg-gradient-to-r from-rose-50 to-amber-50 dark:from-rose-950/30 dark:to-amber-950/30 p-3.5 rounded-2xl border border-rose-200 dark:border-rose-800/50 flex items-center justify-between gap-3 text-xs shadow-xs">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-2xl">🎟️</span>
+                        <div>
+                            <div class="font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                                <span>สมุดสลาก & สถิติย้อนหลัง</span>
+                                <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-[#FF385C] text-white font-bold">ใหม่</span>
+                            </div>
+                            <div class="text-[11px] text-gray-500 dark:text-gray-400">
+                                จัดการสลาก บันทึกงบต่องวด ตรวจรางวัลอัตโนมัติ และวิเคราะห์สถิติตามจริง
+                            </div>
+                        </div>
+                    </div>
+                    <a href="../lotto_book/" class="px-3 py-1.5 bg-[#FF385C] hover:bg-[#E00B41] text-white rounded-xl font-semibold whitespace-nowrap shadow-xs transition flex items-center gap-1 text-xs">
+                        <span>เปิดแอป</span>
+                        <span>→</span>
+                    </a>
+                </div>
+
                 <!-- Navigation Tabs -->
                 <div class="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto no-scrollbar gap-1 text-sm font-medium">
                     <button type="button" data-lotto-tab="bet" class="px-3 py-2.5 whitespace-nowrap rounded-t-lg border-b-2 transition-colors ${activeTab === 'bet' ? 'border-[#FF385C] text-[#FF385C] font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}">
