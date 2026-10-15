@@ -908,6 +908,115 @@
                 page-break-inside: avoid;
             }
         }
+        /* Lottery tool shares the calculator's surfaces, controls and theme tokens. */
+        .lotto-tool { --lotto-surface: var(--color-canvas); --lotto-muted: var(--app-muted); color: var(--app-ink); container-type: inline-size; }
+        html:is([data-theme="dark"], [data-theme="ferrari"]) .lotto-tool { --lotto-surface: var(--app-header-bg); }
+        html[data-theme="classic"] .lotto-tool { --lotto-muted: var(--color-muted); }
+        .lotto-tool .lotto-form-grid { grid-template-columns: minmax(0, 1fr); }
+        .lotto-tool .lotto-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .lotto-tool .lotto-stats-grid > :last-child { grid-column: 1 / -1; }
+        @container (min-width: 420px) {
+            .lotto-tool .lotto-stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .lotto-tool .lotto-stats-grid > :last-child { grid-column: auto; }
+        }
+        .lotto-tool .lotto-card {
+            min-width: 0;
+            padding: 16px;
+            border: 1px solid var(--app-hairline);
+            border-radius: var(--app-card-radius);
+            background: var(--lotto-surface);
+            box-shadow: var(--app-elevation);
+        }
+        .lotto-tool .lotto-result, .lotto-tool .lotto-inset.lotto-result {
+            background: var(--app-accent-soft);
+            border-color: var(--app-accent);
+            box-shadow: none;
+        }
+        .lotto-tool .lotto-inset, .lotto-tool .lotto-stat, .lotto-tool .lotto-note {
+            min-width: 0;
+            background: var(--app-surface-soft);
+            border: 1px solid var(--app-hairline);
+            border-radius: var(--app-btn-radius);
+        }
+        .lotto-tool .lotto-stat, .lotto-tool .lotto-note { padding: 12px; }
+        .lotto-tool .lotto-ink { color: var(--app-ink); }
+        .lotto-tool .lotto-muted { color: var(--lotto-muted); }
+        .lotto-tool .lotto-accent { color: var(--app-accent); }
+        .lotto-tool .lotto-hairline { border-color: var(--app-hairline); }
+        .lotto-tool .lotto-soft { background: var(--app-surface-soft); }
+        .lotto-tool .lotto-input {
+            min-width: 0;
+            background: var(--lotto-surface);
+            color: var(--app-ink);
+            border-color: var(--app-hairline);
+            border-radius: var(--app-btn-radius);
+        }
+        .lotto-tool .lotto-input:focus {
+            border-width: 1px;
+            outline: 2px solid var(--app-ink);
+            outline-offset: 1px;
+        }
+        .lotto-tool .lotto-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-height: 40px;
+            padding: 8px 12px;
+            border: 1px solid var(--app-hairline);
+            border-radius: var(--app-btn-radius);
+            background: var(--lotto-surface);
+            color: var(--app-ink);
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.4;
+            text-align: center;
+            transition: background-color 120ms ease, border-color 120ms ease;
+        }
+        .lotto-tool .lotto-compact { min-height: 36px; padding: 6px 10px; font-size: 12px; }
+        .lotto-tool #btnAddManualNumber { flex-shrink: 0; white-space: nowrap; }
+        .lotto-tool .lotto-button.is-selected {
+            background: var(--app-accent-soft);
+            border-color: var(--app-accent);
+            color: var(--app-accent);
+        }
+        .lotto-tool .lotto-primary {
+            background: var(--app-accent);
+            border-color: var(--app-accent);
+            color: #ffffff;
+        }
+        html[data-theme="dark"] .lotto-tool .lotto-primary { color: var(--app-shell-bg); }
+        .lotto-tool .lotto-button:active { background: var(--app-surface-strong); color: var(--app-ink); }
+        .lotto-tool :is(button, a):focus-visible { outline: 2px solid var(--app-ink); outline-offset: 2px; }
+        .lotto-tool .lotto-number-list {
+            max-height: 144px;
+            overflow-y: auto;
+            padding: 8px;
+            background: var(--app-surface-soft);
+            border: 1px solid var(--app-hairline);
+            border-radius: var(--app-btn-radius);
+        }
+        .lotto-tool .lotto-number-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 4px 2px 10px;
+            background: var(--lotto-surface);
+            border: 1px solid var(--app-hairline);
+            border-radius: var(--app-btn-radius);
+            font-size: 13px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+        .lotto-tool .lotto-remove-number { min-width: 32px; min-height: 32px; color: var(--app-muted); }
+        .lotto-tool .lotto-link-button { min-height: 36px; padding: 6px 0 6px 8px; color: var(--app-accent); }
+        .lotto-tool .lotto-book-link { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .lotto-tool .lotto-book-link > div { min-width: 0; }
+        .lotto-tool .lotto-result .flex.justify-between { flex-wrap: wrap; gap: 8px; }
+        .lotto-tool .lotto-result :is(div, span) { min-width: 0; overflow-wrap: anywhere; }
+        .lotto-tool #luckyDisplayNumber { font-size: clamp(2rem, 8vw, 3rem); font-variant-numeric: tabular-nums; }
+        @media (hover: hover) and (pointer: fine) {
+            .lotto-tool .lotto-button:hover { border-color: var(--app-accent); }
+        }
     </style>
 </head>
 <body>
