@@ -399,47 +399,47 @@ function renderHomeRefinanceTool(container) {
     });
 
     container.innerHTML = `
-        <div class="flex flex-col gap-3 p-1">
+        <div class="finance-thai-tool refinance-tool flex flex-col gap-3 p-1">
             <!-- Mode Switcher Tabs -->
-            <div class="segment-group grid-cols-2 mb-0.5">
-                <button type="button" class="segment-btn loan-tab-btn" data-tab="amortization">
-                    📊 ผ่อนชำระ & ตารางโปะ
+            <div class="segment-group grid-cols-2 balanced-segment-modes" role="group" aria-label="โหมดเงินกู้">
+                <button type="button" aria-pressed="false" class="segment-btn loan-tab-btn" data-tab="amortization">
+                    ผ่อนชำระ & ตารางโปะ
                 </button>
-                <button type="button" class="segment-btn loan-tab-btn active" data-tab="refinance">
-                    🔄 รีไฟแนนซ์ vs Retention (ธปท.)
+                <button type="button" aria-pressed="true" class="segment-btn loan-tab-btn active" data-tab="refinance">
+                    รีไฟแนนซ์ / Retention
                 </button>
             </div>
 
             <!-- Principal & Term Inputs -->
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-3" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-neutral-800 border-b border-neutral-100 pb-1.5 flex justify-between items-center">
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)] border-b border-[var(--app-hairline)] pb-1.5 tool-section-heading flex flex-wrap justify-between items-center gap-2">
                     <span>1. ยอดหนี้คงเหลือและระยะเวลา</span>
-                    <span class="text-[11px] font-medium text-emerald-600">อิงแนวทาง ธปท. 3 ปีแรก</span>
+                    <span class="text-[11px] font-medium text-[var(--app-ink)]">เปรียบเทียบช่วง 3 ปีแรก</span>
                 </div>
                 <div>
-                    <label class="text-xs font-medium text-neutral-600 block mb-1">ยอดหนี้บ้านคงเหลือ (Principal Balance)</label>
+                    <label class="text-xs font-medium text-[var(--app-muted)] block mb-1">ยอดหนี้บ้านคงเหลือ (Principal Balance)</label>
                     <div class="relative">
-                        <input id="refinancePrincipal" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.principal))}" class="airbnb-input w-full font-bold text-base text-[var(--color-ink)] pr-12" placeholder="เช่น 2,000,000">
-                        <span class="absolute right-3 top-2.5 text-xs text-neutral-400">บาท</span>
+                        <input id="refinancePrincipal" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.principal))}" class="airbnb-input w-full font-bold text-base text-[var(--app-ink)] pr-12" placeholder="เช่น 2,000,000">
+                        <span class="absolute right-3 top-2.5 text-xs text-[var(--app-muted)]">บาท</span>
                     </div>
                     <!-- Quick Principal Chips -->
                     <div class="flex items-center gap-1.5 mt-2 flex-wrap">
-                        <span class="text-[11px] text-neutral-400">เลือกด่วน:</span>
-                        <button type="button" class="btn-quick-principal px-2.5 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-p="1000000">1.0 ล้าน</button>
-                        <button type="button" class="btn-quick-principal px-2.5 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-p="2000000">2.0 ล้าน</button>
-                        <button type="button" class="btn-quick-principal px-2.5 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-p="3000000">3.0 ล้าน</button>
-                        <button type="button" class="btn-quick-principal px-2.5 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-p="5000000">5.0 ล้าน</button>
+                        <span class="text-[11px] text-[var(--app-muted)]">เลือกด่วน:</span>
+                        <button type="button" class="btn-quick-principal tool-chip-btn" data-p="1000000">1.0 ล้าน</button>
+                        <button type="button" class="btn-quick-principal tool-chip-btn" data-p="2000000">2.0 ล้าน</button>
+                        <button type="button" class="btn-quick-principal tool-chip-btn" data-p="3000000">3.0 ล้าน</button>
+                        <button type="button" class="btn-quick-principal tool-chip-btn" data-p="5000000">5.0 ล้าน</button>
                     </div>
                 </div>
 
                 <div>
-                    <label class="text-xs font-medium text-neutral-600 block mb-1">ระยะเวลาผ่อนที่เหลืออยู่ (เดือน / ปี)</label>
+                    <label class="text-xs font-medium text-[var(--app-muted)] block mb-1">ระยะเวลาผ่อนที่เหลืออยู่ (เดือน / ปี)</label>
                     <div class="grid grid-cols-2 gap-2">
                         <div class="relative">
                             <input id="refinanceMonths" type="number" min="12" max="480" value="${st.months || 240}" class="airbnb-input w-full font-semibold text-xs pr-12">
-                            <span class="absolute right-3 top-2 text-xs text-neutral-400">เดือน</span>
+                            <span class="absolute right-3 top-2 text-xs text-[var(--app-muted)]">เดือน</span>
                         </div>
-                        <div class="flex items-center text-xs font-bold text-neutral-700 bg-neutral-50 rounded-lg px-3 border border-neutral-200">
+                        <div class="flex items-center text-xs font-bold text-[var(--app-ink)] bg-[var(--app-surface-soft)] rounded-lg px-3 border border-[var(--app-hairline)]">
                             ≈ ${(integerOrDefault(st.months, 240) / 12).toFixed(1)} ปี
                         </div>
                     </div>
@@ -447,149 +447,149 @@ function renderHomeRefinanceTool(container) {
             </div>
 
             <!-- Comparison Input Cards (3 Options) -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div class="grid grid-cols-1 gap-3">
                 <!-- Option 1: Existing Floating -->
-                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2">
-                    <div class="text-xs font-bold text-neutral-700 border-b pb-1">
+                <div class="themed-tool-card p-4 space-y-2">
+                    <div class="text-xs font-bold text-[var(--app-ink)] border-b pb-1">
                         1. ดอกเบี้ยเดิมลอยตัว
                     </div>
                     <div>
-                        <label class="text-[11px] text-neutral-500 block mb-0.5">ดอกเบี้ย MRR เดิม (%)</label>
+                        <label class="text-[11px] text-[var(--app-muted)] block mb-0.5">ดอกเบี้ย MRR เดิม (%)</label>
                         <input id="refinanceCurrentRate" type="number" step="0.01" value="${st.currentRate ?? '5.50'}" class="airbnb-input w-full text-xs font-bold text-center">
                     </div>
-                    <div class="pt-1 border-t text-[11px] space-y-1 text-neutral-600">
-                        <div class="flex justify-between">
+                    <div class="pt-1 border-t text-[11px] space-y-1 text-[var(--app-muted)]">
+                        <div class="flex justify-between gap-3">
                             <span>ผ่อนต่อเดือน:</span>
-                            <b class="text-neutral-800">${formatMoney(calc.currentPlan.monthlyPay)} ฿</b>
+                            <b class="text-[var(--app-ink)]">${formatMoney(calc.currentPlan.monthlyPay)} ฿</b>
                         </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between gap-3">
                             <span>ดอกเบี้ย 3 ปี:</span>
-                            <b class="text-red-600">${formatMoney(calc.currentPlan.interestPaid3Y)} ฿</b>
+                            <b class="text-[var(--app-ink)]">${formatMoney(calc.currentPlan.interestPaid3Y)} ฿</b>
                         </div>
                     </div>
                 </div>
 
                 <!-- Option 2: Retention -->
-                <div class="bg-emerald-50/50 border border-emerald-300 rounded-[var(--app-card-radius)] p-3 space-y-2">
-                    <div class="text-xs font-bold text-emerald-800 border-b border-emerald-200 pb-1 flex justify-between">
+                <div class="themed-tool-card p-4 space-y-3">
+                    <div class="text-xs font-bold text-[var(--app-ink)] border-b border-[var(--app-hairline)] pb-1 flex justify-between gap-3">
                         <span>2. ขอลดแบงก์เดิม</span>
-                        <span class="text-[10px] bg-emerald-100 text-emerald-800 px-1 rounded">Retention</span>
+                        <span class="text-[11px] bg-[var(--app-surface-soft)] text-[var(--app-ink)] px-1 rounded">Retention</span>
                     </div>
                     <div>
-                        <label class="text-[11px] text-emerald-700 block mb-0.5">ดอกเบี้ย Retention เฉลี่ย (%)</label>
-                        <input id="refinanceRetentionRate" type="number" step="0.01" value="${st.retentionRate ?? '3.80'}" class="airbnb-input w-full text-xs font-bold text-center text-emerald-900 border-emerald-300">
+                        <label class="text-[11px] text-[var(--app-ink)] block mb-0.5">ดอกเบี้ย Retention เฉลี่ย (%)</label>
+                        <input id="refinanceRetentionRate" type="number" step="0.01" value="${st.retentionRate ?? '3.80'}" class="airbnb-input w-full text-xs font-bold text-center text-[var(--app-ink)] border-[var(--app-hairline)]">
                     </div>
                     <div>
-                        <label class="text-[10px] text-neutral-500 block mb-0.5">ค่าธรรมเนียม Retention (ถ้ามี)</label>
+                        <label class="text-[11px] text-[var(--app-muted)] block mb-0.5">ค่าธรรมเนียม Retention (ถ้ามี)</label>
                         <input id="refinanceRetentionFee" type="number" value="${st.retentionFee ?? '0'}" class="airbnb-input w-full text-xs text-center">
                     </div>
-                    <div class="pt-1 border-t border-emerald-200 text-[11px] space-y-1 text-emerald-950 font-medium">
-                        <div class="flex justify-between">
+                    <div class="pt-1 border-t border-[var(--app-hairline)] text-[11px] space-y-1 text-[var(--app-ink)] font-medium">
+                        <div class="flex justify-between gap-3">
                             <span>ผ่อนต่อเดือน:</span>
                             <b>${formatMoney(calc.retentionPlan.monthlyPay)} ฿</b>
                         </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between gap-3">
                             <span>ประหยัดสุทธิ 3 ปี:</span>
-                            <b class="text-emerald-700">+${formatMoney(calc.retentionNetSavings)} ฿</b>
+                            <b class="text-[var(--app-ink)]">+${formatMoney(calc.retentionNetSavings)} ฿</b>
                         </div>
                     </div>
                 </div>
 
                 <!-- Option 3: Refinance -->
-                <div class="bg-blue-50/50 border border-blue-300 rounded-[var(--app-card-radius)] p-3 space-y-2">
-                    <div class="text-xs font-bold text-blue-800 border-b border-blue-200 pb-1 flex justify-between">
+                <div class="themed-tool-card p-4 space-y-3">
+                    <div class="text-xs font-bold text-[var(--app-ink)] border-b border-[var(--app-hairline)] pb-1 flex justify-between gap-3">
                         <span>3. ย้ายธนาคารใหม่</span>
-                        <span class="text-[10px] bg-blue-100 text-blue-800 px-1 rounded">Refinance</span>
+                        <span class="text-[11px] bg-[var(--app-surface-soft)] text-[var(--app-ink)] px-1 rounded">Refinance</span>
                     </div>
                     <div>
-                        <label class="text-[11px] text-blue-700 block mb-0.5">ดอกเบี้ยเฉลี่ย 3 ปีแรก (%)</label>
-                        <input id="refinanceNewRate" type="number" step="0.01" value="${st.refinanceRate ?? '2.99'}" class="airbnb-input w-full text-xs font-bold text-center text-blue-900 border-blue-300">
+                        <label class="text-[11px] text-[var(--app-ink)] block mb-0.5">ดอกเบี้ยเฉลี่ย 3 ปีแรก (%)</label>
+                        <input id="refinanceNewRate" type="number" step="0.01" value="${st.refinanceRate ?? '2.99'}" class="airbnb-input w-full text-xs font-bold text-center text-[var(--app-ink)] border-[var(--app-hairline)]">
                     </div>
-                    <div class="pt-1 text-[11px] space-y-1 text-blue-950 font-medium">
-                        <label class="flex items-center gap-1.5 text-[10px] text-neutral-600 cursor-pointer mb-1">
-                            <input id="refinanceGovReduced" type="checkbox" ${calc.isGovReduced ? 'checked' : ''} class="rounded text-blue-600">
+                    <div class="pt-1 text-[11px] space-y-1 text-[var(--app-ink)] font-medium">
+                        <label class="flex items-center gap-1.5 text-[11px] text-[var(--app-muted)] cursor-pointer mb-1">
+                            <input id="refinanceGovReduced" type="checkbox" ${calc.isGovReduced ? 'checked' : ''} class="rounded text-[var(--app-ink)]">
                             <span>มาตรการรัฐ (จำนอง 0.01%)</span>
                         </label>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between gap-3">
                             <span>รวมค่าใช้จ่ายย้าย:</span>
-                            <b class="text-neutral-700">-${formatMoney(calc.totalRefinanceFees)} ฿</b>
+                            <b class="text-[var(--app-ink)]">-${formatMoney(calc.totalRefinanceFees)} ฿</b>
                         </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between gap-3">
                             <span>ผ่อนต่อเดือน:</span>
                             <b>${formatMoney(calc.refinancePlan.monthlyPay)} ฿</b>
                         </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between gap-3">
                             <span>ประหยัดสุทธิ 3 ปี:</span>
-                            <b class="text-blue-700">+${formatMoney(calc.refinanceNetSavings)} ฿</b>
+                            <b class="text-[var(--app-ink)]">+${formatMoney(calc.refinanceNetSavings)} ฿</b>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- HERO RECOMMENDATION BOX -->
-            <div class="rounded-[var(--app-card-radius)] p-4 border ${calc.isRefinanceBetter ? 'bg-blue-50 border-blue-300 text-blue-950' : 'bg-emerald-50 border-emerald-300 text-emerald-950'} space-y-3" style="box-shadow:var(--app-elevation)">
-                <div class="flex items-center justify-between">
+            <div class="themed-result-card theme-result-highlight p-5 space-y-3">
+                <div class="tool-section-heading flex flex-wrap items-center justify-between gap-2">
                     <div>
-                        <span class="text-xs font-extrabold uppercase tracking-wider ${calc.isRefinanceBetter ? 'text-blue-700' : 'text-emerald-700'}">
-                            💡 ผลวิเคราะห์ความคุ้มค่าตามแนวทาง ธปท.
+                        <span class="text-xs font-semibold text-[var(--app-muted)]">
+                            ผลเปรียบเทียบความคุ้มค่า
                         </span>
-                        <div class="text-lg sm:text-xl font-bold mt-1 text-[var(--color-ink)]">
+                        <div class="text-lg sm:text-xl font-bold mt-1 text-[var(--app-ink)]">
                             ${escapeHTML(calc.recommendation)}
                         </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-black/10 text-xs">
-                    <div class="bg-white/80 rounded-lg p-2 border border-black/5">
-                        <div class="text-[10px] text-neutral-500">จุดคุ้มทุน (Breakeven)</div>
-                        <div class="text-sm font-bold text-neutral-800 mt-0.5">
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-[var(--app-hairline)] text-xs">
+                    <div class="themed-subcard p-3">
+                        <div class="text-[11px] text-[var(--app-muted)]">จุดคุ้มทุน (Breakeven)</div>
+                        <div class="text-sm font-bold text-[var(--app-ink)] mt-0.5">
                             ${calc.breakevenMonth !== null ? (calc.breakevenMonth === 0 ? 'คุ้มทุนทันที' : `เดือนที่ ${calc.breakevenMonth} (ปีที่ ${(calc.breakevenMonth / 12).toFixed(1)})`) : 'ไม่คุ้มทุน'}
                         </div>
-                        <div class="text-[9px] text-neutral-400">จากส่วนต่างค่าธรรมเนียม</div>
+                        <div class="text-[11px] text-[var(--app-muted)]">จากส่วนต่างค่าธรรมเนียม</div>
                     </div>
-                    <div class="bg-white/80 rounded-lg p-2 border border-black/5">
-                        <div class="text-[10px] text-neutral-500">ประหยัดดอกเบี้ย 3 ปี (Refinance)</div>
-                        <div class="text-sm font-bold text-blue-700 mt-0.5">+${formatMoney(calc.refinanceInterestSaved)} ฿</div>
-                        <div class="text-[9px] text-neutral-400">เทียบกับไม่ทำอะไรเลย</div>
+                    <div class="themed-subcard p-3">
+                        <div class="text-[11px] text-[var(--app-muted)]">ประหยัดดอกเบี้ย 3 ปี (Refinance)</div>
+                        <div class="text-sm font-bold text-[var(--app-ink)] mt-0.5">+${formatMoney(calc.refinanceInterestSaved)} ฿</div>
+                        <div class="text-[11px] text-[var(--app-muted)]">เทียบกับไม่ทำอะไรเลย</div>
                     </div>
-                    <div class="bg-white/80 rounded-lg p-2 border border-black/5 col-span-2 sm:col-span-1">
-                        <div class="text-[10px] text-neutral-500">ประหยัดดอกเบี้ย 3 ปี (Retention)</div>
-                        <div class="text-sm font-bold text-emerald-700 mt-0.5">+${formatMoney(calc.retentionInterestSaved)} ฿</div>
-                        <div class="text-[9px] text-neutral-400">ไม่มีค่าธรรมเนียมย้ายค่าย</div>
+                    <div class="themed-subcard p-3 col-span-2 sm:col-span-1">
+                        <div class="text-[11px] text-[var(--app-muted)]">ประหยัดดอกเบี้ย 3 ปี (Retention)</div>
+                        <div class="text-sm font-bold text-[var(--app-ink)] mt-0.5">+${formatMoney(calc.retentionInterestSaved)} ฿</div>
+                        <div class="text-[11px] text-[var(--app-muted)]">ไม่มีค่าธรรมเนียมย้ายค่าย</div>
                     </div>
                 </div>
             </div>
 
             <!-- ITEMIZED REFINANCE CLOSING COSTS BREAKDOWN -->
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
-                <div class="font-bold text-neutral-800 border-b border-neutral-100 pb-1.5 flex justify-between">
+            <div class="themed-tool-card p-4 space-y-2 text-xs">
+                <div class="font-bold text-[var(--app-ink)] border-b border-[var(--app-hairline)] pb-1.5 flex justify-between gap-3">
                     <span>รายละเอียดค่าใช้จ่ายในการรีไฟแนนซ์ (Refinance Closing Costs)</span>
                     <span>ประมาณการ</span>
                 </div>
-                <div class="flex justify-between py-0.5">
-                    <span class="text-neutral-600">1. ค่าจดจำนองที่ดิน (${calc.isGovReduced ? 'มาตรการรัฐ 0.01%' : 'อัตราปกติ 1.0%'})</span>
-                    <b class="text-neutral-800">${formatMoney(calc.mortgageFee)} บาท</b>
+                <div class="flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">1. ค่าจดจำนองที่ดิน (${calc.isGovReduced ? 'มาตรการรัฐ 0.01%' : 'อัตราปกติ 1.0%'})</span>
+                    <b class="text-[var(--app-ink)]">${formatMoney(calc.mortgageFee)} บาท</b>
                 </div>
-                <div class="flex justify-between py-0.5">
-                    <span class="text-neutral-600">2. ค่าประเมินราคาหลักทรัพย์</span>
-                    <b class="text-neutral-800">${formatMoney(calc.appraisalFee)} บาท</b>
+                <div class="flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">2. ค่าประเมินราคาหลักทรัพย์</span>
+                    <b class="text-[var(--app-ink)]">${formatMoney(calc.appraisalFee)} บาท</b>
                 </div>
-                <div class="flex justify-between py-0.5">
-                    <span class="text-neutral-600">3. ค่าอากรแสตมป์สัญญาเงินกู้ (0.05% สูงสุด 10,000 บ.)</span>
-                    <b class="text-neutral-800">${formatMoney(calc.stampDuty)} บาท</b>
+                <div class="flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">3. ค่าอากรแสตมป์สัญญาเงินกู้ (0.05% สูงสุด 10,000 บ.)</span>
+                    <b class="text-[var(--app-ink)]">${formatMoney(calc.stampDuty)} บาท</b>
                 </div>
-                <div class="flex justify-between py-0.5">
-                    <span class="text-neutral-600">4. ค่าเบี้ยประกันอัคคีภัย (ประมาณการ)</span>
-                    <b class="text-neutral-800">${formatMoney(calc.insuranceFee)} บาท</b>
+                <div class="flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">4. ค่าเบี้ยประกันอัคคีภัย (ประมาณการ)</span>
+                    <b class="text-[var(--app-ink)]">${formatMoney(calc.insuranceFee)} บาท</b>
                 </div>
-                <div class="border-t border-neutral-200 pt-1.5 flex justify-between font-bold text-neutral-900">
+                <div class="border-t border-[var(--app-hairline)] pt-1.5 flex justify-between gap-3 font-bold text-[var(--app-ink)]">
                     <span>รวมค่าใช้จ่ายดำเนินการรีไฟแนนซ์ทั้งหมด</span>
-                    <span class="text-red-700">${formatMoney(calc.totalRefinanceFees)} บาท</span>
+                    <span class="text-[var(--app-ink)]">${formatMoney(calc.totalRefinanceFees)} บาท</span>
                 </div>
 
                 <div class="flex justify-end pt-2">
-                    <button id="btnPrintRefinanceSummary" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm">
-                        🖨️ พิมพ์เอกสารวิเคราะห์รีไฟแนนซ์ / PDF
+                    <button id="btnPrintRefinanceSummary" type="button" class="tool-action-btn text-xs">
+                        พิมพ์เอกสารวิเคราะห์รีไฟแนนซ์ / PDF
                     </button>
                 </div>
             </div>
@@ -660,7 +660,7 @@ function renderHomeRefinanceTool(container) {
     });
 
     // Status Banner
-    setStatusBanner('success', `🏠 แนะนำ: <b>${calc.isRefinanceBetter ? 'รีไฟแนนซ์' : 'Retention'}</b> · ประหยัดสุทธิ 3 ปี <b>${formatMoney(calc.isRefinanceBetter ? calc.refinanceNetSavings : calc.retentionNetSavings)} บาท</b>${calc.breakevenMonth !== null ? ` (จุดคุ้มทุนเดือนที่ ${calc.breakevenMonth})` : ''}`);
+    setStatusBanner('success', `แนะนำ: <b>${calc.isRefinanceBetter ? 'รีไฟแนนซ์' : 'Retention'}</b> · ประหยัดสุทธิ 3 ปี <b>${formatMoney(calc.isRefinanceBetter ? calc.refinanceNetSavings : calc.retentionNetSavings)} บาท</b>${calc.breakevenMonth !== null ? ` (จุดคุ้มทุนเดือนที่ ${calc.breakevenMonth})` : ''}`);
 }
 
 /* -----------------------------------------------------------

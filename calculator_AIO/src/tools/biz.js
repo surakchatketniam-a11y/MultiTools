@@ -381,210 +381,210 @@ function renderEcommerceProfitTool(container) {
     const isCustom = st.platform === 'custom';
 
     container.innerHTML = `
-        <div class="flex flex-col gap-3 p-1">
+        <div class="finance-thai-tool ecommerce-tool flex flex-col gap-3 p-1">
             <!-- Platform Selector -->
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2" style="box-shadow:var(--app-elevation)">
-                <div class="flex items-center justify-between">
-                    <label class="text-xs font-bold text-neutral-600 dark:text-neutral-400">เลือกแพลตฟอร์มขายสินค้า</label>
-                    <span class="text-[11px] font-semibold text-emerald-600">ค่าธรรมเนียมปี 2025/2026</span>
+            <div class="themed-tool-card p-4 space-y-2">
+                <div class="tool-section-heading flex flex-wrap items-center justify-between gap-2">
+                    <label class="text-xs font-bold text-[var(--app-muted)]">เลือกแพลตฟอร์มขายสินค้า</label>
+                    <span class="text-[11px] font-semibold text-[var(--app-ink)]">ปรับอัตราให้ตรงกับร้านของคุณ</span>
                 </div>
-                <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 text-xs font-semibold">
-                    <button type="button" class="btn-ecom-plat py-2 px-1.5 rounded-lg border text-center transition-all cursor-pointer ${isShopee ? 'bg-orange-50 border-orange-500 text-orange-700 font-bold shadow-sm' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'}" data-plat="shopee">
-                        🟠 Shopee
+                <div class="grid grid-cols-2 gap-1.5 text-xs font-semibold">
+                    <button type="button" class="btn-ecom-plat tool-chip-btn" aria-pressed="${isShopee}" data-plat="shopee">
+                        Shopee
                     </button>
-                    <button type="button" class="btn-ecom-plat py-2 px-1.5 rounded-lg border text-center transition-all cursor-pointer ${isLazada ? 'bg-blue-50 border-blue-500 text-blue-700 font-bold shadow-sm' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'}" data-plat="lazada">
-                        🔵 Lazada
+                    <button type="button" class="btn-ecom-plat tool-chip-btn" aria-pressed="${isLazada}" data-plat="lazada">
+                        Lazada
                     </button>
-                    <button type="button" class="btn-ecom-plat py-2 px-1.5 rounded-lg border text-center transition-all cursor-pointer ${isTiktok ? 'bg-neutral-900 border-neutral-900 text-white font-bold shadow-sm' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'}" data-plat="tiktok">
-                        ⚫ TikTok
+                    <button type="button" class="btn-ecom-plat tool-chip-btn" aria-pressed="${isTiktok}" data-plat="tiktok">
+                        TikTok
                     </button>
-                    <button type="button" class="btn-ecom-plat py-2 px-1.5 rounded-lg border text-center transition-all cursor-pointer ${isDirect ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-bold shadow-sm' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'}" data-plat="direct">
-                        🟢 ขายตรง (LINE)
+                    <button type="button" class="btn-ecom-plat tool-chip-btn" aria-pressed="${isDirect}" data-plat="direct">
+                        ขายตรง (LINE)
                     </button>
-                    <button type="button" class="btn-ecom-plat py-2 px-1.5 rounded-lg border text-center transition-all cursor-pointer ${isCustom ? 'bg-purple-50 border-purple-500 text-purple-700 font-bold shadow-sm' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'}" data-plat="custom">
-                        ⚙️ กำหนดเอง
+                    <button type="button" class="btn-ecom-plat tool-chip-btn" aria-pressed="${isCustom}" data-plat="custom">
+                        กำหนดเอง
                     </button>
                 </div>
             </div>
 
             <!-- Card 1: ราคาขายและโปรโมชัน -->
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-3" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-neutral-800 border-b border-neutral-100 pb-1.5 flex justify-between items-center">
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)] border-b border-[var(--app-hairline)] pb-1.5 tool-section-heading flex flex-wrap justify-between items-center gap-2">
                     <span>1. ราคาขายและโปรโมชันหน้าร้าน</span>
-                    <span class="text-[11px] font-normal text-neutral-500">ใส่ราคาตั้งขาย</span>
+                    <span class="text-[11px] font-normal text-[var(--app-muted)]">ใส่ราคาตั้งขาย</span>
                 </div>
                 <div>
-                    <label class="text-xs font-medium text-neutral-600 block mb-1">ราคาตั้งขายต่อชิ้น (บาท)</label>
+                    <label class="text-xs font-medium text-[var(--app-muted)] block mb-1">ราคาตั้งขายต่อชิ้น (บาท)</label>
                     <div class="relative">
-                        <input id="ecomSellingPrice" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.sellingPrice))}" class="airbnb-input w-full font-bold text-base text-[var(--color-ink)] pr-12" placeholder="เช่น 350">
-                        <span class="absolute right-3 top-2.5 text-xs text-neutral-400">บาท</span>
+                        <input id="ecomSellingPrice" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.sellingPrice))}" class="airbnb-input w-full font-bold text-base text-[var(--app-ink)] pr-12" placeholder="เช่น 350">
+                        <span class="absolute right-3 top-2.5 text-xs text-[var(--app-muted)]">บาท</span>
                     </div>
                     <!-- Quick Price Step Chips -->
                     <div class="flex items-center gap-1.5 mt-2 flex-wrap">
-                        <span class="text-[11px] text-neutral-400">บวกราคา:</span>
-                        <button type="button" class="btn-quick-price px-2 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-add="10">+10</button>
-                        <button type="button" class="btn-quick-price px-2 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-add="20">+20</button>
-                        <button type="button" class="btn-quick-price px-2 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-add="50">+50</button>
-                        <button type="button" class="btn-quick-price px-2 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-add="100">+100</button>
+                        <span class="text-[11px] text-[var(--app-muted)]">บวกราคา:</span>
+                        <button type="button" class="btn-quick-price tool-chip-btn" data-add="10">+10</button>
+                        <button type="button" class="btn-quick-price tool-chip-btn" data-add="20">+20</button>
+                        <button type="button" class="btn-quick-price tool-chip-btn" data-add="50">+50</button>
+                        <button type="button" class="btn-quick-price tool-chip-btn" data-add="100">+100</button>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div class="grid grid-cols-2 gap-2.5">
                     <div>
-                        <label class="text-xs font-medium text-neutral-600 block mb-1">คูปองส่วนลดที่ร้านออกให้ (บาท)</label>
+                        <label class="text-xs font-medium text-[var(--app-muted)] block mb-1">คูปองส่วนลดที่ร้านออกให้ (บาท)</label>
                         <input id="ecomShopVoucher" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.shopVoucher))}" class="airbnb-input w-full text-xs" placeholder="เช่น 20 (ถ้าไม่มีใส่ 0)">
                     </div>
                     <div>
-                        <label class="text-xs font-medium text-neutral-600 block mb-1">ค่าส่งที่ลูกค้าจ่ายหน้าร้าน (บาท)</label>
+                        <label class="text-xs font-medium text-[var(--app-muted)] block mb-1">ค่าส่งที่ลูกค้าจ่ายหน้าร้าน (บาท)</label>
                         <input id="ecomCustomerShipping" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.customerShipping))}" class="airbnb-input w-full text-xs" placeholder="เช่น 35">
                     </div>
                 </div>
             </div>
 
             <!-- Card 2: ต้นทุนสินค้าและการดำเนินการ -->
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-3" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-neutral-800 border-b border-neutral-100 pb-1.5">
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)] border-b border-[var(--app-hairline)] pb-1.5">
                     2. ต้นทุนสินค้า ค่าแพ็ค และค่าโฆษณา
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div class="grid grid-cols-2 gap-2.5">
                     <div>
-                        <label class="text-xs font-medium text-neutral-600 block mb-1">ราคาทุนสินค้า / ผลิต (บาท)</label>
+                        <label class="text-xs font-medium text-[var(--app-muted)] block mb-1">ราคาทุนสินค้า / ผลิต (บาท)</label>
                         <input id="ecomProductCost" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.productCost))}" class="airbnb-input w-full text-xs font-semibold" placeholder="เช่น 150">
                     </div>
                     <div>
-                        <label class="text-xs font-medium text-neutral-600 block mb-1">ค่ากล่อง / เทป / ซองแพ็ค (บาท)</label>
+                        <label class="text-xs font-medium text-[var(--app-muted)] block mb-1">ค่ากล่อง / เทป / ซองแพ็ค (บาท)</label>
                         <input id="ecomPackagingCost" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.packagingCost))}" class="airbnb-input w-full text-xs" placeholder="เช่น 10">
                     </div>
                     <div>
-                        <label class="text-xs font-medium text-neutral-600 block mb-1">ค่าส่งจริงที่ขนส่งหัก (บาท)</label>
+                        <label class="text-xs font-medium text-[var(--app-muted)] block mb-1">ค่าส่งจริงที่ขนส่งหัก (บาท)</label>
                         <input id="ecomSellerShipping" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.sellerShipping))}" class="airbnb-input w-full text-xs" placeholder="เช่น 35">
                     </div>
                     <div>
-                        <label class="text-xs font-medium text-neutral-600 block mb-1">งบยิงแอด/โฆษณาเฉลี่ยต่อออเดอร์ (บาท)</label>
+                        <label class="text-xs font-medium text-[var(--app-muted)] block mb-1">งบยิงแอด/โฆษณาเฉลี่ยต่อออเดอร์ (บาท)</label>
                         <input id="ecomAdSpend" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.adSpendPerOrder))}" class="airbnb-input w-full text-xs" placeholder="เช่น 30 (ถ้าไม่ยิงใส่ 0)">
                     </div>
                 </div>
             </div>
 
             <!-- Card 3: อัตราค่าธรรมเนียมแพลตฟอร์ม -->
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-2.5" style="box-shadow:var(--app-elevation)">
-                <div class="text-xs font-bold text-neutral-800 border-b border-neutral-100 pb-1.5 flex justify-between items-center">
+            <div class="themed-tool-card p-4 space-y-2.5">
+                <div class="text-xs font-bold text-[var(--app-ink)] border-b border-[var(--app-hairline)] pb-1.5 tool-section-heading flex flex-wrap justify-between items-center gap-2">
                     <span>3. โครงสร้างค่าธรรมเนียม (${escapeHTML(calc.platform.toUpperCase())})</span>
-                    <label class="flex items-center gap-1.5 text-[11px] text-neutral-600 cursor-pointer">
-                        <input id="ecomVatCheck" type="checkbox" ${calc.isVatApplied ? 'checked' : ''} class="rounded border-neutral-300 text-emerald-600">
+                    <label class="flex items-center gap-1.5 text-[11px] text-[var(--app-muted)] cursor-pointer">
+                        <input id="ecomVatCheck" type="checkbox" ${calc.isVatApplied ? 'checked' : ''} class="rounded border-[var(--app-hairline)] text-[var(--app-ink)]">
                         <span>คิด VAT 7% เพิ่มบนค่าธรรมเนียม</span>
                     </label>
                 </div>
                 <div class="grid grid-cols-3 gap-2 text-xs">
                     <div>
-                        <label class="text-[11px] text-neutral-500 block mb-1">คอมมิชชัน (%)</label>
+                        <label class="text-[11px] text-[var(--app-muted)] block mb-1">คอมมิชชัน (%)</label>
                         <input id="ecomCommission" type="number" step="0.1" value="${st.commissionRatePct}" class="airbnb-input w-full text-xs text-center font-semibold">
                     </div>
                     <div>
-                        <label class="text-[11px] text-neutral-500 block mb-1">โปรแกรมส่งฟรี (%)</label>
+                        <label class="text-[11px] text-[var(--app-muted)] block mb-1">โปรแกรมส่งฟรี (%)</label>
                         <input id="ecomService" type="number" step="0.1" value="${st.serviceFeePct}" class="airbnb-input w-full text-xs text-center font-semibold">
                     </div>
                     <div>
-                        <label class="text-[11px] text-neutral-500 block mb-1">ธุรกรรม/ชำระเงิน (%)</label>
+                        <label class="text-[11px] text-[var(--app-muted)] block mb-1">ธุรกรรม/ชำระเงิน (%)</label>
                         <input id="ecomTransaction" type="number" step="0.1" value="${st.transactionRatePct}" class="airbnb-input w-full text-xs text-center font-semibold">
                     </div>
                 </div>
             </div>
 
             <!-- HERO SUMMARY CARD -->
-            <div class="rounded-[var(--app-card-radius)] p-4 border ${calc.isProfit ? 'bg-emerald-50/70 border-emerald-300 text-emerald-950' : 'bg-red-50/70 border-red-300 text-red-950'} space-y-3" style="box-shadow:var(--app-elevation)">
-                <div class="flex items-center justify-between">
+            <div class="themed-result-card ${calc.isProfit ? 'is-profit' : 'is-loss'} p-5 space-y-3">
+                <div class="tool-section-heading flex flex-wrap items-center justify-between gap-2">
                     <div>
-                        <span class="text-xs uppercase font-bold tracking-wider ${calc.isProfit ? 'text-emerald-700' : 'text-red-700'}">
-                            ${calc.isProfit ? '💰 กำไรสุทธิต่อออเดอร์ (Net Profit)' : '⚠️ ขาดทุนต่อออเดอร์ (Net Loss)'}
+                        <span class="text-xs font-semibold text-[var(--app-muted)]">
+                            ${calc.isProfit ? 'กำไรสุทธิต่อออเดอร์' : 'ขาดทุนต่อออเดอร์'}
                         </span>
-                        <div class="text-2xl sm:text-3xl font-extrabold mt-0.5 ${calc.isProfit ? 'text-emerald-700' : 'text-red-700'}">
+                        <div class="themed-result-value text-2xl md:text-3xl font-extrabold mt-1">
                             ${formatMoney(calc.netProfit)} บาท
                         </div>
                     </div>
                     <div class="text-right">
-                        <span class="inline-block px-2.5 py-1 text-xs font-bold rounded-full ${calc.isProfit ? 'bg-emerald-200 text-emerald-900' : 'bg-red-200 text-red-900'}">
+                        <span class="tool-metric-chip">
                             Margin ${formatNum(calc.profitMarginPct, 1)}%
                         </span>
-                        <div class="text-[11px] text-neutral-500 mt-1">
+                        <div class="text-[11px] text-[var(--app-muted)] mt-1">
                             Markup: ${formatNum(calc.markupPct, 1)}%
                         </div>
                     </div>
                 </div>
 
                 <!-- Sub KPI Grid -->
-                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-black/10">
-                    <div class="bg-white/80 rounded-lg p-2.5 border border-black/5">
-                        <div class="text-[11px] text-neutral-500 font-medium">ราคาขายขั้นต่ำที่ไม่ขาดทุน (Breakeven)</div>
-                        <div class="text-base font-bold text-[var(--color-ink)] mt-0.5">${formatMoney(calc.breakevenPrice)} ฿</div>
-                        <div class="text-[10px] text-neutral-400">ขายต่ำกว่านี้จะเริ่มเข้าเนื้อ</div>
+                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-[var(--app-hairline)]">
+                    <div class="themed-subcard p-3">
+                        <div class="text-[11px] text-[var(--app-muted)] font-medium">ราคาขายขั้นต่ำที่ไม่ขาดทุน (Breakeven)</div>
+                        <div class="text-base font-bold text-[var(--app-ink)] mt-0.5">${formatMoney(calc.breakevenPrice)} ฿</div>
+                        <div class="text-[11px] text-[var(--app-muted)]">ขายต่ำกว่านี้จะเริ่มเข้าเนื้อ</div>
                     </div>
-                    <div class="bg-white/80 rounded-lg p-2.5 border border-black/5">
-                        <div class="text-[11px] text-neutral-500 font-medium">เงินโอนเข้าบัญชีจริง (Net Payout)</div>
-                        <div class="text-base font-bold text-emerald-800 mt-0.5">${formatMoney(calc.netPayout)} ฿</div>
-                        <div class="text-[10px] text-neutral-400">หลังหักค่าธรรมเนียมและค่าส่ง</div>
+                    <div class="themed-subcard p-3">
+                        <div class="text-[11px] text-[var(--app-muted)] font-medium">เงินโอนเข้าบัญชีจริง (Net Payout)</div>
+                        <div class="text-base font-bold text-[var(--app-ink)] mt-0.5">${formatMoney(calc.netPayout)} ฿</div>
+                        <div class="text-[11px] text-[var(--app-muted)]">หลังหักค่าธรรมเนียมและค่าส่ง</div>
                     </div>
                 </div>
             </div>
 
             <!-- ITEMIZED COST BREAKDOWN -->
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
-                <div class="font-bold text-neutral-800 border-b border-neutral-100 pb-1.5 flex justify-between">
+            <div class="themed-tool-card p-4 space-y-2 text-xs">
+                <div class="font-bold text-[var(--app-ink)] border-b border-[var(--app-hairline)] pb-1.5 flex justify-between gap-3">
                     <span>ตารางแจกแจงค่าธรรมเนียมและต้นทุน</span>
                     <span>สัดส่วน</span>
                 </div>
-                <div class="flex justify-between py-0.5">
-                    <span class="text-neutral-600">1. ต้นทุนตัวสินค้า (COGS)</span>
-                    <b class="text-neutral-800">${formatMoney(calc.productCost)} ฿ (${calc.sellingPrice > 0 ? formatNum((calc.productCost / calc.sellingPrice) * 100, 1) : 0}%)</b>
+                <div class="flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">1. ต้นทุนตัวสินค้า (COGS)</span>
+                    <b class="text-[var(--app-ink)]">${formatMoney(calc.productCost)} ฿ (${calc.sellingPrice > 0 ? formatNum((calc.productCost / calc.sellingPrice) * 100, 1) : 0}%)</b>
                 </div>
-                <div class="flex justify-between py-0.5">
-                    <span class="text-neutral-600">2. ค่ากล่องและบรรจุภัณฑ์</span>
-                    <b class="text-neutral-800">${formatMoney(calc.packagingCost)} ฿</b>
+                <div class="flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">2. ค่ากล่องและบรรจุภัณฑ์</span>
+                    <b class="text-[var(--app-ink)]">${formatMoney(calc.packagingCost)} ฿</b>
                 </div>
-                <div class="flex justify-between py-0.5">
-                    <span class="text-neutral-600">3. คูปองส่วนลดร้านค้า</span>
-                    <b class="text-neutral-800">${formatMoney(calc.shopVoucher)} ฿</b>
+                <div class="flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">3. คูปองส่วนลดร้านค้า</span>
+                    <b class="text-[var(--app-ink)]">${formatMoney(calc.shopVoucher)} ฿</b>
                 </div>
-                <div class="flex justify-between py-0.5">
-                    <span class="text-neutral-600">4. รวมค่าธรรมเนียมแพลตฟอร์ม ${calc.isVatApplied ? '(รวม VAT 7%)' : ''}</span>
-                    <b class="text-red-600">-${formatMoney(calc.totalPlatformFees)} ฿ (${calc.sellingPrice > 0 ? formatNum((calc.totalPlatformFees / calc.sellingPrice) * 100, 1) : 0}%)</b>
+                <div class="flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">4. รวมค่าธรรมเนียมแพลตฟอร์ม ${calc.isVatApplied ? '(รวม VAT 7%)' : ''}</span>
+                    <b class="text-[var(--app-ink)]">-${formatMoney(calc.totalPlatformFees)} ฿ (${calc.sellingPrice > 0 ? formatNum((calc.totalPlatformFees / calc.sellingPrice) * 100, 1) : 0}%)</b>
                 </div>
-                <div class="pl-3 space-y-0.5 text-[11px] text-neutral-500 border-l-2 border-red-200">
-                    <div class="flex justify-between">
+                <div class="pl-3 space-y-0.5 text-[11px] text-[var(--app-muted)] border-l-2 border-[var(--app-hairline)]">
+                    <div class="flex justify-between gap-3">
                         <span>• ค่าคอมมิชชัน (${calc.commissionRatePct}%)</span>
                         <span>${formatMoney(calc.commissionFeePreVat)} ฿</span>
                     </div>
-                    <div class="flex justify-between">
+                    <div class="flex justify-between gap-3">
                         <span>• ค่าบริการโปรแกรมส่งฟรี (${calc.serviceFeePct}%)</span>
                         <span>${formatMoney(calc.serviceFeePreVat)} ฿</span>
                     </div>
-                    <div class="flex justify-between">
+                    <div class="flex justify-between gap-3">
                         <span>• ค่าธุรกรรมการชำระเงิน (${calc.transactionRatePct}%)</span>
                         <span>${formatMoney(calc.transactionFeePreVat)} ฿</span>
                     </div>
                     ${calc.isVatApplied ? `
-                        <div class="flex justify-between text-neutral-600">
+                        <div class="flex justify-between gap-3 text-[var(--app-muted)]">
                             <span>• ภาษีมูลค่าเพิ่ม (VAT 7% บนค่าธรรมเนียม)</span>
                             <span>${formatMoney(calc.platformVat)} ฿</span>
                         </div>
                     ` : ''}
                 </div>
-                <div class="flex justify-between py-0.5">
-                    <span class="text-neutral-600">5. ค่าขนส่งส่วนต่างที่ร้านออกเพิ่ม</span>
-                    <b class="text-neutral-800">${formatMoney(calc.shippingDifference)} ฿</b>
+                <div class="flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">5. ค่าขนส่งส่วนต่างที่ร้านออกเพิ่ม</span>
+                    <b class="text-[var(--app-ink)]">${formatMoney(calc.shippingDifference)} ฿</b>
                 </div>
-                <div class="flex justify-between py-0.5">
-                    <span class="text-neutral-600">6. ค่ายิงแอด/โฆษณาต่อออเดอร์</span>
-                    <b class="text-neutral-800">${formatMoney(calc.adSpendPerOrder)} ฿</b>
+                <div class="flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">6. ค่ายิงแอด/โฆษณาต่อออเดอร์</span>
+                    <b class="text-[var(--app-ink)]">${formatMoney(calc.adSpendPerOrder)} ฿</b>
                 </div>
-                <div class="border-t border-neutral-200 pt-1.5 flex justify-between font-bold text-neutral-900">
+                <div class="border-t border-[var(--app-hairline)] pt-1.5 flex justify-between gap-3 font-bold text-[var(--app-ink)]">
                     <span>รวมต้นทุนค่าใช้จ่ายทั้งหมด (Total Costs)</span>
-                    <span class="text-red-700">${formatMoney(calc.totalCosts)} ฿</span>
+                    <span class="text-[var(--app-ink)]">${formatMoney(calc.totalCosts)} ฿</span>
                 </div>
 
                 <div class="flex justify-end pt-2">
-                    <button id="btnPrintEcomReceipt" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm">
-                        🖨️ พิมพ์ใบสรุปกำไร / บันทึก PDF
+                    <button id="btnPrintEcomReceipt" type="button" class="tool-action-btn text-xs">
+                        พิมพ์ใบสรุปกำไร / บันทึก PDF
                     </button>
                 </div>
             </div>
