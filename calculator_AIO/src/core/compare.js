@@ -240,6 +240,59 @@ function getComparisonPresets(toolId) {
                     ]
                 }
             }
+        ],
+        food_costing: [
+            {
+                label: 'ทางเลือก 1: จานเดี่ยว Food Cost 30% (ขาย 65 บ.)',
+                state: {
+                    recipeName: 'กะเพราหมูสับไข่ดาว',
+                    batchYield: '1',
+                    targetFoodCostPct: '30',
+                    sellingPrice: '65',
+                    packagingCost: '4.5',
+                    hiddenCostBufferPct: '5',
+                    ingredients: [
+                        { id: '1', name: 'หมูสับ', packPrice: '160', packSize: '1000', packUnit: 'g', useAmount: '120', useUnit: 'g', yieldPct: '100' },
+                        { id: '2', name: 'ข้าวสวย', packPrice: '45', packSize: '2500', packUnit: 'g', useAmount: '200', useUnit: 'g', yieldPct: '100' },
+                        { id: '3', name: 'ไข่ไก่', packPrice: '120', packSize: '30', packUnit: 'piece', useAmount: '1', useUnit: 'piece', yieldPct: '100' },
+                        { id: '4', name: 'เครื่องปรุง', packPrice: '50', packSize: '500', packUnit: 'g', useAmount: '30', useUnit: 'g', yieldPct: '90' }
+                    ]
+                }
+            },
+            {
+                label: 'ทางเลือก 2: จานเดี่ยว Food Cost 25% (ขาย 75 บ.)',
+                state: {
+                    recipeName: 'กะเพราหมูสับไข่ดาว',
+                    batchYield: '1',
+                    targetFoodCostPct: '25',
+                    sellingPrice: '75',
+                    packagingCost: '4.5',
+                    hiddenCostBufferPct: '5',
+                    ingredients: [
+                        { id: '1', name: 'หมูสับ', packPrice: '160', packSize: '1000', packUnit: 'g', useAmount: '120', useUnit: 'g', yieldPct: '100' },
+                        { id: '2', name: 'ข้าวสวย', packPrice: '45', packSize: '2500', packUnit: 'g', useAmount: '200', useUnit: 'g', yieldPct: '100' },
+                        { id: '3', name: 'ไข่ไก่', packPrice: '120', packSize: '30', packUnit: 'piece', useAmount: '1', useUnit: 'piece', yieldPct: '100' },
+                        { id: '4', name: 'เครื่องปรุง', packPrice: '50', packSize: '500', packUnit: 'g', useAmount: '30', useUnit: 'g', yieldPct: '90' }
+                    ]
+                }
+            },
+            {
+                label: 'ทางเลือก 3: วัตถุดิบล็อตใหญ่ (ลดต้นทุนหมูเหลือ 140 บ.)',
+                state: {
+                    recipeName: 'กะเพราหมูสับไข่ดาว (ราคาส่ง)',
+                    batchYield: '1',
+                    targetFoodCostPct: '30',
+                    sellingPrice: '65',
+                    packagingCost: '3.5',
+                    hiddenCostBufferPct: '5',
+                    ingredients: [
+                        { id: '1', name: 'หมูสับส่งตรง', packPrice: '140', packSize: '1000', packUnit: 'g', useAmount: '120', useUnit: 'g', yieldPct: '100' },
+                        { id: '2', name: 'ข้าวสวย', packPrice: '45', packSize: '2500', packUnit: 'g', useAmount: '200', useUnit: 'g', yieldPct: '100' },
+                        { id: '3', name: 'ไข่ไก่ส่งฟาร์ม', packPrice: '105', packSize: '30', packUnit: 'piece', useAmount: '1', useUnit: 'piece', yieldPct: '100' },
+                        { id: '4', name: 'เครื่องปรุง', packPrice: '50', packSize: '500', packUnit: 'g', useAmount: '30', useUnit: 'g', yieldPct: '90' }
+                    ]
+                }
+            }
         ]
     };
     return presets[toolId] || [];
@@ -1034,6 +1087,65 @@ function compareCalculations(toolId, itemsList) {
         const maxMonths = Math.max(...results.map(r => r.summary.months));
         const diffMonths = maxMonths - fastestRes.summary.months;
         deltaSummary = `🏆 ทางเลือกที่ปลดหนี้ได้เร็วที่สุดคือ "${items[winnerIndex].label}" ใช้เวลาเพียง ${fastestRes.summary.months} เดือน (${fastestRes.summary.years} ปี)${diffMonths > 0 ? ` (เร็วกว่าทางเลือกช้าสุด ${diffMonths} เดือน)` : ''}`;
+
+    } else if (toolId === 'food_costing') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            return (typeof calculateFoodCosting === 'function')
+                ? calculateFoodCosting(st)
+                : { recipeName: '', batchYield: 1, targetFoodCostPct: 30, sellingPrice: 0, summary: { rawBatchCost: 0, rawCostPerPortion: 0, hiddenCostBuffer: 0, packagingCost: 0, totalCostPerPortion: 0, suggestedSellingPrice: 0, suggestedPriceRounded: 0, grossProfit: 0, actualFoodCostPct: 0, grossMarginPct: 0, isProfit: true, hasActualPrice: false } };
+        });
+
+        rows.push({
+            label: 'ขนาดสูตร / เสิร์ฟ',
+            values: results.map(r => r.batchYield > 1 ? `${r.batchYield} เสิร์ฟ` : '1 เสิร์ฟ (จานเดี่ยว)')
+        });
+        rows.push({
+            label: 'ต้นทุนวัตถุดิบต่อเสิร์ฟ',
+            values: results.map(r => `${formatMoney(r.summary.rawCostPerPortion)} ฿`)
+        });
+        rows.push({
+            label: 'เผื่อสูญเสีย & บรรจุภัณฑ์',
+            values: results.map(r => `+${formatMoney(r.summary.hiddenCostBuffer + r.summary.packagingCost)} ฿`)
+        });
+
+        const minCostRes = results.reduce((min, cur) => cur.summary.totalCostPerPortion < min.summary.totalCostPerPortion ? cur : min, results[0]);
+        const minCostIdx = results.indexOf(minCostRes);
+
+        rows.push({
+            label: 'ต้นทุนรวมต่อเสิร์ฟ (Total Cost)',
+            values: results.map(r => `${formatMoney(r.summary.totalCostPerPortion)} ฿`),
+            bestIndex: minCostIdx
+        });
+        rows.push({
+            label: 'ราคาแนะนำ (Food Cost เป้าหมาย)',
+            values: results.map(r => `${formatMoney(r.summary.suggestedSellingPrice)} ฿ (${r.targetFoodCostPct}%)`)
+        });
+        rows.push({
+            label: 'ราคาขายจริงต่อเสิร์ฟ',
+            values: results.map(r => r.summary.hasActualPrice ? `${formatMoney(r.sellingPrice)} ฿` : '-')
+        });
+
+        const validProfits = results.filter(r => r.summary.hasActualPrice);
+        if (validProfits.length > 0) {
+            const maxProfitRes = validProfits.reduce((max, cur) => cur.summary.grossProfit > max.summary.grossProfit ? cur : max, validProfits[0]);
+            const maxProfitIdx = results.indexOf(maxProfitRes);
+
+            rows.push({
+                label: 'กำไรขั้นต้นต่อเสิร์ฟ (Gross Profit)',
+                values: results.map(r => r.summary.hasActualPrice ? `${formatMoney(r.summary.grossProfit)} ฿ (Margin ${formatNum(r.summary.grossMarginPct, 1)}%)` : '-'),
+                bestIndex: maxProfitIdx,
+                highlight: true
+            });
+
+            winnerIndex = maxProfitIdx;
+            const minProfit = Math.min(...validProfits.map(r => r.summary.grossProfit));
+            const diffProfit = maxProfitRes.summary.grossProfit - minProfit;
+            deltaSummary = `🏆 ทางเลือกที่สร้างกำไรต่อเสิร์ฟสูงสุดคือ "${items[winnerIndex].label}" กำไร ${formatMoney(maxProfitRes.summary.grossProfit)} บาท (Margin ${formatNum(maxProfitRes.summary.grossMarginPct, 1)}%)${diffProfit > 0 ? ` มากกว่าทางเลือกต่ำสุด ${formatMoney(diffProfit)} บาท` : ''}`;
+        } else {
+            winnerIndex = minCostIdx;
+            deltaSummary = `🏆 ทางเลือกที่ต้นทุนรวมต่อเสิร์ฟประหยัดที่สุดคือ "${items[winnerIndex].label}" ต้นทุนเพียง ${formatMoney(minCostRes.summary.totalCostPerPortion)} บาท`;
+        }
 
     } else {
         rows.push({

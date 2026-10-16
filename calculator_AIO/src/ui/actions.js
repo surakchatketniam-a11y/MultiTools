@@ -258,6 +258,18 @@ function clearCurrentTool() {
                 { id: '1', name: '', balance: '', rate: '', minPayment: '' }
             ]
         };
+    } else if (id === 'food_costing') {
+        appState.food_costing = {
+            recipeName: '',
+            batchYield: '1',
+            targetFoodCostPct: '30',
+            sellingPrice: '',
+            packagingCost: '0',
+            hiddenCostBufferPct: '5',
+            ingredients: [
+                { id: '1', name: '', packPrice: '', packSize: '1000', packUnit: 'g', useAmount: '', useUnit: 'g', yieldPct: '100' }
+            ]
+        };
     }
     rememberToolClear(snapshot);
     renderActiveTool();
@@ -492,6 +504,22 @@ function loadDemoForCurrentTool() {
                 { id: '1', name: 'บัตรกดเงินสด A', balance: '25000', rate: '25', minPayment: '1250' },
                 { id: '2', name: 'บัตรเครดิต B', balance: '45000', rate: '16', minPayment: '2250' },
                 { id: '3', name: 'สินเชื่อส่วนบุคคล C', balance: '80000', rate: '18', minPayment: '3500' }
+            ]
+        };
+    } else if (id === 'food_costing') {
+        appState.food_costing = {
+            recipeName: 'ข้าวกะเพราหมูสับไข่ดาว (Delivery)',
+            batchYield: '1',
+            targetFoodCostPct: '30',
+            sellingPrice: '65',
+            packagingCost: '4.5',
+            hiddenCostBufferPct: '5',
+            ingredients: [
+                { id: '1', name: 'หมูสับติดมัน', packPrice: '160', packSize: '1000', packUnit: 'g', useAmount: '120', useUnit: 'g', yieldPct: '100' },
+                { id: '2', name: 'ข้าวหอมมะลิสุก', packPrice: '45', packSize: '2500', packUnit: 'g', useAmount: '200', useUnit: 'g', yieldPct: '100' },
+                { id: '3', name: 'ไข่ไก่สด เบอร์ 2', packPrice: '120', packSize: '30', packUnit: 'piece', useAmount: '1', useUnit: 'piece', yieldPct: '100' },
+                { id: '4', name: 'ใบกะเพรา + พริกกระเทียม', packPrice: '50', packSize: '500', packUnit: 'g', useAmount: '30', useUnit: 'g', yieldPct: '90' },
+                { id: '5', name: 'น้ำมันพืช & ซอสปรุงรส', packPrice: '65', packSize: '1000', packUnit: 'ml', useAmount: '25', useUnit: 'ml', yieldPct: '100' }
             ]
         };
     }

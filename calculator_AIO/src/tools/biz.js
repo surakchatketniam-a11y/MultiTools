@@ -1018,6 +1018,750 @@ function renderEcommerceProfitTool(container) {
     }
 }
 
+/* -----------------------------------------------------------
+ * ENGINE: คำนวณต้นทุนอาหาร & เครื่องดื่ม (F&B Recipe Costing)
+ * ----------------------------------------------------------- */
+function calculateFoodCosting(options = {}) {
+    const toNum = (val, def = 0) => {
+        if (typeof val === 'number') return Number.isFinite(val) ? val : def;
+        if (typeof parseNumericInput === 'function') {
+            const parsed = parseNumericInput(val);
+            return Number.isFinite(parsed) ? parsed : def;
+        }
+        const clean = String(val ?? '').trim().replace(/,/g, '');
+        const n = parseFloat(clean);
+        return Number.isFinite(n) ? n : def;
+    };
+
+    const recipeName = options.recipeName || 'สูตรอาหาร/เครื่องดื่ม';
+    const batchYield = Math.max(1, toNum(options.batchYield, 1));
+    const targetFoodCostPct = Math.max(1, Math.min(99, toNum(options.targetFoodCostPct, 30)));
+    const sellingPrice = Math.max(0, toNum(options.sellingPrice, 0));
+    const packagingCost = Math.max(0, toNum(options.packagingCost, 0));
+    const hiddenCostBufferPct = Math.max(0, toNum(options.hiddenCostBufferPct, 0));
+
+    const rawIngredients = Array.isArray(options.ingredients) ? options.ingredients : [];
+
+    // Helper: แปลงหน่วยเป็น Base Unit (g, ml, piece)
+    function normalizeUnit(amount, unit) {
+        const u = String(unit || 'g').toLowerCase().trim();
+        if (u === 'kg') return { val: amount * 1000, base: 'g', family: 'mass' };
+        if (u === 'g') return { val: amount, base: 'g', family: 'mass' };
+        if (u === 'l') return { val: amount * 1000, base: 'ml', family: 'volume' };
+        if (u === 'ml') return { val: amount, base: 'ml', family: 'volume' };
+        return { val: amount, base: 'piece', family: 'count' };
+    }
+
+    let rawBatchCost = 0;
+    const itemized = rawIngredients.map((item, idx) => {
+        const name = String(item.name || `วัตถุดิบ ${idx + 1}`).trim();
+        const packPrice = Math.max(0, toNum(item.packPrice, 0));
+        const packSize = Math.max(0.0001, toNum(item.packSize, 1));
+        const packUnit = item.packUnit || 'g';
+        const useAmount = Math.max(0, toNum(item.useAmount, 0));
+        const useUnit = item.useUnit || 'g';
+        const rawYield = toNum(item.yieldPct, 100);
+        const yieldPct = (rawYield > 0 && rawYield <= 100) ? rawYield : 100;
+
+        const packNorm = normalizeUnit(packSize, packUnit);
+        const useNorm = normalizeUnit(useAmount, useUnit);
+
+        let unitCost = 0;
+        let lineCost = 0;
+
+        if (packNorm.family === useNorm.family) {
+            unitCost = packNorm.val > 0 ? (packPrice / packNorm.val) : 0;
+            lineCost = (useNorm.val * unitCost) / (yieldPct / 100);
+        } else {
+            unitCost = packSize > 0 ? (packPrice / packSize) : 0;
+            lineCost = (useAmount * unitCost) / (yieldPct / 100);
+        }
+
+        lineCost = Math.round(lineCost * 100) / 100;
+        rawBatchCost += lineCost;
+
+        return {
+            id: item.id || String(idx + 1),
+            name,
+            packPrice,
+            packSize,
+            packUnit,
+            useAmount,
+            useUnit,
+            yieldPct,
+            unitCost: Math.round(unitCost * 10000) / 10000,
+            lineCost
+        };
+    });
+
+    rawBatchCost = Math.round(rawBatchCost * 100) / 100;
+
+    // ต้นทุนต่อจาน/เสิร์ฟ (Portion Cost)
+    const rawCostPerPortion = Math.round((rawBatchCost / batchYield) * 100) / 100;
+    const hiddenCostBuffer = Math.round((rawCostPerPortion * (hiddenCostBufferPct / 100)) * 100) / 100;
+    const foodCostPerPortion = Math.round((rawCostPerPortion + hiddenCostBuffer) * 100) / 100;
+    const totalCostPerPortion = Math.round((foodCostPerPortion + packagingCost) * 100) / 100;
+
+    // ราคาขายแนะนำตาม Target Food Cost %
+    const suggestedSellingPrice = targetFoodCostPct > 0
+        ? Math.round((totalCostPerPortion / (targetFoodCostPct / 100)) * 100) / 100
+        : totalCostPerPortion;
+
+    // ปัดเศษให้เป็นตัวเลขกลมๆ สวยงามสำหรับการค้า (Commercial Rounding ปัดขึ้นทีละ 5 บาท)
+    const suggestedPriceRounded = Math.ceil(suggestedSellingPrice / 5) * 5;
+
+    // วิเคราะห์กำไรจากราคาขายจริง (Actual Selling Price)
+    const hasActualPrice = sellingPrice > 0;
+    const grossProfit = hasActualPrice ? Math.round((sellingPrice - totalCostPerPortion) * 100) / 100 : 0;
+    const actualFoodCostPct = (hasActualPrice && sellingPrice > 0)
+        ? Math.round(((totalCostPerPortion / sellingPrice) * 100) * 10) / 10
+        : 0;
+    const grossMarginPct = (hasActualPrice && sellingPrice > 0)
+        ? Math.round(((grossProfit / sellingPrice) * 100) * 10) / 10
+        : 0;
+    const markupPct = totalCostPerPortion > 0
+        ? Math.round(((grossProfit / totalCostPerPortion) * 100) * 10) / 10
+        : 0;
+    const isProfit = grossProfit >= 0;
+
+    return {
+        recipeName,
+        batchYield,
+        targetFoodCostPct,
+        sellingPrice,
+        packagingCost,
+        hiddenCostBufferPct,
+        ingredients: itemized,
+        summary: {
+            rawBatchCost,
+            rawCostPerPortion,
+            hiddenCostBuffer,
+            foodCostPerPortion,
+            packagingCost,
+            totalCostPerPortion,
+            suggestedSellingPrice,
+            suggestedPriceRounded,
+            hasActualPrice,
+            grossProfit,
+            actualFoodCostPct,
+            grossMarginPct,
+            markupPct,
+            isProfit
+        }
+    };
+}
+
+/* -----------------------------------------------------------
+ * UI RENDERER: คำนวณต้นทุนอาหาร & เครื่องดื่ม (F&B Recipe Costing)
+ * ----------------------------------------------------------- */
+function renderFoodCostingTool(container) {
+    if (!container) return;
+    const st = appState.food_costing || {
+        recipeName: 'ข้าวกะเพราหมูสับไข่ดาว',
+        batchYield: '1',
+        targetFoodCostPct: '30',
+        sellingPrice: '65',
+        packagingCost: '4.5',
+        hiddenCostBufferPct: '5',
+        ingredients: [
+            { id: '1', name: 'หมูสับ', packPrice: '160', packSize: '1000', packUnit: 'g', useAmount: '120', useUnit: 'g', yieldPct: '100' },
+            { id: '2', name: 'ข้าวสวยสุก', packPrice: '45', packSize: '2500', packUnit: 'g', useAmount: '200', useUnit: 'g', yieldPct: '100' },
+            { id: '3', name: 'ไข่ไก่ (เบอร์ 2)', packPrice: '120', packSize: '30', packUnit: 'piece', useAmount: '1', useUnit: 'piece', yieldPct: '100' },
+            { id: '4', name: 'ใบกะเพรา + พริกกระเทียม', packPrice: '50', packSize: '500', packUnit: 'g', useAmount: '30', useUnit: 'g', yieldPct: '90' }
+        ]
+    };
+    appState.food_costing = st;
+
+    if (!Array.isArray(st.ingredients) || st.ingredients.length === 0) {
+        st.ingredients = [{ id: '1', name: 'วัตถุดิบหลัก 1', packPrice: '', packSize: '1000', packUnit: 'g', useAmount: '', useUnit: 'g', yieldPct: '100' }];
+    }
+
+    const calc = calculateFoodCosting(st);
+
+    const unitOptions = [
+        { key: 'g', label: 'กรัม (g)' },
+        { key: 'kg', label: 'กิโลกรัม (kg)' },
+        { key: 'ml', label: 'มิลลิลิตร (ml)' },
+        { key: 'l', label: 'ลิตร (L)' },
+        { key: 'piece', label: 'ชิ้น/ฟอง/แผ่น' }
+    ];
+
+    let html = `
+        <div class="food-costing-tool flex flex-col gap-3 p-1">
+            <!-- 1. การ์ดข้อมูลเมนู & เป้าหมาย Food Cost (Recipe Header Card) -->
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="flex justify-between items-center text-xs font-semibold">
+                    <label for="foodRecipeName">ชื่อเมนู / รายการสูตร</label>
+                    <div class="flex gap-1.5">
+                        <button type="button" id="btnFoodPresetKaprao" class="tool-chip-btn text-xs">
+                            สูตรกะเพราไข่ดาว
+                        </button>
+                        <button type="button" id="btnFoodPresetTea" class="tool-chip-btn text-xs">
+                            สูตรชาไทย/กาแฟ
+                        </button>
+                    </div>
+                </div>
+                <input id="foodRecipeName" type="text" value="${escapeHTML(st.recipeName || '')}" class="airbnb-input w-full font-bold text-sm" placeholder="เช่น ข้าวกะเพราหมูสับ หรือ ชาไทยเย็น">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+                    <div>
+                        <label for="foodBatchYield" class="block mb-1" style="color: var(--app-muted);">จำนวนเสิร์ฟที่ทำได้ต่อสูตร (Batch Yield)</label>
+                        <div class="relative">
+                            <input id="foodBatchYield" type="text" inputmode="numeric" value="${escapeHTML(st.batchYield || '1')}" class="airbnb-input w-full font-semibold pr-16" placeholder="1">
+                            <span class="absolute right-3 top-2.5 text-xs pointer-events-none" style="color: var(--app-muted);">จาน/แก้ว</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="foodTargetCostPct" class="block mb-1" style="color: var(--app-muted);">Food Cost เป้าหมาย (%)</label>
+                        <div class="relative">
+                            <input id="foodTargetCostPct" type="text" inputmode="decimal" value="${escapeHTML(st.targetFoodCostPct || '30')}" class="airbnb-input w-full font-semibold pr-8" placeholder="30">
+                            <span class="absolute right-3 top-2.5 text-xs pointer-events-none" style="color: var(--app-muted);">%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span class="text-xs" style="color: var(--app-muted);">เป้าหมายแนะนำ:</span>
+                    <button type="button" class="tool-chip-btn food-chip-target" data-val="20">20% เครื่องดื่ม</button>
+                    <button type="button" class="tool-chip-btn food-chip-target" data-val="25">25% คาเฟ่</button>
+                    <button type="button" class="tool-chip-btn food-chip-target" data-val="30">30% อาหารทั่วไป</button>
+                    <button type="button" class="tool-chip-btn food-chip-target" data-val="35">35% มาตรฐาน</button>
+                    <button type="button" class="tool-chip-btn food-chip-target" data-val="40">40% บุฟเฟต์</button>
+                </div>
+            </div>
+
+            <!-- 2. การ์ดรายการวัตถุดิบ (Ingredients List Card) -->
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="flex justify-between items-center text-xs font-semibold">
+                    <span>รายการวัตถุดิบ (${st.ingredients.length} รายการ)</span>
+                    <button type="button" id="btnAddFoodIngredient" class="tool-action-btn text-xs">
+                        + เพิ่มวัตถุดิบ
+                    </button>
+                </div>
+
+                <div class="space-y-3" id="foodIngredientsList">
+                    ${st.ingredients.map((ing, idx) => {
+                        const itemCalc = calc.ingredients[idx] || { lineCost: 0 };
+                        return `
+                            <div class="themed-subcard p-3 space-y-2.5" data-ing-id="${escapeHTML(ing.id)}">
+                                <div class="flex items-center justify-between gap-2">
+                                    <div class="flex-1">
+                                        <label for="foodIngName_${escapeHTML(ing.id)}" class="sr-only">ชื่อวัตถุดิบ ${idx + 1}</label>
+                                        <input id="foodIngName_${escapeHTML(ing.id)}" type="text" value="${escapeHTML(ing.name || '')}" class="airbnb-input w-full text-xs font-semibold food-ing-name" data-ing-id="${escapeHTML(ing.id)}" placeholder="ชื่อวัตถุดิบ เช่น หมูสับ, นมสด, เมล็ดกาแฟ">
+                                    </div>
+                                    ${st.ingredients.length > 1 ? `
+                                        <button type="button" class="tool-danger-btn btn-remove-ing text-xs" data-ing-id="${escapeHTML(ing.id)}">
+                                            ลบ
+                                        </button>
+                                    ` : ''}
+                                </div>
+
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                                    <div>
+                                        <label for="foodIngPackPrice_${escapeHTML(ing.id)}" class="block mb-1" style="color: var(--app-muted);">ราคาซื้อ/แพ็ค</label>
+                                        <input id="foodIngPackPrice_${escapeHTML(ing.id)}" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(ing.packPrice))}" class="airbnb-input w-full text-xs food-ing-pack-price" data-ing-id="${escapeHTML(ing.id)}" placeholder="บาท">
+                                    </div>
+                                    <div>
+                                        <label for="foodIngPackSize_${escapeHTML(ing.id)}" class="block mb-1" style="color: var(--app-muted);">ขนาดแพ็คที่ซื้อ</label>
+                                        <input id="foodIngPackSize_${escapeHTML(ing.id)}" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(ing.packSize))}" class="airbnb-input w-full text-xs food-ing-pack-size" data-ing-id="${escapeHTML(ing.id)}" placeholder="ขนาด">
+                                    </div>
+                                    <div>
+                                        <label for="foodIngPackUnit_${escapeHTML(ing.id)}" class="block mb-1" style="color: var(--app-muted);">หน่วยที่ซื้อ</label>
+                                        <select id="foodIngPackUnit_${escapeHTML(ing.id)}" class="airbnb-input w-full text-xs food-ing-pack-unit" data-ing-id="${escapeHTML(ing.id)}">
+                                            ${unitOptions.map(u => `
+                                                <option value="${u.key}" ${u.key === (ing.packUnit || 'g') ? 'selected' : ''}>${u.label}</option>
+                                            `).join('')}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="foodIngUseAmt_${escapeHTML(ing.id)}" class="block mb-1" style="color: var(--app-muted);">ปริมาณที่ใช้ในสูตร</label>
+                                        <input id="foodIngUseAmt_${escapeHTML(ing.id)}" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(ing.useAmount))}" class="airbnb-input w-full text-xs food-ing-use-amount" data-ing-id="${escapeHTML(ing.id)}" placeholder="ปริมาณ">
+                                    </div>
+                                    <div>
+                                        <label for="foodIngUseUnit_${escapeHTML(ing.id)}" class="block mb-1" style="color: var(--app-muted);">หน่วยที่ใช้</label>
+                                        <select id="foodIngUseUnit_${escapeHTML(ing.id)}" class="airbnb-input w-full text-xs food-ing-use-unit" data-ing-id="${escapeHTML(ing.id)}">
+                                            ${unitOptions.map(u => `
+                                                <option value="${u.key}" ${u.key === (ing.useUnit || 'g') ? 'selected' : ''}>${u.label}</option>
+                                            `).join('')}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="foodIngYield_${escapeHTML(ing.id)}" class="block mb-1" style="color: var(--app-muted);">Yield / ใช้ได้จริง (%)</label>
+                                        <input id="foodIngYield_${escapeHTML(ing.id)}" type="text" inputmode="decimal" value="${escapeHTML(ing.yieldPct || '100')}" class="airbnb-input w-full text-xs food-ing-yield" data-ing-id="${escapeHTML(ing.id)}" placeholder="100%">
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-between items-center text-xs pt-1 border-t" style="border-color: var(--app-hairline);">
+                                    <span style="color: var(--app-muted);">ต้นทุนวัตถุดิบนี้ในสูตร:</span>
+                                    <span class="font-bold food-ing-cost-display" data-ing-id="${escapeHTML(ing.id)}" style="color: var(--app-accent);">฿${formatMoney(itemCalc.lineCost)} บาท</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+
+            <!-- 3. การ์ดบรรจุภัณฑ์ & ต้นทุนแฝง (Packaging & Buffer Card) -->
+            <div class="themed-tool-card p-4 space-y-3 text-xs">
+                <div class="font-semibold">บรรจุภัณฑ์ ต้นทุนแฝง และราคาขาย</div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label for="foodPackagingCost" class="block mb-1" style="color: var(--app-muted);">ค่าบรรจุภัณฑ์ต่อเสิร์ฟ (กล่อง/แก้ว/ถุง/ช้อน)</label>
+                        <div class="relative">
+                            <input id="foodPackagingCost" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.packagingCost || '0'))}" class="airbnb-input w-full font-semibold pr-10" placeholder="0">
+                            <span class="absolute right-3 top-2.5 text-xs pointer-events-none" style="color: var(--app-muted);">บาท</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="foodHiddenCostPct" class="block mb-1" style="color: var(--app-muted);">เผื่อต้นทุนแฝง/เครื่องปรุง/แก๊ส (%)</label>
+                        <div class="relative">
+                            <input id="foodHiddenCostPct" type="text" inputmode="decimal" value="${escapeHTML(st.hiddenCostBufferPct || '5')}" class="airbnb-input w-full font-semibold pr-8" placeholder="5">
+                            <span class="absolute right-3 top-2.5 text-xs pointer-events-none" style="color: var(--app-muted);">%</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="foodSellingPrice" class="block mb-1" style="color: var(--app-muted);">ราคาขายจริงต่อเสิร์ฟ (บาท)</label>
+                        <div class="relative">
+                            <input id="foodSellingPrice" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.sellingPrice || '0'))}" class="airbnb-input w-full font-semibold pr-10" placeholder="0">
+                            <span class="absolute right-3 top-2.5 text-xs pointer-events-none" style="color: var(--app-muted);">บาท</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. การ์ดสรุปผลการคำนวณ (Cost & Profit Results Card) -->
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="flex justify-between items-center text-xs" style="color: var(--app-muted);">
+                    <span>ต้นทุนรวมสุทธิต่อเสิร์ฟ (Total Cost per Portion)</span>
+                    <span id="foodBatchSummary">${calc.batchYield > 1 ? `สูตรละ ${calc.batchYield} เสิร์ฟ` : 'จานเดี่ยว / 1 เสิร์ฟ'}</span>
+                </div>
+                <div class="themed-result-value text-2xl md:text-3xl font-extrabold font-mono" id="foodTotalCostResult">
+                    ฿${formatMoney(calc.summary.totalCostPerPortion)}
+                </div>
+
+                <!-- แจกแจงสัดส่วนต้นทุน 4 ก้อน -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs pt-1">
+                    <div class="themed-subcard p-2.5">
+                        <span class="block" style="color: var(--app-muted);">วัตถุดิบ/เสิร์ฟ</span>
+                        <span class="font-bold text-sm" id="foodRawPortionResult">฿${formatMoney(calc.summary.rawCostPerPortion)}</span>
+                    </div>
+                    <div class="themed-subcard p-2.5">
+                        <span class="block" style="color: var(--app-muted);">ต้นทุนแฝง (${calc.hiddenCostBufferPct}%)</span>
+                        <span class="font-bold text-sm" id="foodHiddenCostResult">฿${formatMoney(calc.summary.hiddenCostBuffer)}</span>
+                    </div>
+                    <div class="themed-subcard p-2.5">
+                        <span class="block" style="color: var(--app-muted);">บรรจุภัณฑ์</span>
+                        <span class="font-bold text-sm" id="foodPackagingResult">฿${formatMoney(calc.summary.packagingCost)}</span>
+                    </div>
+                    <div class="themed-subcard p-2.5">
+                        <span class="block" style="color: var(--app-muted);">รวมทั้งสูตร (${calc.batchYield} ที่)</span>
+                        <span class="font-bold text-sm" id="foodBatchCostResult">฿${formatMoney(calc.summary.rawBatchCost)}</span>
+                    </div>
+                </div>
+
+                <!-- ราคาขายแนะนำตามเป้าหมาย (Suggested Selling Price) -->
+                <div class="themed-subcard p-3 space-y-2 text-xs">
+                    <div class="flex justify-between items-center">
+                        <span class="font-semibold">ราคาขายแนะนำที่ Food Cost ${calc.targetFoodCostPct}%</span>
+                        <span class="font-mono font-bold text-base" id="foodSuggestedPriceResult" style="color: var(--app-accent);">
+                            ฿${formatMoney(calc.summary.suggestedSellingPrice)} บาท
+                        </span>
+                    </div>
+                    <div class="text-[11px]" style="color: var(--app-muted);">
+                        ปัดเศษราคาขายที่น่าสนใจทางการตลาด: <b id="foodSuggestedRoundedResult" class="font-mono">฿${formatMoney(calc.summary.suggestedPriceRounded)} บาท</b>
+                    </div>
+                </div>
+
+                <!-- วิเคราะห์กำไรจริง (Actual Profit Analysis) -->
+                <div class="themed-subcard p-3 space-y-2 text-xs" id="foodActualProfitWrapper">
+                    ${calc.summary.hasActualPrice ? `
+                        <div class="font-semibold">ผลประกอบการเมื่อขายราคาจริง ฿${formatMoney(calc.sellingPrice)} บาท</div>
+                        <div class="flex justify-between items-center py-1 border-b" style="border-color: var(--app-hairline);">
+                            <span>กำไรขั้นต้นต่อเสิร์ฟ (Gross Profit)</span>
+                            <span class="font-mono font-bold ${calc.summary.isProfit ? 'text-green-600' : 'text-red-500'}">
+                                ${calc.summary.isProfit ? '+' : ''}฿${formatMoney(calc.summary.grossProfit)} บาท
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 border-b" style="border-color: var(--app-hairline);">
+                            <span>Food Cost % ที่เกิดขึ้นจริง</span>
+                            <span class="font-mono font-bold">${calc.summary.actualFoodCostPct}%</span>
+                        </div>
+                        <div class="flex justify-between items-center py-1">
+                            <span>อัตรากำไรขั้นต้น (Gross Profit Margin)</span>
+                            <span class="font-mono font-bold">${calc.summary.grossMarginPct}%</span>
+                        </div>
+                        <div class="p-2 rounded-lg text-xs" style="background-color: var(--app-surface-soft); line-height: 1.5;">
+                            ${calc.summary.actualFoodCostPct <= calc.targetFoodCostPct
+                                ? `ราคาขายนี้ได้สัดส่วน Food Cost <b>${calc.summary.actualFoodCostPct}%</b> อยู่ในเกณฑ์เป้าหมาย (ไม่เกิน ${calc.targetFoodCostPct}%)`
+                                : `Food Cost จริงอยู่ที่ <b>${calc.summary.actualFoodCostPct}%</b> สูงกว่าเป้าหมายที่ตั้งไว้ (${calc.targetFoodCostPct}%) พิจารณาปรับราคาขายขึ้นหรือลดต้นทุนวัตถุดิบ`}
+                        </div>
+                    ` : `
+                        <div class="text-[11px] text-center py-1" style="color: var(--app-muted);">
+                            ระบุ "ราคาขายจริงต่อเสิร์ฟ" ด้านบนเพื่อดูการวิเคราะห์กำไรสุทธิต่อจานและ Food Cost % จริง
+                        </div>
+                    `}
+                </div>
+
+                <!-- ปุ่มพิมพ์เอกสารทางการ / PDF -->
+                <div class="pt-2">
+                    <button type="button" id="btnPrintFoodReceipt" class="tool-action-btn w-full text-xs">
+                        พิมพ์ใบคำนวณต้นทุนอาหาร / PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+
+    // ฟังก์ชันอัปเดตผลลัพธ์แบบ Real-time โดยไม่ทำลาย DOM ช่องกรอก
+    function updateFoodCostingLive() {
+        const curCalc = calculateFoodCosting(st);
+
+        // 1. อัปเดตราคาแต่ละแถววัตถุดิบ
+        container.querySelectorAll('.food-ing-cost-display').forEach(el => {
+            const ingId = el.dataset.ingId;
+            const item = curCalc.ingredients.find(i => i.id === ingId);
+            if (item) {
+                el.textContent = `฿${formatMoney(item.lineCost)} บาท`;
+            }
+        });
+
+        // 2. อัปเดตการ์ดผลลัพธ์หลัก
+        const batchEl = container.querySelector('#foodBatchSummary');
+        if (batchEl) {
+            batchEl.textContent = curCalc.batchYield > 1 ? `สูตรละ ${curCalc.batchYield} เสิร์ฟ` : 'จานเดี่ยว / 1 เสิร์ฟ';
+        }
+
+        const totalCostEl = container.querySelector('#foodTotalCostResult');
+        if (totalCostEl) {
+            totalCostEl.textContent = `฿${formatMoney(curCalc.summary.totalCostPerPortion)}`;
+        }
+
+        const rawPortionEl = container.querySelector('#foodRawPortionResult');
+        if (rawPortionEl) rawPortionEl.textContent = `฿${formatMoney(curCalc.summary.rawCostPerPortion)}`;
+
+        const hiddenEl = container.querySelector('#foodHiddenCostResult');
+        if (hiddenEl) hiddenEl.textContent = `฿${formatMoney(curCalc.summary.hiddenCostBuffer)}`;
+
+        const packEl = container.querySelector('#foodPackagingResult');
+        if (packEl) packEl.textContent = `฿${formatMoney(curCalc.summary.packagingCost)}`;
+
+        const batchCostEl = container.querySelector('#foodBatchCostResult');
+        if (batchCostEl) batchCostEl.textContent = `฿${formatMoney(curCalc.summary.rawBatchCost)}`;
+
+        const suggestedEl = container.querySelector('#foodSuggestedPriceResult');
+        if (suggestedEl) suggestedEl.textContent = `฿${formatMoney(curCalc.summary.suggestedSellingPrice)} บาท`;
+
+        const roundedEl = container.querySelector('#foodSuggestedRoundedResult');
+        if (roundedEl) roundedEl.textContent = `฿${formatMoney(curCalc.summary.suggestedPriceRounded)} บาท`;
+
+        // 3. อัปเดตส่วนวิเคราะห์ราคาจริง
+        const profitWrapper = container.querySelector('#foodActualProfitWrapper');
+        if (profitWrapper) {
+            if (curCalc.summary.hasActualPrice) {
+                profitWrapper.innerHTML = `
+                    <div class="font-semibold">ผลประกอบการเมื่อขายราคาจริง ฿${formatMoney(curCalc.sellingPrice)} บาท</div>
+                    <div class="flex justify-between items-center py-1 border-b" style="border-color: var(--app-hairline);">
+                        <span>กำไรขั้นต้นต่อเสิร์ฟ (Gross Profit)</span>
+                        <span class="font-mono font-bold ${curCalc.summary.isProfit ? 'text-green-600' : 'text-red-500'}">
+                            ${curCalc.summary.isProfit ? '+' : ''}฿${formatMoney(curCalc.summary.grossProfit)} บาท
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center py-1 border-b" style="border-color: var(--app-hairline);">
+                        <span>Food Cost % ที่เกิดขึ้นจริง</span>
+                        <span class="font-mono font-bold">${curCalc.summary.actualFoodCostPct}%</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1">
+                        <span>อัตรากำไรขั้นต้น (Gross Profit Margin)</span>
+                        <span class="font-mono font-bold">${curCalc.summary.grossMarginPct}%</span>
+                    </div>
+                    <div class="p-2 rounded-lg text-xs" style="background-color: var(--app-surface-soft); line-height: 1.5;">
+                        ${curCalc.summary.actualFoodCostPct <= curCalc.targetFoodCostPct
+                            ? `ราคาขายนี้ได้สัดส่วน Food Cost <b>${curCalc.summary.actualFoodCostPct}%</b> อยู่ในเกณฑ์เป้าหมาย (ไม่เกิน ${curCalc.targetFoodCostPct}%)`
+                            : `Food Cost จริงอยู่ที่ <b>${curCalc.summary.actualFoodCostPct}%</b> สูงกว่าเป้าหมายที่ตั้งไว้ (${curCalc.targetFoodCostPct}%) พิจารณาปรับราคาขายขึ้นหรือลดต้นทุนวัตถุดิบ`}
+                    </div>
+                `;
+            } else {
+                profitWrapper.innerHTML = `
+                    <div class="text-[11px] text-center py-1" style="color: var(--app-muted);">
+                        ระบุ "ราคาขายจริงต่อเสิร์ฟ" ด้านบนเพื่อดูการวิเคราะห์กำไรสุทธิต่อจานและ Food Cost % จริง
+                    </div>
+                `;
+            }
+        }
+
+        // 4. Status Banner
+        if (curCalc.ingredients.length === 0 || curCalc.summary.totalCostPerPortion <= 0) {
+            setStatusBanner('empty', 'กรุณาระบุวัตถุดิบและราคาซื้อเพื่อคำนวณต้นทุนอาหารและราคาขายแนะนำ');
+        } else if (curCalc.summary.hasActualPrice) {
+            if (curCalc.summary.isProfit) {
+                setStatusBanner('success', `ต้นทุนต่อเสิร์ฟ <b>${formatMoney(curCalc.summary.totalCostPerPortion)} บาท</b> · กำไร <b>${formatMoney(curCalc.summary.grossProfit)} บาท</b> (Food Cost ${curCalc.summary.actualFoodCostPct}%, Margin ${curCalc.summary.grossMarginPct}%)`);
+            } else {
+                setStatusBanner('empty', `ขาดทุนต่อเสิร์ฟ <b>${formatMoney(Math.abs(curCalc.summary.grossProfit))} บาท</b> · ราคาแนะนำที่ Food Cost ${curCalc.targetFoodCostPct}% คือ ${formatMoney(curCalc.summary.suggestedSellingPrice)} บาท`);
+            }
+        } else {
+            setStatusBanner('success', `ต้นทุนรวมต่อเสิร์ฟ <b>${formatMoney(curCalc.summary.totalCostPerPortion)} บาท</b> · ราคาแนะนำที่ Food Cost ${curCalc.targetFoodCostPct}% คือ <b>${formatMoney(curCalc.summary.suggestedSellingPrice)} บาท</b>`);
+        }
+    }
+
+    // Event Bindings: Input Header
+    const nameInput = container.querySelector('#foodRecipeName');
+    nameInput?.addEventListener('input', e => {
+        st.recipeName = e.target.value;
+        persistAppState();
+    });
+
+    const yieldInput = container.querySelector('#foodBatchYield');
+    yieldInput?.addEventListener('input', e => {
+        st.batchYield = e.target.value;
+        persistAppState();
+        updateFoodCostingLive();
+    });
+    yieldInput?.addEventListener('blur', () => {
+        st.batchYield = formatInputDisplay(yieldInput.value);
+        yieldInput.value = st.batchYield;
+        persistAppState();
+        updateFoodCostingLive();
+    });
+
+    const targetInput = container.querySelector('#foodTargetCostPct');
+    targetInput?.addEventListener('input', e => {
+        st.targetFoodCostPct = e.target.value;
+        persistAppState();
+        updateFoodCostingLive();
+    });
+    targetInput?.addEventListener('blur', () => {
+        st.targetFoodCostPct = formatInputDisplay(targetInput.value);
+        targetInput.value = st.targetFoodCostPct;
+        persistAppState();
+        updateFoodCostingLive();
+    });
+
+    // Preset Target Chips
+    container.querySelectorAll('.food-chip-target').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.targetFoodCostPct = btn.dataset.val;
+            if (targetInput) targetInput.value = st.targetFoodCostPct;
+            persistAppState();
+            updateFoodCostingLive();
+        });
+    });
+
+    // Preset Recipe Buttons
+    container.querySelector('#btnFoodPresetKaprao')?.addEventListener('click', () => {
+        st.recipeName = 'ข้าวกะเพราหมูสับไข่ดาว';
+        st.batchYield = '1';
+        st.targetFoodCostPct = '30';
+        st.sellingPrice = '65';
+        st.packagingCost = '4.5';
+        st.hiddenCostBufferPct = '5';
+        st.ingredients = [
+            { id: '1', name: 'หมูสับ', packPrice: '160', packSize: '1000', packUnit: 'g', useAmount: '120', useUnit: 'g', yieldPct: '100' },
+            { id: '2', name: 'ข้าวสวยสุก', packPrice: '45', packSize: '2500', packUnit: 'g', useAmount: '200', useUnit: 'g', yieldPct: '100' },
+            { id: '3', name: 'ไข่ไก่ (เบอร์ 2)', packPrice: '120', packSize: '30', packUnit: 'piece', useAmount: '1', useUnit: 'piece', yieldPct: '100' },
+            { id: '4', name: 'ใบกะเพรา + พริกกระเทียม', packPrice: '50', packSize: '500', packUnit: 'g', useAmount: '30', useUnit: 'g', yieldPct: '90' }
+        ];
+        persistAppState();
+        renderActiveTool();
+    });
+
+    container.querySelector('#btnFoodPresetTea')?.addEventListener('click', () => {
+        st.recipeName = 'ชาไทยเย็น / ลาเต้เย็น';
+        st.batchYield = '1';
+        st.targetFoodCostPct = '25';
+        st.sellingPrice = '55';
+        st.packagingCost = '3.5';
+        st.hiddenCostBufferPct = '5';
+        st.ingredients = [
+            { id: '1', name: 'ผงชาไทย / เมล็ดกาแฟ', packPrice: '350', packSize: '500', packUnit: 'g', useAmount: '20', useUnit: 'g', yieldPct: '100' },
+            { id: '2', name: 'นมสดพาสเจอร์ไรส์', packPrice: '95', packSize: '2000', packUnit: 'ml', useAmount: '120', useUnit: 'ml', yieldPct: '100' },
+            { id: '3', name: 'นมข้นหวาน / ไซรัป', packPrice: '55', packSize: '1000', packUnit: 'g', useAmount: '30', useUnit: 'g', yieldPct: '100' },
+            { id: '4', name: 'น้ำแข็งหลอด', packPrice: '20', packSize: '10', packUnit: 'kg', useAmount: '200', useUnit: 'g', yieldPct: '100' }
+        ];
+        persistAppState();
+        renderActiveTool();
+    });
+
+    // Add Ingredient
+    container.querySelector('#btnAddFoodIngredient')?.addEventListener('click', () => {
+        const newId = String(Date.now());
+        st.ingredients.push({
+            id: newId,
+            name: `วัตถุดิบ ${st.ingredients.length + 1}`,
+            packPrice: '',
+            packSize: '1000',
+            packUnit: 'g',
+            useAmount: '',
+            useUnit: 'g',
+            yieldPct: '100'
+        });
+        persistAppState();
+        renderActiveTool();
+    });
+
+    // Remove Ingredient
+    container.querySelectorAll('.btn-remove-ing').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const idToRemove = btn.dataset.ingId;
+            st.ingredients = st.ingredients.filter(i => i.id !== idToRemove);
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    // Ingredient Row Inputs
+    container.querySelectorAll('.food-ing-name').forEach(inp => {
+        inp.addEventListener('input', e => {
+            const ing = st.ingredients.find(i => i.id === e.target.dataset.ingId);
+            if (ing) ing.name = e.target.value;
+            persistAppState();
+        });
+    });
+
+    container.querySelectorAll('.food-ing-pack-price').forEach(inp => {
+        inp.addEventListener('input', e => {
+            const ing = st.ingredients.find(i => i.id === e.target.dataset.ingId);
+            if (ing) ing.packPrice = e.target.value;
+            persistAppState();
+            updateFoodCostingLive();
+        });
+        inp.addEventListener('blur', e => {
+            const formatted = formatInputDisplay(e.target.value);
+            const ing = st.ingredients.find(i => i.id === e.target.dataset.ingId);
+            if (ing) ing.packPrice = formatted;
+            inp.value = formatted;
+            persistAppState();
+            updateFoodCostingLive();
+        });
+    });
+
+    container.querySelectorAll('.food-ing-pack-size').forEach(inp => {
+        inp.addEventListener('input', e => {
+            const ing = st.ingredients.find(i => i.id === e.target.dataset.ingId);
+            if (ing) ing.packSize = e.target.value;
+            persistAppState();
+            updateFoodCostingLive();
+        });
+        inp.addEventListener('blur', e => {
+            const formatted = formatInputDisplay(e.target.value);
+            const ing = st.ingredients.find(i => i.id === e.target.dataset.ingId);
+            if (ing) ing.packSize = formatted;
+            inp.value = formatted;
+            persistAppState();
+            updateFoodCostingLive();
+        });
+    });
+
+    container.querySelectorAll('.food-ing-pack-unit').forEach(sel => {
+        sel.addEventListener('change', e => {
+            const ing = st.ingredients.find(i => i.id === e.target.dataset.ingId);
+            if (ing) ing.packUnit = e.target.value;
+            persistAppState();
+            updateFoodCostingLive();
+        });
+    });
+
+    container.querySelectorAll('.food-ing-use-amount').forEach(inp => {
+        inp.addEventListener('input', e => {
+            const ing = st.ingredients.find(i => i.id === e.target.dataset.ingId);
+            if (ing) ing.useAmount = e.target.value;
+            persistAppState();
+            updateFoodCostingLive();
+        });
+        inp.addEventListener('blur', e => {
+            const formatted = formatInputDisplay(e.target.value);
+            const ing = st.ingredients.find(i => i.id === e.target.dataset.ingId);
+            if (ing) ing.useAmount = formatted;
+            inp.value = formatted;
+            persistAppState();
+            updateFoodCostingLive();
+        });
+    });
+
+    container.querySelectorAll('.food-ing-use-unit').forEach(sel => {
+        sel.addEventListener('change', e => {
+            const ing = st.ingredients.find(i => i.id === e.target.dataset.ingId);
+            if (ing) ing.useUnit = e.target.value;
+            persistAppState();
+            updateFoodCostingLive();
+        });
+    });
+
+    container.querySelectorAll('.food-ing-yield').forEach(inp => {
+        inp.addEventListener('input', e => {
+            const ing = st.ingredients.find(i => i.id === e.target.dataset.ingId);
+            if (ing) ing.yieldPct = e.target.value;
+            persistAppState();
+            updateFoodCostingLive();
+        });
+        inp.addEventListener('blur', e => {
+            const ing = st.ingredients.find(i => i.id === e.target.dataset.ingId);
+            if (ing) ing.yieldPct = e.target.value;
+            persistAppState();
+            updateFoodCostingLive();
+        });
+    });
+
+    // Packaging & Hidden Cost Inputs
+    const packCostInput = container.querySelector('#foodPackagingCost');
+    packCostInput?.addEventListener('input', e => {
+        st.packagingCost = e.target.value;
+        persistAppState();
+        updateFoodCostingLive();
+    });
+    packCostInput?.addEventListener('blur', () => {
+        st.packagingCost = formatInputDisplay(packCostInput.value);
+        packCostInput.value = st.packagingCost;
+        persistAppState();
+        updateFoodCostingLive();
+    });
+
+    const hiddenCostInput = container.querySelector('#foodHiddenCostPct');
+    hiddenCostInput?.addEventListener('input', e => {
+        st.hiddenCostBufferPct = e.target.value;
+        persistAppState();
+        updateFoodCostingLive();
+    });
+    hiddenCostInput?.addEventListener('blur', () => {
+        st.hiddenCostBufferPct = formatInputDisplay(hiddenCostInput.value);
+        hiddenCostInput.value = st.hiddenCostBufferPct;
+        persistAppState();
+        updateFoodCostingLive();
+    });
+
+    const sellingInput = container.querySelector('#foodSellingPrice');
+    sellingInput?.addEventListener('input', e => {
+        st.sellingPrice = e.target.value;
+        persistAppState();
+        updateFoodCostingLive();
+    });
+    sellingInput?.addEventListener('blur', () => {
+        st.sellingPrice = formatInputDisplay(sellingInput.value);
+        sellingInput.value = st.sellingPrice;
+        persistAppState();
+        updateFoodCostingLive();
+    });
+
+    // Print Receipt
+    container.querySelector('#btnPrintFoodReceipt')?.addEventListener('click', () => {
+        triggerPrintReceipt('food_costing');
+    });
+
+    // Initial Status Banner
+    if (calc.ingredients.length === 0 || calc.summary.totalCostPerPortion <= 0) {
+        setStatusBanner('empty', 'กรุณาระบุวัตถุดิบและราคาซื้อเพื่อคำนวณต้นทุนอาหารและราคาขายแนะนำ');
+    } else if (calc.summary.hasActualPrice) {
+        if (calc.summary.isProfit) {
+            setStatusBanner('success', `ต้นทุนต่อเสิร์ฟ <b>${formatMoney(calc.summary.totalCostPerPortion)} บาท</b> · กำไร <b>${formatMoney(calc.summary.grossProfit)} บาท</b> (Food Cost ${calc.summary.actualFoodCostPct}%, Margin ${calc.summary.grossMarginPct}%)`);
+        } else {
+            setStatusBanner('empty', `ขาดทุนต่อเสิร์ฟ <b>${formatMoney(Math.abs(calc.summary.grossProfit))} บาท</b> · ราคาแนะนำที่ Food Cost ${calc.targetFoodCostPct}% คือ ${formatMoney(calc.summary.suggestedSellingPrice)} บาท`);
+        }
+    } else {
+        setStatusBanner('success', `ต้นทุนรวมต่อเสิร์ฟ <b>${formatMoney(calc.summary.totalCostPerPortion)} บาท</b> · ราคาแนะนำที่ Food Cost ${calc.targetFoodCostPct}% คือ <b>${formatMoney(calc.summary.suggestedSellingPrice)} บาท</b>`);
+    }
+}
+
 (function(root) {
     const exportsObj = {
         renderVatTool,
@@ -1026,7 +1770,9 @@ function renderEcommerceProfitTool(container) {
         renderSalaryTool,
         calculateNetSalary,
         calculateEcommerceProfit,
-        renderEcommerceProfitTool
+        renderEcommerceProfitTool,
+        calculateFoodCosting,
+        renderFoodCostingTool
     };
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = exportsObj;

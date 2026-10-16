@@ -55,6 +55,12 @@ function hasInvalidNumericInput(toolId, stateObj) {
         const debts = Array.isArray(st.debts) ? st.debts : [];
         return debts.some(d => invalid(d.balance) || invalid(d.rate) || invalid(d.minPayment));
     }
+    if (curToolId === 'food_costing') {
+        const st = state.food_costing || {};
+        if (invalid(st.batchYield) || invalid(st.targetFoodCostPct) || invalid(st.sellingPrice) || invalid(st.packagingCost) || invalid(st.hiddenCostBufferPct)) return true;
+        const ings = Array.isArray(st.ingredients) ? st.ingredients : [];
+        return ings.some(i => invalid(i.packPrice) || invalid(i.packSize) || invalid(i.useAmount) || invalid(i.yieldPct));
+    }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
     return (fields[curToolId] || []).some(key => invalid(state[curToolId][key]));

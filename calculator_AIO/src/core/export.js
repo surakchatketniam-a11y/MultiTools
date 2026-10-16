@@ -1578,6 +1578,74 @@ function generateFormalPrintHTML(toolId, stateObj) {
             </div>
         `;
 
+    } else if (curToolId === 'food_costing') {
+        docTitle = 'ใบสรุปต้นทุนสูตรมาตรฐานอาหารและเครื่องดื่ม';
+        docSubtitle = 'Standard Recipe Cost & Pricing Sheet (F&B Costing)';
+        const st = state.food_costing || {};
+        const calc = (typeof calculateFoodCosting === 'function')
+            ? calculateFoodCosting(st)
+            : { recipeName: 'สูตรอาหาร', batchYield: 1, targetFoodCostPct: 30, sellingPrice: 0, packagingCost: 0, hiddenCostBufferPct: 5, ingredients: [], summary: { rawBatchCost: 0, rawCostPerPortion: 0, hiddenCostBuffer: 0, packagingCost: 0, totalCostPerPortion: 0, suggestedSellingPrice: 0, suggestedPriceRounded: 0, grossProfit: 0, actualFoodCostPct: 0, grossMarginPct: 0, isProfit: true, hasActualPrice: false } };
+
+        paramsRows = [
+            ['ชื่อเมนู / สูตรอาหาร', calc.recipeName || 'สูตรอาหาร/เครื่องดื่ม'],
+            ['ขนาดสูตรการผลิต (Batch Yield)', calc.batchYield > 1 ? `${calc.batchYield} เสิร์ฟ` : '1 เสิร์ฟ (จานเดี่ยว)'],
+            ['ต้นทุนเผื่อสูญเสีย & เครื่องปรุง (Buffer)', `${calc.hiddenCostBufferPct}% (+${formatMoney(calc.summary.hiddenCostBuffer)} บาท/เสิร์ฟ)`],
+            ['ค่าบรรจุภัณฑ์ต่อเสิร์ฟ (Packaging)', `${formatMoney(calc.summary.packagingCost)} บาท`],
+            ['เป้าหมาย Food Cost %', `${calc.targetFoodCostPct}%`],
+            ['ราคาขายจริงต่อเสิร์ฟ', calc.summary.hasActualPrice ? `${formatMoney(calc.sellingPrice)} บาท` : 'ไม่ได้ระบุ']
+        ];
+
+        resultCards = [
+            { label: 'ต้นทุนรวมต่อเสิร์ฟ (Total Cost)', value: `${formatMoney(calc.summary.totalCostPerPortion)} บาท`, highlight: true },
+            { label: 'ราคาแนะนำ (Food Cost เป้าหมาย)', value: `${formatMoney(calc.summary.suggestedSellingPrice)} บาท` },
+            { label: 'ราคาแนะนำปัดเศษการค้า (฿5)', value: `${formatMoney(calc.summary.suggestedPriceRounded)} บาท` },
+            { label: calc.summary.isProfit ? 'กำไรขั้นต้นจริงต่อเสิร์ฟ' : 'ขาดทุนต่อเสิร์ฟ', value: calc.summary.hasActualPrice ? `${formatMoney(calc.summary.grossProfit)} บาท (Margin ${calc.summary.grossMarginPct}%)` : '-' }
+        ];
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    ตารางแจกแจงต้นทุนวัตถุดิบตามสูตร (Ingredients Breakdown)
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 6px 8px; text-align: left;">ลำดับ</th>
+                            <th style="padding: 6px 8px; text-align: left;">ชื่อวัตถุดิบ</th>
+                            <th style="padding: 6px 8px; text-align: right;">ราคาซื้อต่อแพ็ค</th>
+                            <th style="padding: 6px 8px; text-align: right;">ขนาดบรรจุ</th>
+                            <th style="padding: 6px 8px; text-align: right;">ปริมาณที่ใช้</th>
+                            <th style="padding: 6px 8px; text-align: right;">Yield %</th>
+                            <th style="padding: 6px 8px; text-align: right;">ต้นทุนในสูตร</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${calc.ingredients.map((ing, idx) => `
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; font-weight: 600;">${idx + 1}</td>
+                                <td style="padding: 6px 8px; font-weight: 600;">${escapeHTML(ing.name || `วัตถุดิบ ${idx + 1}`)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(ing.packPrice)} ฿</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(ing.packSize)} ${ing.packUnit}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(ing.useAmount)} ${ing.useUnit}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatNum(ing.yieldPct, 1)}%</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #0369a1;">${formatMoney(ing.lineCost)} ฿</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                            <td colspan="6" style="padding: 8px;">รวมต้นทุนวัตถุดิบตามสูตร (Raw Batch Cost):</td>
+                            <td style="padding: 8px; text-align: right; color: #0284c7; font-size: 12px;">${formatMoney(calc.summary.rawBatchCost)} ฿</td>
+                        </tr>
+                        <tr style="background: #ffffff; font-weight: 600;">
+                            <td colspan="6" style="padding: 6px 8px; color: #475569;">ต้นทุนวัตถุดิบเฉลี่ยต่อเสิร์ฟ (${calc.batchYield} เสิร์ฟ):</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #0f172a;">${formatMoney(calc.summary.rawCostPerPortion)} ฿</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+
     } else {
         // Generic Fallback for other calculators
         const summary = (typeof getToolSummaryText === 'function') ? getToolSummaryText(curToolId) : '';

@@ -283,11 +283,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 34 tools classified into 5 valid groups with search keywords', () => {
+test('catalog contains exactly 35 tools classified into 5 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 5);
-    assert.equal(TOOLS_CATALOG.length, 34);
+    assert.equal(TOOLS_CATALOG.length, 35);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -431,7 +431,7 @@ test('thai official holidays: Songkran, fixed holidays and lunar Buddhist observ
     assert.equal(ctx.isThaiOfficialHoliday(new Date('2026-10-14T00:00:00')), false);
 });
 
-test('all 34 tools have complete and valid clear and demo data mappings', () => {
+test('all 35 tools have complete and valid clear and demo data mappings', () => {
     const rawAppStateMatch = html.match(/const appState = \{[\s\S]*?\n        \};/);
     assert.ok(rawAppStateMatch, 'appState must be defined');
 
@@ -447,7 +447,7 @@ test('all 34 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 34);
+    assert.equal(ctx.TOOLS_CATALOG.length, 35);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -1183,7 +1183,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('🏆 คุ้มค่าที่สุด'));
 });
 
-test('all 34 tool renderers are modularized and exported across the 5 tool groups', () => {
+test('all 35 tool renderers are modularized and exported across the 5 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -1219,10 +1219,11 @@ test('all 34 tool renderers are modularized and exported across the 5 tool group
         legal_interest:    'renderLegalInterestTool',
         ot_calc:           'renderOvertimeTool',
         ecommerce_profit:  'renderEcommerceProfitTool',
-        debt_payoff:       'renderDebtPayoffTool'
+        debt_payoff:       'renderDebtPayoffTool',
+        food_costing:      'renderFoodCostingTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 34);
+    assert.equal(Object.keys(rendererMap).length, 35);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -2658,4 +2659,166 @@ test('pure engine calculateDebtPayoff: Avalanche vs Snowball, minimums, rollover
         }
     });
     assert.ok(unpayableDoc.includes('ยังชำระไม่สำเร็จ'));
+});
+
+test('calculateFoodCosting: recipe costing engine, yield %, hidden cost buffer, packaging, and target profit analysis', () => {
+    const ctx = context();
+
+    // 1. Single serving recipe test
+    // Pork: 160 THB for 1000g, use 120g, 100% yield => 160 * (120/1000) = 19.20 THB
+    // Rice: 45 THB for 2500g, use 200g, 100% yield => 45 * (200/2500) = 3.60 THB
+    // Egg: 120 THB for 30 pieces, use 1 piece => 120 / 30 = 4.00 THB
+    // Basil/Chili: 50 THB for 500g, use 30g, 90% yield => (30 * (50/500)) / 0.90 = 3.00 / 0.9 = 3.3333... THB
+    // Sauce/Oil: 65 THB for 1000ml, use 25ml => 65 * (25/1000) = 1.625 THB
+    // Total raw batch cost = 19.20 + 3.60 + 4.00 + 3.3333 + 1.625 = 31.7583 THB
+    // Batch yield = 1 => Raw cost per portion = 31.7583 THB
+    // Hidden cost buffer 5% => 31.7583 * 0.05 = 1.5879 THB
+    // Packaging = 4.50 THB
+    // Total cost per portion = 31.7583 + 1.5879 + 4.50 = 37.8462 THB
+    // Target food cost % = 30% => Suggested selling price = 37.8462 / 0.30 = 126.154 THB
+    // Commercial rounded price (nearest 5) = ceil(126.154 / 5) * 5 = 130 THB
+    const singleRecipe = ctx.calculateFoodCosting({
+        recipeName: 'ข้าวกะเพราหมูสับไข่ดาว',
+        batchYield: '1',
+        targetFoodCostPct: '30',
+        sellingPrice: '65',
+        packagingCost: '4.5',
+        hiddenCostBufferPct: '5',
+        ingredients: [
+            { id: '1', name: 'หมูสับ', packPrice: '160', packSize: '1000', packUnit: 'g', useAmount: '120', useUnit: 'g', yieldPct: '100' },
+            { id: '2', name: 'ข้าวสวย', packPrice: '45', packSize: '2500', packUnit: 'g', useAmount: '200', useUnit: 'g', yieldPct: '100' },
+            { id: '3', name: 'ไข่ไก่', packPrice: '120', packSize: '30', packUnit: 'piece', useAmount: '1', useUnit: 'piece', yieldPct: '100' },
+            { id: '4', name: 'ใบกะเพรา', packPrice: '50', packSize: '500', packUnit: 'g', useAmount: '30', useUnit: 'g', yieldPct: '90' },
+            { id: '5', name: 'น้ำมัน&ซอส', packPrice: '65', packSize: '1000', packUnit: 'ml', useAmount: '25', useUnit: 'ml', yieldPct: '100' }
+        ]
+    });
+
+    assert.equal(singleRecipe.batchYield, 1);
+    assert.equal(singleRecipe.ingredients.length, 5);
+    assert.equal(Math.round(singleRecipe.ingredients[0].lineCost * 100) / 100, 19.20);
+    assert.equal(Math.round(singleRecipe.ingredients[1].lineCost * 100) / 100, 3.60);
+    assert.equal(Math.round(singleRecipe.ingredients[2].lineCost * 100) / 100, 4.00);
+    assert.equal(Math.round(singleRecipe.ingredients[3].lineCost * 100) / 100, 3.33);
+    assert.equal(Math.round(singleRecipe.ingredients[4].lineCost * 100) / 100, 1.63);
+
+    assert.equal(Math.round(singleRecipe.summary.rawCostPerPortion * 100) / 100, 31.76);
+    assert.equal(Math.round(singleRecipe.summary.hiddenCostBuffer * 100) / 100, 1.59);
+    assert.equal(singleRecipe.summary.packagingCost, 4.5);
+    assert.equal(Math.round(singleRecipe.summary.totalCostPerPortion * 100) / 100, 37.85);
+
+    assert.equal(Math.round(singleRecipe.summary.suggestedSellingPrice * 100) / 100, 126.17);
+    assert.equal(singleRecipe.summary.suggestedPriceRounded, 130);
+
+    // Actual selling price analysis at 65 THB
+    // Gross Profit = 65 - 37.8462 = 27.1538 THB
+    // Actual Food Cost % = (37.8462 / 65) * 100 = 58.22%
+    // Gross Margin % = (27.1538 / 65) * 100 = 41.78%
+    assert.equal(singleRecipe.summary.hasActualPrice, true);
+    assert.equal(singleRecipe.summary.isProfit, true);
+    assert.equal(Math.round(singleRecipe.summary.grossProfit * 100) / 100, 27.15);
+    assert.equal(singleRecipe.summary.actualFoodCostPct, 58.2);
+    assert.equal(singleRecipe.summary.grossMarginPct, 41.8);
+
+    // 2. Batch Recipe: 10 portions of Thai Tea
+    // Tea leaves: 350 THB for 500g, use 200g (pack 500g, use 200g) => 350 * (200/500) = 140 THB
+    // Milk: 95 THB for 2000ml, use 1200ml => 95 * (1200/2000) = 57 THB
+    // Condensed milk: 55 THB for 1000g, use 300g => 55 * (300/1000) = 16.5 THB
+    // Ice: 20 THB for 10kg, use 2kg (2000g with pack 10kg) => unit conversion kg to g
+    // 10kg = 10,000g => 20 * (2000/10000) = 4.00 THB
+    // Total raw batch cost = 140 + 57 + 16.5 + 4 = 217.50 THB
+    // Batch yield = 10 portions => Raw cost per portion = 21.75 THB
+    // Hidden cost buffer 5% => 21.75 * 0.05 = 1.0875 THB
+    // Packaging = 3.50 THB per cup
+    // Total cost per cup = 21.75 + 1.0875 + 3.50 = 26.3375 THB
+    // Target food cost % = 25% => Suggested price = 26.3375 / 0.25 = 105.35 THB
+    // Commercial rounded = 110 THB
+    const batchRecipe = ctx.calculateFoodCosting({
+        recipeName: 'ชาไทยเย็น Batch 10 แก้ว',
+        batchYield: '10',
+        targetFoodCostPct: '25',
+        sellingPrice: '50',
+        packagingCost: '3.5',
+        hiddenCostBufferPct: '5',
+        ingredients: [
+            { id: '1', name: 'ผงชา', packPrice: '350', packSize: '500', packUnit: 'g', useAmount: '200', useUnit: 'g', yieldPct: '100' },
+            { id: '2', name: 'นมสด', packPrice: '95', packSize: '2000', packUnit: 'ml', useAmount: '1200', useUnit: 'ml', yieldPct: '100' },
+            { id: '3', name: 'นมข้น', packPrice: '55', packSize: '1000', packUnit: 'g', useAmount: '300', useUnit: 'g', yieldPct: '100' },
+            { id: '4', name: 'น้ำแข็ง', packPrice: '20', packSize: '10', packUnit: 'kg', useAmount: '2000', useUnit: 'g', yieldPct: '100' }
+        ]
+    });
+
+    assert.equal(batchRecipe.batchYield, 10);
+    assert.equal(Math.round(batchRecipe.summary.rawBatchCost * 100) / 100, 217.50);
+    assert.equal(Math.round(batchRecipe.summary.rawCostPerPortion * 100) / 100, 21.75);
+    assert.equal(Math.round(batchRecipe.summary.hiddenCostBuffer * 100) / 100, 1.09);
+    assert.equal(Math.round(batchRecipe.summary.totalCostPerPortion * 100) / 100, 26.34);
+    assert.equal(Math.round(batchRecipe.summary.suggestedSellingPrice * 100) / 100, 105.36);
+    assert.equal(batchRecipe.summary.suggestedPriceRounded, 110);
+
+    // Selling at 50 THB:
+    // Profit = 50 - 26.3375 = 23.6625 THB
+    assert.equal(batchRecipe.summary.isProfit, true);
+    assert.equal(Math.round(batchRecipe.summary.grossProfit * 100) / 100, 23.66);
+
+    // 3. Loss scenario test (selling below total cost)
+    const lossRecipe = ctx.calculateFoodCosting({
+        recipeName: 'เมนูขายขาดทุน',
+        batchYield: '1',
+        targetFoodCostPct: '30',
+        sellingPrice: '20',
+        packagingCost: '5',
+        hiddenCostBufferPct: '0',
+        ingredients: [
+            { id: '1', name: 'เนื้อสเต็ก', packPrice: '500', packSize: '1000', packUnit: 'g', useAmount: '200', useUnit: 'g', yieldPct: '100' }
+        ]
+    });
+    // Raw cost = 100 THB + packaging 5 = 105 THB
+    // Selling price = 20 THB => Loss = -85 THB
+    assert.equal(lossRecipe.summary.totalCostPerPortion, 105);
+    assert.equal(lossRecipe.summary.grossProfit, -85);
+    assert.equal(lossRecipe.summary.isProfit, false);
+
+    // 4. Drawer summary test
+    const summaryText = ctx.getToolSummaryText('food_costing', {
+        food_costing: {
+            recipeName: 'ข้าวกะเพราหมูสับไข่ดาว',
+            batchYield: '1',
+            targetFoodCostPct: '30',
+            sellingPrice: '65',
+            packagingCost: '4.5',
+            hiddenCostBufferPct: '5',
+            ingredients: [
+                { id: '1', name: 'หมูสับ', packPrice: '160', packSize: '1000', packUnit: 'g', useAmount: '120', useUnit: 'g', yieldPct: '100' }
+            ]
+        }
+    });
+    assert.match(summaryText, /สรุปต้นทุนสูตรอาหาร & เครื่องดื่ม/);
+    assert.match(summaryText, /ต้นทุนรวมต่อเสิร์ฟ:/);
+    assert.match(summaryText, /ราคาแนะนำ/);
+
+    // 5. Formal print sheet test
+    const printDoc = ctx.generateFormalPrintHTML('food_costing', {
+        food_costing: {
+            recipeName: 'ข้าวกะเพราหมูสับไข่ดาว',
+            batchYield: '1',
+            targetFoodCostPct: '30',
+            sellingPrice: '65',
+            packagingCost: '4.5',
+            hiddenCostBufferPct: '5',
+            ingredients: [
+                { id: '1', name: 'หมูสับ', packPrice: '160', packSize: '1000', packUnit: 'g', useAmount: '120', useUnit: 'g', yieldPct: '100' }
+            ]
+        }
+    });
+    assert.ok(printDoc.includes('ใบสรุปต้นทุนสูตรมาตรฐานอาหารและเครื่องดื่ม'));
+    assert.ok(printDoc.includes('Standard Recipe Cost & Pricing Sheet'));
+    assert.ok(printDoc.includes('ตารางแจกแจงต้นทุนวัตถุดิบตามสูตร'));
+
+    // 6. Compare calculations test
+    const presets = ctx.getComparisonPresets('food_costing');
+    assert.equal(presets.length, 3);
+    const compResult = ctx.compareCalculations('food_costing', presets);
+    assert.ok(compResult);
+    assert.ok(compResult.rows.length >= 5);
+    assert.ok(compResult.deltaSummary.includes('ทางเลือกที่'));
 });

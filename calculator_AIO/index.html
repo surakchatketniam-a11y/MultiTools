@@ -1498,7 +1498,7 @@
             <div class="bg-white rounded-full px-3.5 py-1.5 border border-[var(--app-hairline)] flex items-center justify-between" style="box-shadow: var(--airbnb-shadow);">
                 <div class="flex items-center gap-2.5 min-w-0">
                     <div class="w-8 h-8 rounded-full bg-[var(--app-accent)] text-white flex flex-col items-center justify-center font-bold text-[9px] leading-none shrink-0">
-                        <span id="footerCatalogCount">34 in 1</span>
+                        <span id="footerCatalogCount">35 in 1</span>
                     </div>
                     <div class="leading-tight truncate">
                         <div class="text-xs sm:text-sm font-bold text-[#222222] truncate">มีตังค์ | เครื่องสารพัดคำนวณ Free+</div>
@@ -2062,6 +2062,23 @@
                     { id: '2', name: 'บัตรเครดิต B', balance: '45000', rate: '16', minPayment: '2250' },
                     { id: '3', name: 'สินเชื่อส่วนบุคคล C', balance: '80000', rate: '18', minPayment: '3500' }
                 ]
+            },
+
+            // 35. F&B Recipe Costing (food_costing)
+            food_costing: {
+                recipeName: 'ข้าวกะเพราหมูสับไข่ดาว (Delivery)',
+                batchYield: '1',
+                targetFoodCostPct: '30',
+                sellingPrice: '65',
+                packagingCost: '4.5',
+                hiddenCostBufferPct: '5',
+                ingredients: [
+                    { id: '1', name: 'หมูสับติดมัน', packPrice: '160', packSize: '1000', packUnit: 'g', useAmount: '120', useUnit: 'g', yieldPct: '100' },
+                    { id: '2', name: 'ข้าวหอมมะลิสุก', packPrice: '45', packSize: '2500', packUnit: 'g', useAmount: '200', useUnit: 'g', yieldPct: '100' },
+                    { id: '3', name: 'ไข่ไก่สด เบอร์ 2', packPrice: '120', packSize: '30', packUnit: 'piece', useAmount: '1', useUnit: 'piece', yieldPct: '100' },
+                    { id: '4', name: 'ใบกะเพรา + พริกกระเทียม', packPrice: '50', packSize: '500', packUnit: 'g', useAmount: '30', useUnit: 'g', yieldPct: '90' },
+                    { id: '5', name: 'น้ำมันพืช & ซอสปรุงรส', packPrice: '65', packSize: '1000', packUnit: 'ml', useAmount: '25', useUnit: 'ml', yieldPct: '100' }
+                ]
             }
         };
 
@@ -2144,6 +2161,7 @@
                 case 'ot_calc':          renderOvertimeTool(topPanel); break;
                 case 'ecommerce_profit': renderEcommerceProfitTool(topPanel); break;
                 case 'debt_payoff':      renderDebtPayoffTool(topPanel); break;
+                case 'food_costing':     renderFoodCostingTool(topPanel); break;
             }
             if (editing) {
                 const replacement = topPanel.querySelector(`input[data-shared-field="${editing.index}"]`);

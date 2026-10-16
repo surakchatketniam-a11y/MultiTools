@@ -479,6 +479,19 @@ function getToolSummaryText(toolId, stateObj) {
             }
             return `💳 สรุปแผนปลดหนี้หลายบัญชี (${stratName})\n${divider}\n• ยอดหนี้รวมเริ่มต้น: ${formatMoney(calc.initialTotalDebt)} บาท\n• เงินโปะเพิ่มต่อเดือน: +${formatMoney(calc.extraMonthly || 0)} บาท\n• ระยะเวลาปลดหนี้: ${calc.summary.months} เดือน (${calc.summary.years} ปี)\n• ดอกเบี้ยรวมที่ต้องจ่าย: ${formatMoney(calc.summary.totalInterest)} บาท\n• ยอดชำระรวมทั้งสิ้น: ${formatMoney(calc.summary.totalPaid)} บาท\n${calc.summary.interestSavedVsOther > 0 ? `• ประหยัดดอกเบี้ยได้มากกว่าอีกวิธี: ${formatMoney(calc.summary.interestSavedVsOther)} บาท\n` : ''}${divider}\n🎯 ปลดหนี้หมดสำเร็จใน ${calc.summary.months} เดือน\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'food_costing': {
+            const st = state.food_costing || {};
+            const calc = (typeof calculateFoodCosting === 'function')
+                ? calculateFoodCosting(st)
+                : { recipeName: 'สูตรอาหาร/เครื่องดื่ม', batchYield: 1, targetFoodCostPct: 30, sellingPrice: 65, summary: { rawBatchCost: 20, rawCostPerPortion: 20, hiddenCostBuffer: 1, packagingCost: 4.5, totalCostPerPortion: 25.5, suggestedSellingPrice: 85, suggestedPriceRounded: 85, grossProfit: 39.5, actualFoodCostPct: 39.2, grossMarginPct: 60.8, isProfit: true, hasActualPrice: true } };
+            const rName = calc.recipeName || 'สูตรอาหาร/เครื่องดื่ม';
+            const portionText = calc.batchYield > 1 ? `สูตรผลิต ${calc.batchYield} เสิร์ฟ` : 'จานเดี่ยว (1 เสิร์ฟ)';
+            let profitSummary = '';
+            if (calc.summary.hasActualPrice) {
+                profitSummary = `\n• ราคาขายจริง: ${formatMoney(calc.sellingPrice)} บาท\n• ${calc.summary.isProfit ? '💰 กำไรขั้นต้น' : '⚠️ ขาดทุน'}: ${formatMoney(calc.summary.grossProfit)} บาท/เสิร์ฟ (Food Cost ${calc.summary.actualFoodCostPct}%, Margin ${calc.summary.grossMarginPct}%)`;
+            }
+            return `🍳 สรุปต้นทุนสูตรอาหาร & เครื่องดื่ม: ${rName}\n${divider}\n• ขนาดสูตร: ${portionText}\n• ต้นทุนวัตถุดิบ/เสิร์ฟ: ${formatMoney(calc.summary.rawCostPerPortion)} บาท\n• เผื่อสูญเสีย/เครื่องปรุง (${calc.hiddenCostBufferPct}%): +${formatMoney(calc.summary.hiddenCostBuffer)} บาท\n• บรรจุภัณฑ์/กล่อง: +${formatMoney(calc.summary.packagingCost)} บาท\n${divider}\n💰 ต้นทุนรวมต่อเสิร์ฟ: ${formatMoney(calc.summary.totalCostPerPortion)} บาท\n🎯 ราคาแนะนำ (Food Cost ${calc.targetFoodCostPct}%): ${formatMoney(calc.summary.suggestedSellingPrice)} บาท (ปัดเศษการค้า: ${formatMoney(calc.summary.suggestedPriceRounded)} บ.)${profitSummary}\n(คำนวณโดย Multitools Calculator)`;
+        }
         default: {
             const statusText = document.getElementById('sharedStatusText')?.innerText?.trim();
             return `📋 สรุปผล: ${title}\n${divider}\n${statusText || 'คำนวณเรียบร้อยแล้ว'}\n(คำนวณโดย Multitools Calculator)`;
