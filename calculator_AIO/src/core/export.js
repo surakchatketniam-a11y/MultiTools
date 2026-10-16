@@ -1160,6 +1160,90 @@ function generateFormalPrintHTML(toolId, stateObj) {
             </div>
         `;
 
+    } else if (curToolId === 'ot_calc') {
+        docTitle = 'หนังสือแสดงรายการคำนวณค่าล่วงเวลาและค่าทำงานในวันหยุด';
+        docSubtitle = 'Labor Protection Act Overtime & Holiday Pay Calculation Statement (Section 61/62/63)';
+        const st = state.ot_calc || {};
+        const calc = (typeof calculateOvertimePay === 'function')
+            ? calculateOvertimePay(st)
+            : { wageType: 'monthly', wageBase: 25000, workHoursPerDay: 8, hourlyRate: 104.17, dailyRate: 833.33, otWeekdayHours: 10, holidayWorkHours: 8, holidayOtHours: 4, holidayMultiplier: 1.0, otWeekdayPay: 1562.5, holidayWorkPay: 833.33, holidayOtPay: 1250, shiftAllowance: 0, totalOtPay: 3645.83, totalEarnings: 28645.83, totalHours: 22 };
+
+        const typeLabel = calc.wageType === 'daily' ? 'พนักงานรายวัน (Daily)' : (calc.wageType === 'hourly' ? 'รายชั่วโมง (Hourly)' : 'พนักงานรายเดือน (Monthly)');
+
+        paramsRows = [
+            ['รูปแบบการจ้างงาน', typeLabel],
+            ['ฐานค่าจ้าง (Base Wage)', `${formatMoney(calc.wageBase)} บาท (${st.wageType === 'monthly' ? 'ต่อเดือน' : (st.wageType === 'daily' ? 'ต่อวัน' : 'ต่อชั่วโมง')})`],
+            ['ชั่วโมงทำงานปกติใน 1 วัน', `${calc.workHoursPerDay} ชั่วโมง/วัน (ฐานคิดคำนวณ)`],
+            ['อัตราค่าจ้างรายชั่วโมงฐาน', `${formatMoney(calc.hourlyRate)} บาท/ชั่วโมง`],
+            ['รวมจำนวนชั่วโมงพิเศษทั้งหมด', `${formatNum(calc.totalHours, 1)} ชั่วโมง`]
+        ];
+
+        resultCards = [
+            { label: '💰 รวมค่าล่วงเวลา OT สุทธิ', value: `+${formatMoney(calc.totalOtPay)} บาท`, highlight: true },
+            { label: 'ยอดเงินได้รวมประจำงวด (ฐาน + OT)', value: `${formatMoney(calc.totalEarnings)} บาท` },
+            { label: 'OT วันทำงานปกติ (1.5 เท่า)', value: `${formatMoney(calc.otWeekdayPay)} บาท (${calc.otWeekdayHours} ชม.)` },
+            { label: 'ทำงานในวันหยุด (ม.62/63)', value: `${formatMoney(calc.holidayWorkPay + calc.holidayOtPay)} บาท` }
+        ];
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    รายละเอียดการคำนวณตาม พ.ร.บ. คุ้มครองแรงงาน พ.ศ. 2541
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 6px 8px; text-align: left;">ประเภทค่าล่วงเวลาและวันหยุด</th>
+                            <th style="padding: 6px 8px; text-align: right;">จำนวนชั่วโมง</th>
+                            <th style="padding: 6px 8px; text-align: right;">อัตราคูณ</th>
+                            <th style="padding: 6px 8px; text-align: right;">อัตรา/ชม. (บาท)</th>
+                            <th style="padding: 6px 8px; text-align: right;">จำนวนเงิน (บาท)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;"><b>ล่วงเวลาวันทำงานปกติ (ม.61)</b></td>
+                            <td style="padding: 6px 8px; text-align: right;">${calc.otWeekdayHours} ชม.</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #0284c7;">1.5 เท่า</td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.rate1_5)}</td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600;">+${formatMoney(calc.otWeekdayPay)}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;"><b>ทำงานในวันหยุดเวลาปกติ (ม.62)</b></td>
+                            <td style="padding: 6px 8px; text-align: right;">${calc.holidayWorkHours} ชม.</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #0284c7;">${calc.holidayMultiplier} เท่า</td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.rateHolidayWork)}</td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600;">+${formatMoney(calc.holidayWorkPay)}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;"><b>ล่วงเวลาในวันหยุดเกินปกติ (ม.63)</b></td>
+                            <td style="padding: 6px 8px; text-align: right;">${calc.holidayOtHours} ชม.</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #0284c7;">3.0 เท่า</td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.rate3_0)}</td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600;">+${formatMoney(calc.holidayOtPay)}</td>
+                        </tr>
+                        ${calc.shiftAllowance > 0 ? `
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px;">เงินค่ากะ / เบี้ยเลี้ยงพิเศษ</td>
+                                <td style="padding: 6px 8px; text-align: right;">-</td>
+                                <td style="padding: 6px 8px; text-align: right;">ตามจริง</td>
+                                <td style="padding: 6px 8px; text-align: right;">-</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">+${formatMoney(calc.shiftAllowance)}</td>
+                            </tr>
+                        ` : ''}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                            <td style="padding: 8px;">รวมค่าล่วงเวลาและเงินพิเศษที่ต้องจ่าย:</td>
+                            <td style="padding: 8px; text-align: right;">${formatNum(calc.totalHours, 1)} ชม.</td>
+                            <td style="padding: 8px;" colspan="2"></td>
+                            <td style="padding: 8px; text-align: right; color: #0284c7; font-size: 12px;">+${formatMoney(calc.totalOtPay)} บาท</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+
     } else {
         // Generic Fallback for other calculators
         const summary = (typeof getToolSummaryText === 'function') ? getToolSummaryText(curToolId) : '';

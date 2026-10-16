@@ -1426,7 +1426,7 @@
             <div class="bg-white rounded-full px-3.5 py-1.5 border border-[var(--app-hairline)] flex items-center justify-between" style="box-shadow: var(--airbnb-shadow);">
                 <div class="flex items-center gap-2.5 min-w-0">
                     <div class="w-8 h-8 rounded-full bg-[var(--app-accent)] text-white flex flex-col items-center justify-center font-bold text-[9px] leading-none shrink-0">
-                        <span id="footerCatalogCount">31 in 1</span>
+                        <span id="footerCatalogCount">32 in 1</span>
                     </div>
                     <div class="leading-tight truncate">
                         <div class="text-xs sm:text-sm font-bold text-[#222222] truncate">มีตังค์ | เครื่องสารพัดคำนวณ Free+</div>
@@ -1943,6 +1943,17 @@
                 startDate: getSafeDateStr(-60),
                 endDate: getSafeDateStr(0),
                 overdueDays: '60'
+            },
+
+            // 28. Overtime & Holiday Pay (OT)
+            ot_calc: {
+                wageType: 'monthly',
+                wageBase: '25000',
+                workHoursPerDay: '8',
+                otWeekdayHours: '10',
+                holidayWorkHours: '8',
+                holidayOtHours: '4',
+                shiftAllowance: '0'
             }
         };
 
@@ -2021,6 +2032,7 @@
                 case 'social_security':  renderSocialSecurityTool(topPanel); break;
                 case 'labor_severance':  renderLaborSeveranceTool(topPanel); break;
                 case 'legal_interest':   renderLegalInterestTool(topPanel); break;
+                case 'ot_calc':          renderOvertimeTool(topPanel); break;
             }
             if (editing) {
                 const replacement = topPanel.querySelector(`input[data-shared-field="${editing.index}"]`);

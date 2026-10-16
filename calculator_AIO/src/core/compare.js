@@ -174,6 +174,20 @@ function getComparisonPresets(toolId) {
                 label: 'ทางเลือก 3: อัตราสัญญาเดิม 7.5% (ค้าง 60 วัน)',
                 state: { principal: '200000', ratePreset: 'custom', customRate: '7.5', calcMode: 'days', overdueDays: '60' }
             }
+        ],
+        ot_calc: [
+            {
+                label: 'ทางเลือก 1: พนักงานรายเดือน 25k (OT วันธรรมดา 10 ชม.)',
+                state: { wageType: 'monthly', wageBase: '25000', workHoursPerDay: '8', otWeekdayHours: '10', holidayWorkHours: '0', holidayOtHours: '0', shiftAllowance: '0' }
+            },
+            {
+                label: 'ทางเลือก 2: พนักงานรายเดือน 25k (OT วันธรรมดา 15 ชม. + วันหยุด 8 ชม.)',
+                state: { wageType: 'monthly', wageBase: '25000', workHoursPerDay: '8', otWeekdayHours: '15', holidayWorkHours: '8', holidayOtHours: '0', shiftAllowance: '500' }
+            },
+            {
+                label: 'ทางเลือก 3: พนักงานรายวัน 500 บ. (OT วันหยุดเต็มวัน + OT ดึก 4 ชม.)',
+                state: { wageType: 'daily', wageBase: '500', workHoursPerDay: '8', otWeekdayHours: '10', holidayWorkHours: '8', holidayOtHours: '4', shiftAllowance: '800' }
+            }
         ]
     };
     return presets[toolId] || [];
@@ -809,6 +823,62 @@ function compareCalculations(toolId, itemsList) {
         const maxPayable = Math.max(...results.map(r => r.totalPayable));
         const diffPayable = maxPayable - minPayableRes.totalPayable;
         deltaSummary = `🏆 ทางเลือกที่มียอดหนี้รวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดชำระรวม ${formatMoney(minPayableRes.totalPayable)} บาท (ดอกเบี้ย ${formatMoney(minPayableRes.totalInterest)} บาท)${diffPayable > 0 ? ` ประหยัดภาระหนี้ได้ ${formatMoney(diffPayable)} บาท` : ''}`;
+
+    } else if (toolId === 'ot_calc') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const calc = (typeof calculateOvertimePay === 'function')
+                ? calculateOvertimePay(st)
+                : { wageType: 'monthly', wageBase: 0, hourlyRate: 0, otWeekdayHours: 0, otWeekdayPay: 0, holidayWorkHours: 0, holidayWorkPay: 0, holidayOtHours: 0, holidayOtPay: 0, shiftAllowance: 0, totalOtPay: 0, totalEarnings: 0 };
+            return calc;
+        });
+
+        rows.push({
+            label: 'ประเภทค่าจ้าง / ฐานค่าจ้าง',
+            values: results.map(r => `${r.wageType === 'daily' ? 'รายวัน' : r.wageType === 'hourly' ? 'รายชั่วโมง' : 'รายเดือน'} ${formatMoney(r.wageBase)} ฿`)
+        });
+        rows.push({
+            label: 'อัตราค่าจ้างต่อชั่วโมงฐาน',
+            values: results.map(r => `${formatMoney(r.hourlyRate)} ฿/ชม.`)
+        });
+        rows.push({
+            label: 'OT วันทำงานปกติ (1.5x)',
+            values: results.map(r => `${r.otWeekdayHours} ชม. (+${formatMoney(r.otWeekdayPay)} ฿)`)
+        });
+        rows.push({
+            label: 'ทำงานในวันหยุด (1x/2x)',
+            values: results.map(r => `${r.holidayWorkHours} ชม. (+${formatMoney(r.holidayWorkPay)} ฿)`)
+        });
+        rows.push({
+            label: 'OT วันหยุด (3.0x)',
+            values: results.map(r => `${r.holidayOtHours} ชม. (+${formatMoney(r.holidayOtPay)} ฿)`)
+        });
+        if (results.some(r => r.shiftAllowance > 0)) {
+            rows.push({
+                label: 'เงินช่วยเหลือ/กะพิเศษ',
+                values: results.map(r => `+${formatMoney(r.shiftAllowance)} ฿`)
+            });
+        }
+
+        const maxOtRes = results.reduce((max, cur) => cur.totalOtPay > max.totalOtPay ? cur : max, results[0]);
+        const maxOtIdx = results.indexOf(maxOtRes);
+
+        rows.push({
+            label: 'รวมค่าล่วงเวลา & วันหยุด (OT Pay)',
+            values: results.map(r => `+${formatMoney(r.totalOtPay)} ฿`),
+            bestIndex: maxOtIdx,
+            highlight: true
+        });
+        rows.push({
+            label: 'รวมรายได้คาดการณ์ทั้งสิ้น',
+            values: results.map(r => `${formatMoney(r.totalEarnings)} ฿`),
+            bestIndex: results.indexOf(results.reduce((max, cur) => cur.totalEarnings > max.totalEarnings ? cur : max, results[0]))
+        });
+
+        winnerIndex = maxOtIdx;
+        const minOt = Math.min(...results.map(r => r.totalOtPay));
+        const diffOt = maxOtRes.totalOtPay - minOt;
+        deltaSummary = `🏆 ทางเลือกที่ได้ค่าล่วงเวลา (OT) สูงสุดคือ "${items[winnerIndex].label}" ได้รับค่า OT รวม ${formatMoney(maxOtRes.totalOtPay)} บาท${diffOt > 0 ? ` (มากกว่าทางเลือกต่ำสุด ${formatMoney(diffOt)} บาท)` : ''}`;
 
     } else {
         rows.push({

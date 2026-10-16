@@ -283,11 +283,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 31 tools classified into 5 valid groups with search keywords', () => {
+test('catalog contains exactly 32 tools classified into 5 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 5);
-    assert.equal(TOOLS_CATALOG.length, 31);
+    assert.equal(TOOLS_CATALOG.length, 32);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -413,7 +413,7 @@ test('thai official holidays: Songkran, fixed holidays and lunar Buddhist observ
     assert.equal(ctx.isThaiOfficialHoliday(new Date('2026-10-14T00:00:00')), false);
 });
 
-test('all 31 tools have complete and valid clear and demo data mappings', () => {
+test('all 32 tools have complete and valid clear and demo data mappings', () => {
     const rawAppStateMatch = html.match(/const appState = \{[\s\S]*?\n        \};/);
     assert.ok(rawAppStateMatch, 'appState must be defined');
 
@@ -429,7 +429,7 @@ test('all 31 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 31);
+    assert.equal(ctx.TOOLS_CATALOG.length, 32);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -841,7 +841,27 @@ test('formal print-to-pdf: generates accurate Thai receipt documents for loan, s
     assert.ok(legDoc.includes('ป.พ.พ. ม.224'));
     assert.ok(legDoc.includes('ยอดหนี้รวมทั้งสิ้นที่ลูกหนี้ต้องชำระ'));
 
-    // 14. Generic Calculator Fallback
+    // 14. Overtime & Holiday Pay Formal Receipt
+    const otState = {
+        activeToolId: 'ot_calc',
+        ot_calc: {
+            wageType: 'monthly',
+            wageBase: '28,000',
+            workHoursPerDay: '8',
+            otWeekdayHours: '16',
+            holidayWorkHours: '8',
+            holidayOtHours: '4',
+            shiftAllowance: '1,200'
+        }
+    };
+    const otDoc = ctx.generateFormalPrintHTML('ot_calc', otState);
+    assert.ok(otDoc.includes('หนังสือแสดงรายการคำนวณค่าล่วงเวลาและค่าทำงานในวันหยุด'));
+    assert.ok(otDoc.includes('28,000.00 บาท'));
+    assert.ok(otDoc.includes('พ.ร.บ. คุ้มครองแรงงาน พ.ศ. 2541'));
+    assert.ok(otDoc.includes('รวมค่าล่วงเวลา OT สุทธิ'));
+    assert.ok(otDoc.includes('ล่วงเวลาวันทำงานปกติ (ม.61)'));
+
+    // 15. Generic Calculator Fallback
     const genericDoc = ctx.generateFormalPrintHTML('tip', { activeToolId: 'tip' });
     assert.ok(genericDoc.includes('MULTITOOLS AIO'));
     assert.ok(genericDoc.includes('เอกสารสรุปผลการคำนวณ'));
@@ -852,7 +872,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     const ctx = context();
 
     // 1. Presets availability
-    for (const toolId of ['loan', 'savings', 'vat_wht', 'salary', 'tax_personal', 'property_transfer', 'gold_thai', 'electricity_bill', 'car_loan', 'social_security', 'labor_severance', 'legal_interest']) {
+    for (const toolId of ['loan', 'savings', 'vat_wht', 'salary', 'tax_personal', 'property_transfer', 'gold_thai', 'electricity_bill', 'car_loan', 'social_security', 'labor_severance', 'legal_interest', 'ot_calc']) {
         const presets = ctx.getComparisonPresets(toolId);
         assert.ok(Array.isArray(presets) && presets.length >= 3, `Presets for ${toolId} must have at least 3 items`);
         assert.ok(presets[0].label && presets[0].state, `Preset item must have label and state`);
@@ -1028,7 +1048,21 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.equal(legComp.winnerIndex, 1, '3.0% interest must yield lower debt than 5.0%');
     assert.ok(legComp.deltaSummary.includes('ดอกเบี้ย ป.พ.พ. ม.7 3.0%'));
 
-    // 14. Print Comparison Sheet Generator
+    // 14. Overtime comparison
+    const otA = {
+        label: 'ทางเลือก A (OT วันธรรมดา 10 ชม.)',
+        state: { wageType: 'monthly', wageBase: '25000', workHoursPerDay: '8', otWeekdayHours: '10', holidayWorkHours: '0', holidayOtHours: '0', shiftAllowance: '0' }
+    };
+    const otB = {
+        label: 'ทางเลือก B (OT วันธรรมดา 15 ชม. + วันหยุด 8 ชม.)',
+        state: { wageType: 'monthly', wageBase: '25000', workHoursPerDay: '8', otWeekdayHours: '15', holidayWorkHours: '8', holidayOtHours: '0', shiftAllowance: '500' }
+    };
+    const otComp = ctx.compareCalculations('ot_calc', [otA, otB]);
+    assert.ok(otComp);
+    assert.equal(otComp.winnerIndex, 1, 'More OT hours and holiday work must yield higher OT pay');
+    assert.ok(otComp.deltaSummary.includes('ทางเลือก B'));
+
+    // 15. Print Comparison Sheet Generator
     const printHTML = ctx.generateComparePrintHTML(loanComp);
     assert.ok(printHTML.includes('MULTITOOLS AIO'));
     assert.ok(printHTML.includes('ตารางวิเคราะห์และเปรียบเทียบชุดคำนวณ'));
@@ -1037,7 +1071,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('🏆 คุ้มค่าที่สุด'));
 });
 
-test('all 31 tool renderers are modularized and exported across the 5 tool groups', () => {
+test('all 32 tool renderers are modularized and exported across the 5 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -1070,10 +1104,11 @@ test('all 31 tool renderers are modularized and exported across the 5 tool group
         car_loan:          'renderCarLoanTool',
         social_security:   'renderSocialSecurityTool',
         labor_severance:   'renderLaborSeveranceTool',
-        legal_interest:    'renderLegalInterestTool'
+        legal_interest:    'renderLegalInterestTool',
+        ot_calc:           'renderOvertimeTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 31);
+    assert.equal(Object.keys(rendererMap).length, 32);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -2026,6 +2061,93 @@ test('pure engine calculateLegalInterest: Section 224 (5%), Section 7 (3%), day 
     assert.match(summaryLeg, /100,000\.00 บาท/);
     assert.match(summaryLeg, /5% ต่อปี/);
     assert.match(summaryLeg, /60 วัน/);
+});
+
+test('pure engine calculateOvertimePay: Section 61 (1.5x), Section 62 (1x/2x), Section 63 (3x), shift allowances and summary text', () => {
+    const ctx = context();
+
+    // 1. Monthly Employee: 24,000 THB / month (hourly rate = 24,000 / (30 * 8) = 100 THB/hr)
+    const monthlyCalc = ctx.calculateOvertimePay({
+        wageType: 'monthly',
+        wageBase: 24000,
+        workHoursPerDay: 8,
+        otWeekdayHours: 10,
+        holidayWorkHours: 8,
+        holidayOtHours: 4,
+        shiftAllowance: 500
+    });
+    assert.equal(monthlyCalc.hourlyRate, 100);
+    // Section 61: 10 hrs * 100 * 1.5 = 1,500 THB
+    assert.equal(monthlyCalc.otWeekdayPay, 1500);
+    // Section 62: Monthly employee gets 1.0x extra = 8 hrs * 100 * 1.0 = 800 THB
+    assert.equal(monthlyCalc.holidayWorkPay, 800);
+    // Section 63: 4 hrs * 100 * 3.0 = 1,200 THB
+    assert.equal(monthlyCalc.holidayOtPay, 1200);
+    assert.equal(monthlyCalc.shiftAllowance, 500);
+    // Total OT Pay (including allowance) = 1,500 + 800 + 1,200 + 500 = 4,000 THB
+    assert.equal(monthlyCalc.totalOtPay, 4000);
+    // Total Earnings = 24,000 + 4,000 = 28,000 THB
+    assert.equal(monthlyCalc.totalEarnings, 28000);
+
+    // 2. Daily Employee: 400 THB / day (hourly rate = 400 / 8 = 50 THB/hr)
+    const dailyCalc = ctx.calculateOvertimePay({
+        wageType: 'daily',
+        wageBase: 400,
+        workHoursPerDay: 8,
+        otWeekdayHours: 10,
+        holidayWorkHours: 8,
+        holidayOtHours: 4,
+        shiftAllowance: 200
+    });
+    assert.equal(dailyCalc.hourlyRate, 50);
+    // Section 61: 10 hrs * 50 * 1.5 = 750 THB
+    assert.equal(dailyCalc.otWeekdayPay, 750);
+    // Section 62: Daily employee gets 2.0x = 8 hrs * 50 * 2.0 = 800 THB
+    assert.equal(dailyCalc.holidayWorkPay, 800);
+    // Section 63: 4 hrs * 50 * 3.0 = 600 THB
+    assert.equal(dailyCalc.holidayOtPay, 600);
+    assert.equal(dailyCalc.shiftAllowance, 200);
+    // Total OT Pay (including allowance) = 750 + 800 + 600 + 200 = 2,350 THB
+    assert.equal(dailyCalc.totalOtPay, 2350);
+    // Estimated monthly earnings = (400 * 26) + 2,350 = 10,400 + 2,350 = 12,750 THB
+    assert.equal(dailyCalc.totalEarnings, 12750);
+
+    // 3. Hourly Employee: 100 THB / hr
+    const hourlyCalc = ctx.calculateOvertimePay({
+        wageType: 'hourly',
+        wageBase: 100,
+        workHoursPerDay: 8,
+        otWeekdayHours: 5,
+        holidayWorkHours: 8,
+        holidayOtHours: 2,
+        shiftAllowance: 0
+    });
+    assert.equal(hourlyCalc.hourlyRate, 100);
+    // Section 61: 5 * 100 * 1.5 = 750 THB
+    assert.equal(hourlyCalc.otWeekdayPay, 750);
+    // Section 62: Hourly employee gets 2.0x = 8 * 100 * 2.0 = 1,600 THB
+    assert.equal(hourlyCalc.holidayWorkPay, 1600);
+    // Section 63: 2 * 100 * 3.0 = 600 THB
+    assert.equal(hourlyCalc.holidayOtPay, 600);
+    assert.equal(hourlyCalc.totalOtPay, 2950);
+
+    // 4. Summary text verification
+    const summaryOt = ctx.getToolSummaryText('ot_calc', {
+        ot_calc: {
+            wageType: 'monthly',
+            wageBase: '28000',
+            workHoursPerDay: '8',
+            otWeekdayHours: '16',
+            holidayWorkHours: '8',
+            holidayOtHours: '4',
+            shiftAllowance: '1200'
+        }
+    });
+    assert.match(summaryOt, /สรุปค่าล่วงเวลา \(OT\) & ทำงานวันหยุด/);
+    assert.match(summaryOt, /28,000\.00 บ\./);
+    assert.match(summaryOt, /OT วันทำงานปกติ/);
+    assert.match(summaryOt, /ทำงานในวันหยุด/);
+    assert.match(summaryOt, /รวมค่าล่วงเวลา OT พิเศษ/);
 });
 
 

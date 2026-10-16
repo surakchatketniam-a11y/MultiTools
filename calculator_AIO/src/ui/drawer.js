@@ -425,6 +425,14 @@ function getToolSummaryText(toolId, stateObj) {
                 : { principal: 100000, interestRate: 5.0, overdueDays: 60, totalInterest: 821.92, totalPayable: 100821.92 };
             return `⚖️ สรุปดอกเบี้ยผิดนัดชำระหนี้ (ป.พ.พ.)\n${divider}\n• เงินต้นค้างชำระ: ${formatMoney(calc.principal)} บาท\n• อัตราดอกเบี้ย: ${formatNum(calc.interestRate, 2)}% ต่อปี (ป.พ.พ. ม.224)\n• ระยะเวลาผิดนัด: ${calc.overdueDays} วัน\n• ดอกเบี้ยผิดนัดชำระ: +${formatMoney(calc.totalInterest)} บาท\n${divider}\n💰 ยอดหนี้รวมที่ต้องชำระ: ${formatMoney(calc.totalPayable)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'ot_calc': {
+            const st = state.ot_calc || {};
+            const calc = (typeof calculateOvertimePay === 'function')
+                ? calculateOvertimePay(st)
+                : { wageType: 'monthly', wageBase: 25000, hourlyRate: 104.17, otWeekdayHours: 10, holidayWorkHours: 8, holidayOtHours: 4, holidayMultiplier: 1.0, otWeekdayPay: 1562.5, holidayWorkPay: 833.33, holidayOtPay: 1250, shiftAllowance: 0, totalOtPay: 3645.83, totalEarnings: 28645.83, totalHours: 22 };
+            const typeLabel = calc.wageType === 'daily' ? 'พนักงานรายวัน' : (calc.wageType === 'hourly' ? 'รายชั่วโมง' : 'พนักงานรายเดือน');
+            return `⏱️ สรุปค่าล่วงเวลา (OT) & ทำงานวันหยุด\n${divider}\n• การจ้าง: ${typeLabel} (ฐาน ${formatMoney(calc.wageBase)} บ. / คิดชั่วโมงละ ${formatMoney(calc.hourlyRate)} บ.)\n• OT วันทำงานปกติ (1.5 เท่า): ${calc.otWeekdayHours} ชม. (+${formatMoney(calc.otWeekdayPay)} บ.)\n• ทำงานในวันหยุด (${calc.holidayMultiplier} เท่า): ${calc.holidayWorkHours} ชม. (+${formatMoney(calc.holidayWorkPay)} บ.)\n• OT ในวันหยุด (3.0 เท่า): ${calc.holidayOtHours} ชม. (+${formatMoney(calc.holidayOtPay)} บ.)\n${calc.shiftAllowance > 0 ? `• เงินค่ากะ/เบี้ยเลี้ยง: +${formatMoney(calc.shiftAllowance)} บาท\n` : ''}${divider}\n💰 รวมค่าล่วงเวลา OT พิเศษ: +${formatMoney(calc.totalOtPay)} บาท (${formatNum(calc.totalHours, 1)} ชม.)\n💵 ยอดเงินได้รวมประจำงวด: ${formatMoney(calc.totalEarnings)} บาท\n(คำนวณโดย Multitools Calculator)`;
+        }
         default: {
             const statusText = document.getElementById('sharedStatusText')?.innerText?.trim();
             return `📋 สรุปผล: ${title}\n${divider}\n${statusText || 'คำนวณเรียบร้อยแล้ว'}\n(คำนวณโดย Multitools Calculator)`;

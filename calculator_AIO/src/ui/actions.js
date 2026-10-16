@@ -220,6 +220,16 @@ function clearCurrentTool() {
             endDate: formatLocalDate(new Date()),
             overdueDays: '30'
         };
+    } else if (id === 'ot_calc') {
+        appState.ot_calc = {
+            wageType: 'monthly',
+            wageBase: '',
+            workHoursPerDay: '8',
+            otWeekdayHours: '',
+            holidayWorkHours: '',
+            holidayOtHours: '',
+            shiftAllowance: ''
+        };
     }
     rememberToolClear(snapshot);
     renderActiveTool();
@@ -404,6 +414,16 @@ function loadDemoForCurrentTool() {
             startDate: formatLocalDate(addCalendarDays(new Date(), -120)),
             endDate: formatLocalDate(new Date()),
             overdueDays: '120'
+        };
+    } else if (id === 'ot_calc') {
+        appState.ot_calc = {
+            wageType: 'monthly',
+            wageBase: '28000',
+            workHoursPerDay: '8',
+            otWeekdayHours: '16',
+            holidayWorkHours: '8',
+            holidayOtHours: '4',
+            shiftAllowance: '1200'
         };
     }
     renderActiveTool();

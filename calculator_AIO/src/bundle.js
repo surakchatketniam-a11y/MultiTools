@@ -53,6 +53,7 @@ var TOOLS_CATALOG = [
     // หมวดหมู่ที่ 4: เวลา & สำนักงาน
     { id: 'social_security',   group: 'work', category: 'fav', menuTitle: 'ประกันสังคม & บำนาญ', headerTitle: 'คำนวณเงินสมทบ & บำนาญชราภาพ ประกันสังคม (ม.33/39/40)', usesSharedKeypad: false, keywords: 'social security ประกันสังคม บำนาญ บำเหน็จ ชราภาพ ม33 ม39 ม40 เงินสมทบ เงินออมเกษียณ สปส เกษียณอายุ 55 ปี 60 เดือนสุดท้าย' },
     { id: 'labor_severance',   group: 'work', category: 'fav', menuTitle: 'เงินชดเชยเลิกจ้าง & ค่าตกใจ', headerTitle: 'คำนวณเงินชดเชยเลิกจ้าง & สินจ้างแทนบอกกล่าวล่วงหน้า (ม.118/ม.17)', usesSharedKeypad: false, keywords: 'labor severance เลิกจ้าง ชดเชย ค่าตกใจ กฎหมายแรงงาน ม118 ม17 อายุงาน วันลาพักร้อน ว่างงาน ไล่ออก ปลดพนักงาน' },
+    { id: 'ot_calc',           group: 'work', category: 'fav', menuTitle: 'ค่าล่วงเวลา OT & วันหยุด', headerTitle: 'คำนวณค่าล่วงเวลา (OT) & ค่าทำงานวันหยุด (ม.61/ม.62/ม.63)', usesSharedKeypad: false, keywords: 'ot calc ค่าล่วงเวลา โอที วันหยุด กฎหมายแรงงาน ม61 ม62 ม63 ชั่วโมงทำงาน ค่ากะ กะดึก รายชั่วโมง ค่าแรง เงินเดือน' },
     { id: 'date_work',  group: 'work', category: 'all', menuTitle: 'นับวันทำการ (Workdays)', headerTitle: 'นับวันทำการ', usesSharedKeypad: false, keywords: 'date work วันทำการ วันทำงาน sla วันหยุด ส่งงาน วันครบกำหนด' },
     { id: 'date_calc',  group: 'work', category: 'all', menuTitle: 'คำนวณวันที่ & อายุ', headerTitle: 'เครื่องคำนวณวันที่', usesSharedKeypad: false, keywords: 'date calc วันที่ บวกวัน ลบวัน คำนวณอายุ ระยะห่างวัน' },
     { id: 'world_time', group: 'work', category: 'all', menuTitle: 'เวลาโลก & นัดหมาย', headerTitle: 'นาฬิกาเวลาโลก', usesSharedKeypad: false, keywords: 'world time เวลาโลก timezone ข้ามเขตเวลา โตเกียว นิวยอร์ก ลอนดอน นัดประชุม' },
@@ -1618,6 +1619,90 @@ function generateFormalPrintHTML(toolId, stateObj) {
             </div>
         `;
 
+    } else if (curToolId === 'ot_calc') {
+        docTitle = 'หนังสือแสดงรายการคำนวณค่าล่วงเวลาและค่าทำงานในวันหยุด';
+        docSubtitle = 'Labor Protection Act Overtime & Holiday Pay Calculation Statement (Section 61/62/63)';
+        const st = state.ot_calc || {};
+        const calc = (typeof calculateOvertimePay === 'function')
+            ? calculateOvertimePay(st)
+            : { wageType: 'monthly', wageBase: 25000, workHoursPerDay: 8, hourlyRate: 104.17, dailyRate: 833.33, otWeekdayHours: 10, holidayWorkHours: 8, holidayOtHours: 4, holidayMultiplier: 1.0, otWeekdayPay: 1562.5, holidayWorkPay: 833.33, holidayOtPay: 1250, shiftAllowance: 0, totalOtPay: 3645.83, totalEarnings: 28645.83, totalHours: 22 };
+
+        const typeLabel = calc.wageType === 'daily' ? 'พนักงานรายวัน (Daily)' : (calc.wageType === 'hourly' ? 'รายชั่วโมง (Hourly)' : 'พนักงานรายเดือน (Monthly)');
+
+        paramsRows = [
+            ['รูปแบบการจ้างงาน', typeLabel],
+            ['ฐานค่าจ้าง (Base Wage)', `${formatMoney(calc.wageBase)} บาท (${st.wageType === 'monthly' ? 'ต่อเดือน' : (st.wageType === 'daily' ? 'ต่อวัน' : 'ต่อชั่วโมง')})`],
+            ['ชั่วโมงทำงานปกติใน 1 วัน', `${calc.workHoursPerDay} ชั่วโมง/วัน (ฐานคิดคำนวณ)`],
+            ['อัตราค่าจ้างรายชั่วโมงฐาน', `${formatMoney(calc.hourlyRate)} บาท/ชั่วโมง`],
+            ['รวมจำนวนชั่วโมงพิเศษทั้งหมด', `${formatNum(calc.totalHours, 1)} ชั่วโมง`]
+        ];
+
+        resultCards = [
+            { label: '💰 รวมค่าล่วงเวลา OT สุทธิ', value: `+${formatMoney(calc.totalOtPay)} บาท`, highlight: true },
+            { label: 'ยอดเงินได้รวมประจำงวด (ฐาน + OT)', value: `${formatMoney(calc.totalEarnings)} บาท` },
+            { label: 'OT วันทำงานปกติ (1.5 เท่า)', value: `${formatMoney(calc.otWeekdayPay)} บาท (${calc.otWeekdayHours} ชม.)` },
+            { label: 'ทำงานในวันหยุด (ม.62/63)', value: `${formatMoney(calc.holidayWorkPay + calc.holidayOtPay)} บาท` }
+        ];
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    รายละเอียดการคำนวณตาม พ.ร.บ. คุ้มครองแรงงาน พ.ศ. 2541
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 6px 8px; text-align: left;">ประเภทค่าล่วงเวลาและวันหยุด</th>
+                            <th style="padding: 6px 8px; text-align: right;">จำนวนชั่วโมง</th>
+                            <th style="padding: 6px 8px; text-align: right;">อัตราคูณ</th>
+                            <th style="padding: 6px 8px; text-align: right;">อัตรา/ชม. (บาท)</th>
+                            <th style="padding: 6px 8px; text-align: right;">จำนวนเงิน (บาท)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;"><b>ล่วงเวลาวันทำงานปกติ (ม.61)</b></td>
+                            <td style="padding: 6px 8px; text-align: right;">${calc.otWeekdayHours} ชม.</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #0284c7;">1.5 เท่า</td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.rate1_5)}</td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600;">+${formatMoney(calc.otWeekdayPay)}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;"><b>ทำงานในวันหยุดเวลาปกติ (ม.62)</b></td>
+                            <td style="padding: 6px 8px; text-align: right;">${calc.holidayWorkHours} ชม.</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #0284c7;">${calc.holidayMultiplier} เท่า</td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.rateHolidayWork)}</td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600;">+${formatMoney(calc.holidayWorkPay)}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;"><b>ล่วงเวลาในวันหยุดเกินปกติ (ม.63)</b></td>
+                            <td style="padding: 6px 8px; text-align: right;">${calc.holidayOtHours} ชม.</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #0284c7;">3.0 เท่า</td>
+                            <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.rate3_0)}</td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600;">+${formatMoney(calc.holidayOtPay)}</td>
+                        </tr>
+                        ${calc.shiftAllowance > 0 ? `
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px;">เงินค่ากะ / เบี้ยเลี้ยงพิเศษ</td>
+                                <td style="padding: 6px 8px; text-align: right;">-</td>
+                                <td style="padding: 6px 8px; text-align: right;">ตามจริง</td>
+                                <td style="padding: 6px 8px; text-align: right;">-</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">+${formatMoney(calc.shiftAllowance)}</td>
+                            </tr>
+                        ` : ''}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                            <td style="padding: 8px;">รวมค่าล่วงเวลาและเงินพิเศษที่ต้องจ่าย:</td>
+                            <td style="padding: 8px; text-align: right;">${formatNum(calc.totalHours, 1)} ชม.</td>
+                            <td style="padding: 8px;" colspan="2"></td>
+                            <td style="padding: 8px; text-align: right; color: #0284c7; font-size: 12px;">+${formatMoney(calc.totalOtPay)} บาท</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+
     } else {
         // Generic Fallback for other calculators
         const summary = (typeof getToolSummaryText === 'function') ? getToolSummaryText(curToolId) : '';
@@ -2365,6 +2450,20 @@ function getComparisonPresets(toolId) {
                 label: 'ทางเลือก 3: อัตราสัญญาเดิม 7.5% (ค้าง 60 วัน)',
                 state: { principal: '200000', ratePreset: 'custom', customRate: '7.5', calcMode: 'days', overdueDays: '60' }
             }
+        ],
+        ot_calc: [
+            {
+                label: 'ทางเลือก 1: พนักงานรายเดือน 25k (OT วันธรรมดา 10 ชม.)',
+                state: { wageType: 'monthly', wageBase: '25000', workHoursPerDay: '8', otWeekdayHours: '10', holidayWorkHours: '0', holidayOtHours: '0', shiftAllowance: '0' }
+            },
+            {
+                label: 'ทางเลือก 2: พนักงานรายเดือน 25k (OT วันธรรมดา 15 ชม. + วันหยุด 8 ชม.)',
+                state: { wageType: 'monthly', wageBase: '25000', workHoursPerDay: '8', otWeekdayHours: '15', holidayWorkHours: '8', holidayOtHours: '0', shiftAllowance: '500' }
+            },
+            {
+                label: 'ทางเลือก 3: พนักงานรายวัน 500 บ. (OT วันหยุดเต็มวัน + OT ดึก 4 ชม.)',
+                state: { wageType: 'daily', wageBase: '500', workHoursPerDay: '8', otWeekdayHours: '10', holidayWorkHours: '8', holidayOtHours: '4', shiftAllowance: '800' }
+            }
         ]
     };
     return presets[toolId] || [];
@@ -3000,6 +3099,62 @@ function compareCalculations(toolId, itemsList) {
         const maxPayable = Math.max(...results.map(r => r.totalPayable));
         const diffPayable = maxPayable - minPayableRes.totalPayable;
         deltaSummary = `🏆 ทางเลือกที่มียอดหนี้รวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดชำระรวม ${formatMoney(minPayableRes.totalPayable)} บาท (ดอกเบี้ย ${formatMoney(minPayableRes.totalInterest)} บาท)${diffPayable > 0 ? ` ประหยัดภาระหนี้ได้ ${formatMoney(diffPayable)} บาท` : ''}`;
+
+    } else if (toolId === 'ot_calc') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const calc = (typeof calculateOvertimePay === 'function')
+                ? calculateOvertimePay(st)
+                : { wageType: 'monthly', wageBase: 0, hourlyRate: 0, otWeekdayHours: 0, otWeekdayPay: 0, holidayWorkHours: 0, holidayWorkPay: 0, holidayOtHours: 0, holidayOtPay: 0, shiftAllowance: 0, totalOtPay: 0, totalEarnings: 0 };
+            return calc;
+        });
+
+        rows.push({
+            label: 'ประเภทค่าจ้าง / ฐานค่าจ้าง',
+            values: results.map(r => `${r.wageType === 'daily' ? 'รายวัน' : r.wageType === 'hourly' ? 'รายชั่วโมง' : 'รายเดือน'} ${formatMoney(r.wageBase)} ฿`)
+        });
+        rows.push({
+            label: 'อัตราค่าจ้างต่อชั่วโมงฐาน',
+            values: results.map(r => `${formatMoney(r.hourlyRate)} ฿/ชม.`)
+        });
+        rows.push({
+            label: 'OT วันทำงานปกติ (1.5x)',
+            values: results.map(r => `${r.otWeekdayHours} ชม. (+${formatMoney(r.otWeekdayPay)} ฿)`)
+        });
+        rows.push({
+            label: 'ทำงานในวันหยุด (1x/2x)',
+            values: results.map(r => `${r.holidayWorkHours} ชม. (+${formatMoney(r.holidayWorkPay)} ฿)`)
+        });
+        rows.push({
+            label: 'OT วันหยุด (3.0x)',
+            values: results.map(r => `${r.holidayOtHours} ชม. (+${formatMoney(r.holidayOtPay)} ฿)`)
+        });
+        if (results.some(r => r.shiftAllowance > 0)) {
+            rows.push({
+                label: 'เงินช่วยเหลือ/กะพิเศษ',
+                values: results.map(r => `+${formatMoney(r.shiftAllowance)} ฿`)
+            });
+        }
+
+        const maxOtRes = results.reduce((max, cur) => cur.totalOtPay > max.totalOtPay ? cur : max, results[0]);
+        const maxOtIdx = results.indexOf(maxOtRes);
+
+        rows.push({
+            label: 'รวมค่าล่วงเวลา & วันหยุด (OT Pay)',
+            values: results.map(r => `+${formatMoney(r.totalOtPay)} ฿`),
+            bestIndex: maxOtIdx,
+            highlight: true
+        });
+        rows.push({
+            label: 'รวมรายได้คาดการณ์ทั้งสิ้น',
+            values: results.map(r => `${formatMoney(r.totalEarnings)} ฿`),
+            bestIndex: results.indexOf(results.reduce((max, cur) => cur.totalEarnings > max.totalEarnings ? cur : max, results[0]))
+        });
+
+        winnerIndex = maxOtIdx;
+        const minOt = Math.min(...results.map(r => r.totalOtPay));
+        const diffOt = maxOtRes.totalOtPay - minOt;
+        deltaSummary = `🏆 ทางเลือกที่ได้ค่าล่วงเวลา (OT) สูงสุดคือ "${items[winnerIndex].label}" ได้รับค่า OT รวม ${formatMoney(maxOtRes.totalOtPay)} บาท${diffOt > 0 ? ` (มากกว่าทางเลือกต่ำสุด ${formatMoney(diffOt)} บาท)` : ''}`;
 
     } else {
         rows.push({
@@ -4201,6 +4356,14 @@ function getToolSummaryText(toolId, stateObj) {
                 ? calculateLegalInterest(st)
                 : { principal: 100000, interestRate: 5.0, overdueDays: 60, totalInterest: 821.92, totalPayable: 100821.92 };
             return `⚖️ สรุปดอกเบี้ยผิดนัดชำระหนี้ (ป.พ.พ.)\n${divider}\n• เงินต้นค้างชำระ: ${formatMoney(calc.principal)} บาท\n• อัตราดอกเบี้ย: ${formatNum(calc.interestRate, 2)}% ต่อปี (ป.พ.พ. ม.224)\n• ระยะเวลาผิดนัด: ${calc.overdueDays} วัน\n• ดอกเบี้ยผิดนัดชำระ: +${formatMoney(calc.totalInterest)} บาท\n${divider}\n💰 ยอดหนี้รวมที่ต้องชำระ: ${formatMoney(calc.totalPayable)} บาท\n(คำนวณโดย Multitools Calculator)`;
+        }
+        case 'ot_calc': {
+            const st = state.ot_calc || {};
+            const calc = (typeof calculateOvertimePay === 'function')
+                ? calculateOvertimePay(st)
+                : { wageType: 'monthly', wageBase: 25000, hourlyRate: 104.17, otWeekdayHours: 10, holidayWorkHours: 8, holidayOtHours: 4, holidayMultiplier: 1.0, otWeekdayPay: 1562.5, holidayWorkPay: 833.33, holidayOtPay: 1250, shiftAllowance: 0, totalOtPay: 3645.83, totalEarnings: 28645.83, totalHours: 22 };
+            const typeLabel = calc.wageType === 'daily' ? 'พนักงานรายวัน' : (calc.wageType === 'hourly' ? 'รายชั่วโมง' : 'พนักงานรายเดือน');
+            return `⏱️ สรุปค่าล่วงเวลา (OT) & ทำงานวันหยุด\n${divider}\n• การจ้าง: ${typeLabel} (ฐาน ${formatMoney(calc.wageBase)} บ. / คิดชั่วโมงละ ${formatMoney(calc.hourlyRate)} บ.)\n• OT วันทำงานปกติ (1.5 เท่า): ${calc.otWeekdayHours} ชม. (+${formatMoney(calc.otWeekdayPay)} บ.)\n• ทำงานในวันหยุด (${calc.holidayMultiplier} เท่า): ${calc.holidayWorkHours} ชม. (+${formatMoney(calc.holidayWorkPay)} บ.)\n• OT ในวันหยุด (3.0 เท่า): ${calc.holidayOtHours} ชม. (+${formatMoney(calc.holidayOtPay)} บ.)\n${calc.shiftAllowance > 0 ? `• เงินค่ากะ/เบี้ยเลี้ยง: +${formatMoney(calc.shiftAllowance)} บาท\n` : ''}${divider}\n💰 รวมค่าล่วงเวลา OT พิเศษ: +${formatMoney(calc.totalOtPay)} บาท (${formatNum(calc.totalHours, 1)} ชม.)\n💵 ยอดเงินได้รวมประจำงวด: ${formatMoney(calc.totalEarnings)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
         default: {
             const statusText = document.getElementById('sharedStatusText')?.innerText?.trim();
@@ -10371,13 +10534,376 @@ function renderLegalInterestTool(container) {
     setStatusBanner('success', `ดอกเบี้ยผิดนัดชำระ (${calc.interestRate}% ต่อปี ${calc.overdueDays} วัน): <b class="text-[var(--app-accent)] font-bold">+${formatMoney(calc.totalInterest)} บาท</b> (ยอดหนี้รวม ${formatMoney(calc.totalPayable)} บ.)`);
 }
 
+/* -----------------------------------------------------------
+ * PURE ENGINE: คำนวณค่าล่วงเวลา (OT) & ค่าทำงานในวันหยุด (ม.61, ม.62, ม.63)
+ * พ.ร.บ. คุ้มครองแรงงาน พ.ศ. 2541
+ * ----------------------------------------------------------- */
+function calculateOvertimePay(params) {
+    const p = params || {};
+    const wageType = p.wageType || 'monthly'; // 'monthly' | 'daily' | 'hourly'
+    const wageBase = Math.max(0, numberOrDefault(p.wageBase, wageType === 'monthly' ? 25000 : (wageType === 'daily' ? 500 : 65)));
+    const workHoursPerDay = Math.max(1, Math.min(24, numberOrDefault(p.workHoursPerDay, 8)));
+    const workDaysPerMonth = Math.max(1, Math.min(31, numberOrDefault(p.workDaysPerMonth, 30))); // ฐาน 30 วันตามกฎหมายแรงงานสำหรับพนักงานรายเดือน
+
+    // 1. คำนวณอัตราค่าจ้างรายชั่วโมง (Base Hourly Rate)
+    let dailyRate = 0;
+    let hourlyRate = 0;
+    if (wageType === 'monthly') {
+        dailyRate = wageBase / workDaysPerMonth;
+        hourlyRate = dailyRate / workHoursPerDay;
+    } else if (wageType === 'daily') {
+        dailyRate = wageBase;
+        hourlyRate = dailyRate / workHoursPerDay;
+    } else { // hourly
+        hourlyRate = wageBase;
+        dailyRate = hourlyRate * workHoursPerDay;
+    }
+
+    // 2. อัตราตามกฎหมายแรงงาน (ม.61, ม.62, ม.63)
+    // ม.61: OT วันทำงานปกติ = 1.5 เท่า
+    const rate1_5 = hourlyRate * 1.5;
+
+    // ม.62: ทำงานในวันหยุดตามเวลาทำงานปกติ
+    // - ลูกจ้างรายเดือน: ได้รับเพิ่ม 1 เท่า (เนื่องจากได้รับเงินเดือนในวันหยุดอยู่แล้ว)
+    // - ลูกจ้างรายวัน: ได้รับ 2 เท่า (เนื่องจากไม่ได้รับค่าจ้างในวันหยุด)
+    const holidayMultiplier = wageType === 'monthly' ? 1.0 : 2.0;
+    const rateHolidayWork = hourlyRate * holidayMultiplier;
+
+    // ม.63: OT ในวันหยุด (ทำงานล่วงเวลาเกินเวลาปกติ 8 ชม. ในวันหยุด) = 3 เท่า
+    const rate3_0 = hourlyRate * 3.0;
+
+    // 3. ชั่วโมงที่ทำงาน
+    const otWeekdayHours = Math.max(0, numberOrDefault(p.otWeekdayHours, 10));
+    const holidayWorkHours = Math.max(0, numberOrDefault(p.holidayWorkHours, 8));
+    const holidayOtHours = Math.max(0, numberOrDefault(p.holidayOtHours, 4));
+    const shiftAllowance = Math.max(0, numberOrDefault(p.shiftAllowance, 0));
+
+    // คำนวณยอดเงินแต่ละส่วน
+    const otWeekdayPay = otWeekdayHours * rate1_5;
+    const holidayWorkPay = holidayWorkHours * rateHolidayWork;
+    const holidayOtPay = holidayOtHours * rate3_0;
+
+    // รวมยอดเงิน OT และเงินพิเศษ
+    const totalOtPay = otWeekdayPay + holidayWorkPay + holidayOtPay + shiftAllowance;
+    const totalHours = otWeekdayHours + holidayWorkHours + holidayOtHours;
+
+    // ประมาณการเงินเดือน/ค่าจ้างฐานประจำเดือน
+    const basePayMonthly = wageType === 'monthly' ? wageBase : (dailyRate * 26);
+    const totalEarnings = basePayMonthly + totalOtPay;
+
+    return {
+        wageType,
+        wageBase,
+        workHoursPerDay,
+        workDaysPerMonth,
+        dailyRate,
+        hourlyRate,
+        rate1_5,
+        rateHolidayWork,
+        holidayMultiplier,
+        rate3_0,
+        otWeekdayHours,
+        holidayWorkHours,
+        holidayOtHours,
+        shiftAllowance,
+        otWeekdayPay,
+        holidayWorkPay,
+        holidayOtPay,
+        totalOtPay,
+        totalHours,
+        basePayMonthly,
+        totalEarnings
+    };
+}
+
+/* -----------------------------------------------------------
+ * UI RENDERER: คำนวณค่าล่วงเวลา OT & ค่าทำงานวันหยุด (ot_calc)
+ * ----------------------------------------------------------- */
+function renderOvertimeTool(container) {
+    if (!container) return;
+    if (!appState.ot_calc) {
+        appState.ot_calc = {
+            wageType: 'monthly',
+            wageBase: '25000',
+            workHoursPerDay: '8',
+            otWeekdayHours: '10',
+            holidayWorkHours: '8',
+            holidayOtHours: '4',
+            shiftAllowance: '0'
+        };
+    }
+    const st = appState.ot_calc;
+    const calc = calculateOvertimePay(st);
+
+    container.innerHTML = `
+        <div class="finance-thai-tool flex flex-col gap-4 p-1">
+            <!-- 1. Wage Type Selector -->
+            <div class="segment-group grid-cols-3 balanced-segment-modes">
+                <button type="button" class="segment-btn ot-type-btn ${st.wageType === 'monthly' ? 'active' : ''}" data-type="monthly">
+                    💼 พนักงานรายเดือน
+                </button>
+                <button type="button" class="segment-btn ot-type-btn ${st.wageType === 'daily' ? 'active' : ''}" data-type="daily">
+                    ⏱️ พนักงานรายวัน
+                </button>
+                <button type="button" class="segment-btn ot-type-btn ${st.wageType === 'hourly' ? 'active' : ''}" data-type="hourly">
+                    ⌛ รายชั่วโมง
+                </button>
+            </div>
+
+            <!-- 2. Base Wage Input Card -->
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="font-bold text-sm text-[var(--app-ink)] flex items-center justify-between">
+                    <span>1. ข้อมูลฐานค่าจ้าง (Base Wage)</span>
+                    <span class="text-xs font-semibold px-2 py-0.5 rounded bg-[var(--app-accent-soft)] text-[var(--app-ink)]">
+                        อัตราคิดฐาน ${formatMoney(calc.hourlyRate)} บ./ชม.
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">
+                            ${st.wageType === 'monthly' ? 'เงินเดือนฐาน (บาท/เดือน)' : (st.wageType === 'daily' ? 'ค่าจ้างรายวัน (บาท/วัน)' : 'ค่าจ้างรายชั่วโมง (บาท/ชม.)')}
+                        </label>
+                        <div class="relative">
+                            <input id="otWageBaseInput" type="text" inputmode="decimal" value="${formatInputDisplay(st.wageBase)}" placeholder="เช่น 25,000" class="airbnb-input w-full pr-12 text-sm font-semibold">
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--app-muted)]">บาท</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">
+                            ชั่วโมงทำงานปกติใน 1 วัน
+                        </label>
+                        <div class="relative">
+                            <input id="otWorkHoursInput" type="number" min="1" max="24" value="${st.workHoursPerDay || '8'}" class="airbnb-input w-full pr-14 text-sm font-semibold">
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--app-muted)]">ชม./วัน</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-[11px] text-[var(--app-muted)] pt-1 flex items-center gap-1.5">
+                    <span>ℹ️ เกณฑ์กฎหมายแรงงาน:</span>
+                    <span>รายวัน = ${formatMoney(calc.dailyRate)} บ. | ต่อชั่วโมง = <b>${formatMoney(calc.hourlyRate)} บ.</b></span>
+                </div>
+            </div>
+
+            <!-- 3. OT Hours Input Card -->
+            <div class="themed-tool-card p-4 space-y-4">
+                <div class="font-bold text-sm text-[var(--app-ink)] flex items-center justify-between">
+                    <span>2. บันทึกจำนวนชั่วโมงล่วงเวลา & วันหยุด</span>
+                    <span class="text-xs text-[var(--app-muted)]">รวม ${formatNum(calc.totalHours, 1)} ชั่วโมง</span>
+                </div>
+
+                <!-- Section 61: OT Weekday (1.5x) -->
+                <div class="p-3 rounded-lg border border-[var(--app-hairline)] bg-[var(--app-surface-soft)] space-y-2">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="font-semibold text-xs text-[var(--app-ink)]">ล่วงเวลาวันทำงานปกติ (OT 1.5 เท่า)</span>
+                            <span class="text-[11px] text-[var(--app-muted)] block">พ.ร.บ. คุ้มครองแรงงาน ม.61</span>
+                        </div>
+                        <span class="text-xs font-bold text-[var(--app-accent)]">+${formatMoney(calc.rate1_5)} บ./ชม.</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="relative flex-1">
+                            <input id="otWeekdayHoursInput" type="number" min="0" step="0.5" value="${st.otWeekdayHours || '0'}" class="airbnb-input w-full pr-12 text-sm font-semibold">
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--app-muted)]">ชม.</span>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button type="button" class="tool-chip-btn text-xs px-2 py-1 ot-add-btn" data-target="otWeekdayHoursInput" data-add="1">+1</button>
+                            <button type="button" class="tool-chip-btn text-xs px-2 py-1 ot-add-btn" data-target="otWeekdayHoursInput" data-add="2">+2</button>
+                            <button type="button" class="tool-chip-btn text-xs px-2 py-1 ot-add-btn" data-target="otWeekdayHoursInput" data-add="4">+4</button>
+                        </div>
+                    </div>
+                    <div class="text-right text-xs font-semibold text-[var(--app-ink)]">
+                        รวมยอด ม.61: <b class="text-[var(--app-accent)]">${formatMoney(calc.otWeekdayPay)}</b> บาท
+                    </div>
+                </div>
+
+                <!-- Section 62: Holiday Work (1x or 2x) -->
+                <div class="p-3 rounded-lg border border-[var(--app-hairline)] bg-[var(--app-surface-soft)] space-y-2">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="font-semibold text-xs text-[var(--app-ink)]">ทำงานในวันหยุดตามเวลาปกติ (${calc.holidayMultiplier} เท่า)</span>
+                            <span class="text-[11px] text-[var(--app-muted)] block">พ.ร.บ. คุ้มครองแรงงาน ม.62 (${st.wageType === 'monthly' ? 'รายเดือนได้เพิ่ม 1 เท่า' : 'รายวันได้ 2 เท่า'})</span>
+                        </div>
+                        <span class="text-xs font-bold text-[var(--app-accent)]">+${formatMoney(calc.rateHolidayWork)} บ./ชม.</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="relative flex-1">
+                            <input id="otHolidayWorkHoursInput" type="number" min="0" step="0.5" value="${st.holidayWorkHours || '0'}" class="airbnb-input w-full pr-12 text-sm font-semibold">
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--app-muted)]">ชม.</span>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button type="button" class="tool-chip-btn text-xs px-2 py-1 ot-add-btn" data-target="otHolidayWorkHoursInput" data-add="4">+4</button>
+                            <button type="button" class="tool-chip-btn text-xs px-2 py-1 ot-add-btn" data-target="otHolidayWorkHoursInput" data-add="8">+8</button>
+                        </div>
+                    </div>
+                    <div class="text-right text-xs font-semibold text-[var(--app-ink)]">
+                        รวมยอด ม.62: <b class="text-[var(--app-accent)]">${formatMoney(calc.holidayWorkPay)}</b> บาท
+                    </div>
+                </div>
+
+                <!-- Section 63: Holiday OT (3.0x) -->
+                <div class="p-3 rounded-lg border border-[var(--app-hairline)] bg-[var(--app-surface-soft)] space-y-2">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="font-semibold text-xs text-[var(--app-ink)]">ล่วงเวลาในวันหยุดเกินเวลาปกติ (OT 3 เท่า)</span>
+                            <span class="text-[11px] text-[var(--app-muted)] block">พ.ร.บ. คุ้มครองแรงงาน ม.63 (ทำเกิน 8 ชม. ในวันหยุด)</span>
+                        </div>
+                        <span class="text-xs font-bold text-[var(--app-accent)]">+${formatMoney(calc.rate3_0)} บ./ชม.</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="relative flex-1">
+                            <input id="otHolidayOtHoursInput" type="number" min="0" step="0.5" value="${st.holidayOtHours || '0'}" class="airbnb-input w-full pr-12 text-sm font-semibold">
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--app-muted)]">ชม.</span>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button type="button" class="tool-chip-btn text-xs px-2 py-1 ot-add-btn" data-target="otHolidayOtHoursInput" data-add="1">+1</button>
+                            <button type="button" class="tool-chip-btn text-xs px-2 py-1 ot-add-btn" data-target="otHolidayOtHoursInput" data-add="2">+2</button>
+                            <button type="button" class="tool-chip-btn text-xs px-2 py-1 ot-add-btn" data-target="otHolidayOtHoursInput" data-add="4">+4</button>
+                        </div>
+                    </div>
+                    <div class="text-right text-xs font-semibold text-[var(--app-ink)]">
+                        รวมยอด ม.63: <b class="text-[var(--app-accent)]">${formatMoney(calc.holidayOtPay)}</b> บาท
+                    </div>
+                </div>
+
+                <!-- Shift Allowance -->
+                <div class="pt-1">
+                    <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">
+                        เงินค่ากะ / เบี้ยเลี้ยงพิเศษอื่นๆ (ถ้ามี)
+                    </label>
+                    <div class="relative">
+                        <input id="otAllowanceInput" type="text" inputmode="decimal" value="${formatInputDisplay(st.shiftAllowance)}" placeholder="0" class="airbnb-input w-full pr-12 text-sm">
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--app-muted)]">บาท</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Result Highlight Card -->
+            <div class="themed-result-card theme-result-highlight p-5 text-center space-y-1">
+                <div class="text-xs font-semibold text-[var(--app-muted)]">รวมค่าล่วงเวลาและค่าทำงานวันหยุดสุทธิ</div>
+                <div class="themed-result-value text-2xl md:text-3xl font-extrabold text-[var(--app-accent)]">
+                    +${formatMoney(calc.totalOtPay)} บาท
+                </div>
+                <div class="text-xs text-[var(--app-body)] font-medium">
+                    (รวมเงินได้ทั้งหมดประจำงวด: <b>${formatMoney(calc.totalEarnings)}</b> บาท)
+                </div>
+            </div>
+
+            <!-- 5. Breakdown Summary Table -->
+            <div class="themed-tool-card p-4 space-y-1 text-xs">
+                <div class="font-bold text-[var(--app-ink)] mb-1">สรุปแจกแจงสิทธิประโยชน์ตามกฎหมายแรงงาน</div>
+                
+                <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                    <span class="text-[var(--app-muted)]">ฐานค่าจ้างเฉลี่ยต่อชั่วโมง (หาร 30 วัน/8 ชม.)</span>
+                    <b>${formatMoney(calc.hourlyRate)} บาท/ชม.</b>
+                </div>
+                <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                    <span class="text-[var(--app-muted)]">OT วันทำงานปกติ ม.61 (1.5 เท่า × ${calc.otWeekdayHours} ชม.)</span>
+                    <b class="text-[var(--app-ink)]">+${formatMoney(calc.otWeekdayPay)} บาท</b>
+                </div>
+                <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                    <span class="text-[var(--app-muted)]">ทำงานในวันหยุด ม.62 (${calc.holidayMultiplier} เท่า × ${calc.holidayWorkHours} ชม.)</span>
+                    <b class="text-[var(--app-ink)]">+${formatMoney(calc.holidayWorkPay)} บาท</b>
+                </div>
+                <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                    <span class="text-[var(--app-muted)]">OT ในวันหยุด ม.63 (3.0 เท่า × ${calc.holidayOtHours} ชม.)</span>
+                    <b class="text-[var(--app-ink)]">+${formatMoney(calc.holidayOtPay)} บาท</b>
+                </div>
+                ${calc.shiftAllowance > 0 ? `
+                    <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                        <span class="text-[var(--app-muted)]">เงินค่ากะ / เบี้ยเลี้ยงพิเศษ</span>
+                        <b>+${formatMoney(calc.shiftAllowance)} บาท</b>
+                    </div>
+                ` : ''}
+                <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)] font-bold text-sm">
+                    <span class="text-[var(--app-ink)]">รวมเงินค่าล่วงเวลาทั้งหมด</span>
+                    <b class="text-[var(--app-accent)]">+${formatMoney(calc.totalOtPay)} บาท</b>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button id="btnPrintOvertimeSummary" type="button" class="tool-action-btn text-xs">
+                        พิมพ์ใบสรุปค่าล่วงเวลา / PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Event Bindings
+    container.querySelectorAll('.ot-type-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.wageType = btn.dataset.type;
+            if (st.wageType === 'daily' && numberOrDefault(st.wageBase, 0) > 3000) {
+                st.wageBase = '500';
+            } else if (st.wageType === 'hourly' && numberOrDefault(st.wageBase, 0) > 500) {
+                st.wageBase = '65';
+            } else if (st.wageType === 'monthly' && numberOrDefault(st.wageBase, 0) < 1000) {
+                st.wageBase = '25000';
+            }
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    container.querySelectorAll('.ot-add-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetId = btn.dataset.target;
+            const addVal = parseFloat(btn.dataset.add) || 0;
+            const input = container.querySelector('#' + targetId);
+            if (input) {
+                const cur = parseFloat(input.value) || 0;
+                input.value = String(Math.max(0, cur + addVal));
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        });
+    });
+
+    const bindInput = (id, key, isMoney = false) => {
+        const el = container.querySelector('#' + id);
+        if (!el) return;
+        el.addEventListener('input', () => {
+            st[key] = isMoney ? el.value.replace(/,/g, '') : el.value;
+            persistAppState();
+            const liveCalc = calculateOvertimePay(st);
+            const resVal = container.querySelector('.themed-result-value');
+            if (resVal) resVal.textContent = `+${formatMoney(liveCalc.totalOtPay)} บาท`;
+            setStatusBanner('success', `ค่าล่วงเวลา OT (${formatNum(liveCalc.totalHours, 1)} ชม.): <b class="text-[var(--app-accent)] font-bold">+${formatMoney(liveCalc.totalOtPay)} บาท</b> (ยอดรวมทั้งสิ้น ${formatMoney(liveCalc.totalEarnings)} บ.)`);
+        });
+        el.addEventListener('blur', () => {
+            if (isMoney) {
+                const formatted = formatInputDisplay(el.value);
+                st[key] = formatted;
+                el.value = formatted;
+            }
+            persistAppState();
+            renderActiveTool();
+        });
+    };
+
+    bindInput('otWageBaseInput', 'wageBase', true);
+    bindInput('otWorkHoursInput', 'workHoursPerDay');
+    bindInput('otWeekdayHoursInput', 'otWeekdayHours');
+    bindInput('otHolidayWorkHoursInput', 'holidayWorkHours');
+    bindInput('otHolidayOtHoursInput', 'holidayOtHours');
+    bindInput('otAllowanceInput', 'shiftAllowance', true);
+
+    container.querySelector('#btnPrintOvertimeSummary')?.addEventListener('click', () => {
+        triggerPrintReceipt('ot_calc');
+    });
+
+    setStatusBanner('success', `ค่าล่วงเวลา OT (${formatNum(calc.totalHours, 1)} ชม.): <b class="text-[var(--app-accent)] font-bold">+${formatMoney(calc.totalOtPay)} บาท</b> (ยอดรวมทั้งสิ้น ${formatMoney(calc.totalEarnings)} บ.)`);
+}
+
 // Module export definitions
 (function(root) {
     const exportsObj = {
         calculateLaborSeverance,
         calculateLegalInterest,
+        calculateOvertimePay,
         renderLaborSeveranceTool,
-        renderLegalInterestTool
+        renderLegalInterestTool,
+        renderOvertimeTool
     };
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = exportsObj;
@@ -10386,6 +10912,7 @@ function renderLegalInterestTool(container) {
         Object.assign(root, exportsObj);
     }
 })(typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this);
+
 
 // <<< src/tools/legal_labor.js <<<
 
@@ -10612,6 +11139,16 @@ function clearCurrentTool() {
             endDate: formatLocalDate(new Date()),
             overdueDays: '30'
         };
+    } else if (id === 'ot_calc') {
+        appState.ot_calc = {
+            wageType: 'monthly',
+            wageBase: '',
+            workHoursPerDay: '8',
+            otWeekdayHours: '',
+            holidayWorkHours: '',
+            holidayOtHours: '',
+            shiftAllowance: ''
+        };
     }
     rememberToolClear(snapshot);
     renderActiveTool();
@@ -10796,6 +11333,16 @@ function loadDemoForCurrentTool() {
             startDate: formatLocalDate(addCalendarDays(new Date(), -120)),
             endDate: formatLocalDate(new Date()),
             overdueDays: '120'
+        };
+    } else if (id === 'ot_calc') {
+        appState.ot_calc = {
+            wageType: 'monthly',
+            wageBase: '28000',
+            workHoursPerDay: '8',
+            otWeekdayHours: '16',
+            holidayWorkHours: '8',
+            holidayOtHours: '4',
+            shiftAllowance: '1200'
         };
     }
     renderActiveTool();
