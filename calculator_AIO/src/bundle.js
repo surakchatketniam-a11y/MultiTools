@@ -41,8 +41,7 @@ var TOOLS_CATALOG = [
     { id: 'ecommerce_profit', group: 'biz', category: 'fav', menuTitle: 'กำไรขายของออนไลน์', headerTitle: 'คำนวณกำไรขายของออนไลน์ & ค่าธรรมเนียม (Shopee/Lazada/TikTok)', usesSharedKeypad: false, keywords: 'ecommerce profit กำไร ขายของออนไลน์ shopee lazada tiktok fee ค่าธรรมเนียม คอมมิชชัน ธุรกรรม ค่าส่ง ยิงแอด จุดคุ้มทุน breakeven profit margin มาร์เก็ตเพลส' },
     { id: 'salary',     group: 'biz', category: 'all', menuTitle: 'จัดการเงินเดือน 50/30/20', headerTitle: 'เครื่องมือจัดการเงินเดือน', usesSharedKeypad: true, keywords: 'salary เงินเดือน 50 30 20 รายจ่าย เงินเก็บ ออมเงิน หนี้' },
 
-    // หมวดหมู่ที่ 3: การเงิน & วางแผน
-    { id: 'loan',              group: 'finance', category: 'all', menuTitle: 'เงินกู้ & ผ่อนชำระ', headerTitle: 'เครื่องคำนวณเงินกู้', usesSharedKeypad: true, keywords: 'loan เงินกู้ ผ่อนบ้าน ผ่อนรถ ดอกเบี้ย ค่างวด ดอกเบี้ยคงที่ ค่างวดผ่อน' },
+    { id: 'loan',              group: 'finance', category: 'all', menuTitle: 'เงินกู้ & รีไฟแนนซ์', headerTitle: 'เครื่องคำนวณเงินกู้ & รีไฟแนนซ์บ้าน', usesSharedKeypad: true, keywords: 'loan เงินกู้ ผ่อนบ้าน รีไฟแนนซ์ refinance retention โปะบ้าน ดอกเบี้ย ค่างวด ดอกเบี้ยคงที่ ค่างวดผ่อน ธปท จุดคุ้มทุน' },
     { id: 'savings',           group: 'finance', category: 'all', menuTitle: 'เงินออม & เกษียณ', headerTitle: 'เครื่องคำนวณเงินออม', usesSharedKeypad: true, keywords: 'savings เงินออม เกษียณ ดอกเบี้ยทบต้น เงินเฟ้อ ออมทรัพย์' },
     { id: 'tax_personal',      group: 'finance', category: 'fav', menuTitle: 'ภาษีบุคคล (ภ.ง.ด.90/91)', headerTitle: 'คำนวณภาษีเงินได้บุคคลธรรมดา (ภ.ง.ด. 90/91)', usesSharedKeypad: false, keywords: 'tax personal ภาษี เงินได้ บุคคลธรรมดา ภงด 90 91 เงินเดือน ลดหย่อน ประกัน กองทุน บริจาค ขอคืนภาษี คืนเงิน ภาษีรายได้' },
     { id: 'property_transfer', group: 'finance', category: 'fav', menuTitle: 'ค่าโอนที่ดิน & อสังหาฯ', headerTitle: 'ค่าธรรมเนียมโอนที่ดิน & ภาษีซื้อขายอสังหาฯ', usesSharedKeypad: false, keywords: 'property transfer ค่าโอน ที่ดิน คอนโด บ้าน ภาษีอสังหา ธุรกิจเฉพาะ อากรแสตมป์ กรมที่ดิน จำนอง ค่าธรรมเนียมโอน ซื้อขาย' },
@@ -786,7 +785,101 @@ function generateFormalPrintHTML(toolId, stateObj) {
     let resultCards = [];
     let breakdownHTML = '';
 
-    if (curToolId === 'loan') {
+    if (curToolId === 'loan' && state.loan?.tab === 'refinance') {
+        docTitle = 'เอกสารสรุปผลวิเคราะห์การรีไฟแนนซ์บ้าน vs ขอลดดอกเบี้ย (Retention)';
+        docSubtitle = 'Bank of Thailand (BOT) Mortgage Refinance vs Retention Analysis Report';
+        const st = state.loan || {};
+        const calcFn = typeof calculateHomeRefinance === 'function' ? calculateHomeRefinance : (typeof globalThis !== 'undefined' ? globalThis.calculateHomeRefinance : null);
+        const calc = calcFn ? calcFn({
+            principal: parseNumericInput(st.principal),
+            months: integerOrDefault(st.months, 240),
+            currentRate: parseNumericInput(st.currentRate ?? '5.50'),
+            retentionRate: parseNumericInput(st.retentionRate ?? '3.80'),
+            retentionFee: parseNumericInput(st.retentionFee ?? '0'),
+            refinanceRate: parseNumericInput(st.refinanceRate ?? '2.99'),
+            isGovReducedMortgage: st.isGovReducedMortgage === 'yes',
+            appraisalFee: parseNumericInput(st.appraisalFee ?? '2800'),
+            insuranceFee: parseNumericInput(st.insuranceFee ?? '2000'),
+            otherRefinanceFees: parseNumericInput(st.otherRefinanceFees ?? '0')
+        }) : null;
+
+        if (calc) {
+            paramsRows = [
+                ['ยอดหนี้บ้านคงเหลือ (Principal)', `${formatMoney(calc.principal)} บาท`],
+                ['ระยะเวลาผ่อนที่เหลืออยู่', `${calc.months} เดือน (${(calc.months / 12).toFixed(1)} ปี)`],
+                ['อัตราดอกเบี้ยปัจจุบัน (อยู่อย่างเดิม)', `${formatNum(calc.currentRate, 2)}% ต่อปี`],
+                ['อัตราดอกเบี้ย Retention (ธนาคารเดิม)', `${formatNum(calc.retentionRate, 2)}% ต่อปี (ค่าธรรมเนียม ${formatMoney(calc.retentionFee)} บาท)`],
+                ['อัตราดอกเบี้ย Refinance (ย้ายธนาคาร)', `${formatNum(calc.refinanceRate, 2)}% ต่อปี`],
+                ['มาตรการรัฐ (ลดค่าจดจำนองเหลือ 0.01%)', calc.isGovReduced ? 'ใช้สิทธิ (0.01%)' : 'ไม่ใช้สิทธิ (อัตราปกติ 1.0%)'],
+                ['รวมค่าใช้จ่ายย้ายธนาคารทั้งหมด', `${formatMoney(calc.totalRefinanceFees)} บาท`]
+            ];
+
+            resultCards = [
+                { label: 'คำแนะนำความคุ้มค่า (ธปท.)', value: calc.recommendation, highlight: true },
+                { label: 'จุดคุ้มทุน (Breakeven)', value: calc.breakevenMonth !== null ? (calc.breakevenMonth === 0 ? 'คุ้มทุนทันที' : `เดือนที่ ${calc.breakevenMonth} (ปีที่ ${(calc.breakevenMonth / 12).toFixed(1)})`) : 'ไม่คุ้มทุน' },
+                { label: 'ประหยัดสุทธิ 3 ปี (Refinance ย้ายค่าย)', value: `${formatMoney(calc.refinanceNetSavings)} บาท`, highlight: calc.isRefinanceBetter },
+                { label: 'ประหยัดสุทธิ 3 ปี (Retention ขอลดดอก)', value: `${formatMoney(calc.retentionNetSavings)} บาท`, highlight: !calc.isRefinanceBetter },
+                { label: 'ผ่อนต่อเดือนเดิม vs รีไฟแนนซ์', value: `${formatMoney(calc.currentPlan.monthlyPay)} ➔ ${formatMoney(calc.refinancePlan.monthlyPay)} บาท` }
+            ];
+
+            breakdownHTML = `
+                <div style="margin-top: 24px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        เปรียบเทียบ 3 ทางเลือกในรอบ 3 ปี (36 งวดแรก อิงเกณฑ์ ธปท.)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 16px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                                <th style="padding: 6px 8px; text-align: left;">ทางเลือก</th>
+                                <th style="padding: 6px 8px; text-align: right;">ดอกเบี้ยต่อปี</th>
+                                <th style="padding: 6px 8px; text-align: right;">ค่างวด/เดือน</th>
+                                <th style="padding: 6px 8px; text-align: right;">ดอกเบี้ยรวม 3 ปี</th>
+                                <th style="padding: 6px 8px; text-align: right;">ค่าธรรมเนียม</th>
+                                <th style="padding: 6px 8px; text-align: right;">ประหยัดสุทธิ 3 ปี</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; font-weight: 600;">1. อยู่อย่างเดิม (ไม่ทำอะไร)</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.currentRate, 2)}%</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.currentPlan.monthlyPay)}</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #b91c1c;">${formatMoney(calc.currentPlan.totalInterest)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">-</td>
+                                <td style="padding: 6px 8px; text-align: right;">0 บาท (เกณฑ์ฐาน)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; ${!calc.isRefinanceBetter ? 'background: #ecfdf5; font-weight: 600;' : ''}">
+                                <td style="padding: 6px 8px;">2. ขอลดดอกเบี้ยเดิม (Retention) ${!calc.isRefinanceBetter ? '⭐' : ''}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.retentionRate, 2)}%</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.retentionPlan.monthlyPay)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.retentionPlan.totalInterest)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.retentionFee)}</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #15803d; font-weight: bold;">+${formatMoney(calc.retentionNetSavings)}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; ${calc.isRefinanceBetter ? 'background: #eff6ff; font-weight: 600;' : ''}">
+                                <td style="padding: 6px 8px;">3. ย้ายธนาคารใหม่ (Refinance) ${calc.isRefinanceBetter ? '⭐' : ''}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.refinanceRate, 2)}%</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.refinancePlan.monthlyPay)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.refinancePlan.totalInterest)}</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #b91c1c;">-${formatMoney(calc.totalRefinanceFees)}</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #1d4ed8; font-weight: bold;">+${formatMoney(calc.refinanceNetSavings)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4 style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">ประมาณการค่าใช้จ่ายในการย้ายธนาคาร (Refinance Closing Costs)</h4>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 4px 8px;">1. ค่าจดจำนองที่ดิน (${calc.isGovReduced ? 'มาตรการรัฐ 0.01%' : 'อัตราปกติ 1.0%'})</td><td style="padding: 4px 8px; text-align: right;">${formatMoney(calc.mortgageFee)} บาท</td></tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 4px 8px;">2. ค่าประเมินราคาหลักทรัพย์</td><td style="padding: 4px 8px; text-align: right;">${formatMoney(calc.appraisalFee)} บาท</td></tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 4px 8px;">3. ค่าอากรแสตมป์สัญญาเงินกู้ (0.05% สูงสุด 10,000 บาท)</td><td style="padding: 4px 8px; text-align: right;">${formatMoney(calc.stampDuty)} บาท</td></tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 4px 8px;">4. ค่าเบี้ยประกันอัคคีภัย (ประมาณการ)</td><td style="padding: 4px 8px; text-align: right;">${formatMoney(calc.insuranceFee)} บาท</td></tr>
+                            <tr style="border-top: 2px solid #cbd5e1; font-weight: 700; background: #f8fafc;"><td style="padding: 6px 8px;">รวมค่าใช้จ่ายดำเนินการรีไฟแนนซ์ทั้งหมด</td><td style="padding: 6px 8px; text-align: right; color: #b91c1c;">${formatMoney(calc.totalRefinanceFees)} บาท</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+    } else if (curToolId === 'loan') {
         docTitle = 'เอกสารสรุปผลการคำนวณสินเชื่อและตารางผ่อนชำระ';
         docSubtitle = 'Loan Amortization & Repayment Schedule Report';
         const st = state.loan || {};
@@ -4328,6 +4421,26 @@ function getToolSummaryText(toolId, stateObj) {
         }
         case 'loan': {
             const st = state.loan || {};
+            if (st.tab === 'refinance') {
+                const calcFn = typeof calculateHomeRefinance === 'function' ? calculateHomeRefinance : (typeof globalThis !== 'undefined' ? globalThis.calculateHomeRefinance : null);
+                if (calcFn) {
+                    const calc = calcFn({
+                        principal: parseNumericInput(st.principal),
+                        months: integerOrDefault(st.months, 240),
+                        currentRate: parseNumericInput(st.currentRate ?? '5.50'),
+                        retentionRate: parseNumericInput(st.retentionRate ?? '3.80'),
+                        retentionFee: parseNumericInput(st.retentionFee ?? '0'),
+                        refinanceRate: parseNumericInput(st.refinanceRate ?? '2.99'),
+                        isGovReducedMortgage: st.isGovReducedMortgage === 'yes',
+                        appraisalFee: parseNumericInput(st.appraisalFee ?? '2800'),
+                        insuranceFee: parseNumericInput(st.insuranceFee ?? '2000'),
+                        otherRefinanceFees: parseNumericInput(st.otherRefinanceFees ?? '0')
+                    });
+                    const bestChoice = calc.isRefinanceBetter ? 'รีไฟแนนซ์ (ย้ายธนาคาร)' : 'ขอลดดอกเบี้ยเดิม (Retention)';
+                    const netSavings = calc.isRefinanceBetter ? calc.refinanceNetSavings : calc.retentionNetSavings;
+                    return `🏠 สรุปวิเคราะห์รีไฟแนนซ์บ้าน (เกณฑ์ ธปท.)\n${divider}\n• ยอดหนี้คงเหลือ: ${formatMoney(calc.principal)} บาท (${calc.months} เดือน)\n• ดอกเบี้ยเดิม: ${formatNum(calc.currentRate, 2)}% | Retention: ${formatNum(calc.retentionRate, 2)}% | Refinance: ${formatNum(calc.refinanceRate, 2)}%\n• รวมค่าใช้จ่ายย้ายธนาคาร: ${formatMoney(calc.totalRefinanceFees)} บาท\n${divider}\n💡 ทางเลือกที่แนะนำ: ${bestChoice}\n💰 ประหยัดสุทธิ 3 ปี: +${formatMoney(netSavings)} บาท\n⏱️ จุดคุ้มทุน: ${calc.breakevenMonth !== null ? (calc.breakevenMonth === 0 ? 'คุ้มทุนทันที' : 'เดือนที่ ' + calc.breakevenMonth) : 'ไม่คุ้มทุน'}\n(คำนวณโดย Multitools Calculator)`;
+                }
+            }
             const P = numberOrDefault(st.principal, 0);
             const annualRate = numberOrDefault(st.interestRate, 0);
             const n = integerOrDefault(st.months, 0);
@@ -6276,10 +6389,17 @@ function renderCurrencyTool(container) {
 }
 
 /* -----------------------------------------------------------
- * TOOL 15: เงินกู้ (Loan Payment Calculator)
+ * TOOL 15: เงินกู้ (Loan Payment Calculator & Refinance)
  * ----------------------------------------------------------- */
 function renderLoanTool(container) {
     const st = appState.loan;
+    st.tab = st.tab || 'amortization'; // 'amortization' | 'refinance'
+
+    if (st.tab === 'refinance') {
+        renderHomeRefinanceTool(container);
+        return;
+    }
+
     const P = numberOrDefault(st.principal, 0);
     const annualRate = numberOrDefault(st.interestRate, 0);
     const n = integerOrDefault(st.months, 0);
@@ -6321,6 +6441,14 @@ function renderLoanTool(container) {
 
     container.innerHTML = `
         <div class="flex flex-col gap-1.5">
+            <div class="segment-group grid-cols-2 mb-1">
+                <button type="button" class="segment-btn loan-tab-btn ${st.tab !== 'refinance' ? 'active' : ''}" data-tab="amortization">
+                    📊 ผ่อนชำระ & ตารางโปะ
+                </button>
+                <button type="button" class="segment-btn loan-tab-btn ${st.tab === 'refinance' ? 'active' : ''}" data-tab="refinance">
+                    🔄 รีไฟแนนซ์ vs Retention (ธปท.)
+                </button>
+            </div>
             ${createKeypadFieldHTML(0, 'วงเงินกู้ (เงินต้น)', st.principal, 'บาท', 'เช่น 500,000')}
             ${createKeypadFieldHTML(1, 'อัตราดอกเบี้ยต่อปี', st.interestRate, '% ต่อปี', 'เช่น 4.5')}
             ${createKeypadFieldHTML(2, 'ระยะเวลาผ่อนชำระ', st.months, 'เดือน', 'เช่น 36')}
@@ -6329,6 +6457,14 @@ function renderLoanTool(container) {
     `;
 
     attachFieldClickListeners(container);
+
+    container.querySelectorAll('.loan-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.tab = btn.dataset.tab;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
 
     const loanRoot = container.firstElementChild;
     loanRoot.insertAdjacentHTML('afterbegin', `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-2"><label class="text-xs text-[#6a6a6a] block mb-1">วิธีคำนวณดอกเบี้ย</label><select id="loanCalcMethod" class="w-full font-semibold text-sm bg-transparent outline-none"><option value="reducing" ${st.calcMethod !== 'flat' ? 'selected' : ''}>ลดต้นลดดอก</option><option value="flat" ${st.calcMethod === 'flat' ? 'selected' : ''}>ค่างวดคงที่ (Flat Rate)</option></select></div>`);
@@ -6389,6 +6525,413 @@ function renderLoanTool(container) {
     } else {
         setStatusBanner('success', `🏦 ผ่อนเดือนละ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(monthlyPay)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">ดอกเบี้ยรวม: ${formatMoney(totalInterest)} ฿ | โปะเพิ่ม: ${formatMoney(extra)} ฿/เดือน | เหลือ ${extraMonths} เดือน</span><span class="text-xs font-bold block text-[var(--app-accent)]">ประหยัดดอกเบี้ย ${formatMoney(interestSaved)} ฿ และลดระยะเวลา ${monthsSaved} เดือน</span>`);
     }
+}
+
+/* -----------------------------------------------------------
+ * PURE ENGINE: รีไฟแนนซ์บ้าน vs Retention ธนาคารเดิม & จุดคุ้มทุน (ธปท.)
+ * ----------------------------------------------------------- */
+function calculateHomeRefinance(params) {
+    const p = params || {};
+    const principal = Math.max(0, numberOrDefault(p.principal, 2000000));
+    const months = Math.max(12, integerOrDefault(p.months, 240)); // default 20 years remaining
+    const currentRate = Math.max(0, numberOrDefault(p.currentRate, 5.50));
+    const retentionRate = Math.max(0, numberOrDefault(p.retentionRate, 3.80));
+    const retentionFee = Math.max(0, numberOrDefault(p.retentionFee, 0));
+    const refinanceRate = Math.max(0, numberOrDefault(p.refinanceRate, 2.99));
+    const isGovReduced = p.isGovReducedMortgage === 'yes' || p.isGovReducedMortgage === true;
+    const appraisalFee = Math.max(0, numberOrDefault(p.appraisalFee, 2800));
+    const insuranceFee = Math.max(0, numberOrDefault(p.insuranceFee, 2000));
+    const otherRefinanceFees = Math.max(0, numberOrDefault(p.otherRefinanceFees, 0));
+
+    // Refinance Upfront Fees
+    const mortgageFeeRate = isGovReduced ? 0.0001 : 0.01; // 0.01% or 1.0%
+    const mortgageFee = principal * mortgageFeeRate;
+    const stampDuty = Math.min(10000, principal * 0.0005); // 0.05% capped at 10,000 THB
+    const totalRefinanceFees = mortgageFee + appraisalFee + stampDuty + insuranceFee + otherRefinanceFees;
+
+    // Helper: calculate 3-year amortization (36 months based on BOT standard)
+    const calc3Years = (rate) => {
+        if (principal <= 0 || months <= 0) {
+            return { monthlyPay: 0, totalPaid3Y: 0, interestPaid3Y: 0, principalPaid3Y: 0, endBalance3Y: 0 };
+        }
+        const i = (rate / 100) / 12;
+        const monthlyPay = i > 0
+            ? principal * (i * Math.pow(1 + i, months)) / (Math.pow(1 + i, months) - 1)
+            : principal / months;
+
+        let bal = principal;
+        let totalInterest = 0;
+        let totalPrincipal = 0;
+        const horizon = Math.min(36, months);
+
+        for (let m = 0; m < horizon; m++) {
+            const interest = bal * i;
+            const prinPart = Math.min(bal, Math.max(0, monthlyPay - interest));
+            totalInterest += interest;
+            totalPrincipal += prinPart;
+            bal -= prinPart;
+            if (bal <= 0.01) break;
+        }
+
+        return {
+            monthlyPay,
+            totalPaid3Y: (totalInterest + totalPrincipal),
+            interestPaid3Y: totalInterest,
+            principalPaid3Y: totalPrincipal,
+            endBalance3Y: Math.max(0, bal)
+        };
+    };
+
+    // 1. Current Floating Rate (3 years)
+    const currentPlan = calc3Years(currentRate);
+
+    // 2. Retention Plan (3 years)
+    const retentionPlan = calc3Years(retentionRate);
+    const retentionInterestSaved = Math.max(0, currentPlan.interestPaid3Y - retentionPlan.interestPaid3Y);
+    const retentionNetSavings = retentionInterestSaved - retentionFee;
+
+    // 3. Refinance Plan (3 years)
+    const refinancePlan = calc3Years(refinanceRate);
+    const refinanceInterestSaved = Math.max(0, currentPlan.interestPaid3Y - refinancePlan.interestPaid3Y);
+    const refinanceNetSavings = refinanceInterestSaved - totalRefinanceFees;
+
+    // 4. Comparison: Refinance vs Retention
+    const netSavingsAdvantage = refinanceNetSavings - retentionNetSavings; // positive = Refinance is better
+    const interestSavedAdvantage = refinanceInterestSaved - retentionInterestSaved;
+    const costDifference = Math.max(0, totalRefinanceFees - retentionFee);
+
+    // Breakeven month: how many months of extra interest savings from refinance cover the upfront cost difference
+    let breakevenMonth = null;
+    const monthlyExtraInterestSaved = (retentionPlan.interestPaid3Y - refinancePlan.interestPaid3Y) / 36;
+    if (monthlyExtraInterestSaved > 0 && costDifference > 0) {
+        breakevenMonth = Math.ceil(costDifference / monthlyExtraInterestSaved);
+    } else if (costDifference <= 0) {
+        breakevenMonth = 0;
+    }
+
+    const isRefinanceBetter = netSavingsAdvantage > 0 && (breakevenMonth !== null && breakevenMonth <= 36);
+
+    let recommendation = '';
+    if (isRefinanceBetter) {
+        recommendation = `🏆 แนะนำ "รีไฟแนนซ์ (ย้ายธนาคารใหม่)" คุ้มทุนในเดือนที่ ${breakevenMonth} และประหยัดสุทธิ 3 ปีได้มากกว่า Retention ถึง ${formatMoney(netSavingsAdvantage)} บาท`;
+    } else if (retentionNetSavings > 0) {
+        recommendation = `🏆 แนะนำ "Retention (ขอลดดอกเบี้ยแบงก์เดิม)" คุ้มค่ากว่า ได้ผลประหยัดสุทธิ 3 ปี ${formatMoney(retentionNetSavings)} บาท โดยไม่ต้องเสียเวลายื่นกู้และจ่ายค่าธรรมเนียมย้ายค่าย`;
+    } else {
+        recommendation = `ควรรอเจรจาอัตราดอกเบี้ยโปรโมชันที่ดีกว่านี้ เนื่องจากดอกเบี้ยที่ประหยัดได้ยังไม่คุ้มค่าธรรมเนียม`;
+    }
+
+    return {
+        principal,
+        months,
+        currentRate,
+        retentionRate,
+        retentionFee,
+        refinanceRate,
+        isGovReduced,
+        mortgageFee,
+        stampDuty,
+        appraisalFee,
+        insuranceFee,
+        otherRefinanceFees,
+        totalRefinanceFees,
+        currentPlan,
+        retentionPlan,
+        retentionInterestSaved,
+        retentionNetSavings,
+        refinancePlan,
+        refinanceInterestSaved,
+        refinanceNetSavings,
+        netSavingsAdvantage,
+        interestSavedAdvantage,
+        monthlyExtraInterestSaved,
+        costDifference,
+        breakevenMonth,
+        isRefinanceBetter,
+        recommendation
+    };
+}
+
+/* -----------------------------------------------------------
+ * UI RENDERER: รีไฟแนนซ์บ้าน vs Retention ธนาคารเดิม & จุดคุ้มทุน
+ * ----------------------------------------------------------- */
+function renderHomeRefinanceTool(container) {
+    const st = appState.loan;
+    const calc = calculateHomeRefinance({
+        principal: parseNumericInput(st.principal),
+        months: integerOrDefault(st.months, 240),
+        currentRate: parseNumericInput(st.currentRate ?? '5.50'),
+        retentionRate: parseNumericInput(st.retentionRate ?? '3.80'),
+        retentionFee: parseNumericInput(st.retentionFee ?? '0'),
+        refinanceRate: parseNumericInput(st.refinanceRate ?? '2.99'),
+        isGovReducedMortgage: st.isGovReducedMortgage === 'yes',
+        appraisalFee: parseNumericInput(st.appraisalFee ?? '2800'),
+        insuranceFee: parseNumericInput(st.insuranceFee ?? '2000'),
+        otherRefinanceFees: parseNumericInput(st.otherRefinanceFees ?? '0')
+    });
+
+    container.innerHTML = `
+        <div class="finance-thai-tool refinance-tool flex flex-col gap-3 p-1">
+            <!-- Mode Switcher Tabs -->
+            <div class="segment-group grid-cols-2 balanced-segment-modes" role="group" aria-label="โหมดเงินกู้">
+                <button type="button" aria-pressed="false" class="segment-btn loan-tab-btn" data-tab="amortization">
+                    ผ่อนชำระ & ตารางโปะ
+                </button>
+                <button type="button" aria-pressed="true" class="segment-btn loan-tab-btn active" data-tab="refinance">
+                    รีไฟแนนซ์ / Retention
+                </button>
+            </div>
+
+            <!-- Principal & Term Inputs -->
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="text-xs font-bold text-[var(--app-ink)] border-b border-[var(--app-hairline)] pb-1.5 tool-section-heading flex flex-wrap justify-between items-center gap-2">
+                    <span>1. ยอดหนี้คงเหลือและระยะเวลา</span>
+                    <span class="text-[11px] font-medium text-[var(--app-ink)]">เปรียบเทียบช่วง 3 ปีแรก</span>
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-[var(--app-muted)] block mb-1">ยอดหนี้บ้านคงเหลือ (Principal Balance)</label>
+                    <div class="relative">
+                        <input id="refinancePrincipal" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.principal))}" class="airbnb-input w-full font-bold text-base text-[var(--app-ink)] pr-12" placeholder="เช่น 2,000,000">
+                        <span class="absolute right-3 top-2.5 text-xs text-[var(--app-muted)]">บาท</span>
+                    </div>
+                    <!-- Quick Principal Chips -->
+                    <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+                        <span class="text-[11px] text-[var(--app-muted)]">เลือกด่วน:</span>
+                        <button type="button" class="btn-quick-principal tool-chip-btn" data-p="1000000">1.0 ล้าน</button>
+                        <button type="button" class="btn-quick-principal tool-chip-btn" data-p="2000000">2.0 ล้าน</button>
+                        <button type="button" class="btn-quick-principal tool-chip-btn" data-p="3000000">3.0 ล้าน</button>
+                        <button type="button" class="btn-quick-principal tool-chip-btn" data-p="5000000">5.0 ล้าน</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-xs font-medium text-[var(--app-muted)] block mb-1">ระยะเวลาผ่อนที่เหลืออยู่ (เดือน / ปี)</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="relative">
+                            <input id="refinanceMonths" type="number" min="12" max="480" value="${st.months || 240}" class="airbnb-input w-full font-semibold text-xs pr-12">
+                            <span class="absolute right-3 top-2 text-xs text-[var(--app-muted)]">เดือน</span>
+                        </div>
+                        <div class="flex items-center text-xs font-bold text-[var(--app-ink)] bg-[var(--app-surface-soft)] rounded-lg px-3 border border-[var(--app-hairline)]">
+                            ≈ ${(integerOrDefault(st.months, 240) / 12).toFixed(1)} ปี
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Input Cards (3 Options) -->
+            <div class="grid grid-cols-1 gap-3">
+                <!-- Option 1: Existing Floating -->
+                <div class="themed-tool-card p-4 space-y-2">
+                    <div class="text-xs font-bold text-[var(--app-ink)] border-b pb-1">
+                        1. ดอกเบี้ยเดิมลอยตัว
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-[var(--app-muted)] block mb-0.5">ดอกเบี้ย MRR เดิม (%)</label>
+                        <input id="refinanceCurrentRate" type="number" step="0.01" value="${st.currentRate ?? '5.50'}" class="airbnb-input w-full text-xs font-bold text-center">
+                    </div>
+                    <div class="pt-1 border-t text-[11px] space-y-1 text-[var(--app-muted)]">
+                        <div class="flex justify-between gap-3">
+                            <span>ผ่อนต่อเดือน:</span>
+                            <b class="text-[var(--app-ink)]">${formatMoney(calc.currentPlan.monthlyPay)} ฿</b>
+                        </div>
+                        <div class="flex justify-between gap-3">
+                            <span>ดอกเบี้ย 3 ปี:</span>
+                            <b class="text-[var(--app-ink)]">${formatMoney(calc.currentPlan.interestPaid3Y)} ฿</b>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Option 2: Retention -->
+                <div class="themed-tool-card p-4 space-y-3">
+                    <div class="text-xs font-bold text-[var(--app-ink)] border-b border-[var(--app-hairline)] pb-1 flex justify-between gap-3">
+                        <span>2. ขอลดแบงก์เดิม</span>
+                        <span class="text-[11px] bg-[var(--app-surface-soft)] text-[var(--app-ink)] px-1 rounded">Retention</span>
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-[var(--app-ink)] block mb-0.5">ดอกเบี้ย Retention เฉลี่ย (%)</label>
+                        <input id="refinanceRetentionRate" type="number" step="0.01" value="${st.retentionRate ?? '3.80'}" class="airbnb-input w-full text-xs font-bold text-center text-[var(--app-ink)] border-[var(--app-hairline)]">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-[var(--app-muted)] block mb-0.5">ค่าธรรมเนียม Retention (ถ้ามี)</label>
+                        <input id="refinanceRetentionFee" type="number" value="${st.retentionFee ?? '0'}" class="airbnb-input w-full text-xs text-center">
+                    </div>
+                    <div class="pt-1 border-t border-[var(--app-hairline)] text-[11px] space-y-1 text-[var(--app-ink)] font-medium">
+                        <div class="flex justify-between gap-3">
+                            <span>ผ่อนต่อเดือน:</span>
+                            <b>${formatMoney(calc.retentionPlan.monthlyPay)} ฿</b>
+                        </div>
+                        <div class="flex justify-between gap-3">
+                            <span>ประหยัดสุทธิ 3 ปี:</span>
+                            <b class="text-[var(--app-ink)]">+${formatMoney(calc.retentionNetSavings)} ฿</b>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Option 3: Refinance -->
+                <div class="themed-tool-card p-4 space-y-3">
+                    <div class="text-xs font-bold text-[var(--app-ink)] border-b border-[var(--app-hairline)] pb-1 flex justify-between gap-3">
+                        <span>3. ย้ายธนาคารใหม่</span>
+                        <span class="text-[11px] bg-[var(--app-surface-soft)] text-[var(--app-ink)] px-1 rounded">Refinance</span>
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-[var(--app-ink)] block mb-0.5">ดอกเบี้ยเฉลี่ย 3 ปีแรก (%)</label>
+                        <input id="refinanceNewRate" type="number" step="0.01" value="${st.refinanceRate ?? '2.99'}" class="airbnb-input w-full text-xs font-bold text-center text-[var(--app-ink)] border-[var(--app-hairline)]">
+                    </div>
+                    <div class="pt-1 text-[11px] space-y-1 text-[var(--app-ink)] font-medium">
+                        <label class="flex items-center gap-1.5 text-[11px] text-[var(--app-muted)] cursor-pointer mb-1">
+                            <input id="refinanceGovReduced" type="checkbox" ${calc.isGovReduced ? 'checked' : ''} class="rounded text-[var(--app-ink)]">
+                            <span>มาตรการรัฐ (จำนอง 0.01%)</span>
+                        </label>
+                        <div class="flex justify-between gap-3">
+                            <span>รวมค่าใช้จ่ายย้าย:</span>
+                            <b class="text-[var(--app-ink)]">-${formatMoney(calc.totalRefinanceFees)} ฿</b>
+                        </div>
+                        <div class="flex justify-between gap-3">
+                            <span>ผ่อนต่อเดือน:</span>
+                            <b>${formatMoney(calc.refinancePlan.monthlyPay)} ฿</b>
+                        </div>
+                        <div class="flex justify-between gap-3">
+                            <span>ประหยัดสุทธิ 3 ปี:</span>
+                            <b class="text-[var(--app-ink)]">+${formatMoney(calc.refinanceNetSavings)} ฿</b>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HERO RECOMMENDATION BOX -->
+            <div class="themed-result-card theme-result-highlight p-5 space-y-3">
+                <div class="tool-section-heading flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <span class="text-xs font-semibold text-[var(--app-muted)]">
+                            ผลเปรียบเทียบความคุ้มค่า
+                        </span>
+                        <div class="text-lg sm:text-xl font-bold mt-1 text-[var(--app-ink)]">
+                            ${escapeHTML(calc.recommendation)}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-[var(--app-hairline)] text-xs">
+                    <div class="themed-subcard p-3">
+                        <div class="text-[11px] text-[var(--app-muted)]">จุดคุ้มทุน (Breakeven)</div>
+                        <div class="text-sm font-bold text-[var(--app-ink)] mt-0.5">
+                            ${calc.breakevenMonth !== null ? (calc.breakevenMonth === 0 ? 'คุ้มทุนทันที' : `เดือนที่ ${calc.breakevenMonth} (ปีที่ ${(calc.breakevenMonth / 12).toFixed(1)})`) : 'ไม่คุ้มทุน'}
+                        </div>
+                        <div class="text-[11px] text-[var(--app-muted)]">จากส่วนต่างค่าธรรมเนียม</div>
+                    </div>
+                    <div class="themed-subcard p-3">
+                        <div class="text-[11px] text-[var(--app-muted)]">ประหยัดดอกเบี้ย 3 ปี (Refinance)</div>
+                        <div class="text-sm font-bold text-[var(--app-ink)] mt-0.5">+${formatMoney(calc.refinanceInterestSaved)} ฿</div>
+                        <div class="text-[11px] text-[var(--app-muted)]">เทียบกับไม่ทำอะไรเลย</div>
+                    </div>
+                    <div class="themed-subcard p-3 col-span-2 sm:col-span-1">
+                        <div class="text-[11px] text-[var(--app-muted)]">ประหยัดดอกเบี้ย 3 ปี (Retention)</div>
+                        <div class="text-sm font-bold text-[var(--app-ink)] mt-0.5">+${formatMoney(calc.retentionInterestSaved)} ฿</div>
+                        <div class="text-[11px] text-[var(--app-muted)]">ไม่มีค่าธรรมเนียมย้ายค่าย</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ITEMIZED REFINANCE CLOSING COSTS BREAKDOWN -->
+            <div class="themed-tool-card p-4 space-y-2 text-xs">
+                <div class="font-bold text-[var(--app-ink)] border-b border-[var(--app-hairline)] pb-1.5 flex justify-between gap-3">
+                    <span>รายละเอียดค่าใช้จ่ายในการรีไฟแนนซ์ (Refinance Closing Costs)</span>
+                    <span>ประมาณการ</span>
+                </div>
+                <div class="flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">1. ค่าจดจำนองที่ดิน (${calc.isGovReduced ? 'มาตรการรัฐ 0.01%' : 'อัตราปกติ 1.0%'})</span>
+                    <b class="text-[var(--app-ink)]">${formatMoney(calc.mortgageFee)} บาท</b>
+                </div>
+                <div class="flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">2. ค่าประเมินราคาหลักทรัพย์</span>
+                    <b class="text-[var(--app-ink)]">${formatMoney(calc.appraisalFee)} บาท</b>
+                </div>
+                <div class="flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">3. ค่าอากรแสตมป์สัญญาเงินกู้ (0.05% สูงสุด 10,000 บ.)</span>
+                    <b class="text-[var(--app-ink)]">${formatMoney(calc.stampDuty)} บาท</b>
+                </div>
+                <div class="flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">4. ค่าเบี้ยประกันอัคคีภัย (ประมาณการ)</span>
+                    <b class="text-[var(--app-ink)]">${formatMoney(calc.insuranceFee)} บาท</b>
+                </div>
+                <div class="border-t border-[var(--app-hairline)] pt-1.5 flex justify-between gap-3 font-bold text-[var(--app-ink)]">
+                    <span>รวมค่าใช้จ่ายดำเนินการรีไฟแนนซ์ทั้งหมด</span>
+                    <span class="text-[var(--app-ink)]">${formatMoney(calc.totalRefinanceFees)} บาท</span>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button id="btnPrintRefinanceSummary" type="button" class="tool-action-btn text-xs">
+                        พิมพ์เอกสารวิเคราะห์รีไฟแนนซ์ / PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Event Listeners
+    container.querySelectorAll('.loan-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.tab = btn.dataset.tab;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    container.querySelectorAll('.btn-quick-principal').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.principal = formatInputDisplay(btn.dataset.p);
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    const bindInput = (id, key) => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.addEventListener('change', () => {
+            st[key] = input.value;
+            persistAppState();
+            renderActiveTool();
+        });
+        input.addEventListener('blur', () => {
+            const formatted = formatInputDisplay(input.value);
+            st[key] = formatted;
+            input.value = formatted;
+            persistAppState();
+        });
+    };
+
+    bindInput('refinancePrincipal', 'principal');
+
+    document.getElementById('refinanceMonths')?.addEventListener('change', (e) => {
+        st.months = e.target.value;
+        persistAppState();
+        renderActiveTool();
+    });
+
+    const bindRate = (id, key) => {
+        document.getElementById(id)?.addEventListener('change', (e) => {
+            st[key] = e.target.value;
+            persistAppState();
+            renderActiveTool();
+        });
+    };
+    bindRate('refinanceCurrentRate', 'currentRate');
+    bindRate('refinanceRetentionRate', 'retentionRate');
+    bindRate('refinanceRetentionFee', 'retentionFee');
+    bindRate('refinanceNewRate', 'refinanceRate');
+
+    document.getElementById('refinanceGovReduced')?.addEventListener('change', (e) => {
+        st.isGovReducedMortgage = e.target.checked ? 'yes' : 'no';
+        persistAppState();
+        renderActiveTool();
+    });
+
+    container.querySelector('#btnPrintRefinanceSummary')?.addEventListener('click', () => {
+        triggerPrintReceipt('loan');
+    });
+
+    // Status Banner
+    setStatusBanner('success', `แนะนำ: <b>${calc.isRefinanceBetter ? 'รีไฟแนนซ์' : 'Retention'}</b> · ประหยัดสุทธิ 3 ปี <b>${formatMoney(calc.isRefinanceBetter ? calc.refinanceNetSavings : calc.retentionNetSavings)} บาท</b>${calc.breakevenMonth !== null ? ` (จุดคุ้มทุนเดือนที่ ${calc.breakevenMonth})` : ''}`);
 }
 
 /* -----------------------------------------------------------
@@ -6566,6 +7109,8 @@ function renderSavingsTool(container) {
         loadFrankfurterRates,
         renderCurrencyTool,
         renderLoanTool,
+        calculateHomeRefinance,
+        renderHomeRefinanceTool,
         renderSavingsTool
     };
     if (typeof module !== 'undefined' && module.exports) {

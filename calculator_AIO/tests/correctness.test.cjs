@@ -885,7 +885,30 @@ test('formal print-to-pdf: generates accurate Thai receipt documents for loan, s
     assert.ok(ecomDoc.includes('Shopee Thailand'));
     assert.ok(ecomDoc.includes('รวมค่าธรรมเนียมแพลตฟอร์มทั้งสิ้น'));
 
-    // 16. Generic Calculator Fallback
+    // 16. Mortgage Refinance vs Retention Formal Receipt (Bank of Thailand BOT guidelines)
+    const refiState = {
+        activeToolId: 'loan',
+        loan: {
+            tab: 'refinance',
+            principal: '2,000,000',
+            months: '240',
+            currentRate: '5.50',
+            retentionRate: '3.80',
+            retentionFee: '0',
+            refinanceRate: '2.99',
+            isGovReducedMortgage: 'no',
+            appraisalFee: '2800',
+            insuranceFee: '2000'
+        }
+    };
+    const refiDoc = ctx.generateFormalPrintHTML('loan', refiState);
+    assert.ok(refiDoc.includes('เอกสารสรุปผลวิเคราะห์การรีไฟแนนซ์บ้าน vs ขอลดดอกเบี้ย (Retention)'));
+    assert.ok(refiDoc.includes('2,000,000.00 บาท'));
+    assert.ok(refiDoc.includes('เปรียบเทียบ 3 ทางเลือกในรอบ 3 ปี (36 งวดแรก อิงเกณฑ์ ธปท.)'));
+    assert.ok(refiDoc.includes('ประมาณการค่าใช้จ่ายในการย้ายธนาคาร (Refinance Closing Costs)'));
+    assert.ok(refiDoc.includes('คำแนะนำความคุ้มค่า (ธปท.)'));
+
+    // 17. Generic Calculator Fallback
     const genericDoc = ctx.generateFormalPrintHTML('tip', { activeToolId: 'tip' });
     assert.ok(genericDoc.includes('MULTITOOLS AIO'));
     assert.ok(genericDoc.includes('เอกสารสรุปผลการคำนวณ'));
@@ -2273,6 +2296,90 @@ test('pure engine calculateEcommerceProfit: platform fee breakdown, VAT 7%, brea
     assert.match(summaryEcom, /350\.00 บาท/);
     assert.match(summaryEcom, /ต้นทุนสินค้า/);
     assert.match(summaryEcom, /ค่าธรรมเนียมแพลตฟอร์ม/);
+    assert.match(summaryEcom, /กำไรสุทธิต่อชิ้น/);
+});
+
+test('pure engine calculateHomeRefinance: Bank of Thailand 3-year horizon, closing costs, breakeven month, and recommendations', () => {
+    const ctx = context();
+
+    // 1. Standard Refinance Scenario:
+    // Loan: 2,000,000 THB, 240 months
+    // Current rate: 5.50%
+    // Retention rate: 3.80%, retention fee: 0 THB
+    // Refinance rate: 2.99%
+    // Closing costs:
+    //   - mortgageFee: 1.0% of 2M = 20,000
+    //   - appraisalFee: 2,800
+    //   - stampDuty: 0.05% of 2M = 1,000
+    //   - insuranceFee: 2,000
+    //   - totalRefinanceFees: 20,000 + 2,800 + 1,000 + 2,000 = 25,800
+    const calcRefi = ctx.calculateHomeRefinance({
+        principal: 2000000,
+        months: 240,
+        currentRate: 5.50,
+        retentionRate: 3.80,
+        retentionFee: 0,
+        refinanceRate: 2.99,
+        isGovReducedMortgage: false,
+        appraisalFee: 2800,
+        insuranceFee: 2000,
+        otherRefinanceFees: 0
+    });
+
+    assert.equal(calcRefi.principal, 2000000);
+    assert.equal(calcRefi.months, 240);
+    assert.equal(calcRefi.mortgageFee, 20000);
+    assert.equal(calcRefi.stampDuty, 1000);
+    assert.equal(calcRefi.appraisalFee, 2800);
+    assert.equal(calcRefi.insuranceFee, 2000);
+    assert.equal(calcRefi.totalRefinanceFees, 25800);
+
+    // Amortization 3 years checks
+    assert.ok(calcRefi.currentPlan.monthlyPay > calcRefi.retentionPlan.monthlyPay);
+    assert.ok(calcRefi.retentionPlan.monthlyPay > calcRefi.refinancePlan.monthlyPay);
+    assert.ok(calcRefi.refinanceInterestSaved > calcRefi.retentionInterestSaved);
+    assert.ok(calcRefi.refinanceNetSavings > 0);
+    assert.ok(calcRefi.breakevenMonth > 0 && calcRefi.breakevenMonth <= 36);
+    assert.equal(calcRefi.isRefinanceBetter, true);
+    assert.match(calcRefi.recommendation, /รีไฟแนนซ์/);
+
+    // 2. Government Reduced Mortgage Incentive (0.01% mortgage registration fee)
+    const calcGov = ctx.calculateHomeRefinance({
+        principal: 2000000,
+        months: 240,
+        currentRate: 5.50,
+        retentionRate: 3.80,
+        retentionFee: 0,
+        refinanceRate: 2.99,
+        isGovReducedMortgage: true,
+        appraisalFee: 2800,
+        insuranceFee: 2000,
+        otherRefinanceFees: 0
+    });
+    // Mortgage fee: 2M * 0.01% = 200 THB
+    assert.equal(calcGov.mortgageFee, 200);
+    assert.equal(calcGov.totalRefinanceFees, 6000); // 200 + 2800 + 1000 + 2000
+    assert.ok(calcGov.refinanceNetSavings > calcRefi.refinanceNetSavings);
+    assert.ok(calcGov.breakevenMonth < calcRefi.breakevenMonth);
+    assert.equal(calcGov.isRefinanceBetter, true);
+
+    // 3. Retention Superior Scenario (Bank gives competitive retention e.g. 3.05% vs refinance 2.99%)
+    const calcRetention = ctx.calculateHomeRefinance({
+        principal: 2000000,
+        months: 240,
+        currentRate: 5.50,
+        retentionRate: 3.05,
+        retentionFee: 0,
+        refinanceRate: 2.99,
+        isGovReducedMortgage: false,
+        appraisalFee: 2800,
+        insuranceFee: 2000,
+        otherRefinanceFees: 0
+    });
+    // Refinance costs 25,800, but only saves ~0.06% interest over 3 years (~3,000 THB), so closing costs far exceed extra savings
+    assert.equal(calcRetention.isRefinanceBetter, false);
+    assert.ok(calcRetention.retentionNetSavings > calcRetention.refinanceNetSavings);
+    assert.match(calcRetention.recommendation, /Retention/);
 });
 
 

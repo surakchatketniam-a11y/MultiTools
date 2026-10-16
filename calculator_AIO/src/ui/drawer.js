@@ -244,6 +244,26 @@ function getToolSummaryText(toolId, stateObj) {
         }
         case 'loan': {
             const st = state.loan || {};
+            if (st.tab === 'refinance') {
+                const calcFn = typeof calculateHomeRefinance === 'function' ? calculateHomeRefinance : (typeof globalThis !== 'undefined' ? globalThis.calculateHomeRefinance : null);
+                if (calcFn) {
+                    const calc = calcFn({
+                        principal: parseNumericInput(st.principal),
+                        months: integerOrDefault(st.months, 240),
+                        currentRate: parseNumericInput(st.currentRate ?? '5.50'),
+                        retentionRate: parseNumericInput(st.retentionRate ?? '3.80'),
+                        retentionFee: parseNumericInput(st.retentionFee ?? '0'),
+                        refinanceRate: parseNumericInput(st.refinanceRate ?? '2.99'),
+                        isGovReducedMortgage: st.isGovReducedMortgage === 'yes',
+                        appraisalFee: parseNumericInput(st.appraisalFee ?? '2800'),
+                        insuranceFee: parseNumericInput(st.insuranceFee ?? '2000'),
+                        otherRefinanceFees: parseNumericInput(st.otherRefinanceFees ?? '0')
+                    });
+                    const bestChoice = calc.isRefinanceBetter ? 'รีไฟแนนซ์ (ย้ายธนาคาร)' : 'ขอลดดอกเบี้ยเดิม (Retention)';
+                    const netSavings = calc.isRefinanceBetter ? calc.refinanceNetSavings : calc.retentionNetSavings;
+                    return `🏠 สรุปวิเคราะห์รีไฟแนนซ์บ้าน (เกณฑ์ ธปท.)\n${divider}\n• ยอดหนี้คงเหลือ: ${formatMoney(calc.principal)} บาท (${calc.months} เดือน)\n• ดอกเบี้ยเดิม: ${formatNum(calc.currentRate, 2)}% | Retention: ${formatNum(calc.retentionRate, 2)}% | Refinance: ${formatNum(calc.refinanceRate, 2)}%\n• รวมค่าใช้จ่ายย้ายธนาคาร: ${formatMoney(calc.totalRefinanceFees)} บาท\n${divider}\n💡 ทางเลือกที่แนะนำ: ${bestChoice}\n💰 ประหยัดสุทธิ 3 ปี: +${formatMoney(netSavings)} บาท\n⏱️ จุดคุ้มทุน: ${calc.breakevenMonth !== null ? (calc.breakevenMonth === 0 ? 'คุ้มทุนทันที' : 'เดือนที่ ' + calc.breakevenMonth) : 'ไม่คุ้มทุน'}\n(คำนวณโดย Multitools Calculator)`;
+                }
+            }
             const P = numberOrDefault(st.principal, 0);
             const annualRate = numberOrDefault(st.interestRate, 0);
             const n = integerOrDefault(st.months, 0);
