@@ -45,6 +45,13 @@ function getToolFieldBindings(toolId) {
                 { get: () => appState.vat.rate, set: (v) => { appState.vat.rate = v; } }
             ];
         case 'fuel_cost':
+            if (appState.fuel_cost && appState.fuel_cost.mode === 'ev') {
+                return [
+                    { get: () => appState.fuel_cost.distance, set: (v) => { appState.fuel_cost.distance = v; } },
+                    { get: () => appState.fuel_cost.evEfficiency, set: (v) => { appState.fuel_cost.evEfficiency = v; } },
+                    { get: () => appState.fuel_cost.electricityRate, set: (v) => { appState.fuel_cost.electricityRate = v; } }
+                ];
+            }
             return [
                 { get: () => appState.fuel_cost.distance, set: (v) => { appState.fuel_cost.distance = v; } },
                 { get: () => appState.fuel_cost.efficiency, set: (v) => { appState.fuel_cost.efficiency = v; } },

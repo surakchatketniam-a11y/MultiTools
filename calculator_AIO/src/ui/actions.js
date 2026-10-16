@@ -90,7 +90,21 @@ function clearCurrentTool() {
     } else if (id === 'ovulation') {
         appState.ovulation.lastPeriodDate = formatLocalDate(new Date());
     } else if (id === 'fuel_cost') {
-        appState.fuel_cost.distance = '';
+        const curMode = appState.fuel_cost?.mode || 'fuel';
+        appState.fuel_cost = {
+            mode: curMode,
+            distance: '',
+            efficiency: '15',
+            oilPrice: '36.50',
+            evEfficiency: '6.5',
+            electricityRate: '2.90',
+            chargingPreset: 'home_offpeak',
+            chargingLossPct: '10',
+            batteryCapacity: '60',
+            compareIceEfficiency: '15',
+            compareFuelPrice: '36.50',
+            yearlyKm: '20000'
+        };
     } else if (id === 'fuel_eff') {
         appState.fuel_eff.distance = '';
         appState.fuel_eff.fuelUsed = '';
@@ -311,7 +325,21 @@ function loadDemoForCurrentTool() {
             additionalDeductionsYearly: '0'
         };
     } else if (id === 'fuel_cost') {
-        appState.fuel_cost = { distance: '320', efficiency: '16', oilPrice: '35.50' };
+        const curMode = appState.fuel_cost?.mode || 'fuel';
+        appState.fuel_cost = {
+            mode: curMode,
+            distance: '320',
+            efficiency: '16',
+            oilPrice: '36.50',
+            evEfficiency: '6.5',
+            electricityRate: '2.90',
+            chargingPreset: 'home_offpeak',
+            chargingLossPct: '10',
+            batteryCapacity: '60',
+            compareIceEfficiency: '15',
+            compareFuelPrice: '36.50',
+            yearlyKm: '20000'
+        };
     } else if (id === 'tip') {
         appState.tip = { bill: '1850', tipPct: '10', people: '4' };
     } else if (id === 'fuel_eff') {

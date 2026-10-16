@@ -1646,6 +1646,145 @@ function generateFormalPrintHTML(toolId, stateObj) {
             </div>
         `;
 
+    } else if (curToolId === 'fuel_cost') {
+        const st = state.fuel_cost || {};
+        const isEv = st.mode === 'ev';
+
+        if (isEv) {
+            docTitle = 'ใบสรุปต้นทุนค่าชาร์จรถยนต์ไฟฟ้า EV และเปรียบเทียบรถน้ำมัน';
+            docSubtitle = 'Electric Vehicle (EV) Charging Cost & ICE Comparison Statement';
+            const calc = (typeof calculateEvCost === 'function')
+                ? calculateEvCost(st)
+                : {
+                    distance: 0, evEfficiency: 6.5, electricityRate: 2.9, chargingLossPct: 10, batteryCapacity: 60,
+                    compareIceEfficiency: 15, compareFuelPrice: 36.5, yearlyKm: 20000,
+                    ev: { netKwh: 0, billedKwh: 0, totalCost: 0, costPerKm: 0, batteryCycles: 0 },
+                    ice: { litersNeeded: 0, totalCost: 0, costPerKm: 0 },
+                    savings: { tripSavings: 0, savingsPct: 0, savingsPerKm: 0, isSavings: true },
+                    annual: { evYearlyCost: 0, iceYearlyCost: 0, yearlySavings: 0, fiveYearSavings: 0 }
+                };
+
+            paramsRows = [
+                ['โหมดการคำนวณ', 'รถยนต์ไฟฟ้า EV (Electric Vehicle)'],
+                ['ระยะทางคำนวณ (Distance)', `${formatNum(calc.distance)} กิโลเมตร`],
+                ['อัตราสิ้นเปลือง EV', `${formatNum(calc.evEfficiency, 1)} กม./kWh`],
+                ['อัตราค่าไฟฟ้า (Electricity Rate)', `${formatMoney(calc.electricityRate)} บาท/หน่วย (kWh)`],
+                ['เผื่อการสูญเสียการชาร์จ (Loss)', `${formatNum(calc.chargingLossPct, 1)}%`],
+                ['ขนาดแบตเตอรี่ (Battery Capacity)', `${formatNum(calc.batteryCapacity)} kWh`],
+                ['เทียบเคียงรถน้ำมัน (ICE Benchmark)', `${formatNum(calc.compareIceEfficiency, 1)} กม./ลิตร (น้ำมัน ${formatMoney(calc.compareFuelPrice)} บาท/ลิตร)`],
+                ['ระยะทางขับขี่เฉลี่ยต่อปี', `${formatNum(calc.yearlyKm)} กิโลเมตร/ปี`]
+            ];
+
+            resultCards = [
+                { label: 'ค่าชาร์จไฟฟ้าทริปนี้', value: `${formatMoney(calc.ev.totalCost)} บาท`, highlight: true },
+                { label: 'ต้นทุนเฉลี่ย EV ต่อ กม.', value: `${formatMoney(calc.ev.costPerKm)} บาท/กม.` },
+                { label: 'ค่าน้ำมันรถเดิมทริปนี้', value: `${formatMoney(calc.ice.totalCost)} บาท (${formatMoney(calc.ice.costPerKm)} ฿/กม.)` },
+                { label: calc.savings.isSavings ? 'ประหยัดสุทธิต่อทริป' : 'ส่วนต่างต้นทุนต่อทริป', value: `${formatMoney(calc.savings.tripSavings)} บาท (${formatNum(calc.savings.savingsPct, 1)}%)` },
+                { label: 'ประมาณการประหยัดต่อปี', value: `${formatMoney(calc.annual.yearlySavings)} บาท/ปี` }
+            ];
+
+            breakdownHTML = `
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        ตารางเปรียบเทียบความคุ้มค่า EV vs รถน้ำมันเดิม (Side-by-Side Analysis)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                                <th style="padding: 6px 8px; text-align: left;">หัวข้อการเปรียบเทียบ</th>
+                                <th style="padding: 6px 8px; text-align: right; color: #047857;">รถยนต์ไฟฟ้า EV</th>
+                                <th style="padding: 6px 8px; text-align: right; color: #b45309;">รถยนต์น้ำมัน (ICE)</th>
+                                <th style="padding: 6px 8px; text-align: right; color: #0284c7;">ส่วนต่างที่ประหยัดได้</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; font-weight: 500;">พลังงานที่ใช้ตลอดทริป</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatNum(calc.ev.billedKwh, 1)} kWh (มิเตอร์)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatNum(calc.ice.litersNeeded, 1)} ลิตร</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #64748b;">-</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; background: #ecfdf5;">
+                                <td style="padding: 6px 8px; font-weight: 700; color: #065f46;">ค่าพลังงานทริปนี้ (${formatNum(calc.distance)} กม.)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #047857;">${formatMoney(calc.ev.totalCost)} ฿</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #b45309;">${formatMoney(calc.ice.totalCost)} ฿</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #059669;">+${formatMoney(calc.savings.tripSavings)} ฿ (${formatNum(calc.savings.savingsPct, 1)}%)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; font-weight: 600;">ต้นทุนเฉลี่ยต่อกิโลเมตร</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #047857;">${formatMoney(calc.ev.costPerKm)} ฿/กม.</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #b45309;">${formatMoney(calc.ice.costPerKm)} ฿/กม.</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #059669;">ประหยัด ${formatMoney(calc.savings.savingsPerKm)} ฿/กม.</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; font-weight: 500;">ประมาณการค่าพลังงานต่อปี (${formatNum(calc.yearlyKm)} กม.)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.annual.evYearlyCost)} ฿/ปี</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.annual.iceYearlyCost)} ฿/ปี</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #059669;">+${formatMoney(calc.annual.yearlySavings)} ฿/ปี</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #cbd5e1; background: #f8fafc;">
+                                <td style="padding: 6px 8px; font-weight: 700;">ประมาณการสะสมระยะยาว 5 ปี</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #047857;">${formatMoney(calc.annual.evYearlyCost * 5)} ฿</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #b45309;">${formatMoney(calc.annual.iceYearlyCost * 5)} ฿</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 800; color: #047857;">+${formatMoney(calc.annual.fiveYearSavings)} ฿</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else {
+            docTitle = 'ใบสรุปต้นทุนค่าน้ำมันและค่าเดินทาง';
+            docSubtitle = 'Trip Fuel Consumption & Travel Cost Statement';
+            const calc = (typeof calculateFuelCost === 'function')
+                ? calculateFuelCost(st)
+                : { distance: 0, efficiency: 15, oilPrice: 36.5, liters: 0, fuelCost: 0, costPerKm: 0, totalTripCost: 0, costPerPerson: 0, tollFee: 0, passengers: 1 };
+
+            paramsRows = [
+                ['โหมดการคำนวณ', 'รถยนต์น้ำมันเชื้อเพลิง (Internal Combustion Engine)'],
+                ['ระยะทางเดินทาง (Distance)', `${formatNum(calc.distance)} กิโลเมตร`],
+                ['อัตราสิ้นเปลืองน้ำมัน', `${formatNum(calc.efficiency, 1)} กม./ลิตร`],
+                ['ราคาน้ำมันต่อลิตร', `${formatMoney(calc.oilPrice)} บาท/ลิตร`],
+                ['ค่าทางด่วน / ค่าผ่านทาง', `${formatMoney(calc.tollFee)} บาท`],
+                ['จำนวนผู้โดยสาร / ร่วมหาร', `${calc.passengers} คน`]
+            ];
+
+            resultCards = [
+                { label: 'รวมค่าใช้จ่ายการเดินทางทั้งสิ้น', value: `${formatMoney(calc.totalTripCost)} บาท`, highlight: true },
+                { label: 'ปริมาณน้ำมันที่ใช้', value: `${formatNum(calc.liters, 2)} ลิตร` },
+                { label: 'ค่าน้ำมันอย่างเดียว', value: `${formatMoney(calc.fuelCost)} บาท` },
+                { label: 'ต้นทุนต่อกิโลเมตร', value: `${formatMoney(calc.costPerKm)} บาท/กม.` },
+                { label: 'แชร์เฉลี่ยต่อคน', value: `${formatMoney(calc.costPerPerson)} บาท/คน` }
+            ];
+
+            breakdownHTML = `
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        สรุปการเดินทางและการแชร์ค่าใช้จ่าย (Trip Cost Breakdown)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; color: #475569;">ค่าน้ำมันเชื้อเพลิง (${formatNum(calc.liters, 2)} ลิตร @ ${formatMoney(calc.oilPrice)} ฿)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.fuelCost)} บาท</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; color: #475569;">ค่าทางด่วน / ผ่านทาง</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.tollFee)} บาท</td>
+                            </tr>
+                            <tr style="border-bottom: 2px solid #94a3b8; background: #f8fafc; font-weight: 700;">
+                                <td style="padding: 8px; color: #0f172a;">รวมค่าใช้จ่ายทั้งทริป</td>
+                                <td style="padding: 8px; text-align: right; color: #0284c7; font-size: 12px;">${formatMoney(calc.totalTripCost)} บาท</td>
+                            </tr>
+                            <tr style="background: #ffffff; font-weight: 600;">
+                                <td style="padding: 6px 8px; color: #475569;">เฉลี่ยต่อคน (${calc.passengers} คน)</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #0f172a;">${formatMoney(calc.costPerPerson)} บาท/คน</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
     } else {
         // Generic Fallback for other calculators
         const summary = (typeof getToolSummaryText === 'function') ? getToolSummaryText(curToolId) : '';

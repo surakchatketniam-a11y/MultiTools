@@ -2822,3 +2822,130 @@ test('calculateFoodCosting: recipe costing engine, yield %, hidden cost buffer, 
     assert.ok(compResult.rows.length >= 5);
     assert.ok(compResult.deltaSummary.includes('ทางเลือกที่'));
 });
+
+test('fuel_cost: fuel consumption and EV charging comparison', () => {
+    const ctx = context();
+
+    // 1. Pure calculation: ICE Fuel Mode
+    const fuelRes = ctx.calculateFuelCost({
+        distance: '150',
+        efficiency: '15',
+        oilPrice: '36.50',
+        tollFee: '100',
+        passengers: '2'
+    });
+    assert.equal(fuelRes.distance, 150);
+    assert.equal(fuelRes.efficiency, 15);
+    assert.equal(fuelRes.liters, 10);
+    assert.equal(fuelRes.fuelCost, 365);
+    assert.equal(fuelRes.tollFee, 100);
+    assert.equal(fuelRes.totalTripCost, 465);
+    assert.equal(fuelRes.costPerKm, 2.43);
+    assert.equal(fuelRes.costPerPerson, 232.5);
+
+    // 2. Pure calculation: EV Charging Mode (Home TOU Off-Peak)
+    const evHomeRes = ctx.calculateEvCost({
+        distance: '200',
+        evEfficiency: '6.5',
+        electricityRate: '2.90',
+        chargingLossPct: '10',
+        batteryCapacity: '60',
+        compareIceEfficiency: '15',
+        compareFuelPrice: '36.50',
+        yearlyKm: '20000'
+    });
+    assert.equal(evHomeRes.distance, 200);
+    assert.equal(evHomeRes.evEfficiency, 6.5);
+    assert.equal(evHomeRes.ev.netKwh, 30.77);
+    assert.equal(evHomeRes.ev.billedKwh, 33.85);
+    assert.equal(evHomeRes.ev.totalCost, 98.15);
+    assert.equal(evHomeRes.ev.costPerKm, 0.49);
+    assert.equal(evHomeRes.ice.litersNeeded, 13.33);
+    assert.equal(evHomeRes.ice.totalCost, 486.67);
+    assert.equal(evHomeRes.ice.costPerKm, 2.43);
+    assert.equal(evHomeRes.savings.tripSavings, 388.51);
+    assert.equal(evHomeRes.savings.savingsPct, 79.8);
+    assert.equal(evHomeRes.savings.isSavings, true);
+    assert.equal(evHomeRes.annual.evYearlyCost, 9815);
+    assert.equal(evHomeRes.annual.iceYearlyCost, 48667);
+    assert.equal(evHomeRes.annual.yearlySavings, 38851);
+    assert.equal(evHomeRes.annual.fiveYearSavings, 194256);
+
+    // 3. Pure calculation: EV Charging Mode (DC Fast Charge Peak)
+    const evDcRes = ctx.calculateEvCost({
+        distance: '200',
+        evEfficiency: '6.5',
+        electricityRate: '7.80',
+        chargingLossPct: '10',
+        batteryCapacity: '60',
+        compareIceEfficiency: '15',
+        compareFuelPrice: '36.50',
+        yearlyKm: '20000'
+    });
+    assert.equal(evDcRes.ev.totalCost, 264);
+    assert.equal(evDcRes.ev.costPerKm, 1.32);
+    assert.equal(evDcRes.savings.tripSavings, 222.67);
+    assert.equal(evDcRes.savings.savingsPct, 45.8);
+
+    // 4. Drawer summary test
+    const fuelSummary = ctx.getToolSummaryText('fuel_cost', {
+        fuel_cost: { mode: 'fuel', distance: '150', efficiency: '15', oilPrice: '36.50', tollFee: '0', passengers: '1' }
+    });
+    assert.match(fuelSummary, /สรุปค่าน้ำมันเดินทาง/);
+    assert.match(fuelSummary, /ค่าน้ำมันรวม:/);
+
+    const evSummary = ctx.getToolSummaryText('fuel_cost', {
+        fuel_cost: {
+            mode: 'ev',
+            distance: '200',
+            evEfficiency: '6.5',
+            electricityRate: '2.90',
+            chargingLossPct: '10',
+            batteryCapacity: '60',
+            compareIceEfficiency: '15',
+            compareFuelPrice: '36.50',
+            yearlyKm: '20000'
+        }
+    });
+    assert.match(evSummary, /สรุปค่าชาร์จรถไฟฟ้า EV & เทียบรถน้ำมัน/);
+    assert.match(evSummary, /ค่าชาร์จรถ EV/);
+    assert.match(evSummary, /ประหยัดได้/);
+
+    // 5. Formal print sheet test
+    const fuelPrint = ctx.generateFormalPrintHTML('fuel_cost', {
+        fuel_cost: { mode: 'fuel', distance: '150', efficiency: '15', oilPrice: '36.50', tollFee: '0', passengers: '1' }
+    });
+    assert.ok(fuelPrint.includes('ใบสรุปต้นทุนค่าน้ำมันและค่าเดินทาง'));
+
+    const evPrint = ctx.generateFormalPrintHTML('fuel_cost', {
+        fuel_cost: {
+            mode: 'ev',
+            distance: '200',
+            evEfficiency: '6.5',
+            electricityRate: '2.90',
+            chargingLossPct: '10',
+            batteryCapacity: '60',
+            compareIceEfficiency: '15',
+            compareFuelPrice: '36.50',
+            yearlyKm: '20000'
+        }
+    });
+    assert.ok(evPrint.includes('ใบสรุปต้นทุนค่าชาร์จรถยนต์ไฟฟ้า EV และเปรียบเทียบรถน้ำมัน'));
+    assert.ok(evPrint.includes('Electric Vehicle (EV) Charging Cost'));
+    assert.ok(evPrint.includes('ตารางเปรียบเทียบความคุ้มค่า EV vs รถน้ำมันเดิม'));
+
+    // 6. Compare calculations matrix test
+    const presets = ctx.getComparisonPresets('fuel_cost');
+    assert.equal(presets.length, 3);
+    const compResult = ctx.compareCalculations('fuel_cost', presets);
+    assert.ok(compResult);
+    assert.ok(compResult.rows.length >= 6);
+    assert.ok(compResult.deltaSummary.includes('ทางเลือกที่ประหยัดต้นทุนพลังงานที่สุดคือ'));
+    assert.equal(compResult.winnerIndex, 0); // Home TOU Off-Peak is cheapest per km
+
+    // 7. Input validation test
+    assert.equal(ctx.hasInvalidNumericInput('fuel_cost', { fuel_cost: { mode: 'fuel', distance: '100', efficiency: '15', oilPrice: '36.50', tollFee: '0', passengers: '1' } }), false);
+    assert.equal(ctx.hasInvalidNumericInput('fuel_cost', { fuel_cost: { mode: 'fuel', distance: 'abc', efficiency: '15', oilPrice: '36.50', tollFee: '0', passengers: '1' } }), true);
+    assert.equal(ctx.hasInvalidNumericInput('fuel_cost', { fuel_cost: { mode: 'ev', distance: '100', evEfficiency: '6.5', electricityRate: '2.90', chargingLossPct: '10', batteryCapacity: '60', compareIceEfficiency: '15', compareFuelPrice: '36.50', yearlyKm: '20000' } }), false);
+    assert.equal(ctx.hasInvalidNumericInput('fuel_cost', { fuel_cost: { mode: 'ev', distance: '100', evEfficiency: 'notanumber', electricityRate: '2.90', chargingLossPct: '10', batteryCapacity: '60', compareIceEfficiency: '15', compareFuelPrice: '36.50', yearlyKm: '20000' } }), true);
+});

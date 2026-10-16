@@ -351,12 +351,20 @@ function getToolSummaryText(toolId, stateObj) {
         }
         case 'fuel_cost': {
             const st = state.fuel_cost || {};
+            const mode = st.mode || 'fuel';
+            if (mode === 'ev') {
+                const calc = (typeof calculateEvCost === 'function')
+                    ? calculateEvCost(st)
+                    : { distance: 100, evEfficiency: 6.5, electricityRate: 2.9, compareIceEfficiency: 15, compareFuelPrice: 36.5, yearlyKm: 20000, ev: { billedKwh: 16.9, totalCost: 49.08, costPerKm: 0.49 }, ice: { totalCost: 243.33, costPerKm: 2.43 }, savings: { tripSavings: 194.25, savingsPct: 79.8, isSavings: true }, annual: { yearlySavings: 38850 } };
+                return `⚡ สรุปค่าชาร์จรถไฟฟ้า EV & เทียบรถน้ำมัน\n${divider}\n• ระยะทาง: ${formatMoney(calc.distance)} กม.\n• อัตรากินไฟ EV: ${calc.evEfficiency} กม./kWh (ไฟรวม ${formatNum(calc.ev.billedKwh, 1)} หน่วย)\n• อัตราค่าไฟ: ${formatMoney(calc.electricityRate)} บาท/หน่วย\n• ค่าชาร์จรถ EV: ${formatMoney(calc.ev.totalCost)} บาท (เฉลี่ย ${formatMoney(calc.ev.costPerKm)} ฿/กม.)\n${divider}\n🚗 เทียบรถน้ำมัน (${calc.compareIceEfficiency} กม./ลิตร @ ${formatMoney(calc.compareFuelPrice)} ฿):\n• ค่าน้ำมันปกติ: ${formatMoney(calc.ice.totalCost)} บาท (${formatMoney(calc.ice.costPerKm)} ฿/กม.)\n${calc.savings.isSavings ? `💰 ประหยัดได้: ${formatMoney(calc.savings.tripSavings)} บาท (${calc.savings.savingsPct}%)\n🎉 ประหยัดต่อปี (~${formatMoney(calc.yearlyKm)} กม.): +${formatMoney(calc.annual.yearlySavings)} บาท/ปี` : `⚠️ แพงกว่ารถน้ำมัน: ${formatMoney(Math.abs(calc.savings.tripSavings))} บาท`}\n(คำนวณโดย Multitools Calculator)`;
+            }
             const dist = parseNumericInput(st.distance) || 0;
             const eff = parseNumericInput(st.efficiency) || 15;
             const price = parseNumericInput(st.oilPrice) || 35.5;
             const liters = eff > 0 ? dist / eff : 0;
             const totalCost = liters * price;
-            return `⛽ สรุปค่าน้ำมันเดินทาง\n${divider}\n• ระยะทาง: ${formatNum(dist, 1)} กม.\n• อัตราสิ้นเปลือง: ${formatNum(eff, 1)} กม./ลิตร\n• ราคาน้ำมัน: ${formatMoney(price)} บาท/ลิตร\n• ปริมาณน้ำมัน: ${formatNum(liters, 2)} ลิตร\n${divider}\n💰 ค่าน้ำมันรวม: ${formatMoney(totalCost)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            const costPerKm = dist > 0 ? totalCost / dist : 0;
+            return `⛽ สรุปค่าน้ำมันเดินทาง\n${divider}\n• ระยะทาง: ${formatNum(dist, 1)} กม.\n• อัตราสิ้นเปลือง: ${formatNum(eff, 1)} กม./ลิตร\n• ราคาน้ำมัน: ${formatMoney(price)} บาท/ลิตร\n• ปริมาณน้ำมัน: ${formatNum(liters, 2)} ลิตร (เฉลี่ย ${formatMoney(costPerKm)} ฿/กม.)\n${divider}\n💰 ค่าน้ำมันรวม: ${formatMoney(totalCost)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'lotto_calc': {
             const st = state.lotto_calc || {};

@@ -33,7 +33,10 @@ function hasInvalidNumericInput(toolId, stateObj) {
     const fields = {
         currency: ['amount', 'customRateToTHB'], unit: ['val'], discount: ['price', 'discountPct', 'extraPct'],
         percent: ['x', 'y', ...(state.percent && state.percent.mode === 'compound' ? ['z'] : [])], vat: ['amount', 'rate'],
-        vat_wht: ['amount', 'vatRate', 'whtRate'], fuel_cost: ['distance', 'efficiency', 'oilPrice'],
+        vat_wht: ['amount', 'vatRate', 'whtRate'],
+        fuel_cost: (state.fuel_cost && state.fuel_cost.mode === 'ev')
+            ? ['distance', 'evEfficiency', 'electricityRate', 'chargingLossPct', 'batteryCapacity', 'compareIceEfficiency', 'compareFuelPrice', 'yearlyKm']
+            : ['distance', 'efficiency', 'oilPrice', 'tollFee', 'passengers'],
         health: ['weight', 'height', 'age', 'activity'], tip: ['bill', 'tipPct', 'people'], fuel_eff: ['distance', 'fuelUsed'],
         area_cost: ['rai', 'ngan', 'wa', 'rate', 'rounds'],
         loan: ['principal', 'interestRate', 'months', 'extra', ...(state.loan && state.loan.rateType === 'step' ? ['rateAfter', 'promoMonths'] : [])],

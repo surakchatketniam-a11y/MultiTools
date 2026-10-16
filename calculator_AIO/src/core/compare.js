@@ -293,6 +293,45 @@ function getComparisonPresets(toolId) {
                     ]
                 }
             }
+        ],
+        fuel_cost: [
+            {
+                label: 'ทางเลือก 1: ชาร์จบ้าน TOU Off-Peak (2.90 ฿/หน่วย)',
+                state: {
+                    mode: 'ev',
+                    distance: '200',
+                    evEfficiency: '6.5',
+                    electricityRate: '2.90',
+                    chargingLossPct: '10',
+                    batteryCapacity: '60',
+                    compareIceEfficiency: '15',
+                    compareFuelPrice: '36.50',
+                    yearlyKm: '20000'
+                }
+            },
+            {
+                label: 'ทางเลือก 2: ตู้ชาร์จสาธารณะ DC Peak (7.80 ฿/หน่วย)',
+                state: {
+                    mode: 'ev',
+                    distance: '200',
+                    evEfficiency: '6.5',
+                    electricityRate: '7.80',
+                    chargingLossPct: '10',
+                    batteryCapacity: '60',
+                    compareIceEfficiency: '15',
+                    compareFuelPrice: '36.50',
+                    yearlyKm: '20000'
+                }
+            },
+            {
+                label: 'ทางเลือก 3: รถยนต์น้ำมันเดิม (15 กม./ลิตร @ 36.50 ฿)',
+                state: {
+                    mode: 'fuel',
+                    distance: '200',
+                    efficiency: '15',
+                    oilPrice: '36.50'
+                }
+            }
         ]
     };
     return presets[toolId] || [];
@@ -1145,6 +1184,103 @@ function compareCalculations(toolId, itemsList) {
         } else {
             winnerIndex = minCostIdx;
             deltaSummary = `🏆 ทางเลือกที่ต้นทุนรวมต่อเสิร์ฟประหยัดที่สุดคือ "${items[winnerIndex].label}" ต้นทุนเพียง ${formatMoney(minCostRes.summary.totalCostPerPortion)} บาท`;
+        }
+
+    } else if (toolId === 'fuel_cost') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const isEv = st.mode === 'ev';
+            if (isEv) {
+                const res = (typeof calculateEvCost === 'function')
+                    ? calculateEvCost(st)
+                    : { distance: 0, evEfficiency: 6.5, electricityRate: 2.9, ev: { totalCost: 0, costPerKm: 0, billedKwh: 0 }, annual: { evYearlyCost: 0 }, yearlyKm: 20000 };
+                return {
+                    isEv: true,
+                    modeLabel: 'รถยนต์ไฟฟ้า EV',
+                    distance: res.distance,
+                    effText: `${formatNum(res.evEfficiency, 1)} กม./kWh`,
+                    rateText: `${formatMoney(res.electricityRate)} ฿/kWh`,
+                    energyText: `${formatNum(res.ev.billedKwh, 1)} kWh (รวมสูญเสีย)`,
+                    tripCost: res.ev.totalCost,
+                    costPerKm: res.ev.costPerKm,
+                    annualCost: res.annual.evYearlyCost,
+                    yearlyKm: res.yearlyKm || 20000
+                };
+            } else {
+                const res = (typeof calculateFuelCost === 'function')
+                    ? calculateFuelCost(st)
+                    : { distance: 0, efficiency: 15, oilPrice: 36.5, liters: 0, totalTripCost: 0, costPerKm: 0 };
+                const yearlyKm = numberOrDefault(st.yearlyKm, 20000);
+                const annualCost = Math.round(res.costPerKm * yearlyKm);
+                return {
+                    isEv: false,
+                    modeLabel: 'รถยนต์น้ำมัน (ICE)',
+                    distance: res.distance,
+                    effText: `${formatNum(res.efficiency, 1)} กม./ลิตร`,
+                    rateText: `${formatMoney(res.oilPrice)} ฿/ลิตร`,
+                    energyText: `${formatNum(res.liters, 1)} ลิตร`,
+                    tripCost: res.totalTripCost || res.fuelCost,
+                    costPerKm: res.costPerKm,
+                    annualCost: annualCost,
+                    yearlyKm: yearlyKm
+                };
+            }
+        });
+
+        rows.push({
+            label: 'ประเภทพลังงาน',
+            values: results.map(r => r.modeLabel)
+        });
+        rows.push({
+            label: 'ระยะทางคำนวณ',
+            values: results.map(r => `${formatNum(r.distance)} กม.`)
+        });
+        rows.push({
+            label: 'อัตราสิ้นเปลืองเฉลี่ย',
+            values: results.map(r => r.effText)
+        });
+        rows.push({
+            label: 'อัตราค่าพลังงานต่อหน่วย',
+            values: results.map(r => r.rateText)
+        });
+        rows.push({
+            label: 'พลังงานที่ใช้ตลอดทริป',
+            values: results.map(r => r.energyText)
+        });
+        rows.push({
+            label: 'ค่าพลังงานทริปนี้',
+            values: results.map(r => `${formatMoney(r.tripCost)} ฿`)
+        });
+
+        const validCostResults = results.filter(r => r.distance > 0 && r.costPerKm > 0);
+        if (validCostResults.length > 0) {
+            const minCostRes = validCostResults.reduce((min, cur) => cur.costPerKm < min.costPerKm ? cur : min, validCostResults[0]);
+            const minCostIdx = results.indexOf(minCostRes);
+            const maxCost = Math.max(...validCostResults.map(r => r.costPerKm));
+            const diffKm = maxCost - minCostRes.costPerKm;
+            const maxAnnual = Math.max(...validCostResults.map(r => r.annualCost));
+            const diffAnnual = maxAnnual - minCostRes.annualCost;
+
+            rows.push({
+                label: 'ต้นทุนเฉลี่ยต่อกิโลเมตร',
+                values: results.map(r => `${formatMoney(r.costPerKm)} ฿/กม.`),
+                bestIndex: minCostIdx,
+                highlight: true
+            });
+            rows.push({
+                label: 'ประมาณการค่าใช้จ่ายต่อปี (20,000 กม.)',
+                values: results.map(r => `${formatMoney(r.annualCost)} ฿/ปี`),
+                bestIndex: minCostIdx
+            });
+
+            winnerIndex = minCostIdx;
+            deltaSummary = `🏆 ทางเลือกที่ประหยัดต้นทุนพลังงานที่สุดคือ "${items[winnerIndex].label}" ต้นทุนเพียง ${formatMoney(minCostRes.costPerKm)} บาท/กม. (ประมาณการ ${formatMoney(minCostRes.annualCost)} บาท/ปี)${diffAnnual > 0 ? ` ประหยัดกว่าทางเลือกสูงสุดถึง ${formatMoney(diffAnnual)} บาท/ปี (${formatMoney(diffKm)} บาท/กม.)` : ''}`;
+        } else {
+            rows.push({
+                label: 'ต้นทุนเฉลี่ยต่อกิโลเมตร',
+                values: results.map(r => `${formatMoney(r.costPerKm)} ฿/กม.`)
+            });
+            deltaSummary = `เปรียบเทียบข้อมูลต้นทุนพลังงาน ${items.length} ทางเลือก`;
         }
 
     } else {

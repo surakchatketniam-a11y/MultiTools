@@ -64,7 +64,7 @@ var TOOLS_CATALOG = [
     // หมวดหมู่ที่ 5: สุขภาพ & พิเศษ
     { id: 'health',     group: 'special', category: 'all', menuTitle: 'ตัวชี้วัดร่างกาย (BMI/BMR)', headerTitle: 'คำนวณตัวชี้วัดร่างกาย (BMI/BMR)', usesSharedKeypad: true, keywords: 'health สุขภาพ bmi bmr ส่วนสูง น้ำหนัก แคลอรี่ อ้วน ผอม' },
     { id: 'ovulation',  group: 'special', category: 'all', menuTitle: 'วันตกไข่ & รอบเดือน', headerTitle: 'คำนวณวันตกไข่และรอบเดือน', usesSharedKeypad: false, keywords: 'ovulation ตกไข่ ประจำเดือน รอบเดือน ภาวะเจริญพันธุ์ มีลูก' },
-    { id: 'fuel_cost',  group: 'special', category: 'all', menuTitle: 'ค่าใช้จ่ายเชื้อเพลิง', headerTitle: 'คำนวณค่าใช้จ่ายเชื้อเพลิง', usesSharedKeypad: true, keywords: 'fuel cost น้ำมัน ค่าน้ำมัน ระยะทาง ทริป เที่ยว ค่าน้ำมันไปกลับ' },
+    { id: 'fuel_cost',  group: 'special', category: 'all', menuTitle: 'ค่าน้ำมัน & ค่าชาร์จรถ EV', headerTitle: 'คำนวณค่าน้ำมัน & ค่าชาร์จรถไฟฟ้า EV เทียบความคุ้มค่า', usesSharedKeypad: true, keywords: 'fuel cost น้ำมัน ค่าน้ำมัน ค่าชาร์จ ev รถยนต์ไฟฟ้า ชาร์จบ้าน tou offpeak dc fast charge เทียบน้ำมัน อัตราสิ้นเปลือง กิโลเมตร ประหยัดค่าน้ำมัน ระยะทาง ทริป เที่ยว ค่าน้ำมันไปกลับ' },
     { id: 'fuel_eff',         group: 'special', category: 'all', menuTitle: 'ประสิทธิภาพเชื้อเพลิง', headerTitle: 'คำนวณประสิทธิภาพเชื้อเพลิง', usesSharedKeypad: true, keywords: 'fuel efficiency ประสิทธิภาพน้ำมัน อัตราสิ้นเปลือง กิโลเมตรต่อลิตร l/100km' },
     { id: 'electricity_bill', group: 'special', category: 'fav', menuTitle: 'ค่าไฟฟ้า & อุปกรณ์', headerTitle: 'คำนวณค่าไฟฟ้าบ้าน & เครื่องใช้ไฟฟ้า', usesSharedKeypad: false, keywords: 'electricity bill ค่าไฟ ค่าไฟฟ้า การไฟฟ้า กฟน กฟภ ft ขั้นบันได แอร์ ค่าไฟบ้าน วัตต์ watt' },
     { id: 'area_cost',  group: 'special', category: 'all', menuTitle: 'ต้นทุนต่อพื้นที่ (ที่ดิน)', headerTitle: 'คำนวณต้นทุนต่อพื้นที่', usesSharedKeypad: false, keywords: 'area cost ต้นทุน ที่ดิน ไร่ งาน ตารางวา เกษตร ค่าปุ๋ย ค่าไถ' },
@@ -124,7 +124,10 @@ function hasInvalidNumericInput(toolId, stateObj) {
     const fields = {
         currency: ['amount', 'customRateToTHB'], unit: ['val'], discount: ['price', 'discountPct', 'extraPct'],
         percent: ['x', 'y', ...(state.percent && state.percent.mode === 'compound' ? ['z'] : [])], vat: ['amount', 'rate'],
-        vat_wht: ['amount', 'vatRate', 'whtRate'], fuel_cost: ['distance', 'efficiency', 'oilPrice'],
+        vat_wht: ['amount', 'vatRate', 'whtRate'],
+        fuel_cost: (state.fuel_cost && state.fuel_cost.mode === 'ev')
+            ? ['distance', 'evEfficiency', 'electricityRate', 'chargingLossPct', 'batteryCapacity', 'compareIceEfficiency', 'compareFuelPrice', 'yearlyKm']
+            : ['distance', 'efficiency', 'oilPrice', 'tollFee', 'passengers'],
         health: ['weight', 'height', 'age', 'activity'], tip: ['bill', 'tipPct', 'people'], fuel_eff: ['distance', 'fuelUsed'],
         area_cost: ['rai', 'ngan', 'wa', 'rate', 'rounds'],
         loan: ['principal', 'interestRate', 'months', 'extra', ...(state.loan && state.loan.rateType === 'step' ? ['rateAfter', 'promoMonths'] : [])],
@@ -2119,6 +2122,145 @@ function generateFormalPrintHTML(toolId, stateObj) {
             </div>
         `;
 
+    } else if (curToolId === 'fuel_cost') {
+        const st = state.fuel_cost || {};
+        const isEv = st.mode === 'ev';
+
+        if (isEv) {
+            docTitle = 'ใบสรุปต้นทุนค่าชาร์จรถยนต์ไฟฟ้า EV และเปรียบเทียบรถน้ำมัน';
+            docSubtitle = 'Electric Vehicle (EV) Charging Cost & ICE Comparison Statement';
+            const calc = (typeof calculateEvCost === 'function')
+                ? calculateEvCost(st)
+                : {
+                    distance: 0, evEfficiency: 6.5, electricityRate: 2.9, chargingLossPct: 10, batteryCapacity: 60,
+                    compareIceEfficiency: 15, compareFuelPrice: 36.5, yearlyKm: 20000,
+                    ev: { netKwh: 0, billedKwh: 0, totalCost: 0, costPerKm: 0, batteryCycles: 0 },
+                    ice: { litersNeeded: 0, totalCost: 0, costPerKm: 0 },
+                    savings: { tripSavings: 0, savingsPct: 0, savingsPerKm: 0, isSavings: true },
+                    annual: { evYearlyCost: 0, iceYearlyCost: 0, yearlySavings: 0, fiveYearSavings: 0 }
+                };
+
+            paramsRows = [
+                ['โหมดการคำนวณ', 'รถยนต์ไฟฟ้า EV (Electric Vehicle)'],
+                ['ระยะทางคำนวณ (Distance)', `${formatNum(calc.distance)} กิโลเมตร`],
+                ['อัตราสิ้นเปลือง EV', `${formatNum(calc.evEfficiency, 1)} กม./kWh`],
+                ['อัตราค่าไฟฟ้า (Electricity Rate)', `${formatMoney(calc.electricityRate)} บาท/หน่วย (kWh)`],
+                ['เผื่อการสูญเสียการชาร์จ (Loss)', `${formatNum(calc.chargingLossPct, 1)}%`],
+                ['ขนาดแบตเตอรี่ (Battery Capacity)', `${formatNum(calc.batteryCapacity)} kWh`],
+                ['เทียบเคียงรถน้ำมัน (ICE Benchmark)', `${formatNum(calc.compareIceEfficiency, 1)} กม./ลิตร (น้ำมัน ${formatMoney(calc.compareFuelPrice)} บาท/ลิตร)`],
+                ['ระยะทางขับขี่เฉลี่ยต่อปี', `${formatNum(calc.yearlyKm)} กิโลเมตร/ปี`]
+            ];
+
+            resultCards = [
+                { label: 'ค่าชาร์จไฟฟ้าทริปนี้', value: `${formatMoney(calc.ev.totalCost)} บาท`, highlight: true },
+                { label: 'ต้นทุนเฉลี่ย EV ต่อ กม.', value: `${formatMoney(calc.ev.costPerKm)} บาท/กม.` },
+                { label: 'ค่าน้ำมันรถเดิมทริปนี้', value: `${formatMoney(calc.ice.totalCost)} บาท (${formatMoney(calc.ice.costPerKm)} ฿/กม.)` },
+                { label: calc.savings.isSavings ? 'ประหยัดสุทธิต่อทริป' : 'ส่วนต่างต้นทุนต่อทริป', value: `${formatMoney(calc.savings.tripSavings)} บาท (${formatNum(calc.savings.savingsPct, 1)}%)` },
+                { label: 'ประมาณการประหยัดต่อปี', value: `${formatMoney(calc.annual.yearlySavings)} บาท/ปี` }
+            ];
+
+            breakdownHTML = `
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        ตารางเปรียบเทียบความคุ้มค่า EV vs รถน้ำมันเดิม (Side-by-Side Analysis)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                                <th style="padding: 6px 8px; text-align: left;">หัวข้อการเปรียบเทียบ</th>
+                                <th style="padding: 6px 8px; text-align: right; color: #047857;">รถยนต์ไฟฟ้า EV</th>
+                                <th style="padding: 6px 8px; text-align: right; color: #b45309;">รถยนต์น้ำมัน (ICE)</th>
+                                <th style="padding: 6px 8px; text-align: right; color: #0284c7;">ส่วนต่างที่ประหยัดได้</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; font-weight: 500;">พลังงานที่ใช้ตลอดทริป</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatNum(calc.ev.billedKwh, 1)} kWh (มิเตอร์)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatNum(calc.ice.litersNeeded, 1)} ลิตร</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #64748b;">-</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; background: #ecfdf5;">
+                                <td style="padding: 6px 8px; font-weight: 700; color: #065f46;">ค่าพลังงานทริปนี้ (${formatNum(calc.distance)} กม.)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #047857;">${formatMoney(calc.ev.totalCost)} ฿</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #b45309;">${formatMoney(calc.ice.totalCost)} ฿</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #059669;">+${formatMoney(calc.savings.tripSavings)} ฿ (${formatNum(calc.savings.savingsPct, 1)}%)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; font-weight: 600;">ต้นทุนเฉลี่ยต่อกิโลเมตร</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #047857;">${formatMoney(calc.ev.costPerKm)} ฿/กม.</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #b45309;">${formatMoney(calc.ice.costPerKm)} ฿/กม.</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #059669;">ประหยัด ${formatMoney(calc.savings.savingsPerKm)} ฿/กม.</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; font-weight: 500;">ประมาณการค่าพลังงานต่อปี (${formatNum(calc.yearlyKm)} กม.)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.annual.evYearlyCost)} ฿/ปี</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.annual.iceYearlyCost)} ฿/ปี</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #059669;">+${formatMoney(calc.annual.yearlySavings)} ฿/ปี</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #cbd5e1; background: #f8fafc;">
+                                <td style="padding: 6px 8px; font-weight: 700;">ประมาณการสะสมระยะยาว 5 ปี</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #047857;">${formatMoney(calc.annual.evYearlyCost * 5)} ฿</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #b45309;">${formatMoney(calc.annual.iceYearlyCost * 5)} ฿</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 800; color: #047857;">+${formatMoney(calc.annual.fiveYearSavings)} ฿</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else {
+            docTitle = 'ใบสรุปต้นทุนค่าน้ำมันและค่าเดินทาง';
+            docSubtitle = 'Trip Fuel Consumption & Travel Cost Statement';
+            const calc = (typeof calculateFuelCost === 'function')
+                ? calculateFuelCost(st)
+                : { distance: 0, efficiency: 15, oilPrice: 36.5, liters: 0, fuelCost: 0, costPerKm: 0, totalTripCost: 0, costPerPerson: 0, tollFee: 0, passengers: 1 };
+
+            paramsRows = [
+                ['โหมดการคำนวณ', 'รถยนต์น้ำมันเชื้อเพลิง (Internal Combustion Engine)'],
+                ['ระยะทางเดินทาง (Distance)', `${formatNum(calc.distance)} กิโลเมตร`],
+                ['อัตราสิ้นเปลืองน้ำมัน', `${formatNum(calc.efficiency, 1)} กม./ลิตร`],
+                ['ราคาน้ำมันต่อลิตร', `${formatMoney(calc.oilPrice)} บาท/ลิตร`],
+                ['ค่าทางด่วน / ค่าผ่านทาง', `${formatMoney(calc.tollFee)} บาท`],
+                ['จำนวนผู้โดยสาร / ร่วมหาร', `${calc.passengers} คน`]
+            ];
+
+            resultCards = [
+                { label: 'รวมค่าใช้จ่ายการเดินทางทั้งสิ้น', value: `${formatMoney(calc.totalTripCost)} บาท`, highlight: true },
+                { label: 'ปริมาณน้ำมันที่ใช้', value: `${formatNum(calc.liters, 2)} ลิตร` },
+                { label: 'ค่าน้ำมันอย่างเดียว', value: `${formatMoney(calc.fuelCost)} บาท` },
+                { label: 'ต้นทุนต่อกิโลเมตร', value: `${formatMoney(calc.costPerKm)} บาท/กม.` },
+                { label: 'แชร์เฉลี่ยต่อคน', value: `${formatMoney(calc.costPerPerson)} บาท/คน` }
+            ];
+
+            breakdownHTML = `
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        สรุปการเดินทางและการแชร์ค่าใช้จ่าย (Trip Cost Breakdown)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; color: #475569;">ค่าน้ำมันเชื้อเพลิง (${formatNum(calc.liters, 2)} ลิตร @ ${formatMoney(calc.oilPrice)} ฿)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.fuelCost)} บาท</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; color: #475569;">ค่าทางด่วน / ผ่านทาง</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.tollFee)} บาท</td>
+                            </tr>
+                            <tr style="border-bottom: 2px solid #94a3b8; background: #f8fafc; font-weight: 700;">
+                                <td style="padding: 8px; color: #0f172a;">รวมค่าใช้จ่ายทั้งทริป</td>
+                                <td style="padding: 8px; text-align: right; color: #0284c7; font-size: 12px;">${formatMoney(calc.totalTripCost)} บาท</td>
+                            </tr>
+                            <tr style="background: #ffffff; font-weight: 600;">
+                                <td style="padding: 6px 8px; color: #475569;">เฉลี่ยต่อคน (${calc.passengers} คน)</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #0f172a;">${formatMoney(calc.costPerPerson)} บาท/คน</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
     } else {
         // Generic Fallback for other calculators
         const summary = (typeof getToolSummaryText === 'function') ? getToolSummaryText(curToolId) : '';
@@ -2985,6 +3127,45 @@ function getComparisonPresets(toolId) {
                     ]
                 }
             }
+        ],
+        fuel_cost: [
+            {
+                label: 'ทางเลือก 1: ชาร์จบ้าน TOU Off-Peak (2.90 ฿/หน่วย)',
+                state: {
+                    mode: 'ev',
+                    distance: '200',
+                    evEfficiency: '6.5',
+                    electricityRate: '2.90',
+                    chargingLossPct: '10',
+                    batteryCapacity: '60',
+                    compareIceEfficiency: '15',
+                    compareFuelPrice: '36.50',
+                    yearlyKm: '20000'
+                }
+            },
+            {
+                label: 'ทางเลือก 2: ตู้ชาร์จสาธารณะ DC Peak (7.80 ฿/หน่วย)',
+                state: {
+                    mode: 'ev',
+                    distance: '200',
+                    evEfficiency: '6.5',
+                    electricityRate: '7.80',
+                    chargingLossPct: '10',
+                    batteryCapacity: '60',
+                    compareIceEfficiency: '15',
+                    compareFuelPrice: '36.50',
+                    yearlyKm: '20000'
+                }
+            },
+            {
+                label: 'ทางเลือก 3: รถยนต์น้ำมันเดิม (15 กม./ลิตร @ 36.50 ฿)',
+                state: {
+                    mode: 'fuel',
+                    distance: '200',
+                    efficiency: '15',
+                    oilPrice: '36.50'
+                }
+            }
         ]
     };
     return presets[toolId] || [];
@@ -3837,6 +4018,103 @@ function compareCalculations(toolId, itemsList) {
         } else {
             winnerIndex = minCostIdx;
             deltaSummary = `🏆 ทางเลือกที่ต้นทุนรวมต่อเสิร์ฟประหยัดที่สุดคือ "${items[winnerIndex].label}" ต้นทุนเพียง ${formatMoney(minCostRes.summary.totalCostPerPortion)} บาท`;
+        }
+
+    } else if (toolId === 'fuel_cost') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const isEv = st.mode === 'ev';
+            if (isEv) {
+                const res = (typeof calculateEvCost === 'function')
+                    ? calculateEvCost(st)
+                    : { distance: 0, evEfficiency: 6.5, electricityRate: 2.9, ev: { totalCost: 0, costPerKm: 0, billedKwh: 0 }, annual: { evYearlyCost: 0 }, yearlyKm: 20000 };
+                return {
+                    isEv: true,
+                    modeLabel: 'รถยนต์ไฟฟ้า EV',
+                    distance: res.distance,
+                    effText: `${formatNum(res.evEfficiency, 1)} กม./kWh`,
+                    rateText: `${formatMoney(res.electricityRate)} ฿/kWh`,
+                    energyText: `${formatNum(res.ev.billedKwh, 1)} kWh (รวมสูญเสีย)`,
+                    tripCost: res.ev.totalCost,
+                    costPerKm: res.ev.costPerKm,
+                    annualCost: res.annual.evYearlyCost,
+                    yearlyKm: res.yearlyKm || 20000
+                };
+            } else {
+                const res = (typeof calculateFuelCost === 'function')
+                    ? calculateFuelCost(st)
+                    : { distance: 0, efficiency: 15, oilPrice: 36.5, liters: 0, totalTripCost: 0, costPerKm: 0 };
+                const yearlyKm = numberOrDefault(st.yearlyKm, 20000);
+                const annualCost = Math.round(res.costPerKm * yearlyKm);
+                return {
+                    isEv: false,
+                    modeLabel: 'รถยนต์น้ำมัน (ICE)',
+                    distance: res.distance,
+                    effText: `${formatNum(res.efficiency, 1)} กม./ลิตร`,
+                    rateText: `${formatMoney(res.oilPrice)} ฿/ลิตร`,
+                    energyText: `${formatNum(res.liters, 1)} ลิตร`,
+                    tripCost: res.totalTripCost || res.fuelCost,
+                    costPerKm: res.costPerKm,
+                    annualCost: annualCost,
+                    yearlyKm: yearlyKm
+                };
+            }
+        });
+
+        rows.push({
+            label: 'ประเภทพลังงาน',
+            values: results.map(r => r.modeLabel)
+        });
+        rows.push({
+            label: 'ระยะทางคำนวณ',
+            values: results.map(r => `${formatNum(r.distance)} กม.`)
+        });
+        rows.push({
+            label: 'อัตราสิ้นเปลืองเฉลี่ย',
+            values: results.map(r => r.effText)
+        });
+        rows.push({
+            label: 'อัตราค่าพลังงานต่อหน่วย',
+            values: results.map(r => r.rateText)
+        });
+        rows.push({
+            label: 'พลังงานที่ใช้ตลอดทริป',
+            values: results.map(r => r.energyText)
+        });
+        rows.push({
+            label: 'ค่าพลังงานทริปนี้',
+            values: results.map(r => `${formatMoney(r.tripCost)} ฿`)
+        });
+
+        const validCostResults = results.filter(r => r.distance > 0 && r.costPerKm > 0);
+        if (validCostResults.length > 0) {
+            const minCostRes = validCostResults.reduce((min, cur) => cur.costPerKm < min.costPerKm ? cur : min, validCostResults[0]);
+            const minCostIdx = results.indexOf(minCostRes);
+            const maxCost = Math.max(...validCostResults.map(r => r.costPerKm));
+            const diffKm = maxCost - minCostRes.costPerKm;
+            const maxAnnual = Math.max(...validCostResults.map(r => r.annualCost));
+            const diffAnnual = maxAnnual - minCostRes.annualCost;
+
+            rows.push({
+                label: 'ต้นทุนเฉลี่ยต่อกิโลเมตร',
+                values: results.map(r => `${formatMoney(r.costPerKm)} ฿/กม.`),
+                bestIndex: minCostIdx,
+                highlight: true
+            });
+            rows.push({
+                label: 'ประมาณการค่าใช้จ่ายต่อปี (20,000 กม.)',
+                values: results.map(r => `${formatMoney(r.annualCost)} ฿/ปี`),
+                bestIndex: minCostIdx
+            });
+
+            winnerIndex = minCostIdx;
+            deltaSummary = `🏆 ทางเลือกที่ประหยัดต้นทุนพลังงานที่สุดคือ "${items[winnerIndex].label}" ต้นทุนเพียง ${formatMoney(minCostRes.costPerKm)} บาท/กม. (ประมาณการ ${formatMoney(minCostRes.annualCost)} บาท/ปี)${diffAnnual > 0 ? ` ประหยัดกว่าทางเลือกสูงสุดถึง ${formatMoney(diffAnnual)} บาท/ปี (${formatMoney(diffKm)} บาท/กม.)` : ''}`;
+        } else {
+            rows.push({
+                label: 'ต้นทุนเฉลี่ยต่อกิโลเมตร',
+                values: results.map(r => `${formatMoney(r.costPerKm)} ฿/กม.`)
+            });
+            deltaSummary = `เปรียบเทียบข้อมูลต้นทุนพลังงาน ${items.length} ทางเลือก`;
         }
 
     } else {
@@ -4966,12 +5244,20 @@ function getToolSummaryText(toolId, stateObj) {
         }
         case 'fuel_cost': {
             const st = state.fuel_cost || {};
+            const mode = st.mode || 'fuel';
+            if (mode === 'ev') {
+                const calc = (typeof calculateEvCost === 'function')
+                    ? calculateEvCost(st)
+                    : { distance: 100, evEfficiency: 6.5, electricityRate: 2.9, compareIceEfficiency: 15, compareFuelPrice: 36.5, yearlyKm: 20000, ev: { billedKwh: 16.9, totalCost: 49.08, costPerKm: 0.49 }, ice: { totalCost: 243.33, costPerKm: 2.43 }, savings: { tripSavings: 194.25, savingsPct: 79.8, isSavings: true }, annual: { yearlySavings: 38850 } };
+                return `⚡ สรุปค่าชาร์จรถไฟฟ้า EV & เทียบรถน้ำมัน\n${divider}\n• ระยะทาง: ${formatMoney(calc.distance)} กม.\n• อัตรากินไฟ EV: ${calc.evEfficiency} กม./kWh (ไฟรวม ${formatNum(calc.ev.billedKwh, 1)} หน่วย)\n• อัตราค่าไฟ: ${formatMoney(calc.electricityRate)} บาท/หน่วย\n• ค่าชาร์จรถ EV: ${formatMoney(calc.ev.totalCost)} บาท (เฉลี่ย ${formatMoney(calc.ev.costPerKm)} ฿/กม.)\n${divider}\n🚗 เทียบรถน้ำมัน (${calc.compareIceEfficiency} กม./ลิตร @ ${formatMoney(calc.compareFuelPrice)} ฿):\n• ค่าน้ำมันปกติ: ${formatMoney(calc.ice.totalCost)} บาท (${formatMoney(calc.ice.costPerKm)} ฿/กม.)\n${calc.savings.isSavings ? `💰 ประหยัดได้: ${formatMoney(calc.savings.tripSavings)} บาท (${calc.savings.savingsPct}%)\n🎉 ประหยัดต่อปี (~${formatMoney(calc.yearlyKm)} กม.): +${formatMoney(calc.annual.yearlySavings)} บาท/ปี` : `⚠️ แพงกว่ารถน้ำมัน: ${formatMoney(Math.abs(calc.savings.tripSavings))} บาท`}\n(คำนวณโดย Multitools Calculator)`;
+            }
             const dist = parseNumericInput(st.distance) || 0;
             const eff = parseNumericInput(st.efficiency) || 15;
             const price = parseNumericInput(st.oilPrice) || 35.5;
             const liters = eff > 0 ? dist / eff : 0;
             const totalCost = liters * price;
-            return `⛽ สรุปค่าน้ำมันเดินทาง\n${divider}\n• ระยะทาง: ${formatNum(dist, 1)} กม.\n• อัตราสิ้นเปลือง: ${formatNum(eff, 1)} กม./ลิตร\n• ราคาน้ำมัน: ${formatMoney(price)} บาท/ลิตร\n• ปริมาณน้ำมัน: ${formatNum(liters, 2)} ลิตร\n${divider}\n💰 ค่าน้ำมันรวม: ${formatMoney(totalCost)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            const costPerKm = dist > 0 ? totalCost / dist : 0;
+            return `⛽ สรุปค่าน้ำมันเดินทาง\n${divider}\n• ระยะทาง: ${formatNum(dist, 1)} กม.\n• อัตราสิ้นเปลือง: ${formatNum(eff, 1)} กม./ลิตร\n• ราคาน้ำมัน: ${formatMoney(price)} บาท/ลิตร\n• ปริมาณน้ำมัน: ${formatNum(liters, 2)} ลิตร (เฉลี่ย ${formatMoney(costPerKm)} ฿/กม.)\n${divider}\n💰 ค่าน้ำมันรวม: ${formatMoney(totalCost)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'lotto_calc': {
             const st = state.lotto_calc || {};
@@ -5246,6 +5532,13 @@ function getToolFieldBindings(toolId) {
                 { get: () => appState.vat.rate, set: (v) => { appState.vat.rate = v; } }
             ];
         case 'fuel_cost':
+            if (appState.fuel_cost && appState.fuel_cost.mode === 'ev') {
+                return [
+                    { get: () => appState.fuel_cost.distance, set: (v) => { appState.fuel_cost.distance = v; } },
+                    { get: () => appState.fuel_cost.evEfficiency, set: (v) => { appState.fuel_cost.evEfficiency = v; } },
+                    { get: () => appState.fuel_cost.electricityRate, set: (v) => { appState.fuel_cost.electricityRate = v; } }
+                ];
+            }
             return [
                 { get: () => appState.fuel_cost.distance, set: (v) => { appState.fuel_cost.distance = v; } },
                 { get: () => appState.fuel_cost.efficiency, set: (v) => { appState.fuel_cost.efficiency = v; } },
@@ -9960,34 +10253,573 @@ function renderOvulationTool(container) {
 }
 
 /* -----------------------------------------------------------
- * TOOL 7: ค่าใช้จ่ายเชื้อเพลิง (Fuel Cost Calculator)
+ * PURE ENGINE: คำนวณค่าน้ำมันเชื้อเพลิง (Fuel Cost)
+ * ----------------------------------------------------------- */
+function calculateFuelCost(params = {}) {
+    const toNum = (val, def = 0) => {
+        if (typeof val === 'number') return Number.isFinite(val) ? val : def;
+        if (typeof parseNumericInput === 'function') {
+            const parsed = parseNumericInput(val);
+            return Number.isFinite(parsed) ? parsed : def;
+        }
+        const clean = String(val ?? '').trim().replace(/,/g, '');
+        const n = parseFloat(clean);
+        return Number.isFinite(n) ? n : def;
+    };
+
+    const distance = Math.max(0, toNum(params.distance, 0));
+    const efficiency = Math.max(0, toNum(params.efficiency, 15));
+    const oilPrice = Math.max(0, toNum(params.oilPrice, 36.50));
+    const tollFee = Math.max(0, toNum(params.tollFee, 0));
+    const passengers = Math.max(1, Math.round(toNum(params.passengers, 1)));
+
+    const litersNeeded = efficiency > 0 ? (distance / efficiency) : 0;
+    const fuelCost = litersNeeded * oilPrice;
+    const totalTripCost = fuelCost + tollFee;
+    const costPerKm = distance > 0 ? (fuelCost / distance) : 0;
+    const costPerPerson = passengers > 0 ? (totalTripCost / passengers) : totalTripCost;
+
+    const round2 = (v) => Math.round(v * 100) / 100;
+
+    return {
+        distance,
+        efficiency,
+        oilPrice,
+        tollFee: round2(tollFee),
+        passengers,
+        litersNeeded: round2(litersNeeded),
+        liters: round2(litersNeeded),
+        totalCost: round2(fuelCost),
+        fuelCost: round2(fuelCost),
+        totalTripCost: round2(totalTripCost),
+        costPerKm: round2(costPerKm),
+        costPerPerson: round2(costPerPerson)
+    };
+}
+
+/* -----------------------------------------------------------
+ * PURE ENGINE: ค่าชาร์จรถยนต์ไฟฟ้า EV & เทียบความคุ้มค่ารถน้ำมัน
+ * ----------------------------------------------------------- */
+function calculateEvCost(params = {}) {
+    const toNum = (val, def = 0) => {
+        if (typeof val === 'number') return Number.isFinite(val) ? val : def;
+        if (typeof parseNumericInput === 'function') {
+            const parsed = parseNumericInput(val);
+            return Number.isFinite(parsed) ? parsed : def;
+        }
+        const clean = String(val ?? '').trim().replace(/,/g, '');
+        const n = parseFloat(clean);
+        return Number.isFinite(n) ? n : def;
+    };
+
+    const distance = Math.max(0, toNum(params.distance, 0));
+    const evEfficiency = Math.max(0.1, toNum(params.evEfficiency, 6.5));
+    const electricityRate = Math.max(0, toNum(params.electricityRate, 2.90));
+    const chargingLossPct = Math.max(0, Math.min(50, toNum(params.chargingLossPct, 10)));
+    const batteryCapacity = Math.max(1, toNum(params.batteryCapacity, 60));
+    const compareIceEfficiency = Math.max(0.1, toNum(params.compareIceEfficiency, 15));
+    const compareFuelPrice = Math.max(0, toNum(params.compareFuelPrice, 36.50));
+    const yearlyKm = Math.max(0, toNum(params.yearlyKm, 20000));
+
+    // 1. EV Electric calculations
+    const netKwh = distance > 0 ? (distance / evEfficiency) : 0;
+    const lossMultiplier = 1 + (chargingLossPct / 100);
+    const billedKwh = netKwh * lossMultiplier;
+    const evTotalCost = billedKwh * electricityRate;
+    const evCostPerKm = distance > 0 ? (evTotalCost / distance) : 0;
+    const batteryCycles = batteryCapacity > 0 ? (netKwh / batteryCapacity) : 0;
+
+    // 2. ICE (Petrol/Diesel) Comparison
+    const iceLiters = distance > 0 ? (distance / compareIceEfficiency) : 0;
+    const iceTotalCost = iceLiters * compareFuelPrice;
+    const iceCostPerKm = distance > 0 ? (iceTotalCost / distance) : 0;
+
+    // 3. Trip Savings
+    const tripSavings = iceTotalCost - evTotalCost;
+    const savingsPct = iceTotalCost > 0 ? ((tripSavings / iceTotalCost) * 100) : 0;
+    const savingsPerKm = iceCostPerKm - evCostPerKm;
+
+    // 4. Annual Projections (based on yearlyKm)
+    const evYearlyKwh = (yearlyKm / evEfficiency) * lossMultiplier;
+    const evYearlyCost = evYearlyKwh * electricityRate;
+    const iceYearlyLiters = yearlyKm / compareIceEfficiency;
+    const iceYearlyCost = iceYearlyLiters * compareFuelPrice;
+    const yearlySavings = iceYearlyCost - evYearlyCost;
+    const fiveYearSavings = yearlySavings * 5;
+
+    return {
+        distance,
+        evEfficiency,
+        electricityRate,
+        chargingLossPct,
+        batteryCapacity,
+        compareIceEfficiency,
+        compareFuelPrice,
+        yearlyKm,
+        ev: {
+            netKwh: Math.round(netKwh * 100) / 100,
+            billedKwh: Math.round(billedKwh * 100) / 100,
+            totalCost: Math.round(evTotalCost * 100) / 100,
+            costPerKm: Math.round(evCostPerKm * 100) / 100,
+            batteryCycles: Math.round(batteryCycles * 10) / 10
+        },
+        ice: {
+            litersNeeded: Math.round(iceLiters * 100) / 100,
+            totalCost: Math.round(iceTotalCost * 100) / 100,
+            costPerKm: Math.round(iceCostPerKm * 100) / 100
+        },
+        savings: {
+            tripSavings: Math.round(tripSavings * 100) / 100,
+            savingsPct: Math.round(savingsPct * 10) / 10,
+            savingsPerKm: Math.round(savingsPerKm * 100) / 100,
+            isSavings: tripSavings >= 0
+        },
+        annual: {
+            evYearlyCost: Math.round(evYearlyCost),
+            iceYearlyCost: Math.round(iceYearlyCost),
+            yearlySavings: Math.round(yearlySavings),
+            fiveYearSavings: Math.round(fiveYearSavings)
+        }
+    };
+}
+
+/* -----------------------------------------------------------
+ * TOOL 7: ค่าน้ำมัน & ค่าชาร์จรถ EV เทียบความคุ้มค่า (Fuel & EV Cost)
  * ----------------------------------------------------------- */
 function renderFuelCostTool(container) {
     const st = appState.fuel_cost;
-    const dist = numberOrDefault(st.distance, 0);
-    const eff = numberOrDefault(st.efficiency, 0);
-    const price = numberOrDefault(st.oilPrice, 0);
+    const mode = st.mode || 'fuel'; // 'fuel' | 'ev'
 
-    const litersNeeded = eff > 0 ? dist / eff : 0;
-    const totalCost = litersNeeded * price;
-    const costPerKm = dist > 0 ? totalCost / dist : 0;
-
-    container.innerHTML = `
-        <div class="flex flex-col gap-1.5">
-            ${createKeypadFieldHTML(0, 'ระยะทางที่เดินทาง', st.distance, 'กม.', 'ป้อนระยะทาง')}
-            ${createKeypadFieldHTML(1, 'อัตราสิ้นเปลืองเชื้อเพลิง', st.efficiency, 'กม./ลิตร', 'เช่น 15')}
-            ${createKeypadFieldHTML(2, 'ราคาน้ำมันต่อลิตร', st.oilPrice, 'บาท/ลิตร', 'เช่น 35.50')}
-        </div>
+    let html = `
+        <div class="fuel-cost-tool flex flex-col gap-3 p-1">
+            <div class="segment-group grid-cols-2" role="group" aria-label="โหมดคำนวณเชื้อเพลิง">
+                <button type="button" id="btnFuelModeFuel" aria-pressed="${mode !== 'ev'}" class="segment-btn ${mode !== 'ev' ? 'active' : ''}">
+                    ค่าน้ำมันเดินทาง
+                </button>
+                <button type="button" id="btnFuelModeEv" aria-pressed="${mode === 'ev'}" class="segment-btn ${mode === 'ev' ? 'active' : ''}">
+                    ชาร์จรถไฟฟ้า EV & เทียบน้ำมัน
+                </button>
+            </div>
     `;
 
+    if (mode === 'fuel') {
+        const calc = calculateFuelCost(st);
+
+        html += `
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'ระยะทางที่เดินทาง', st.distance, 'กม.', 'ป้อนระยะทาง')}
+                ${createKeypadFieldHTML(1, 'อัตราสิ้นเปลืองเชื้อเพลิง', st.efficiency, 'กม./ลิตร', 'เช่น 15')}
+                ${createKeypadFieldHTML(2, 'ราคาน้ำมันต่อลิตร', st.oilPrice, 'บาท/ลิตร', 'เช่น 36.50')}
+            </div>
+
+            <!-- Quick Fuel Price Chips -->
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ราคาเฉลี่ยน้ำมันเชื้อเพลิงยอดนิยม</div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" class="tool-chip-btn fuel-quick-price" data-price="37.50" style="min-height: 44px;">
+                        แก๊สโซฮอล์ 95 (37.50฿)
+                    </button>
+                    <button type="button" class="tool-chip-btn fuel-quick-price" data-price="35.20" style="min-height: 44px;">
+                        แก๊สโซฮอล์ E20 (35.20฿)
+                    </button>
+                    <button type="button" class="tool-chip-btn fuel-quick-price" data-price="33.00" style="min-height: 44px;">
+                        ดีเซล B7 (33.00฿)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Fuel Result Card -->
+            <div class="themed-result-card p-4 space-y-2">
+                <div class="text-xs text-[var(--app-muted)]">สรุปค่าน้ำมันเชื้อเพลิง</div>
+                <div class="flex justify-between items-baseline">
+                    <span class="text-xs font-semibold text-[var(--app-muted)]">ค่าน้ำมันรวม</span>
+                    <span class="text-2xl font-bold font-mono text-[var(--app-accent)]" id="fuelTotalCostDisplay">
+                        ฿${formatMoney(calc.totalCost)}
+                    </span>
+                </div>
+                <div class="flex justify-between text-xs pt-1 border-t border-[var(--app-hairline)]">
+                    <span class="text-[var(--app-muted)]">ปริมาณน้ำมันที่ใช้</span>
+                    <b class="text-[var(--app-ink)] font-mono" id="fuelLitersDisplay">${formatNum(calc.litersNeeded, 2)} ลิตร</b>
+                </div>
+                <div class="flex justify-between text-xs">
+                    <span class="text-[var(--app-muted)]">ต้นทุนเฉลี่ยต่อกิโลเมตร</span>
+                    <b class="text-[var(--app-ink)] font-mono" id="fuelCostPerKmDisplay">฿${formatMoney(calc.costPerKm)} / กม.</b>
+                </div>
+            </div>
+        `;
+    } else {
+        // Mode EV: Electric Vehicle Cost & ICE Comparison
+        const calc = calculateEvCost(st);
+
+        html += `
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'ระยะทางที่เดินทาง', st.distance, 'กม.', 'ป้อนระยะทาง')}
+                ${createKeypadFieldHTML(1, 'อัตราประหยัดไฟ EV', st.evEfficiency || '6.5', 'กม./kWh', 'เช่น 6.5')}
+                ${createKeypadFieldHTML(2, 'อัตราค่าไฟฟ้า', st.electricityRate || '2.90', 'บาท/หน่วย', 'เช่น 2.90')}
+            </div>
+
+            <!-- EV Car Presets -->
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">อัตรากินไฟรถยนต์ไฟฟ้าเฉลี่ย</div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" class="tool-chip-btn ev-quick-eff" data-eff="7.0" style="min-height: 44px;">
+                        Eco EV (7.0 กม./หน่วย)
+                    </button>
+                    <button type="button" class="tool-chip-btn ev-quick-eff" data-eff="6.2" style="min-height: 44px;">
+                        C-SUV (6.2 กม./หน่วย)
+                    </button>
+                    <button type="button" class="tool-chip-btn ev-quick-eff" data-eff="5.5" style="min-height: 44px;">
+                        Sedan/LR (5.5 กม./หน่วย)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Charging Rate Presets -->
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">รูปแบบและสถานที่ชาร์จไฟฟ้าในไทย</div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" class="tool-chip-btn ev-quick-rate" data-rate="2.90" data-preset="home_offpeak" style="min-height: 44px;">
+                        ชาร์จบ้าน TOU (2.90 ฿/หน่วย)
+                    </button>
+                    <button type="button" class="tool-chip-btn ev-quick-rate" data-rate="4.50" data-preset="home_normal" style="min-height: 44px;">
+                        ชาร์จบ้านปกติ (4.50 ฿/หน่วย)
+                    </button>
+                    <button type="button" class="tool-chip-btn ev-quick-rate" data-rate="5.80" data-preset="dc_offpeak" style="min-height: 44px;">
+                        ตู้ DC Off-Peak (5.80 ฿/หน่วย)
+                    </button>
+                    <button type="button" class="tool-chip-btn ev-quick-rate" data-rate="7.80" data-preset="dc_peak" style="min-height: 44px;">
+                        ตู้ DC On-Peak (7.80 ฿/หน่วย)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Advanced Charging Settings -->
+            <div class="themed-tool-card p-3 space-y-2.5 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">การตั้งค่าการชาร์จ & แบตเตอรี่</div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label for="evChargingLoss" class="block text-[var(--app-muted)] mb-1">สูญเสียชาร์จ (Loss %)</label>
+                        <input id="evChargingLoss" type="number" min="0" max="50" step="1" value="${st.chargingLossPct || '10'}" class="airbnb-input w-full" style="min-height: 44px;">
+                    </div>
+                    <div>
+                        <label for="evBatteryCap" class="block text-[var(--app-muted)] mb-1">ขนาดแบตเตอรี่ (kWh)</label>
+                        <input id="evBatteryCap" type="number" min="1" max="200" step="1" value="${st.batteryCapacity || '60'}" class="airbnb-input w-full" style="min-height: 44px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- EV Result Card -->
+            <div class="themed-result-card p-4 space-y-2">
+                <div class="text-xs text-[var(--app-muted)]">สรุปค่าไฟฟ้าชาร์จรถ EV</div>
+                <div class="flex justify-between items-baseline">
+                    <span class="text-xs font-semibold text-[var(--app-muted)]">ค่าชาร์จไฟรวม</span>
+                    <span class="text-2xl font-bold font-mono text-[var(--app-accent)]" id="evTotalCostResult">
+                        ฿${formatMoney(calc.ev.totalCost)}
+                    </span>
+                </div>
+                <div class="flex justify-between text-xs pt-1 border-t border-[var(--app-hairline)]">
+                    <span class="text-[var(--app-muted)]">ต้นทุนค่าไฟเฉลี่ยต่อกิโลเมตร</span>
+                    <b class="text-[var(--app-ink)] font-mono text-sm" id="evCostPerKmResult">฿${formatMoney(calc.ev.costPerKm)} / กม.</b>
+                </div>
+                <div class="flex justify-between text-xs">
+                    <span class="text-[var(--app-muted)]">ไฟฟ้าที่ดึงจากมิเตอร์จริง (รวม Loss ${calc.chargingLossPct}%)</span>
+                    <b class="text-[var(--app-ink)] font-mono" id="evBilledKwhResult">${formatNum(calc.ev.billedKwh, 1)} หน่วย (kWh)</b>
+                </div>
+                <div class="flex justify-between text-xs">
+                    <span class="text-[var(--app-muted)]">รอบชาร์จเทียบเท่าแบตเต็ม</span>
+                    <b class="text-[var(--app-ink)] font-mono" id="evBatteryCyclesResult">${formatNum(calc.ev.batteryCycles, 1)} รอบ</b>
+                </div>
+            </div>
+
+            <!-- Comparison with ICE Card -->
+            <div class="themed-tool-card p-4 space-y-3 text-xs">
+                <div class="font-bold text-[var(--app-ink)] text-sm border-b border-[var(--app-hairline)] pb-2 flex justify-between items-center">
+                    <span>เปรียบเทียบกับรถน้ำมันในระยะทางเดียวกัน</span>
+                    <span class="text-xs font-normal text-[var(--app-muted)]">${calc.distance > 0 ? `${formatMoney(calc.distance)} กม.` : 'ทริปนี้'}</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label for="compareIceEff" class="block text-[var(--app-muted)] mb-1">รถน้ำมัน (กม./ลิตร)</label>
+                        <input id="compareIceEff" type="number" min="1" step="0.5" value="${st.compareIceEfficiency || '15'}" class="airbnb-input w-full" style="min-height: 44px;">
+                    </div>
+                    <div>
+                        <label for="compareFuelPrice" class="block text-[var(--app-muted)] mb-1">ราคาน้ำมัน (บาท/ลิตร)</label>
+                        <input id="compareFuelPrice" type="number" min="1" step="0.1" value="${st.compareFuelPrice || '36.50'}" class="airbnb-input w-full" style="min-height: 44px;">
+                    </div>
+                </div>
+
+                <!-- Savings Highlight -->
+                <div class="p-3 rounded-xl border flex flex-col gap-1.5" style="background-color: var(--app-surface-soft); border-color: var(--app-hairline);">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[var(--app-muted)]">ค่าน้ำมันของรถทั่วไป</span>
+                        <b class="text-[var(--app-ink)] font-mono" id="iceTotalCostResult">฿${formatMoney(calc.ice.totalCost)} (เฉลี่ย ฿${formatMoney(calc.ice.costPerKm)}/กม.)</b>
+                    </div>
+                    <div class="flex justify-between items-center text-sm font-bold pt-1 border-t border-[var(--app-hairline)]">
+                        <span>ส่วนต่างความคุ้มค่า</span>
+                        <span class="font-mono ${calc.savings.isSavings ? 'text-green-600' : 'text-red-500'}" id="tripSavingsResult">
+                            ${calc.savings.isSavings ? 'ประหยัด ' : 'แพงกว่า '}฿${formatMoney(Math.abs(calc.savings.tripSavings))} บาท (${calc.savings.savingsPct}%)
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Annual Mileage Projection -->
+                <div class="themed-subcard p-3 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="font-semibold text-[var(--app-ink)]">จำลองระยะวิ่งต่อปี</span>
+                        <div class="flex items-center gap-1">
+                            <input id="evYearlyKm" type="number" min="1000" step="1000" value="${st.yearlyKm || '20000'}" class="airbnb-input text-right font-mono text-xs w-24 py-1" style="min-height: 36px;">
+                            <span class="text-[var(--app-muted)]">กม./ปี</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <button type="button" class="tool-chip-btn ev-quick-year-km text-[11px]" data-km="10000" style="min-height: 38px;">10,000 กม.</button>
+                        <button type="button" class="tool-chip-btn ev-quick-year-km text-[11px]" data-km="20000" style="min-height: 38px;">20,000 กม.</button>
+                        <button type="button" class="tool-chip-btn ev-quick-year-km text-[11px]" data-km="30000" style="min-height: 38px;">30,000 กม.</button>
+                    </div>
+
+                    <div class="space-y-1.5 pt-2 text-xs">
+                        <div class="flex justify-between">
+                            <span class="text-[var(--app-muted)]">EV จ่ายค่าไฟต่อปี:</span>
+                            <b class="text-[var(--app-ink)] font-mono" id="evYearlyCostResult">฿${formatMoney(calc.annual.evYearlyCost)} บาท/ปี</b>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-[var(--app-muted)]">รถน้ำมันจ่ายต่อปี:</span>
+                            <b class="text-[var(--app-ink)] font-mono" id="iceYearlyCostResult">฿${formatMoney(calc.annual.iceYearlyCost)} บาท/ปี</b>
+                        </div>
+                        <div class="flex justify-between font-bold text-green-600 pt-1 border-t border-[var(--app-hairline)]">
+                            <span>ประหยัดเงินต่อปี:</span>
+                            <span class="font-mono" id="yearlySavingsResult">+฿${formatMoney(calc.annual.yearlySavings)} บาท/ปี</span>
+                        </div>
+                        <div class="flex justify-between text-[11px] text-[var(--app-muted)]">
+                            <span>คาดการณ์ประหยัดสะสม 5 ปี:</span>
+                            <b class="text-green-600 font-mono" id="fiveYearSavingsResult">+฿${formatMoney(calc.annual.fiveYearSavings)} บาท</b>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-1">
+                    <button type="button" id="btnPrintFuelReport" class="tool-action-btn w-full" style="min-height: 44px;">
+                        พิมพ์ใบสรุปเปรียบเทียบค่าเดินทาง (Print/PDF)
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    html += `</div>`;
+    container.innerHTML = html;
+
+    // Attach keypad field click listeners
     attachFieldClickListeners(container);
 
-    if (dist <= 0 || eff <= 0) {
-        setStatusBanner('empty', 'ป้อนระยะทางและอัตราสิ้นเปลืองเพื่อคำนวณค่าน้ำมัน');
+    // Live update function for EV mode without destroying DOM
+    function updateEvLive() {
+        const curCalc = calculateEvCost(st);
+
+        const totalCostEl = container.querySelector('#evTotalCostResult');
+        if (totalCostEl) totalCostEl.textContent = `฿${formatMoney(curCalc.ev.totalCost)}`;
+
+        const costPerKmEl = container.querySelector('#evCostPerKmResult');
+        if (costPerKmEl) costPerKmEl.textContent = `฿${formatMoney(curCalc.ev.costPerKm)} / กม.`;
+
+        const billedKwhEl = container.querySelector('#evBilledKwhResult');
+        if (billedKwhEl) billedKwhEl.textContent = `${formatNum(curCalc.ev.billedKwh, 1)} หน่วย (kWh)`;
+
+        const cyclesEl = container.querySelector('#evBatteryCyclesResult');
+        if (cyclesEl) cyclesEl.textContent = `${formatNum(curCalc.ev.batteryCycles, 1)} รอบ`;
+
+        const iceTotalEl = container.querySelector('#iceTotalCostResult');
+        if (iceTotalEl) iceTotalEl.textContent = `฿${formatMoney(curCalc.ice.totalCost)} (เฉลี่ย ฿${formatMoney(curCalc.ice.costPerKm)}/กม.)`;
+
+        const tripSavingsEl = container.querySelector('#tripSavingsResult');
+        if (tripSavingsEl) {
+            tripSavingsEl.className = `font-mono ${curCalc.savings.isSavings ? 'text-green-600' : 'text-red-500'}`;
+            tripSavingsEl.textContent = `${curCalc.savings.isSavings ? 'ประหยัด ' : 'แพงกว่า '}฿${formatMoney(Math.abs(curCalc.savings.tripSavings))} บาท (${curCalc.savings.savingsPct}%)`;
+        }
+
+        const evYearlyEl = container.querySelector('#evYearlyCostResult');
+        if (evYearlyEl) evYearlyEl.textContent = `฿${formatMoney(curCalc.annual.evYearlyCost)} บาท/ปี`;
+
+        const iceYearlyEl = container.querySelector('#iceYearlyCostResult');
+        if (iceYearlyEl) iceYearlyEl.textContent = `฿${formatMoney(curCalc.annual.iceYearlyCost)} บาท/ปี`;
+
+        const yearlySavingsEl = container.querySelector('#yearlySavingsResult');
+        if (yearlySavingsEl) yearlySavingsEl.textContent = `+฿${formatMoney(curCalc.annual.yearlySavings)} บาท/ปี`;
+
+        const fiveYearSavingsEl = container.querySelector('#fiveYearSavingsResult');
+        if (fiveYearSavingsEl) fiveYearSavingsEl.textContent = `+฿${formatMoney(curCalc.annual.fiveYearSavings)} บาท`;
+
+        // Status banner
+        if (curCalc.distance <= 0) {
+            setStatusBanner('empty', 'ป้อนระยะทางและอัตราค่าไฟเพื่อคำนวณค่าชาร์จ EV และเทียบกับรถน้ำมัน');
+        } else {
+            setStatusBanner('success', `ค่าชาร์จ EV <b>${formatMoney(curCalc.ev.totalCost)} บาท</b> (${formatMoney(curCalc.ev.costPerKm)} ฿/กม.) · ประหยัดกว่ารถน้ำมัน <b>${formatMoney(curCalc.savings.tripSavings)} บาท</b> (${curCalc.savings.savingsPct}%)`);
+        }
+    }
+
+    // Live update function for Fuel mode
+    function updateFuelLive() {
+        const curCalc = calculateFuelCost(st);
+
+        const totalCostEl = container.querySelector('#fuelTotalCostDisplay');
+        if (totalCostEl) totalCostEl.textContent = `฿${formatMoney(curCalc.totalCost)}`;
+
+        const litersEl = container.querySelector('#fuelLitersDisplay');
+        if (litersEl) litersEl.textContent = `${formatNum(curCalc.litersNeeded, 2)} ลิตร`;
+
+        const costPerKmEl = container.querySelector('#fuelCostPerKmDisplay');
+        if (costPerKmEl) costPerKmEl.textContent = `฿${formatMoney(curCalc.costPerKm)} / กม.`;
+
+        if (curCalc.distance <= 0 || curCalc.efficiency <= 0) {
+            setStatusBanner('empty', 'ป้อนระยะทางและอัตราสิ้นเปลืองเพื่อคำนวณค่าน้ำมัน');
+        } else {
+            setStatusBanner('success', `ค่าน้ำมันรวม: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(curCalc.totalCost)} บาท</span><span class="text-xs font-medium block text-[var(--app-muted)]">ใช้น้ำมัน ${formatNum(curCalc.litersNeeded, 2)} ลิตร (เฉลี่ย ${formatNum(curCalc.costPerKm, 2)} บาท/กม.)</span>`);
+        }
+    }
+
+    // Event Bindings: Mode Switching
+    container.querySelector('#btnFuelModeFuel')?.addEventListener('click', () => {
+        st.mode = 'fuel';
+        persistAppState();
+        renderActiveTool();
+    });
+
+    container.querySelector('#btnFuelModeEv')?.addEventListener('click', () => {
+        st.mode = 'ev';
+        if (!st.evEfficiency) st.evEfficiency = '6.5';
+        if (!st.electricityRate) st.electricityRate = '2.90';
+        if (!st.compareIceEfficiency) st.compareIceEfficiency = '15';
+        if (!st.compareFuelPrice) st.compareFuelPrice = '36.50';
+        if (!st.yearlyKm) st.yearlyKm = '20000';
+        persistAppState();
+        renderActiveTool();
+    });
+
+    if (mode === 'fuel') {
+        // Quick Fuel Price Chips
+        container.querySelectorAll('.fuel-quick-price').forEach(btn => {
+            btn.addEventListener('click', () => {
+                st.oilPrice = btn.dataset.price;
+                persistAppState();
+                renderActiveTool();
+            });
+        });
+
+        // Initial Status Banner
+        const curCalc = calculateFuelCost(st);
+        if (curCalc.distance <= 0 || curCalc.efficiency <= 0) {
+            setStatusBanner('empty', 'ป้อนระยะทางและอัตราสิ้นเปลืองเพื่อคำนวณค่าน้ำมัน');
+        } else {
+            setStatusBanner('success', `ค่าน้ำมันรวม: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(curCalc.totalCost)} บาท</span><span class="text-xs font-medium block text-[var(--app-muted)]">ใช้น้ำมัน ${formatNum(curCalc.litersNeeded, 2)} ลิตร (เฉลี่ย ${formatNum(curCalc.costPerKm, 2)} บาท/กม.)</span>`);
+        }
     } else {
-        setStatusBanner('success', `⛽ ค่าน้ำมันรวม: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(totalCost)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">ใช้น้ำมัน ${formatNum(litersNeeded, 2)} ลิตร (เฉลี่ย ${formatNum(costPerKm, 2)} บาท/กม.)</span>`);
+        // EV Mode event listeners
+        container.querySelectorAll('.ev-quick-eff').forEach(btn => {
+            btn.addEventListener('click', () => {
+                st.evEfficiency = btn.dataset.eff;
+                persistAppState();
+                renderActiveTool();
+            });
+        });
+
+        container.querySelectorAll('.ev-quick-rate').forEach(btn => {
+            btn.addEventListener('click', () => {
+                st.electricityRate = btn.dataset.rate;
+                st.chargingPreset = btn.dataset.preset;
+                persistAppState();
+                renderActiveTool();
+            });
+        });
+
+        const lossInput = container.querySelector('#evChargingLoss');
+        lossInput?.addEventListener('input', e => {
+            st.chargingLossPct = e.target.value;
+            persistAppState();
+            updateEvLive();
+        });
+        lossInput?.addEventListener('blur', () => {
+            st.chargingLossPct = formatInputDisplay(lossInput.value);
+            lossInput.value = st.chargingLossPct;
+            persistAppState();
+            updateEvLive();
+        });
+
+        const battInput = container.querySelector('#evBatteryCap');
+        battInput?.addEventListener('input', e => {
+            st.batteryCapacity = e.target.value;
+            persistAppState();
+            updateEvLive();
+        });
+        battInput?.addEventListener('blur', () => {
+            st.batteryCapacity = formatInputDisplay(battInput.value);
+            battInput.value = st.batteryCapacity;
+            persistAppState();
+            updateEvLive();
+        });
+
+        const iceEffInput = container.querySelector('#compareIceEff');
+        iceEffInput?.addEventListener('input', e => {
+            st.compareIceEfficiency = e.target.value;
+            persistAppState();
+            updateEvLive();
+        });
+        iceEffInput?.addEventListener('blur', () => {
+            st.compareIceEfficiency = formatInputDisplay(iceEffInput.value);
+            iceEffInput.value = st.compareIceEfficiency;
+            persistAppState();
+            updateEvLive();
+        });
+
+        const iceFuelInput = container.querySelector('#compareFuelPrice');
+        iceFuelInput?.addEventListener('input', e => {
+            st.compareFuelPrice = e.target.value;
+            persistAppState();
+            updateEvLive();
+        });
+        iceFuelInput?.addEventListener('blur', () => {
+            st.compareFuelPrice = formatInputDisplay(iceFuelInput.value);
+            iceFuelInput.value = st.compareFuelPrice;
+            persistAppState();
+            updateEvLive();
+        });
+
+        const yearlyKmInput = container.querySelector('#evYearlyKm');
+        yearlyKmInput?.addEventListener('input', e => {
+            st.yearlyKm = e.target.value;
+            persistAppState();
+            updateEvLive();
+        });
+        yearlyKmInput?.addEventListener('blur', () => {
+            st.yearlyKm = formatInputDisplay(yearlyKmInput.value);
+            yearlyKmInput.value = st.yearlyKm;
+            persistAppState();
+            updateEvLive();
+        });
+
+        container.querySelectorAll('.ev-quick-year-km').forEach(btn => {
+            btn.addEventListener('click', () => {
+                st.yearlyKm = btn.dataset.km;
+                if (yearlyKmInput) yearlyKmInput.value = st.yearlyKm;
+                persistAppState();
+                updateEvLive();
+            });
+        });
+
+        container.querySelector('#btnPrintFuelReport')?.addEventListener('click', () => {
+            triggerPrintReceipt('fuel_cost');
+        });
+
+        // Initial Status Banner
+        const curCalc = calculateEvCost(st);
+        if (curCalc.distance <= 0) {
+            setStatusBanner('empty', 'ป้อนระยะทางและอัตราค่าไฟเพื่อคำนวณค่าชาร์จ EV และเทียบกับรถน้ำมัน');
+        } else {
+            setStatusBanner('success', `ค่าชาร์จ EV <b>${formatMoney(curCalc.ev.totalCost)} บาท</b> (${formatMoney(curCalc.ev.costPerKm)} ฿/กม.) · ประหยัดกว่ารถน้ำมัน <b>${formatMoney(curCalc.savings.tripSavings)} บาท</b> (${curCalc.savings.savingsPct}%)`);
+        }
     }
 }
+
 
 /* -----------------------------------------------------------
  * TOOL 10: ประสิทธิภาพเชื้อเพลิง (Fuel Efficiency Calculator)
@@ -10211,6 +11043,8 @@ function renderStandardCalcTool(container) {
     const exportsObj = {
         renderHealthTool,
         renderOvulationTool,
+        calculateFuelCost,
+        calculateEvCost,
         renderFuelCostTool,
         renderFuelEffTool,
         renderAreaCostTool,
@@ -14418,7 +15252,21 @@ function clearCurrentTool() {
     } else if (id === 'ovulation') {
         appState.ovulation.lastPeriodDate = formatLocalDate(new Date());
     } else if (id === 'fuel_cost') {
-        appState.fuel_cost.distance = '';
+        const curMode = appState.fuel_cost?.mode || 'fuel';
+        appState.fuel_cost = {
+            mode: curMode,
+            distance: '',
+            efficiency: '15',
+            oilPrice: '36.50',
+            evEfficiency: '6.5',
+            electricityRate: '2.90',
+            chargingPreset: 'home_offpeak',
+            chargingLossPct: '10',
+            batteryCapacity: '60',
+            compareIceEfficiency: '15',
+            compareFuelPrice: '36.50',
+            yearlyKm: '20000'
+        };
     } else if (id === 'fuel_eff') {
         appState.fuel_eff.distance = '';
         appState.fuel_eff.fuelUsed = '';
@@ -14639,7 +15487,21 @@ function loadDemoForCurrentTool() {
             additionalDeductionsYearly: '0'
         };
     } else if (id === 'fuel_cost') {
-        appState.fuel_cost = { distance: '320', efficiency: '16', oilPrice: '35.50' };
+        const curMode = appState.fuel_cost?.mode || 'fuel';
+        appState.fuel_cost = {
+            mode: curMode,
+            distance: '320',
+            efficiency: '16',
+            oilPrice: '36.50',
+            evEfficiency: '6.5',
+            electricityRate: '2.90',
+            chargingPreset: 'home_offpeak',
+            chargingLossPct: '10',
+            batteryCapacity: '60',
+            compareIceEfficiency: '15',
+            compareFuelPrice: '36.50',
+            yearlyKm: '20000'
+        };
     } else if (id === 'tip') {
         appState.tip = { bill: '1850', tipPct: '10', people: '4' };
     } else if (id === 'fuel_eff') {

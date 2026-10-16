@@ -1744,11 +1744,22 @@
                 mode: 'before'
             },
 
-            // 7. Fuel Cost Calculator
+            // 7. Fuel Cost Calculator (ค่าน้ำมัน & ค่าชาร์จรถไฟฟ้า EV)
             fuel_cost: {
+                mode: 'fuel',
                 distance: '',
                 efficiency: '15',
-                oilPrice: '35.50'
+                oilPrice: '35.50',
+                tollFee: '0',
+                passengers: '1',
+                evEfficiency: '6.5',
+                electricityRate: '2.90',
+                chargingPreset: 'home_offpeak',
+                chargingLossPct: '10',
+                batteryCapacity: '60',
+                compareIceEfficiency: '15',
+                compareFuelPrice: '36.50',
+                yearlyKm: '20000'
             },
 
             // 8. Body Metrics (BMI & BMR)
