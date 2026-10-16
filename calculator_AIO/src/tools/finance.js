@@ -401,12 +401,12 @@ function renderHomeRefinanceTool(container) {
     container.innerHTML = `
         <div class="finance-thai-tool refinance-tool flex flex-col gap-3 p-1">
             <!-- Mode Switcher Tabs -->
-            <div class="segment-group grid-cols-2 balanced-segment-modes" role="group" aria-label="โหมดเงินกู้">
+            <div class="segment-group grid-cols-2 balanced-segment-modes mb-1" role="group" aria-label="โหมดเงินกู้">
                 <button type="button" aria-pressed="false" class="segment-btn loan-tab-btn" data-tab="amortization">
-                    ผ่อนชำระ & ตารางโปะ
+                    📊 ผ่อนชำระ & ตารางโปะ
                 </button>
                 <button type="button" aria-pressed="true" class="segment-btn loan-tab-btn active" data-tab="refinance">
-                    รีไฟแนนซ์ / Retention
+                    🔄 รีไฟแนนซ์ vs Retention (ธปท.)
                 </button>
             </div>
 

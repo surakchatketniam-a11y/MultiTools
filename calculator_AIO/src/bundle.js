@@ -41,7 +41,7 @@ var TOOLS_CATALOG = [
     { id: 'ecommerce_profit', group: 'biz', category: 'fav', menuTitle: 'กำไรขายของออนไลน์', headerTitle: 'คำนวณกำไรขายของออนไลน์ & ค่าธรรมเนียม (Shopee/Lazada/TikTok)', usesSharedKeypad: false, keywords: 'ecommerce profit กำไร ขายของออนไลน์ shopee lazada tiktok fee ค่าธรรมเนียม คอมมิชชัน ธุรกรรม ค่าส่ง ยิงแอด จุดคุ้มทุน breakeven profit margin มาร์เก็ตเพลส' },
     { id: 'salary',     group: 'biz', category: 'all', menuTitle: 'จัดการเงินเดือน 50/30/20', headerTitle: 'เครื่องมือจัดการเงินเดือน', usesSharedKeypad: true, keywords: 'salary เงินเดือน 50 30 20 รายจ่าย เงินเก็บ ออมเงิน หนี้' },
 
-    { id: 'loan',              group: 'finance', category: 'all', menuTitle: 'เงินกู้ & รีไฟแนนซ์', headerTitle: 'เครื่องคำนวณเงินกู้ & รีไฟแนนซ์บ้าน', usesSharedKeypad: true, keywords: 'loan เงินกู้ ผ่อนบ้าน รีไฟแนนซ์ refinance retention โปะบ้าน ดอกเบี้ย ค่างวด ดอกเบี้ยคงที่ ค่างวดผ่อน ธปท จุดคุ้มทุน' },
+    { id: 'loan',              group: 'finance', category: 'all', menuTitle: 'เงินกู้ & ผ่อนชำระ', headerTitle: 'เครื่องคำนวณเงินกู้', usesSharedKeypad: true, keywords: 'loan เงินกู้ ผ่อนบ้าน รีไฟแนนซ์ refinance retention โปะบ้าน ดอกเบี้ย ค่างวด ดอกเบี้ยคงที่ ค่างวดผ่อน ธปท จุดคุ้มทุน' },
     { id: 'savings',           group: 'finance', category: 'all', menuTitle: 'เงินออม & เกษียณ', headerTitle: 'เครื่องคำนวณเงินออม', usesSharedKeypad: true, keywords: 'savings เงินออม เกษียณ ดอกเบี้ยทบต้น เงินเฟ้อ ออมทรัพย์' },
     { id: 'tax_personal',      group: 'finance', category: 'fav', menuTitle: 'ภาษีบุคคล (ภ.ง.ด.90/91)', headerTitle: 'คำนวณภาษีเงินได้บุคคลธรรมดา (ภ.ง.ด. 90/91)', usesSharedKeypad: false, keywords: 'tax personal ภาษี เงินได้ บุคคลธรรมดา ภงด 90 91 เงินเดือน ลดหย่อน ประกัน กองทุน บริจาค ขอคืนภาษี คืนเงิน ภาษีรายได้' },
     { id: 'property_transfer', group: 'finance', category: 'fav', menuTitle: 'ค่าโอนที่ดิน & อสังหาฯ', headerTitle: 'ค่าธรรมเนียมโอนที่ดิน & ภาษีซื้อขายอสังหาฯ', usesSharedKeypad: false, keywords: 'property transfer ค่าโอน ที่ดิน คอนโด บ้าน ภาษีอสังหา ธุรกิจเฉพาะ อากรแสตมป์ กรมที่ดิน จำนอง ค่าธรรมเนียมโอน ซื้อขาย' },
@@ -6672,12 +6672,12 @@ function renderHomeRefinanceTool(container) {
     container.innerHTML = `
         <div class="finance-thai-tool refinance-tool flex flex-col gap-3 p-1">
             <!-- Mode Switcher Tabs -->
-            <div class="segment-group grid-cols-2 balanced-segment-modes" role="group" aria-label="โหมดเงินกู้">
+            <div class="segment-group grid-cols-2 balanced-segment-modes mb-1" role="group" aria-label="โหมดเงินกู้">
                 <button type="button" aria-pressed="false" class="segment-btn loan-tab-btn" data-tab="amortization">
-                    ผ่อนชำระ & ตารางโปะ
+                    📊 ผ่อนชำระ & ตารางโปะ
                 </button>
                 <button type="button" aria-pressed="true" class="segment-btn loan-tab-btn active" data-tab="refinance">
-                    รีไฟแนนซ์ / Retention
+                    🔄 รีไฟแนนซ์ vs Retention (ธปท.)
                 </button>
             </div>
 
