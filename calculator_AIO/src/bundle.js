@@ -4300,6 +4300,7 @@ function renderSidebarMenu() {
 }
 
 function selectTool(toolId) {
+    if (toolId === 'loan' && appState.loan) appState.loan.tab = 'amortization';
     appState.activeToolId = toolId;
     appState.activeFieldIndex = 0;
     renderSidebarMenu();
@@ -6391,6 +6392,13 @@ function renderCurrencyTool(container) {
 /* -----------------------------------------------------------
  * TOOL 15: เงินกู้ (Loan Payment Calculator & Refinance)
  * ----------------------------------------------------------- */
+function createLoanModeTabs(activeTab) {
+    return `<div class="loan-mode-tabs segment-group grid-cols-2 balanced-segment-modes" role="group" aria-label="โหมดเงินกู้">
+        <button type="button" class="segment-btn loan-tab-btn ${activeTab === 'amortization' ? 'active' : ''}" aria-pressed="${activeTab === 'amortization'}" data-tab="amortization">ผ่อนชำระ & ตารางโปะ</button>
+        <button type="button" class="segment-btn loan-tab-btn ${activeTab === 'refinance' ? 'active' : ''}" aria-pressed="${activeTab === 'refinance'}" data-tab="refinance">รีไฟแนนซ์ / Retention</button>
+    </div>`;
+}
+
 function renderLoanTool(container) {
     const st = appState.loan;
     st.tab = st.tab || 'amortization'; // 'amortization' | 'refinance'
@@ -6441,14 +6449,6 @@ function renderLoanTool(container) {
 
     container.innerHTML = `
         <div class="flex flex-col gap-1.5">
-            <div class="segment-group grid-cols-2 mb-1">
-                <button type="button" class="segment-btn loan-tab-btn ${st.tab !== 'refinance' ? 'active' : ''}" data-tab="amortization">
-                    📊 ผ่อนชำระ & ตารางโปะ
-                </button>
-                <button type="button" class="segment-btn loan-tab-btn ${st.tab === 'refinance' ? 'active' : ''}" data-tab="refinance">
-                    🔄 รีไฟแนนซ์ vs Retention (ธปท.)
-                </button>
-            </div>
             ${createKeypadFieldHTML(0, 'วงเงินกู้ (เงินต้น)', st.principal, 'บาท', 'เช่น 500,000')}
             ${createKeypadFieldHTML(1, 'อัตราดอกเบี้ยต่อปี', st.interestRate, '% ต่อปี', 'เช่น 4.5')}
             ${createKeypadFieldHTML(2, 'ระยะเวลาผ่อนชำระ', st.months, 'เดือน', 'เช่น 36')}
@@ -6458,6 +6458,10 @@ function renderLoanTool(container) {
 
     attachFieldClickListeners(container);
 
+    const loanRoot = container.firstElementChild;
+    loanRoot.insertAdjacentHTML('afterbegin', `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-2"><label class="text-xs text-[#6a6a6a] block mb-1">วิธีคำนวณดอกเบี้ย</label><select id="loanCalcMethod" class="w-full font-semibold text-sm bg-transparent outline-none"><option value="reducing" ${st.calcMethod !== 'flat' ? 'selected' : ''}>ลดต้นลดดอก</option><option value="flat" ${st.calcMethod === 'flat' ? 'selected' : ''}>ค่างวดคงที่ (Flat Rate)</option></select></div>`);
+    loanRoot.insertAdjacentHTML('afterbegin', `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-2"><label class="text-xs text-[#6a6a6a] block mb-1">ประเภทอัตราดอกเบี้ย</label><select id="loanRateType" class="w-full font-semibold text-sm bg-transparent outline-none"><option value="fixed" ${st.rateType !== 'step' ? 'selected' : ''}>Fixed Rate (คงที่)</option><option value="step" ${st.rateType === 'step' ? 'selected' : ''}>Step Rate (ขั้นบันได)</option></select><div id="loanStepFields" class="grid grid-cols-2 gap-2 mt-2" style="display:${st.rateType === 'step' ? 'grid' : 'none'}"><input id="loanPromoMonths" type="number" min="0" value="${st.promoMonths}" placeholder="ช่วงแรก (เดือน)" class="airbnb-input w-full"><input id="loanRateAfter" type="number" step="0.01" value="${st.rateAfter}" placeholder="ดอกเบี้ยหลังช่วงแรก" class="airbnb-input w-full"></div></div>`);
+    loanRoot.insertAdjacentHTML('afterbegin', createLoanModeTabs('amortization'));
     container.querySelectorAll('.loan-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             st.tab = btn.dataset.tab;
@@ -6465,10 +6469,6 @@ function renderLoanTool(container) {
             renderActiveTool();
         });
     });
-
-    const loanRoot = container.firstElementChild;
-    loanRoot.insertAdjacentHTML('afterbegin', `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-2"><label class="text-xs text-[#6a6a6a] block mb-1">วิธีคำนวณดอกเบี้ย</label><select id="loanCalcMethod" class="w-full font-semibold text-sm bg-transparent outline-none"><option value="reducing" ${st.calcMethod !== 'flat' ? 'selected' : ''}>ลดต้นลดดอก</option><option value="flat" ${st.calcMethod === 'flat' ? 'selected' : ''}>ค่างวดคงที่ (Flat Rate)</option></select></div>`);
-    loanRoot.insertAdjacentHTML('afterbegin', `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-2"><label class="text-xs text-[#6a6a6a] block mb-1">ประเภทอัตราดอกเบี้ย</label><select id="loanRateType" class="w-full font-semibold text-sm bg-transparent outline-none"><option value="fixed" ${st.rateType !== 'step' ? 'selected' : ''}>Fixed Rate (คงที่)</option><option value="step" ${st.rateType === 'step' ? 'selected' : ''}>Step Rate (ขั้นบันได)</option></select><div id="loanStepFields" class="grid grid-cols-2 gap-2 mt-2" style="display:${st.rateType === 'step' ? 'grid' : 'none'}"><input id="loanPromoMonths" type="number" min="0" value="${st.promoMonths}" placeholder="ช่วงแรก (เดือน)" class="airbnb-input w-full"><input id="loanRateAfter" type="number" step="0.01" value="${st.rateAfter}" placeholder="ดอกเบี้ยหลังช่วงแรก" class="airbnb-input w-full"></div></div>`);
     if (schedule.length) {
         const table = document.createElement('div');
         table.className = 'bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 mt-2 overflow-auto';
@@ -6672,14 +6672,7 @@ function renderHomeRefinanceTool(container) {
     container.innerHTML = `
         <div class="finance-thai-tool refinance-tool flex flex-col gap-3 p-1">
             <!-- Mode Switcher Tabs -->
-            <div class="segment-group grid-cols-2 balanced-segment-modes mb-1" role="group" aria-label="โหมดเงินกู้">
-                <button type="button" aria-pressed="false" class="segment-btn loan-tab-btn" data-tab="amortization">
-                    📊 ผ่อนชำระ & ตารางโปะ
-                </button>
-                <button type="button" aria-pressed="true" class="segment-btn loan-tab-btn active" data-tab="refinance">
-                    🔄 รีไฟแนนซ์ vs Retention (ธปท.)
-                </button>
-            </div>
+            ${createLoanModeTabs('refinance')}
 
             <!-- Principal & Term Inputs -->
             <div class="themed-tool-card p-4 space-y-3">
@@ -6761,7 +6754,7 @@ function renderHomeRefinanceTool(container) {
                         </div>
                         <div class="flex justify-between gap-3">
                             <span>ประหยัดสุทธิ 3 ปี:</span>
-                            <b class="text-[var(--app-ink)]">+${formatMoney(calc.retentionNetSavings)} ฿</b>
+                            <b class="text-[var(--app-ink)]">${calc.retentionNetSavings > 0 ? '+' : ''}${formatMoney(calc.retentionNetSavings)} ฿</b>
                         </div>
                     </div>
                 </div>
@@ -6791,7 +6784,7 @@ function renderHomeRefinanceTool(container) {
                         </div>
                         <div class="flex justify-between gap-3">
                             <span>ประหยัดสุทธิ 3 ปี:</span>
-                            <b class="text-[var(--app-ink)]">+${formatMoney(calc.refinanceNetSavings)} ฿</b>
+                            <b class="text-[var(--app-ink)]">${calc.refinanceNetSavings > 0 ? '+' : ''}${formatMoney(calc.refinanceNetSavings)} ฿</b>
                         </div>
                     </div>
                 </div>

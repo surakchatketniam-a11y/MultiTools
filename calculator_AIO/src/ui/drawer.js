@@ -123,6 +123,7 @@ function renderSidebarMenu() {
 }
 
 function selectTool(toolId) {
+    if (toolId === 'loan' && appState.loan) appState.loan.tab = 'amortization';
     appState.activeToolId = toolId;
     appState.activeFieldIndex = 0;
     renderSidebarMenu();
