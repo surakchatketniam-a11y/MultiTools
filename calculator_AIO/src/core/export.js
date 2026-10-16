@@ -1499,6 +1499,85 @@ function generateFormalPrintHTML(toolId, stateObj) {
             </div>
         `;
 
+    } else if (curToolId === 'debt_payoff') {
+        docTitle = 'ใบสรุปแผนกลยุทธ์การปลดหนี้หลายบัญชี';
+        docSubtitle = 'Multi-Account Debt Payoff Plan Statement (Snowball vs Avalanche)';
+        const st = state.debt_payoff || {};
+        const calc = (typeof calculateDebtPayoff === 'function')
+            ? calculateDebtPayoff(st)
+            : { summary: { months: 18, years: 1.5, totalInterest: 18500, totalPaid: 168500, interestSavedVsOther: 0 }, initialTotalDebt: 150000, initialTotalMinPayment: 7000, totalMonthlyBudget: 10000, strategy: 'avalanche', debts: [], avalanche: { debtPayoffOrder: [] }, snowball: { debtPayoffOrder: [] } };
+
+        const stratLabel = calc.strategy === 'snowball' ? 'Debt Snowball (ปิดยอดน้อยก่อน)' : 'Debt Avalanche (ปิดดอกเบี้ยสูงก่อน)';
+
+        paramsRows = [
+            ['กลยุทธ์การปลดหนี้ที่เลือก', stratLabel],
+            ['ยอดหนี้รวมเริ่มต้น', `${formatMoney(calc.initialTotalDebt)} บาท`],
+            ['ค่างวดขั้นต่ำรวมทุกบัญชี', `${formatMoney(calc.initialTotalMinPayment)} บาท/เดือน`],
+            ['เงินโปะเพิ่มเติมรายเดือน', `+${formatMoney(calc.extraMonthly || 0)} บาท/เดือน`],
+            ['งบชำระหนี้รวมรายเดือน', `${formatMoney(calc.totalMonthlyBudget)} บาท/เดือน`],
+            ['จำนวนบัญชีหนี้ทั้งหมด', `${calc.debts.length} บัญชี`]
+        ];
+
+        const isCompleted = calc.isPayable && calc[calc.strategy]?.completed;
+
+        resultCards = [
+            { label: 'ระยะเวลาปลดหนี้หมด', value: isCompleted ? `${calc.summary.months} เดือน (${calc.summary.years} ปี)` : 'ยังชำระไม่สำเร็จ', highlight: isCompleted },
+            { label: 'ดอกเบี้ยรวมที่ต้องจ่าย', value: isCompleted ? `${formatMoney(calc.summary.totalInterest)} บาท` : '-' },
+            { label: 'ยอดชำระรวมทั้งสิ้น', value: isCompleted ? `${formatMoney(calc.summary.totalPaid)} บาท` : '-' },
+            { label: 'ประหยัดดอกเบี้ยเทียบอีกวิธี', value: isCompleted ? (calc.summary.interestSavedVsOther > 0 ? `${formatMoney(calc.summary.interestSavedVsOther)} บาท` : 'ใกล้เคียงกัน') : '-' }
+        ];
+
+        const payoffOrder = (calc[calc.strategy] && calc[calc.strategy].debtPayoffOrder) ? calc[calc.strategy].debtPayoffOrder : [];
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    ตารางลำดับการปิดหนี้และรายละเอียดแต่ละบัญชี
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 6px 8px; text-align: left;">ลำดับ</th>
+                            <th style="padding: 6px 8px; text-align: left;">ชื่อบัญชีหนี้</th>
+                            <th style="padding: 6px 8px; text-align: right;">ยอดหนี้คงเหลือ</th>
+                            <th style="padding: 6px 8px; text-align: right;">ดอกเบี้ยต่อปี</th>
+                            <th style="padding: 6px 8px; text-align: right;">ขั้นต่ำ/เดือน</th>
+                            <th style="padding: 6px 8px; text-align: right;">ปิดหนี้ในเดือนที่</th>
+                            <th style="padding: 6px 8px; text-align: right;">ดอกเบี้ยที่จ่าย</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${calc.debts.map((d, idx) => {
+                            const orderInfo = payoffOrder.find(o => o.id === d.id);
+                            const monthCol = orderInfo && orderInfo.month ? `เดือนที่ ${orderInfo.month}` : '-';
+                            const intCol = orderInfo && orderInfo.month ? `${formatMoney(orderInfo.totalInterest)} ฿` : '-';
+                            return `
+                                <tr style="border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 6px 8px; font-weight: 600;">${idx + 1}</td>
+                                    <td style="padding: 6px 8px; font-weight: 600;">${escapeHTML(d.name)}</td>
+                                    <td style="padding: 6px 8px; text-align: right;">${formatMoney(d.balance)} ฿</td>
+                                    <td style="padding: 6px 8px; text-align: right;">${formatNum(d.rate, 2)}%</td>
+                                    <td style="padding: 6px 8px; text-align: right;">${formatMoney(d.minPayment)} ฿</td>
+                                    <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #0369a1;">${monthCol}</td>
+                                    <td style="padding: 6px 8px; text-align: right; color: #be123c;">${intCol}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                            <td colspan="2" style="padding: 8px;">รวมทั้งสิ้น:</td>
+                            <td style="padding: 8px; text-align: right;">${formatMoney(calc.initialTotalDebt)} ฿</td>
+                            <td style="padding: 8px;"></td>
+                            <td style="padding: 8px; text-align: right;">${formatMoney(calc.initialTotalMinPayment)} ฿</td>
+                            <td style="padding: 8px; text-align: right; color: #0284c7; font-size: 12px;">${isCompleted ? `${calc.summary.months} เดือน` : 'ยังไม่สำเร็จ'}</td>
+                            <td style="padding: 8px; text-align: right; color: #be123c; font-size: 12px;">${isCompleted ? `${formatMoney(calc.summary.totalInterest)} ฿` : '-'}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+
     } else {
         // Generic Fallback for other calculators
         const summary = (typeof getToolSummaryText === 'function') ? getToolSummaryText(curToolId) : '';

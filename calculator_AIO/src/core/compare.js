@@ -202,6 +202,44 @@ function getComparisonPresets(toolId) {
                 label: 'ทางเลือก 3: ขายตรง LINE Shop (ราคา 320 บ. ไม่เสียคอม)',
                 state: { platform: 'direct', sellingPrice: '320', productCost: '150', packagingCost: '10', shopVoucher: '0', customerShipping: '35', sellerShipping: '35', adSpendPerOrder: '15', commissionRatePct: '0.0', serviceFeePct: '0.0', transactionRatePct: '0.0', isVatApplied: 'no' }
             }
+        ],
+        debt_payoff: [
+            {
+                label: 'ทางเลือก 1: โปะเพิ่ม 1,000 บ. (Avalanche)',
+                state: {
+                    strategy: 'avalanche',
+                    extraMonthly: '1000',
+                    debts: [
+                        { id: '1', name: 'บัตรกดเงินสด A', balance: '25000', rate: '25', minPayment: '1250' },
+                        { id: '2', name: 'บัตรเครดิต B', balance: '45000', rate: '16', minPayment: '2250' },
+                        { id: '3', name: 'สินเชื่อส่วนบุคคล C', balance: '80000', rate: '18', minPayment: '3500' }
+                    ]
+                }
+            },
+            {
+                label: 'ทางเลือก 2: โปะเพิ่ม 3,000 บ. (Avalanche)',
+                state: {
+                    strategy: 'avalanche',
+                    extraMonthly: '3000',
+                    debts: [
+                        { id: '1', name: 'บัตรกดเงินสด A', balance: '25000', rate: '25', minPayment: '1250' },
+                        { id: '2', name: 'บัตรเครดิต B', balance: '45000', rate: '16', minPayment: '2250' },
+                        { id: '3', name: 'สินเชื่อส่วนบุคคล C', balance: '80000', rate: '18', minPayment: '3500' }
+                    ]
+                }
+            },
+            {
+                label: 'ทางเลือก 3: โปะเพิ่ม 3,000 บ. (Snowball)',
+                state: {
+                    strategy: 'snowball',
+                    extraMonthly: '3000',
+                    debts: [
+                        { id: '1', name: 'บัตรกดเงินสด A', balance: '25000', rate: '25', minPayment: '1250' },
+                        { id: '2', name: 'บัตรเครดิต B', balance: '45000', rate: '16', minPayment: '2250' },
+                        { id: '3', name: 'สินเชื่อส่วนบุคคล C', balance: '80000', rate: '18', minPayment: '3500' }
+                    ]
+                }
+            }
         ]
     };
     return presets[toolId] || [];
@@ -952,6 +990,50 @@ function compareCalculations(toolId, itemsList) {
         const minProfit = Math.min(...results.map(r => r.netProfit));
         const diffProfit = maxProfitRes.netProfit - minProfit;
         deltaSummary = `🏆 ทางเลือกที่สร้างกำไรสุทธิสูงสุดคือ "${items[winnerIndex].label}" กำไรต่อออเดอร์ ${formatMoney(maxProfitRes.netProfit)} บาท (Margin ${formatNum(maxProfitRes.profitMarginPct, 1)}%)${diffProfit > 0 ? ` มากกว่าทางเลือกต่ำสุด ${formatMoney(diffProfit)} บาท` : ''}`;
+
+    } else if (toolId === 'debt_payoff') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            return (typeof calculateDebtPayoff === 'function')
+                ? calculateDebtPayoff(st)
+                : { summary: { months: 0, years: 0, totalInterest: 0, totalPaid: 0 }, initialTotalDebt: 0, totalMonthlyBudget: 0, strategy: 'avalanche' };
+        });
+
+        rows.push({
+            label: 'กลยุทธ์การชำระหนี้',
+            values: results.map(r => r.strategy === 'snowball' ? 'Debt Snowball (ยอดน้อยก่อน)' : 'Debt Avalanche (ดอกเบี้ยสูงก่อน)')
+        });
+        rows.push({
+            label: 'ยอดหนี้รวมเริ่มต้น',
+            values: results.map(r => `${formatMoney(r.initialTotalDebt)} ฿`)
+        });
+        rows.push({
+            label: 'เงินโปะเพิ่มต่อเดือน',
+            values: results.map(r => `+${formatMoney(r.extraMonthly || 0)} ฿`)
+        });
+        rows.push({
+            label: 'งบชำระหนี้รวมต่อเดือน',
+            values: results.map(r => `${formatMoney(r.totalMonthlyBudget)} ฿/เดือน`)
+        });
+        rows.push({
+            label: 'ดอกเบี้ยรวมตลอดสัญญา',
+            values: results.map(r => `${formatMoney(r.summary.totalInterest)} ฿`)
+        });
+
+        const fastestRes = results.reduce((best, cur) => cur.summary.months < best.summary.months ? cur : best, results[0]);
+        const fastestIdx = results.indexOf(fastestRes);
+
+        rows.push({
+            label: 'ระยะเวลาปลดหนี้ทั้งหมด',
+            values: results.map(r => `${r.summary.months} เดือน (${r.summary.years} ปี)`),
+            bestIndex: fastestIdx,
+            highlight: true
+        });
+
+        winnerIndex = fastestIdx;
+        const maxMonths = Math.max(...results.map(r => r.summary.months));
+        const diffMonths = maxMonths - fastestRes.summary.months;
+        deltaSummary = `🏆 ทางเลือกที่ปลดหนี้ได้เร็วที่สุดคือ "${items[winnerIndex].label}" ใช้เวลาเพียง ${fastestRes.summary.months} เดือน (${fastestRes.summary.years} ปี)${diffMonths > 0 ? ` (เร็วกว่าทางเลือกช้าสุด ${diffMonths} เดือน)` : ''}`;
 
     } else {
         rows.push({

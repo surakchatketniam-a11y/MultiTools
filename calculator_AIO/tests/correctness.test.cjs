@@ -283,11 +283,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 33 tools classified into 5 valid groups with search keywords', () => {
+test('catalog contains exactly 34 tools classified into 5 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 5);
-    assert.equal(TOOLS_CATALOG.length, 33);
+    assert.equal(TOOLS_CATALOG.length, 34);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -431,7 +431,7 @@ test('thai official holidays: Songkran, fixed holidays and lunar Buddhist observ
     assert.equal(ctx.isThaiOfficialHoliday(new Date('2026-10-14T00:00:00')), false);
 });
 
-test('all 33 tools have complete and valid clear and demo data mappings', () => {
+test('all 34 tools have complete and valid clear and demo data mappings', () => {
     const rawAppStateMatch = html.match(/const appState = \{[\s\S]*?\n        \};/);
     assert.ok(rawAppStateMatch, 'appState must be defined');
 
@@ -447,7 +447,7 @@ test('all 33 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 33);
+    assert.equal(ctx.TOOLS_CATALOG.length, 34);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -1183,7 +1183,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('🏆 คุ้มค่าที่สุด'));
 });
 
-test('all 33 tool renderers are modularized and exported across the 5 tool groups', () => {
+test('all 34 tool renderers are modularized and exported across the 5 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -1218,10 +1218,11 @@ test('all 33 tool renderers are modularized and exported across the 5 tool group
         labor_severance:   'renderLaborSeveranceTool',
         legal_interest:    'renderLegalInterestTool',
         ot_calc:           'renderOvertimeTool',
-        ecommerce_profit:  'renderEcommerceProfitTool'
+        ecommerce_profit:  'renderEcommerceProfitTool',
+        debt_payoff:       'renderDebtPayoffTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 33);
+    assert.equal(Object.keys(rendererMap).length, 34);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -2512,11 +2513,149 @@ test('pure engine calculateNetSalary: statutory deductions, PVD, ภ.ง.ด.1 w
     assert.equal(emptyState.effectiveDeductionPct, 0);
 });
 
+test('pure engine calculateDebtPayoff: Avalanche vs Snowball, minimums, rollover and underfunded debt trap', () => {
+    const ctx = context();
 
+    // 1. Standard Multi-account debt portfolio:
+    // Debt 1: Balance 25,000, Rate 25%, Min 1,250
+    // Debt 2: Balance 45,000, Rate 16%, Min 2,250
+    // Debt 3: Balance 80,000, Rate 18%, Min 3,500
+    // Extra monthly: 3,000 (Total monthly budget = 7,000 + 3,000 = 10,000)
+    const standardPlan = ctx.calculateDebtPayoff({
+        strategy: 'avalanche',
+        extraMonthly: 3000,
+        debts: [
+            { id: '1', name: 'บัตรกดเงินสด A', balance: 25000, rate: 25, minPayment: 1250 },
+            { id: '2', name: 'บัตรเครดิต B', balance: 45000, rate: 16, minPayment: 2250 },
+            { id: '3', name: 'สินเชื่อบุคคล C', balance: 80000, rate: 18, minPayment: 3500 }
+        ]
+    });
 
+    assert.equal(standardPlan.initialTotalDebt, 150000);
+    assert.equal(standardPlan.initialTotalMinPayment, 7000);
+    assert.equal(standardPlan.totalMonthlyBudget, 10000);
+    assert.equal(standardPlan.isUnderfunded, false);
+    assert.equal(standardPlan.isPayable, true);
 
+    // Avalanche must pay off highest interest (Debt 1 @ 25%) first
+    assert.equal(standardPlan.avalanche.debtPayoffOrder[0].id, '1');
+    assert.ok(standardPlan.avalanche.completed);
+    assert.ok(standardPlan.avalanche.months > 0 && standardPlan.avalanche.months < 36);
 
+    // Snowball must pay off lowest balance (Debt 1 @ 25k) first
+    assert.equal(standardPlan.snowball.debtPayoffOrder[0].id, '1');
+    assert.ok(standardPlan.snowball.completed);
 
+    // In a scenario where highest rate != lowest balance:
+    // Debt A: Balance 10,000, Rate 10%, Min 500
+    // Debt B: Balance 50,000, Rate 28%, Min 2,500
+    const diffPlan = ctx.calculateDebtPayoff({
+        strategy: 'avalanche',
+        extraMonthly: 2000,
+        debts: [
+            { id: 'A', name: 'หนี้ดอกเบี้ยต่ำยอดน้อย', balance: 10000, rate: 10, minPayment: 500 },
+            { id: 'B', name: 'หนี้ดอกเบี้ยสูงยอดเยอะ', balance: 50000, rate: 28, minPayment: 2500 }
+        ]
+    });
+    // Avalanche targets B (28%) first, Snowball targets A (10k) first
+    assert.equal(diffPlan.avalanche.debtPayoffOrder[0].id, 'B');
+    assert.equal(diffPlan.snowball.debtPayoffOrder[0].id, 'A');
+    // Avalanche mathematically saves more interest than Snowball
+    assert.ok(diffPlan.avalanche.totalInterest <= diffPlan.snowball.totalInterest);
+    // Snowball achieves the first debt payoff victory earlier
+    assert.ok(diffPlan.snowball.firstPaidOffMonth <= diffPlan.avalanche.firstPaidOffMonth);
 
+    // 2. Extra payment reduces total payoff time compared to baseline (paying only minimums)
+    assert.ok(standardPlan.summary.months < standardPlan.baseline.months);
+    assert.ok(standardPlan.summary.totalInterest < standardPlan.baseline.totalInterest);
+    assert.ok(standardPlan.summary.interestSavedVsBaseline > 0);
 
+    // 3. Underfunded debt trap: monthly budget cannot cover initial monthly interest
+    // Debt: 1,000,000 at 24% interest -> interest is 20,000/month. Min payment = 5,000, extra = 0
+    const underfunded = ctx.calculateDebtPayoff({
+        strategy: 'avalanche',
+        extraMonthly: 0,
+        debts: [{ id: 'trap', name: 'หนี้ดอกเบี้ยทับเงินต้น', balance: 1000000, rate: 24, minPayment: 5000 }]
+    });
+    assert.equal(underfunded.isUnderfunded, true);
+    assert.equal(underfunded.isPayable, false);
 
+    // 4. Empty / zero debts safety
+    const emptyPlan = ctx.calculateDebtPayoff({});
+    assert.equal(emptyPlan.initialTotalDebt, 0);
+    assert.equal(emptyPlan.summary.months, 0);
+    assert.equal(emptyPlan.summary.totalInterest, 0);
+    assert.equal(emptyPlan.isPayable, true);
+
+    // 5. Drawer summary text formatting
+    const summaryText = ctx.getToolSummaryText('debt_payoff', {
+        debt_payoff: {
+            strategy: 'avalanche',
+            extraMonthly: '3000',
+            debts: [
+                { id: '1', name: 'บัตรกดเงินสด A', balance: '25000', rate: '25', minPayment: '1250' }
+            ]
+        }
+    });
+    assert.match(summaryText, /สรุปแผนปลดหนี้หลายบัญชี/);
+    assert.match(summaryText, /Debt Avalanche/);
+    assert.match(summaryText, /ยอดหนี้รวมเริ่มต้น:/);
+    assert.match(summaryText, /ระยะเวลาปลดหนี้:/);
+
+    // 6. Same-month minimum payment rollover test (Review Point 3)
+    // Debt 1: 100, 0%, min 500
+    // Debt 2: 1000, 0%, min 100
+    // Total budget = 600, extra = 0
+    // Month 1: Debt 1 is paid off with 100 baht. The unused 400 baht rolls into Debt 2 immediately (+100 min = 500 paid on Debt 2, balance drops to 500).
+    // Month 2: Remaining 500 is paid off. Total payoff time must be exactly 2 months.
+    const rolloverPlan = ctx.calculateDebtPayoff({
+        strategy: 'avalanche',
+        extraMonthly: 0,
+        debts: [
+            { id: '1', name: 'หนี้ 1', balance: 100, rate: 0, minPayment: 500 },
+            { id: '2', name: 'หนี้ 2', balance: 1000, rate: 0, minPayment: 100 }
+        ]
+    });
+    assert.equal(rolloverPlan.summary.months, 2);
+    assert.equal(rolloverPlan.avalanche.completed, true);
+    assert.equal(rolloverPlan.avalanche.debtPayoffOrder.length, 2);
+    assert.equal(rolloverPlan.avalanche.debtPayoffOrder[0].month, 1);
+    assert.equal(rolloverPlan.avalanche.debtPayoffOrder[1].month, 2);
+
+    // 7. Unpayable plan when budget is 0 or payments are 0 (Review Point 1)
+    const zeroPayPlan = ctx.calculateDebtPayoff({
+        strategy: 'avalanche',
+        extraMonthly: 0,
+        debts: [
+            { id: '1', name: 'หนี้ไม่จ่าย', balance: 50000, rate: 15, minPayment: 0 }
+        ]
+    });
+    assert.equal(zeroPayPlan.isUnderfunded, true);
+    assert.equal(zeroPayPlan.isPayable, false);
+    assert.equal(zeroPayPlan.avalanche.completed, false);
+    assert.equal(zeroPayPlan.snowball.completed, false);
+
+    // 8. Drawer summary text formatting for unpayable plan
+    const unpayableSummary = ctx.getToolSummaryText('debt_payoff', {
+        debt_payoff: {
+            strategy: 'avalanche',
+            extraMonthly: '0',
+            debts: [
+                { id: '1', name: 'หนี้ไม่จ่าย', balance: '50000', rate: '15', minPayment: '0' }
+            ]
+        }
+    });
+    assert.match(unpayableSummary, /ยังชำระไม่สำเร็จ/);
+
+    // 9. Formal print document formatting for unpayable plan
+    const unpayableDoc = ctx.generateFormalPrintHTML('debt_payoff', {
+        debt_payoff: {
+            strategy: 'avalanche',
+            extraMonthly: '0',
+            debts: [
+                { id: '1', name: 'หนี้ไม่จ่าย', balance: '50000', rate: '15', minPayment: '0' }
+            ]
+        }
+    });
+    assert.ok(unpayableDoc.includes('ยังชำระไม่สำเร็จ'));
+});

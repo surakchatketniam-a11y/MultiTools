@@ -468,6 +468,17 @@ function getToolSummaryText(toolId, stateObj) {
             const platLabel = calc.platform === 'shopee' ? 'Shopee' : (calc.platform === 'lazada' ? 'Lazada' : (calc.platform === 'tiktok' ? 'TikTok Shop' : (calc.platform === 'direct' ? 'ขายตรง/LINE' : 'กำหนดเอง')));
             return `🛍️ สรุปกำไรขายของออนไลน์ (${platLabel})\n${divider}\n• ราคาขายตั้งต้น: ${formatMoney(calc.sellingPrice)} บาท\n• ต้นทุนสินค้า + แพ็คเกจ: ${formatMoney(calc.productCost + calc.packagingCost)} บาท\n• ค่าธรรมเนียมแพลตฟอร์ม: -${formatMoney(calc.totalPlatformFees)} บาท\n${calc.adSpendPerOrder > 0 ? `• ค่ายิงแอด/โฆษณา: -${formatMoney(calc.adSpendPerOrder)} บาท\n` : ''}• เงินโอนเข้าบัญชีจริง: ${formatMoney(calc.netPayout)} บาท\n• จุดคุ้มทุน (Breakeven): ${formatMoney(calc.breakevenPrice)} บาท\n${divider}\n${calc.isProfit ? '💰 กำไรสุทธิต่อชิ้น' : '⚠️ ขาดทุนต่อชิ้น'}: ${formatMoney(calc.netProfit)} บาท (Margin ${formatNum(calc.profitMarginPct, 1)}%)\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'debt_payoff': {
+            const st = state.debt_payoff || {};
+            const calc = (typeof calculateDebtPayoff === 'function')
+                ? calculateDebtPayoff(st)
+                : { summary: { months: 18, years: 1.5, totalInterest: 18500, totalPaid: 168500, interestSavedVsOther: 0, completed: true }, initialTotalDebt: 150000, strategy: 'avalanche', extraMonthly: 3000, isPayable: true };
+            const stratName = calc.strategy === 'snowball' ? 'Debt Snowball (ยอดน้อยก่อน)' : 'Debt Avalanche (ดอกเบี้ยสูงก่อน)';
+            if (!calc.isPayable || !calc[calc.strategy]?.completed) {
+                return `💳 สรุปแผนปลดหนี้หลายบัญชี (${stratName})\n${divider}\n• ยอดหนี้รวมเริ่มต้น: ${formatMoney(calc.initialTotalDebt)} บาท\n• เงินโปะเพิ่มต่อเดือน: +${formatMoney(calc.extraMonthly || 0)} บาท\n${divider}\n⚠️ สถานะ: แผนนี้ยังชำระไม่สำเร็จ (ยอดชำระรายเดือนไม่เพียงพอ หรือเกิน 50 ปี)\n(คำนวณโดย Multitools Calculator)`;
+            }
+            return `💳 สรุปแผนปลดหนี้หลายบัญชี (${stratName})\n${divider}\n• ยอดหนี้รวมเริ่มต้น: ${formatMoney(calc.initialTotalDebt)} บาท\n• เงินโปะเพิ่มต่อเดือน: +${formatMoney(calc.extraMonthly || 0)} บาท\n• ระยะเวลาปลดหนี้: ${calc.summary.months} เดือน (${calc.summary.years} ปี)\n• ดอกเบี้ยรวมที่ต้องจ่าย: ${formatMoney(calc.summary.totalInterest)} บาท\n• ยอดชำระรวมทั้งสิ้น: ${formatMoney(calc.summary.totalPaid)} บาท\n${calc.summary.interestSavedVsOther > 0 ? `• ประหยัดดอกเบี้ยได้มากกว่าอีกวิธี: ${formatMoney(calc.summary.interestSavedVsOther)} บาท\n` : ''}${divider}\n🎯 ปลดหนี้หมดสำเร็จใน ${calc.summary.months} เดือน\n(คำนวณโดย Multitools Calculator)`;
+        }
         default: {
             const statusText = document.getElementById('sharedStatusText')?.innerText?.trim();
             return `📋 สรุปผล: ${title}\n${divider}\n${statusText || 'คำนวณเรียบร้อยแล้ว'}\n(คำนวณโดย Multitools Calculator)`;

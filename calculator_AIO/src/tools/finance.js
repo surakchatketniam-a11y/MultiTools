@@ -825,6 +825,683 @@ function renderSavingsTool(container) {
     }
 }
 
+/* -----------------------------------------------------------
+ * PURE ENGINE: คำนวณแผนปลดหนี้หลายบัญชี (Debt Snowball vs Avalanche)
+ * - Snowball: ชำระหนี้คงเหลือน้อยที่สุดก่อน (สร้างกำลังใจและชัยชนะอย่างรวดเร็ว)
+ * - Avalanche: ชำระหนี้ดอกเบี้ยสูงที่สุดก่อน (ประหยัดดอกเบี้ยได้สูงสุดทางคณิตศาสตร์)
+ * - รองรับเงินโปะเพิ่มรายเดือน (Extra Monthly Payment) และการทบยอดหนี้ที่ปิดแล้ว (Rollover)
+ * ----------------------------------------------------------- */
+function calculateDebtPayoff(params) {
+    const p = params || {};
+    const strategy = p.strategy === 'snowball' ? 'snowball' : 'avalanche';
+    const extraMonthly = Math.max(0, numberOrDefault(p.extraMonthly, 0));
+    const rawDebts = Array.isArray(p.debts) ? p.debts : [];
+
+    // 1. ตรวจสอบและแปลงข้อมูลบัญชีหนี้
+    const debts = rawDebts.map((d, index) => {
+        const id = d.id || String(index + 1);
+        const name = (d.name && String(d.name).trim()) ? String(d.name).trim() : `หนี้ก้อนที่ ${index + 1}`;
+        const balance = Math.max(0, numberOrDefault(d.balance, 0));
+        const rate = Math.max(0, numberOrDefault(d.rate, 0));
+        const minPayment = Math.max(0, numberOrDefault(d.minPayment, 0));
+        return { id, name, balance, rate, minPayment };
+    }).filter(d => d.balance > 0);
+
+    const initialTotalDebt = debts.reduce((sum, d) => sum + d.balance, 0);
+    const initialTotalMinPayment = debts.reduce((sum, d) => sum + d.minPayment, 0);
+    const totalMonthlyBudget = initialTotalMinPayment + extraMonthly;
+
+    if (debts.length === 0 || initialTotalDebt <= 0) {
+        return {
+            strategy,
+            extraMonthly,
+            debts: [],
+            initialTotalDebt: 0,
+            initialTotalMinPayment: 0,
+            totalMonthlyBudget: 0,
+            isUnderfunded: false,
+            isPayable: true,
+            avalanche: { months: 0, years: 0, totalInterest: 0, totalPaid: 0, debtPayoffOrder: [], firstPaidOffMonth: 0, completed: true },
+            snowball: { months: 0, years: 0, totalInterest: 0, totalPaid: 0, debtPayoffOrder: [], firstPaidOffMonth: 0, completed: true },
+            baseline: { months: 0, years: 0, totalInterest: 0, totalPaid: 0, completed: true },
+            summary: {
+                selectedStrategy: strategy,
+                months: 0,
+                years: 0,
+                totalInterest: 0,
+                totalPaid: 0,
+                interestSavedVsOther: 0,
+                interestSavedVsBaseline: 0,
+                monthsSavedVsBaseline: 0,
+                firstPaidOffMonth: 0
+            }
+        };
+    }
+
+    // 2. ตรวจสอบว่ายอดชำระรายเดือนครอบคลุมดอกเบี้ยรายเดือนก้อนแรกหรือไม่
+    const initialMonthlyInterest = debts.reduce((sum, d) => sum + (d.balance * (d.rate / 100) / 12), 0);
+    const isUnderfunded = totalMonthlyBudget <= 0 || (initialMonthlyInterest > 0 && totalMonthlyBudget <= initialMonthlyInterest);
+
+    // 3. ฟังก์ชันจำลองการชำระหนี้รายเดือนแบบทบยอด (Snowball / Avalanche Simulator)
+    function simulate(simStrategy, simExtra) {
+        const activeDebts = debts.map(d => ({
+            id: d.id,
+            name: d.name,
+            balance: d.balance,
+            rate: d.rate,
+            minPayment: d.minPayment,
+            monthlyRate: (d.rate / 100) / 12,
+            totalInterestPaid: 0,
+            paidOffMonth: 0
+        }));
+
+        let month = 0;
+        let totalInterestPaid = 0;
+        let totalPrincipalPaid = 0;
+        const payoffOrder = [];
+        const maxMonths = 600; // เพดานสูงสุด 50 ปี ป้องกัน infinite loop
+        const monthlyDebtBudget = initialTotalMinPayment + simExtra;
+
+        // หากงบชำระรวมเป็น 0 หรือไม่พอดอกเบี้ยก้อนแรก จะไม่มีทางปลดหนี้ได้
+        if (monthlyDebtBudget <= 0 || (initialMonthlyInterest > 0 && monthlyDebtBudget <= initialMonthlyInterest)) {
+            return {
+                months: maxMonths,
+                years: 50,
+                completed: false,
+                totalInterest: 0,
+                totalPaid: initialTotalDebt,
+                debtPayoffOrder: [],
+                firstPaidOffMonth: 0,
+                perDebtSummary: activeDebts.map(d => ({
+                    id: d.id,
+                    name: d.name,
+                    paidOffMonth: maxMonths,
+                    totalInterest: 0
+                }))
+            };
+        }
+
+        while (month < maxMonths) {
+            const remaining = activeDebts.filter(d => d.balance > 0.001);
+            if (remaining.length === 0) break;
+
+            month++;
+
+            // 3.1 คิดดอกเบี้ยรายเดือนของทุกบัญชีที่ยังมียอดคงเหลือ
+            for (const d of remaining) {
+                const interest = d.balance * d.monthlyRate;
+                d.balance += interest;
+                d.totalInterestPaid += interest;
+                totalInterestPaid += interest;
+            }
+
+            // 3.2 ชำระค่างวดขั้นต่ำของแต่ละบัญชี
+            let totalMinPaidThisMonth = 0;
+            for (const d of remaining) {
+                const minPay = Math.min(d.balance, d.minPayment);
+                d.balance -= minPay;
+                totalMinPaidThisMonth += minPay;
+                totalPrincipalPaid += minPay;
+
+                if (d.balance <= 0.001) {
+                    d.balance = 0;
+                    if (!d.paidOffMonth) {
+                        d.paidOffMonth = month;
+                        payoffOrder.push({ id: d.id, name: d.name, month, totalInterest: Math.round(d.totalInterestPaid * 100) / 100 });
+                    }
+                }
+            }
+
+            // 3.3 คำนวณเงินโปะสะสม (Rollover Pool):
+            // งบรวมรายเดือนหักเงินขั้นต่ำที่จ่ายจริงในงวดนี้ เงินส่วนที่เหลือทั้งหมดจะถูกทบไปโปะหนี้เป้าหมายทันทีในเดือนเดียวกัน
+            let rolloverPool = Math.max(0, monthlyDebtBudget - totalMinPaidThisMonth);
+
+            const stillRemaining = activeDebts.filter(d => d.balance > 0.001);
+            if (stillRemaining.length === 0) break;
+
+            // 3.4 จัดลำดับบัญชีเป้าหมายตามกลยุทธ์
+            if (simStrategy === 'avalanche') {
+                // อัตราดอกเบี้ยสูงที่สุดก่อน หากดอกเบี้ยเท่ากันให้เลือกยอดหนี้น้อยก่อน
+                stillRemaining.sort((a, b) => b.rate - a.rate || a.balance - b.balance);
+            } else {
+                // ยอดหนี้คงเหลือน้อยที่สุดก่อน หากยอดเท่ากันให้เลือกดอกเบี้ยสูงก่อน
+                stillRemaining.sort((a, b) => a.balance - b.balance || b.rate - a.rate);
+            }
+
+            // 3.5 นำเงินโปะและยอดทบไปชำระบัญชีเป้าหมายตามลำดับ
+            for (const target of stillRemaining) {
+                if (rolloverPool <= 0.001) break;
+                const payExtra = Math.min(target.balance, rolloverPool);
+                target.balance -= payExtra;
+                rolloverPool -= payExtra;
+                totalPrincipalPaid += payExtra;
+
+                if (target.balance <= 0.001) {
+                    target.balance = 0;
+                    if (!target.paidOffMonth) {
+                        target.paidOffMonth = month;
+                        payoffOrder.push({ id: target.id, name: target.name, month, totalInterest: Math.round(target.totalInterestPaid * 100) / 100 });
+                    }
+                }
+            }
+        }
+
+        const completed = activeDebts.every(d => d.balance <= 0.001);
+        const firstPaidOff = payoffOrder.length > 0 ? payoffOrder[0].month : 0;
+
+        return {
+            months: completed ? month : maxMonths,
+            years: completed ? +(month / 12).toFixed(1) : 50,
+            completed,
+            totalInterest: Math.round(totalInterestPaid * 100) / 100,
+            totalPaid: Math.round((initialTotalDebt + totalInterestPaid) * 100) / 100,
+            debtPayoffOrder: payoffOrder,
+            firstPaidOffMonth: firstPaidOff,
+            perDebtSummary: activeDebts.map(d => ({
+                id: d.id,
+                name: d.name,
+                paidOffMonth: d.paidOffMonth || (completed ? month : maxMonths),
+                totalInterest: Math.round(d.totalInterestPaid * 100) / 100
+            }))
+        };
+    }
+
+    const avalancheRes = simulate('avalanche', extraMonthly);
+    const snowballRes = simulate('snowball', extraMonthly);
+    const baselineRes = simulate('avalanche', 0); // กรณีจ่ายแต่ขั้นต่ำอย่างเดียว
+
+    const selected = strategy === 'snowball' ? snowballRes : avalancheRes;
+    const alternative = strategy === 'snowball' ? avalancheRes : snowballRes;
+
+    const interestSavedVsOther = Math.max(0, snowballRes.totalInterest - avalancheRes.totalInterest);
+    const interestSavedVsBaseline = Math.max(0, baselineRes.totalInterest - selected.totalInterest);
+    const monthsSavedVsBaseline = Math.max(0, baselineRes.months - selected.months);
+
+    return {
+        strategy,
+        extraMonthly,
+        debts,
+        initialTotalDebt,
+        initialTotalMinPayment,
+        totalMonthlyBudget,
+        isUnderfunded,
+        isPayable: !isUnderfunded && (avalancheRes.completed || snowballRes.completed),
+        avalanche: avalancheRes,
+        snowball: snowballRes,
+        baseline: baselineRes,
+        summary: {
+            selectedStrategy: strategy,
+            completed: selected.completed,
+            months: selected.months,
+            years: selected.years,
+            totalInterest: selected.totalInterest,
+            totalPaid: selected.totalPaid,
+            interestSavedVsOther,
+            interestSavedVsBaseline,
+            monthsSavedVsBaseline,
+            firstPaidOffMonth: selected.firstPaidOffMonth
+        }
+    };
+}
+
+/* -----------------------------------------------------------
+ * TOOL: แผนปลดหนี้หลายบัญชี (Debt Snowball vs Avalanche)
+ * ----------------------------------------------------------- */
+function renderDebtPayoffTool(container) {
+    if (!container) return;
+    const st = appState.debt_payoff || {
+        strategy: 'avalanche',
+        extraMonthly: '3000',
+        debts: [
+            { id: '1', name: 'บัตรกดเงินสด A', balance: '25000', rate: '25', minPayment: '1250' },
+            { id: '2', name: 'บัตรเครดิต B', balance: '45000', rate: '16', minPayment: '2250' },
+            { id: '3', name: 'สินเชื่อส่วนบุคคล C', balance: '80000', rate: '18', minPayment: '3500' }
+        ]
+    };
+    appState.debt_payoff = st;
+
+    if (!Array.isArray(st.debts) || st.debts.length === 0) {
+        st.debts = [{ id: '1', name: 'บัตรเครดิต A', balance: '', rate: '', minPayment: '' }];
+    }
+
+    const calc = calculateDebtPayoff(st);
+    const isSnowball = st.strategy === 'snowball';
+
+    // คำนวณเดือนและปีที่คาดว่าจะปลดหนี้หมด
+    function getEstimatedPayoffDateText(months) {
+        if (!months || months <= 0) return '-';
+        const now = new Date();
+        const target = new Date(now.getFullYear(), now.getMonth() + months, 1);
+        const thMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+        const thYear = target.getFullYear() + 543;
+        return `${thMonths[target.getMonth()]} ${thYear}`;
+    }
+
+    const curStrat = calc[st.strategy];
+    const isComp = calc.isPayable && curStrat && curStrat.completed;
+    let payoffDateText = '-';
+    let payoffHeroText = '0 เดือน';
+    let payoffInterestText = '฿0';
+    let payoffTotalPaidText = '฿0';
+
+    if (calc.debts.length > 0 && calc.initialTotalDebt > 0) {
+        if (!isComp) {
+            payoffDateText = '-';
+            payoffHeroText = `<span style="color: var(--app-danger, #ef4444);" class="text-xl md:text-2xl font-bold">ยังชำระไม่สำเร็จ</span><div class="text-xs font-normal mt-1" style="color: var(--app-muted);">(ยอดชำระรายเดือนไม่เพียงพอ หรือต้องใช้เวลาเกิน 50 ปี)</div>`;
+            payoffInterestText = '-';
+            payoffTotalPaidText = '-';
+        } else {
+            payoffDateText = `ประมาณ ${getEstimatedPayoffDateText(curStrat.months)}`;
+            payoffHeroText = `${curStrat.months} เดือน (${curStrat.years} ปี)`;
+            payoffInterestText = `฿${formatMoney(curStrat.totalInterest)}`;
+            payoffTotalPaidText = `฿${formatMoney(curStrat.totalPaid)}`;
+        }
+    }
+
+    let html = `
+        <div class="debt-payoff-tool finance-tool flex flex-col gap-3 p-1">
+            <!-- 1. ตัวเลือกกลยุทธ์การปลดหนี้ (Strategy Tabs) -->
+            <div class="segment-group grid-cols-2" role="group" aria-label="กลยุทธ์การปลดหนี้">
+                <button type="button" id="btnDebtStrategyAvalanche" aria-pressed="${!isSnowball}" class="segment-btn ${!isSnowball ? 'active' : ''}">
+                    Debt Avalanche (ดอกเบี้ยสูงก่อน)
+                </button>
+                <button type="button" id="btnDebtStrategySnowball" aria-pressed="${isSnowball}" class="segment-btn ${isSnowball ? 'active' : ''}">
+                    Debt Snowball (ยอดน้อยก่อน)
+                </button>
+            </div>
+
+            <!-- คำอธิบายกลยุทธ์ -->
+            <div class="themed-tool-card p-3 text-xs flex items-center justify-between gap-2">
+                <span>${isSnowball
+                    ? 'Debt Snowball: มุ่งปิดบัญชีที่ยอดหนี้น้อยที่สุดก่อน สร้างกำลังใจและความสำเร็จอย่างรวดเร็ว'
+                    : 'Debt Avalanche: มุ่งปิดบัญชีที่คิดดอกเบี้ยสูงที่สุดก่อน ประหยัดเงินดอกเบี้ยได้สูงสุดทางคณิตศาสตร์'}</span>
+            </div>
+
+            <!-- 2. การ์ดเงินโปะเพิ่มเติมรายเดือน (Extra Monthly Payment) -->
+            <div class="themed-tool-card p-3 space-y-2">
+                <div class="flex justify-between items-center text-xs font-semibold">
+                    <label for="debtExtraMonthly" class="text-xs">เงินโปะเพิ่มต่อเดือน (Extra Payment)</label>
+                    <span id="debtTotalBudgetSummary" class="text-xs font-normal" style="color: var(--app-muted);">
+                        งบชำระรวม: ฿${formatMoney(calc.totalMonthlyBudget)}/เดือน
+                    </span>
+                </div>
+                <input id="debtExtraMonthly" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.extraMonthly || '0'))}" class="airbnb-input w-full font-semibold" placeholder="0">
+                <div class="flex flex-wrap gap-1.5 pt-1">
+                    <span class="text-xs self-center" style="color: var(--app-muted);">เพิ่มด่วน:</span>
+                    <button type="button" class="tool-chip-btn debt-chip-btn" data-val="1000">+1,000</button>
+                    <button type="button" class="tool-chip-btn debt-chip-btn" data-val="2000">+2,000</button>
+                    <button type="button" class="tool-chip-btn debt-chip-btn" data-val="3000">+3,000</button>
+                    <button type="button" class="tool-chip-btn debt-chip-btn" data-val="5000">+5,000</button>
+                </div>
+            </div>
+
+            <!-- 3. การ์ดรายการหนี้สิน (Debts List) -->
+            <div class="themed-tool-card p-3 space-y-3">
+                <div class="flex justify-between items-center text-xs font-semibold">
+                    <span>รายการหนี้สิน (${st.debts.length} บัญชี)</span>
+                    <button type="button" id="btnAddDebtItem" class="tool-action-btn text-xs">
+                        + เพิ่มรายการหนี้
+                    </button>
+                </div>
+
+                <div class="space-y-3" id="debtItemsList">
+                    ${st.debts.map((d, idx) => `
+                        <div class="themed-subcard p-3 space-y-2" data-debt-id="${escapeHTML(d.id)}">
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="flex-1">
+                                    <label for="debtName_${escapeHTML(d.id)}" class="sr-only">ชื่อบัญชีหนี้ ${idx + 1}</label>
+                                    <input id="debtName_${escapeHTML(d.id)}" type="text" value="${escapeHTML(d.name || '')}" class="airbnb-input w-full text-xs font-semibold debt-field-name" data-debt-id="${escapeHTML(d.id)}" placeholder="ชื่อบัญชี เช่น บัตรเครดิต ${idx + 1}">
+                                </div>
+                                ${st.debts.length > 1 ? `
+                                    <button type="button" class="tool-danger-btn btn-remove-debt text-xs" data-debt-id="${escapeHTML(d.id)}">
+                                        ลบ
+                                    </button>
+                                ` : ''}
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                                <div>
+                                    <label for="debtBalance_${escapeHTML(d.id)}" class="block mb-1" style="color: var(--app-muted);">ยอดหนี้คงเหลือ</label>
+                                    <input id="debtBalance_${escapeHTML(d.id)}" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(d.balance))}" class="airbnb-input w-full text-xs debt-field-balance" data-debt-id="${escapeHTML(d.id)}" placeholder="บาท">
+                                </div>
+                                <div>
+                                    <label for="debtRate_${escapeHTML(d.id)}" class="block mb-1" style="color: var(--app-muted);">ดอกเบี้ยต่อปี (%)</label>
+                                    <input id="debtRate_${escapeHTML(d.id)}" type="text" inputmode="decimal" value="${escapeHTML(d.rate)}" class="airbnb-input w-full text-xs debt-field-rate" data-debt-id="${escapeHTML(d.id)}" placeholder="% ต่อปี">
+                                </div>
+                                <div>
+                                    <label for="debtMin_${escapeHTML(d.id)}" class="block mb-1" style="color: var(--app-muted);">ขั้นต่ำต่อเดือน</label>
+                                    <input id="debtMin_${escapeHTML(d.id)}" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(d.minPayment))}" class="airbnb-input w-full text-xs debt-field-min" data-debt-id="${escapeHTML(d.id)}" placeholder="บาท">
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <!-- 4. การ์ดสรุปผลลัพธ์ (Payoff Results Card) -->
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="flex justify-between items-center text-xs" style="color: var(--app-muted);">
+                    <span>ระยะเวลาปลดหนี้ทั้งหมด (${isSnowball ? 'Debt Snowball' : 'Debt Avalanche'})</span>
+                    <span id="debtPayoffDateResult">${payoffDateText}</span>
+                </div>
+                <div class="themed-result-value text-2xl md:text-3xl font-extrabold font-mono" id="debtPayoffMonthsResult">
+                    ${payoffHeroText}
+                </div>
+
+                <!-- สรุปตัวเลขทางการเงิน -->
+                <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+                    <div class="themed-subcard p-2.5">
+                        <span class="block" style="color: var(--app-muted);">ดอกเบี้ยรวมที่ต้องจ่าย</span>
+                        <span class="font-bold text-sm" id="debtTotalInterestResult">${payoffInterestText}</span>
+                    </div>
+                    <div class="themed-subcard p-2.5">
+                        <span class="block" style="color: var(--app-muted);">ยอดชำระรวมทั้งหมด</span>
+                        <span class="font-bold text-sm" id="debtTotalPaidResult">${payoffTotalPaidText}</span>
+                    </div>
+                </div>
+
+                <!-- เปรียบเทียบ 2 กลยุทธ์ (Side-by-Side Comparison) -->
+                <div class="themed-subcard p-3 space-y-2 text-xs" id="debtComparisonContent">
+                    <div class="font-semibold">เปรียบเทียบผลลัพธ์ระหว่าง 2 กลยุทธ์</div>
+                    <div class="flex justify-between items-center py-1 border-b" style="border-color: var(--app-hairline);">
+                        <span>Debt Avalanche (ดอกเบี้ยสูงก่อน)</span>
+                        <span class="font-mono font-semibold">${calc.avalanche.completed ? `${calc.avalanche.months} เดือน · ดอกเบี้ย ฿${formatMoney(calc.avalanche.totalInterest)}` : 'ยังชำระไม่สำเร็จ'}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1">
+                        <span>Debt Snowball (ยอดน้อยก่อน)</span>
+                        <span class="font-mono font-semibold">${calc.snowball.completed ? `${calc.snowball.months} เดือน · ดอกเบี้ย ฿${formatMoney(calc.snowball.totalInterest)}` : 'ยังชำระไม่สำเร็จ'}</span>
+                    </div>
+                    <div class="p-2 rounded-lg text-xs" style="background-color: var(--app-surface-soft); line-height: 1.5;">
+                        ${!calc.isPayable ? `
+                            ยอดชำระรายเดือนไม่เพียงพอตัดดอกเบี้ยหรือปลดหนี้ กรุณาเพิ่มยอดขั้นต่ำหรือระบุเงินโปะเพิ่ม
+                        ` : (calc.summary.interestSavedVsOther > 0 ? `
+                            กลยุทธ์ Avalanche ช่วยประหยัดเงินดอกเบี้ยได้มากกว่า Snowball <b>฿${formatMoney(calc.summary.interestSavedVsOther)} บาท</b>
+                        ` : (calc.snowball.firstPaidOffMonth < calc.avalanche.firstPaidOffMonth ? `
+                            กลยุทธ์ Snowball สามารถปิดหนี้ก้อนแรกได้เร็วกว่า <b>${calc.avalanche.firstPaidOffMonth - calc.snowball.firstPaidOffMonth} เดือน</b> ช่วยสร้างกำลังใจ
+                        ` : 'ทั้งสองกลยุทธ์ให้ผลลัพธ์ใกล้เคียงกัน'))}
+                    </div>
+                </div>
+
+                <!-- ลำดับการปิดหนี้สำเร็จ (Payoff Order) -->
+                <div id="debtPayoffOrderWrapper">
+                    ${calc[st.strategy].debtPayoffOrder.length > 0 ? `
+                        <div class="themed-subcard p-3 space-y-2 text-xs">
+                            <div class="font-semibold">ลำดับบัญชีที่จะปิดหนี้สำเร็จ (${calc[st.strategy].debtPayoffOrder.length} บัญชี)</div>
+                            <div class="space-y-1.5">
+                                ${calc[st.strategy].debtPayoffOrder.map((order, idx) => `
+                                    <div class="flex justify-between items-center py-1.5 border-b" style="border-color: var(--app-hairline);">
+                                        <div class="flex items-center gap-2">
+                                            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold" style="background-color: var(--app-accent-soft); color: var(--app-accent);">${idx + 1}</span>
+                                            <span class="font-semibold">${escapeHTML(order.name)}</span>
+                                        </div>
+                                        <div class="text-right font-mono">
+                                            <span class="font-semibold">เดือนที่ ${order.month}</span>
+                                            <span class="block text-[11px]" style="color: var(--app-muted);">ดอกเบี้ย ฿${formatMoney(order.totalInterest)}</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <!-- ปุ่มพิมพ์เอกสารทางการ / PDF -->
+                <div class="pt-2">
+                    <button type="button" id="btnPrintDebtReceipt" class="tool-action-btn w-full text-xs">
+                        พิมพ์แผนปลดหนี้ / PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+
+    // ฟังก์ชันอัปเดตผลลัพธ์และ Status Banner แบบ Real-time โดยไม่ทำลายโครงสร้าง DOM ช่องกรอก
+    function updateDebtPayoffLive() {
+        const curCalc = calculateDebtPayoff(st);
+        const curSnowball = st.strategy === 'snowball';
+        const curStrat = curCalc[st.strategy];
+        const curIsComp = curCalc.isPayable && curStrat && curStrat.completed;
+
+        // 1. งบชำระรวม
+        const budgetEl = container.querySelector('#debtTotalBudgetSummary');
+        if (budgetEl) {
+            budgetEl.textContent = `งบชำระรวม: ฿${formatMoney(curCalc.totalMonthlyBudget)}/เดือน`;
+        }
+
+        // 2. ผลลัพธ์หลัก (Hero result & Date)
+        const dateEl = container.querySelector('#debtPayoffDateResult');
+        const monthsEl = container.querySelector('#debtPayoffMonthsResult');
+        const totalIntEl = container.querySelector('#debtTotalInterestResult');
+        const totalPaidEl = container.querySelector('#debtTotalPaidResult');
+
+        if (!curCalc.debts.length || curCalc.initialTotalDebt <= 0) {
+            if (dateEl) dateEl.textContent = '-';
+            if (monthsEl) monthsEl.innerHTML = '0 เดือน';
+            if (totalIntEl) totalIntEl.textContent = '฿0';
+            if (totalPaidEl) totalPaidEl.textContent = '฿0';
+        } else if (!curIsComp) {
+            if (dateEl) dateEl.textContent = '-';
+            if (monthsEl) {
+                monthsEl.innerHTML = `<span style="color: var(--app-danger, #ef4444);" class="text-xl md:text-2xl font-bold">ยังชำระไม่สำเร็จ</span><div class="text-xs font-normal mt-1" style="color: var(--app-muted);">(ยอดชำระรายเดือนไม่เพียงพอ หรือต้องใช้เวลาเกิน 50 ปี)</div>`;
+            }
+            if (totalIntEl) totalIntEl.textContent = '-';
+            if (totalPaidEl) totalPaidEl.textContent = '-';
+        } else {
+            if (dateEl) dateEl.textContent = `ประมาณ ${getEstimatedPayoffDateText(curStrat.months)}`;
+            if (monthsEl) monthsEl.innerHTML = `${curStrat.months} เดือน (${curStrat.years} ปี)`;
+            if (totalIntEl) totalIntEl.textContent = `฿${formatMoney(curStrat.totalInterest)}`;
+            if (totalPaidEl) totalPaidEl.textContent = `฿${formatMoney(curStrat.totalPaid)}`;
+        }
+
+        // 3. กล่องเปรียบเทียบ 2 กลยุทธ์
+        const compEl = container.querySelector('#debtComparisonContent');
+        if (compEl) {
+            const avaText = curCalc.avalanche.completed ? `${curCalc.avalanche.months} เดือน · ดอกเบี้ย ฿${formatMoney(curCalc.avalanche.totalInterest)}` : 'ยังชำระไม่สำเร็จ';
+            const snowText = curCalc.snowball.completed ? `${curCalc.snowball.months} เดือน · ดอกเบี้ย ฿${formatMoney(curCalc.snowball.totalInterest)}` : 'ยังชำระไม่สำเร็จ';
+            let advice = 'ทั้งสองกลยุทธ์ให้ผลลัพธ์ใกล้เคียงกัน';
+            if (!curCalc.isPayable) {
+                advice = 'ยอดชำระรายเดือนไม่เพียงพอตัดดอกเบี้ยหรือปลดหนี้ กรุณาเพิ่มยอดขั้นต่ำหรือระบุเงินโปะเพิ่ม';
+            } else if (curCalc.summary.interestSavedVsOther > 0) {
+                advice = `กลยุทธ์ Avalanche ช่วยประหยัดเงินดอกเบี้ยได้มากกว่า Snowball <b>฿${formatMoney(curCalc.summary.interestSavedVsOther)} บาท</b>`;
+            } else if (curCalc.snowball.firstPaidOffMonth < curCalc.avalanche.firstPaidOffMonth) {
+                advice = `กลยุทธ์ Snowball สามารถปิดหนี้ก้อนแรกได้เร็วกว่า <b>${curCalc.avalanche.firstPaidOffMonth - curCalc.snowball.firstPaidOffMonth} เดือน</b> ช่วยสร้างกำลังใจ`;
+            }
+
+            compEl.innerHTML = `
+                <div class="font-semibold">เปรียบเทียบผลลัพธ์ระหว่าง 2 กลยุทธ์</div>
+                <div class="flex justify-between items-center py-1 border-b" style="border-color: var(--app-hairline);">
+                    <span>Debt Avalanche (ดอกเบี้ยสูงก่อน)</span>
+                    <span class="font-mono font-semibold">${avaText}</span>
+                </div>
+                <div class="flex justify-between items-center py-1">
+                    <span>Debt Snowball (ยอดน้อยก่อน)</span>
+                    <span class="font-mono font-semibold">${snowText}</span>
+                </div>
+                <div class="p-2 rounded-lg text-xs" style="background-color: var(--app-surface-soft); line-height: 1.5;">
+                    ${advice}
+                </div>
+            `;
+        }
+
+        // 4. ลำดับการปิดหนี้สำเร็จ
+        const orderEl = container.querySelector('#debtPayoffOrderWrapper');
+        if (orderEl) {
+            const orders = curStrat.debtPayoffOrder || [];
+            if (orders.length > 0) {
+                orderEl.innerHTML = `
+                    <div class="themed-subcard p-3 space-y-2 text-xs">
+                        <div class="font-semibold">ลำดับบัญชีที่จะปิดหนี้สำเร็จ (${orders.length} บัญชี)</div>
+                        <div class="space-y-1.5">
+                            ${orders.map((order, idx) => `
+                                <div class="flex justify-between items-center py-1.5 border-b" style="border-color: var(--app-hairline);">
+                                    <div class="flex items-center gap-2">
+                                        <span class="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold" style="background-color: var(--app-accent-soft); color: var(--app-accent);">${idx + 1}</span>
+                                        <span class="font-semibold">${escapeHTML(order.name)}</span>
+                                    </div>
+                                    <div class="text-right font-mono">
+                                        <span class="font-semibold">เดือนที่ ${order.month}</span>
+                                        <span class="block text-[11px]" style="color: var(--app-muted);">ดอกเบี้ย ฿${formatMoney(order.totalInterest)}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                orderEl.innerHTML = '';
+            }
+        }
+
+        // 5. Status Banner
+        if (curCalc.debts.length === 0 || curCalc.initialTotalDebt <= 0) {
+            setStatusBanner('empty', 'กรุณาเพิ่มรายการหนี้และระบุยอดหนี้คงเหลือเพื่อวางแผนปลดหนี้');
+        } else if (curCalc.isUnderfunded || !curCalc.isPayable || !curIsComp) {
+            setStatusBanner('error', 'ยอดชำระรายเดือนรวมไม่เพียงพอ หนี้จะไม่หมดตามแผนนี้ กรุณาเพิ่มยอดชำระขั้นต่ำหรือเงินโปะ');
+        } else {
+            const stratName = curSnowball ? 'Debt Snowball' : 'Debt Avalanche';
+            setStatusBanner('success', `ปลดหนี้หมดใน <b>${curStrat.months} เดือน</b> (${curStrat.years} ปี) ดอกเบี้ยรวม ${formatMoney(curStrat.totalInterest)} บาท ด้วยวิธี ${stratName}`);
+        }
+    }
+
+    // ผูก Event กลยุทธ์
+    container.querySelector('#btnDebtStrategyAvalanche')?.addEventListener('click', () => {
+        st.strategy = 'avalanche';
+        persistAppState();
+        renderActiveTool();
+    });
+    container.querySelector('#btnDebtStrategySnowball')?.addEventListener('click', () => {
+        st.strategy = 'snowball';
+        persistAppState();
+        renderActiveTool();
+    });
+
+    // ผูก Event เงินโปะรายเดือน
+    const extraInput = container.querySelector('#debtExtraMonthly');
+    extraInput?.addEventListener('input', e => {
+        st.extraMonthly = e.target.value;
+        persistAppState();
+        updateDebtPayoffLive();
+    });
+    extraInput?.addEventListener('blur', () => {
+        const formatted = formatInputDisplay(extraInput.value);
+        st.extraMonthly = formatted;
+        extraInput.value = formatted;
+        persistAppState();
+        updateDebtPayoffLive();
+    });
+
+    // ผูก Event ปุ่มเพิ่มด่วนเงินโปะ
+    container.querySelectorAll('.debt-chip-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const addVal = numberOrDefault(btn.dataset.val, 0);
+            const currentVal = numberOrDefault(st.extraMonthly, 0);
+            st.extraMonthly = formatInputDisplay(String(currentVal + addVal));
+            if (extraInput) extraInput.value = st.extraMonthly;
+            persistAppState();
+            updateDebtPayoffLive();
+        });
+    });
+
+    // ผูก Event เพิ่มรายการหนี้
+    container.querySelector('#btnAddDebtItem')?.addEventListener('click', () => {
+        const newId = String(Date.now());
+        st.debts.push({
+            id: newId,
+            name: `หนี้ก้อนที่ ${st.debts.length + 1}`,
+            balance: '',
+            rate: '',
+            minPayment: ''
+        });
+        persistAppState();
+        renderActiveTool();
+    });
+
+    // ผูก Event ลบรายการหนี้
+    container.querySelectorAll('.btn-remove-debt').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const idToRemove = btn.dataset.debtId;
+            st.debts = st.debts.filter(d => d.id !== idToRemove);
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    // ผูก Event ช่องกรอกข้อมูลหนี้แต่ละแถว
+    container.querySelectorAll('.debt-field-name').forEach(inp => {
+        inp.addEventListener('input', e => {
+            const d = st.debts.find(item => item.id === e.target.dataset.debtId);
+            if (d) d.name = e.target.value;
+            persistAppState();
+            updateDebtPayoffLive();
+        });
+    });
+
+    container.querySelectorAll('.debt-field-balance').forEach(inp => {
+        inp.addEventListener('input', e => {
+            const d = st.debts.find(item => item.id === e.target.dataset.debtId);
+            if (d) d.balance = e.target.value;
+            persistAppState();
+            updateDebtPayoffLive();
+        });
+        inp.addEventListener('blur', e => {
+            const formatted = formatInputDisplay(e.target.value);
+            const d = st.debts.find(item => item.id === e.target.dataset.debtId);
+            if (d) d.balance = formatted;
+            inp.value = formatted;
+            persistAppState();
+            updateDebtPayoffLive();
+        });
+    });
+
+    container.querySelectorAll('.debt-field-rate').forEach(inp => {
+        inp.addEventListener('input', e => {
+            const d = st.debts.find(item => item.id === e.target.dataset.debtId);
+            if (d) d.rate = e.target.value;
+            persistAppState();
+            updateDebtPayoffLive();
+        });
+        inp.addEventListener('blur', e => {
+            const d = st.debts.find(item => item.id === e.target.dataset.debtId);
+            if (d) d.rate = e.target.value;
+            persistAppState();
+            updateDebtPayoffLive();
+        });
+    });
+
+    container.querySelectorAll('.debt-field-min').forEach(inp => {
+        inp.addEventListener('input', e => {
+            const d = st.debts.find(item => item.id === e.target.dataset.debtId);
+            if (d) d.minPayment = e.target.value;
+            persistAppState();
+            updateDebtPayoffLive();
+        });
+        inp.addEventListener('blur', e => {
+            const formatted = formatInputDisplay(e.target.value);
+            const d = st.debts.find(item => item.id === e.target.dataset.debtId);
+            if (d) d.minPayment = formatted;
+            inp.value = formatted;
+            persistAppState();
+            updateDebtPayoffLive();
+        });
+    });
+
+    // ปุ่มพิมพ์เอกสารทางการ
+    container.querySelector('#btnPrintDebtReceipt')?.addEventListener('click', () => {
+        triggerPrintReceipt('debt_payoff');
+    });
+
+    // อัปเดตสถานะ Status Banner ครั้งแรก
+    if (calc.debts.length === 0 || calc.initialTotalDebt <= 0) {
+        setStatusBanner('empty', 'กรุณาเพิ่มรายการหนี้และระบุยอดหนี้คงเหลือเพื่อวางแผนปลดหนี้');
+    } else if (calc.isUnderfunded || !calc.isPayable || !isComp) {
+        setStatusBanner('error', 'ยอดชำระรายเดือนรวมไม่เพียงพอ หนี้จะไม่หมดตามแผนนี้ กรุณาเพิ่มยอดชำระขั้นต่ำหรือเงินโปะ');
+    } else {
+        const stratName = isSnowball ? 'Debt Snowball' : 'Debt Avalanche';
+        setStatusBanner('success', `ปลดหนี้หมดใน <b>${calc.summary.months} เดือน</b> (${calc.summary.years} ปี) ดอกเบี้ยรวม ${formatMoney(calc.summary.totalInterest)} บาท ด้วยวิธี ${stratName}`);
+    }
+}
+
 (function(root) {
     const exportsObj = {
         loadFrankfurterRates,
@@ -832,7 +1509,9 @@ function renderSavingsTool(container) {
         renderLoanTool,
         calculateHomeRefinance,
         renderHomeRefinanceTool,
-        renderSavingsTool
+        renderSavingsTool,
+        calculateDebtPayoff,
+        renderDebtPayoffTool
     };
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = exportsObj;

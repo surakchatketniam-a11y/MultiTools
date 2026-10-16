@@ -250,6 +250,14 @@ function clearCurrentTool() {
             transactionRatePct: '3.0',
             isVatApplied: 'yes'
         };
+    } else if (id === 'debt_payoff') {
+        appState.debt_payoff = {
+            strategy: 'avalanche',
+            extraMonthly: '0',
+            debts: [
+                { id: '1', name: '', balance: '', rate: '', minPayment: '' }
+            ]
+        };
     }
     rememberToolClear(snapshot);
     renderActiveTool();
@@ -475,6 +483,16 @@ function loadDemoForCurrentTool() {
             serviceFeePct: '4.0',
             transactionRatePct: '3.0',
             isVatApplied: 'yes'
+        };
+    } else if (id === 'debt_payoff') {
+        appState.debt_payoff = {
+            strategy: 'avalanche',
+            extraMonthly: '3000',
+            debts: [
+                { id: '1', name: 'บัตรกดเงินสด A', balance: '25000', rate: '25', minPayment: '1250' },
+                { id: '2', name: 'บัตรเครดิต B', balance: '45000', rate: '16', minPayment: '2250' },
+                { id: '3', name: 'สินเชื่อส่วนบุคคล C', balance: '80000', rate: '18', minPayment: '3500' }
+            ]
         };
     }
     renderActiveTool();

@@ -49,6 +49,12 @@ function hasInvalidNumericInput(toolId, stateObj) {
         return !Number.isFinite(parseNumericInput(text));
     };
     if (curToolId === 'unit_price') return state.unit_price.rows.some(row => invalid(row.price) || invalid(row.qty));
+    if (curToolId === 'debt_payoff') {
+        const st = state.debt_payoff || {};
+        if (invalid(st.extraMonthly)) return true;
+        const debts = Array.isArray(st.debts) ? st.debts : [];
+        return debts.some(d => invalid(d.balance) || invalid(d.rate) || invalid(d.minPayment));
+    }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
     return (fields[curToolId] || []).some(key => invalid(state[curToolId][key]));

@@ -838,16 +838,16 @@
         }
         .tool-text-btn { padding: 8px; }
         .tool-chip-btn {
-            min-height: 40px;
-            padding: 6px 10px;
+            min-height: 44px;
+            padding: 8px 12px;
             border: 1px solid var(--app-hairline);
             background-color: var(--color-canvas);
             color: var(--app-body);
             font-size: 11px;
         }
         .tool-danger-btn {
-            min-height: 40px;
-            padding: 6px 8px;
+            min-height: 44px;
+            padding: 8px 12px;
             color: #be123c;
         }
         .tool-action-btn:hover,
@@ -1012,6 +1012,22 @@
         html[data-theme="ferrari"] .sidebar-item.active-tool,
         html[data-theme="ferrari"] .key-btn.key-action { color: #ff766b !important; }
         html[data-theme="ferrari"] .key-btn.key-primary-cta { background-color: var(--app-accent-active) !important; color: #ffffff !important; }
+        html[data-theme="ferrari"] .tool-action-btn,
+        html[data-theme="ferrari"] .tool-text-btn {
+            color: #ff766b;
+            border-color: #ff766b;
+        }
+        html[data-theme="ferrari"] .tool-action-btn:hover,
+        html[data-theme="ferrari"] .tool-text-btn:hover {
+            background-color: var(--app-accent-soft);
+            color: #ffffff;
+        }
+        html:is([data-theme="dark"], [data-theme="ferrari"]) .tool-danger-btn {
+            color: #fb7185;
+        }
+        html:is([data-theme="dark"], [data-theme="ferrari"]) .tool-danger-btn:hover {
+            background-color: rgba(225, 29, 72, 0.15);
+        }
 
         /* Component states used by the calculator tools in Together. */
         html[data-theme="together"] .cell-input:focus-within,
@@ -1482,7 +1498,7 @@
             <div class="bg-white rounded-full px-3.5 py-1.5 border border-[var(--app-hairline)] flex items-center justify-between" style="box-shadow: var(--airbnb-shadow);">
                 <div class="flex items-center gap-2.5 min-w-0">
                     <div class="w-8 h-8 rounded-full bg-[var(--app-accent)] text-white flex flex-col items-center justify-center font-bold text-[9px] leading-none shrink-0">
-                        <span id="footerCatalogCount">33 in 1</span>
+                        <span id="footerCatalogCount">34 in 1</span>
                     </div>
                     <div class="leading-tight truncate">
                         <div class="text-xs sm:text-sm font-bold text-[#222222] truncate">มีตังค์ | เครื่องสารพัดคำนวณ Free+</div>
@@ -2035,6 +2051,17 @@
                 serviceFeePct: '4.0',
                 transactionRatePct: '3.0',
                 isVatApplied: 'yes'
+            },
+
+            // 30. Multi-Account Debt Payoff Plan (Debt Snowball vs Avalanche)
+            debt_payoff: {
+                strategy: 'avalanche',
+                extraMonthly: '3000',
+                debts: [
+                    { id: '1', name: 'บัตรกดเงินสด A', balance: '25000', rate: '25', minPayment: '1250' },
+                    { id: '2', name: 'บัตรเครดิต B', balance: '45000', rate: '16', minPayment: '2250' },
+                    { id: '3', name: 'สินเชื่อส่วนบุคคล C', balance: '80000', rate: '18', minPayment: '3500' }
+                ]
             }
         };
 
@@ -2116,6 +2143,7 @@
                 case 'legal_interest':   renderLegalInterestTool(topPanel); break;
                 case 'ot_calc':          renderOvertimeTool(topPanel); break;
                 case 'ecommerce_profit': renderEcommerceProfitTool(topPanel); break;
+                case 'debt_payoff':      renderDebtPayoffTool(topPanel); break;
             }
             if (editing) {
                 const replacement = topPanel.querySelector(`input[data-shared-field="${editing.index}"]`);
