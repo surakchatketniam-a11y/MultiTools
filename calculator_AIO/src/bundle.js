@@ -38,6 +38,7 @@ var TOOLS_CATALOG = [
     { id: 'vat',        group: 'biz', category: 'fav', menuTitle: 'ภาษีมูลค่าเพิ่ม (VAT)', headerTitle: 'เครื่องคำนวณภาษีมูลค่าเพิ่ม', usesSharedKeypad: true, keywords: 'vat ภาษี 7% มูลค่าเพิ่ม ถอด vat รวม vat' },
     { id: 'vat_wht',    group: 'biz', category: 'fav', menuTitle: 'VAT + หัก ณ ที่จ่าย', headerTitle: 'VAT + หัก ณ ที่จ่าย', usesSharedKeypad: false, keywords: 'vat wht หัก ณ ที่จ่าย 1% 2% 3% 5% ภาษีหัก ณ ที่จ่าย วางบิล' },
     { id: 'percent',    group: 'biz', category: 'fav', menuTitle: 'เปอร์เซ็นต์ & กำไร', headerTitle: 'เครื่องคำนวณเปอร์เซ็นต์', usesSharedKeypad: true, keywords: 'percent เปอร์เซ็นต์ กำไร margin markup ร้อยละ สัดส่วน' },
+    { id: 'ecommerce_profit', group: 'biz', category: 'fav', menuTitle: 'กำไรขายของออนไลน์', headerTitle: 'คำนวณกำไรขายของออนไลน์ & ค่าธรรมเนียม (Shopee/Lazada/TikTok)', usesSharedKeypad: false, keywords: 'ecommerce profit กำไร ขายของออนไลน์ shopee lazada tiktok fee ค่าธรรมเนียม คอมมิชชัน ธุรกรรม ค่าส่ง ยิงแอด จุดคุ้มทุน breakeven profit margin มาร์เก็ตเพลส' },
     { id: 'salary',     group: 'biz', category: 'all', menuTitle: 'จัดการเงินเดือน 50/30/20', headerTitle: 'เครื่องมือจัดการเงินเดือน', usesSharedKeypad: true, keywords: 'salary เงินเดือน 50 30 20 รายจ่าย เงินเก็บ ออมเงิน หนี้' },
 
     // หมวดหมู่ที่ 3: การเงิน & วางแผน
@@ -785,7 +786,101 @@ function generateFormalPrintHTML(toolId, stateObj) {
     let resultCards = [];
     let breakdownHTML = '';
 
-    if (curToolId === 'loan') {
+    if (curToolId === 'loan' && state.loan?.tab === 'refinance') {
+        docTitle = 'เอกสารสรุปผลวิเคราะห์การรีไฟแนนซ์บ้าน vs ขอลดดอกเบี้ย (Retention)';
+        docSubtitle = 'Bank of Thailand (BOT) Mortgage Refinance vs Retention Analysis Report';
+        const st = state.loan || {};
+        const calcFn = typeof calculateHomeRefinance === 'function' ? calculateHomeRefinance : (typeof globalThis !== 'undefined' ? globalThis.calculateHomeRefinance : null);
+        const calc = calcFn ? calcFn({
+            principal: parseNumericInput(st.principal),
+            months: integerOrDefault(st.months, 240),
+            currentRate: parseNumericInput(st.currentRate ?? '5.50'),
+            retentionRate: parseNumericInput(st.retentionRate ?? '3.80'),
+            retentionFee: parseNumericInput(st.retentionFee ?? '0'),
+            refinanceRate: parseNumericInput(st.refinanceRate ?? '2.99'),
+            isGovReducedMortgage: st.isGovReducedMortgage === 'yes',
+            appraisalFee: parseNumericInput(st.appraisalFee ?? '2800'),
+            insuranceFee: parseNumericInput(st.insuranceFee ?? '2000'),
+            otherRefinanceFees: parseNumericInput(st.otherRefinanceFees ?? '0')
+        }) : null;
+
+        if (calc) {
+            paramsRows = [
+                ['ยอดหนี้บ้านคงเหลือ (Principal)', `${formatMoney(calc.principal)} บาท`],
+                ['ระยะเวลาผ่อนที่เหลืออยู่', `${calc.months} เดือน (${(calc.months / 12).toFixed(1)} ปี)`],
+                ['อัตราดอกเบี้ยปัจจุบัน (อยู่อย่างเดิม)', `${formatNum(calc.currentRate, 2)}% ต่อปี`],
+                ['อัตราดอกเบี้ย Retention (ธนาคารเดิม)', `${formatNum(calc.retentionRate, 2)}% ต่อปี (ค่าธรรมเนียม ${formatMoney(calc.retentionFee)} บาท)`],
+                ['อัตราดอกเบี้ย Refinance (ย้ายธนาคาร)', `${formatNum(calc.refinanceRate, 2)}% ต่อปี`],
+                ['มาตรการรัฐ (ลดค่าจดจำนองเหลือ 0.01%)', calc.isGovReduced ? 'ใช้สิทธิ (0.01%)' : 'ไม่ใช้สิทธิ (อัตราปกติ 1.0%)'],
+                ['รวมค่าใช้จ่ายย้ายธนาคารทั้งหมด', `${formatMoney(calc.totalRefinanceFees)} บาท`]
+            ];
+
+            resultCards = [
+                { label: 'คำแนะนำความคุ้มค่า (ธปท.)', value: calc.recommendation, highlight: true },
+                { label: 'จุดคุ้มทุน (Breakeven)', value: calc.breakevenMonth !== null ? (calc.breakevenMonth === 0 ? 'คุ้มทุนทันที' : `เดือนที่ ${calc.breakevenMonth} (ปีที่ ${(calc.breakevenMonth / 12).toFixed(1)})`) : 'ไม่คุ้มทุน' },
+                { label: 'ประหยัดสุทธิ 3 ปี (Refinance ย้ายค่าย)', value: `${formatMoney(calc.refinanceNetSavings)} บาท`, highlight: calc.isRefinanceBetter },
+                { label: 'ประหยัดสุทธิ 3 ปี (Retention ขอลดดอก)', value: `${formatMoney(calc.retentionNetSavings)} บาท`, highlight: !calc.isRefinanceBetter },
+                { label: 'ผ่อนต่อเดือนเดิม vs รีไฟแนนซ์', value: `${formatMoney(calc.currentPlan.monthlyPay)} ➔ ${formatMoney(calc.refinancePlan.monthlyPay)} บาท` }
+            ];
+
+            breakdownHTML = `
+                <div style="margin-top: 24px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        เปรียบเทียบ 3 ทางเลือกในรอบ 3 ปี (36 งวดแรก อิงเกณฑ์ ธปท.)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 16px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                                <th style="padding: 6px 8px; text-align: left;">ทางเลือก</th>
+                                <th style="padding: 6px 8px; text-align: right;">ดอกเบี้ยต่อปี</th>
+                                <th style="padding: 6px 8px; text-align: right;">ค่างวด/เดือน</th>
+                                <th style="padding: 6px 8px; text-align: right;">ดอกเบี้ยรวม 3 ปี</th>
+                                <th style="padding: 6px 8px; text-align: right;">ค่าธรรมเนียม</th>
+                                <th style="padding: 6px 8px; text-align: right;">ประหยัดสุทธิ 3 ปี</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; font-weight: 600;">1. อยู่อย่างเดิม (ไม่ทำอะไร)</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.currentRate, 2)}%</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.currentPlan.monthlyPay)}</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #b91c1c;">${formatMoney(calc.currentPlan.totalInterest)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">-</td>
+                                <td style="padding: 6px 8px; text-align: right;">0 บาท (เกณฑ์ฐาน)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; ${!calc.isRefinanceBetter ? 'background: #ecfdf5; font-weight: 600;' : ''}">
+                                <td style="padding: 6px 8px;">2. ขอลดดอกเบี้ยเดิม (Retention) ${!calc.isRefinanceBetter ? '⭐' : ''}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.retentionRate, 2)}%</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.retentionPlan.monthlyPay)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.retentionPlan.totalInterest)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.retentionFee)}</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #15803d; font-weight: bold;">+${formatMoney(calc.retentionNetSavings)}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; ${calc.isRefinanceBetter ? 'background: #eff6ff; font-weight: 600;' : ''}">
+                                <td style="padding: 6px 8px;">3. ย้ายธนาคารใหม่ (Refinance) ${calc.isRefinanceBetter ? '⭐' : ''}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.refinanceRate, 2)}%</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.refinancePlan.monthlyPay)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.refinancePlan.totalInterest)}</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #b91c1c;">-${formatMoney(calc.totalRefinanceFees)}</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #1d4ed8; font-weight: bold;">+${formatMoney(calc.refinanceNetSavings)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4 style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">ประมาณการค่าใช้จ่ายในการย้ายธนาคาร (Refinance Closing Costs)</h4>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 4px 8px;">1. ค่าจดจำนองที่ดิน (${calc.isGovReduced ? 'มาตรการรัฐ 0.01%' : 'อัตราปกติ 1.0%'})</td><td style="padding: 4px 8px; text-align: right;">${formatMoney(calc.mortgageFee)} บาท</td></tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 4px 8px;">2. ค่าประเมินราคาหลักทรัพย์</td><td style="padding: 4px 8px; text-align: right;">${formatMoney(calc.appraisalFee)} บาท</td></tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 4px 8px;">3. ค่าอากรแสตมป์สัญญาเงินกู้ (0.05% สูงสุด 10,000 บาท)</td><td style="padding: 4px 8px; text-align: right;">${formatMoney(calc.stampDuty)} บาท</td></tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 4px 8px;">4. ค่าเบี้ยประกันอัคคีภัย (ประมาณการ)</td><td style="padding: 4px 8px; text-align: right;">${formatMoney(calc.insuranceFee)} บาท</td></tr>
+                            <tr style="border-top: 2px solid #cbd5e1; font-weight: 700; background: #f8fafc;"><td style="padding: 6px 8px;">รวมค่าใช้จ่ายดำเนินการรีไฟแนนซ์ทั้งหมด</td><td style="padding: 6px 8px; text-align: right; color: #b91c1c;">${formatMoney(calc.totalRefinanceFees)} บาท</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+    } else if (curToolId === 'loan') {
         docTitle = 'เอกสารสรุปผลการคำนวณสินเชื่อและตารางผ่อนชำระ';
         docSubtitle = 'Loan Amortization & Repayment Schedule Report';
         const st = state.loan || {};
@@ -1703,6 +1798,90 @@ function generateFormalPrintHTML(toolId, stateObj) {
             </div>
         `;
 
+    } else if (curToolId === 'ecommerce_profit') {
+        docTitle = 'ใบวิเคราะห์โครงสร้างต้นทุน กำไรสุทธิ และค่าธรรมเนียมขายของออนไลน์';
+        docSubtitle = 'E-Commerce Net Profit & Platform Fee Statement (Shopee / Lazada / TikTok Shop)';
+        const st = state.ecommerce_profit || {};
+        const calc = (typeof calculateEcommerceProfit === 'function')
+            ? calculateEcommerceProfit(st)
+            : { platform: 'shopee', sellingPrice: 350, productCost: 150, packagingCost: 10, shopVoucher: 0, customerShipping: 35, sellerShipping: 35, adSpendPerOrder: 30, commissionFeePreVat: 17.5, serviceFeePreVat: 14.0, transactionFeePreVat: 11.55, platformVat: 3.01, totalPlatformFees: 46.06, shippingDifference: 0, totalCosts: 236.06, netPayout: 338.94, netProfit: 113.94, isProfit: true, profitMarginPct: 32.55, markupPct: 71.21, breakevenPrice: 216.57 };
+
+        const platLabel = calc.platform === 'shopee' ? 'Shopee Thailand' : (calc.platform === 'lazada' ? 'Lazada Thailand' : (calc.platform === 'tiktok' ? 'TikTok Shop Thailand' : (calc.platform === 'direct' ? 'ขายตรง / LINE / FB Shop' : 'กำหนดเอง (Custom Platform)')));
+
+        paramsRows = [
+            ['แพลตฟอร์มการขาย', platLabel],
+            ['ราคาขายตั้งต้นต่อชิ้น', `${formatMoney(calc.sellingPrice)} บาท`],
+            ['ต้นทุนสินค้าต่อชิ้น (COGS)', `${formatMoney(calc.productCost)} บาท`],
+            ['ค่ากล่องและบรรจุภัณฑ์', `${formatMoney(calc.packagingCost)} บาท`],
+            ['คูปองส่วนลดที่ร้านออกให้', `${formatMoney(calc.shopVoucher)} บาท`],
+            ['ค่าขนส่งที่ลูกค้าจ่าย vs จ่ายจริง', `${formatMoney(calc.customerShipping)} บ. / ${formatMoney(calc.sellerShipping)} บ.`],
+            ['งบโฆษณา/ยิงแอดเฉลี่ยต่อออเดอร์', `${formatMoney(calc.adSpendPerOrder)} บาท`],
+            ['การคิดภาษี VAT 7% บนค่าธรรมเนียม', calc.isVatApplied ? 'มีผลบังคับใช้ (คิด VAT 7%)' : 'ไม่คิด VAT']
+        ];
+
+        resultCards = [
+            { label: calc.isProfit ? '💰 กำไรสุทธิต่อชิ้น (Net Profit)' : '⚠️ ขาดทุนสุทธิต่อชิ้น (Net Loss)', value: `${formatMoney(calc.netProfit)} บาท`, highlight: true },
+            { label: 'อัตรากำไรสุทธิ (Profit Margin)', value: `${formatNum(calc.profitMarginPct, 1)}%` },
+            { label: 'ราคาขายขั้นต่ำที่ไม่ขาดทุน (Breakeven)', value: `${formatMoney(calc.breakevenPrice)} บาท` },
+            { label: 'เงินโอนสุทธิเข้าบัญชี (Net Payout)', value: `${formatMoney(calc.netPayout)} บาท` }
+        ];
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    ตารางแจกแจงโครงสร้างรายได้ ต้นทุน และค่าธรรมเนียม
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 6px 8px; text-align: left;">รายการโครงสร้างการเงิน</th>
+                            <th style="padding: 6px 8px; text-align: right;">จำนวนเงิน (บาท)</th>
+                            <th style="padding: 6px 8px; text-align: left;">หมายเหตุ / เกณฑ์คำนวณ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;"><b>ราคาขายหน้าร้าน (Gross Selling Price)</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.sellingPrice)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">ราคาตั้งขายที่แสดงให้ผู้ซื้อเห็น</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">ต้นทุนสินค้าและบรรจุภัณฑ์</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #dc2626;">-${formatMoney(calc.productCost + calc.packagingCost)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">สินค้า ${formatMoney(calc.productCost)} บ. + กล่อง/แพ็ค ${formatMoney(calc.packagingCost)} บ.</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">คูปองส่วนลดที่ร้านออกให้</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #dc2626;">-${formatMoney(calc.shopVoucher)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">ร้านค้ารับภาระส่วนลดเอง</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: #fff1f2;">
+                            <td style="padding: 6px 8px; color: #be123c;"><b>รวมค่าธรรมเนียมแพลตฟอร์มทั้งสิ้น</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #be123c;">-${formatMoney(calc.totalPlatformFees)}</td>
+                            <td style="padding: 6px 8px; color: #be123c;">คอมมิชชัน + บริการส่งฟรี + ธุรกรรม + VAT 7%</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">ค่าส่งส่วนต่างที่ร้านออกเพิ่ม</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #dc2626;">-${formatMoney(calc.shippingDifference)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">กรณีค่าส่งจริงเกินจากที่เก็บลูกค้า</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">งบโฆษณา/ยิงแอดเฉลี่ยต่อออเดอร์</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #dc2626;">-${formatMoney(calc.adSpendPerOrder)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">ต้นทุนการตลาดต่อการสั่งซื้อ 1 ครั้ง</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                            <td style="padding: 8px;">กำไรสุทธิต่อชิ้นที่ได้รับจริง:</td>
+                            <td style="padding: 8px; text-align: right; color: ${calc.isProfit ? '#15803d' : '#b91c1c'}; font-size: 13px;">${formatMoney(calc.netProfit)} บาท</td>
+                            <td style="padding: 8px; color: #64748b;">Margin ${formatNum(calc.profitMarginPct, 1)}% | เงินโอนเข้าบัญชี ${formatMoney(calc.netPayout)} บ.</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+
     } else {
         // Generic Fallback for other calculators
         const summary = (typeof getToolSummaryText === 'function') ? getToolSummaryText(curToolId) : '';
@@ -2464,6 +2643,20 @@ function getComparisonPresets(toolId) {
                 label: 'ทางเลือก 3: พนักงานรายวัน 500 บ. (OT วันหยุดเต็มวัน + OT ดึก 4 ชม.)',
                 state: { wageType: 'daily', wageBase: '500', workHoursPerDay: '8', otWeekdayHours: '10', holidayWorkHours: '8', holidayOtHours: '4', shiftAllowance: '800' }
             }
+        ],
+        ecommerce_profit: [
+            {
+                label: 'ทางเลือก 1: Shopee (ราคา 350 บ. ยิงแอด 30 บ.)',
+                state: { platform: 'shopee', sellingPrice: '350', productCost: '150', packagingCost: '10', shopVoucher: '0', customerShipping: '35', sellerShipping: '35', adSpendPerOrder: '30', commissionRatePct: '5.0', serviceFeePct: '4.0', transactionRatePct: '3.0', isVatApplied: 'yes' }
+            },
+            {
+                label: 'ทางเลือก 2: TikTok Shop (ราคา 350 บ. ยิงแอด 20 บ.)',
+                state: { platform: 'tiktok', sellingPrice: '350', productCost: '150', packagingCost: '10', shopVoucher: '0', customerShipping: '35', sellerShipping: '35', adSpendPerOrder: '20', commissionRatePct: '4.0', serviceFeePct: '0.0', transactionRatePct: '3.0', isVatApplied: 'yes' }
+            },
+            {
+                label: 'ทางเลือก 3: ขายตรง LINE Shop (ราคา 320 บ. ไม่เสียคอม)',
+                state: { platform: 'direct', sellingPrice: '320', productCost: '150', packagingCost: '10', shopVoucher: '0', customerShipping: '35', sellerShipping: '35', adSpendPerOrder: '15', commissionRatePct: '0.0', serviceFeePct: '0.0', transactionRatePct: '0.0', isVatApplied: 'no' }
+            }
         ]
     };
     return presets[toolId] || [];
@@ -3155,6 +3348,59 @@ function compareCalculations(toolId, itemsList) {
         const minOt = Math.min(...results.map(r => r.totalOtPay));
         const diffOt = maxOtRes.totalOtPay - minOt;
         deltaSummary = `🏆 ทางเลือกที่ได้ค่าล่วงเวลา (OT) สูงสุดคือ "${items[winnerIndex].label}" ได้รับค่า OT รวม ${formatMoney(maxOtRes.totalOtPay)} บาท${diffOt > 0 ? ` (มากกว่าทางเลือกต่ำสุด ${formatMoney(diffOt)} บาท)` : ''}`;
+
+    } else if (toolId === 'ecommerce_profit') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const calc = (typeof calculateEcommerceProfit === 'function')
+                ? calculateEcommerceProfit(st)
+                : { platform: 'shopee', sellingPrice: 0, productCost: 0, packagingCost: 0, totalPlatformFees: 0, adSpendPerOrder: 0, totalCosts: 0, netPayout: 0, netProfit: 0, profitMarginPct: 0, breakevenPrice: 0 };
+            return calc;
+        });
+
+        rows.push({
+            label: 'ช่องทาง / แพลตฟอร์ม',
+            values: results.map(r => r.platform.toUpperCase())
+        });
+        rows.push({
+            label: 'ราคาขายต่อชิ้น (Selling Price)',
+            values: results.map(r => `${formatMoney(r.sellingPrice)} ฿`)
+        });
+        rows.push({
+            label: 'ต้นทุนสินค้า + บรรจุภัณฑ์',
+            values: results.map(r => `${formatMoney(r.productCost + r.packagingCost)} ฿`)
+        });
+        rows.push({
+            label: 'ค่าธรรมเนียมแพลตฟอร์มรวม VAT',
+            values: results.map(r => `-${formatMoney(r.totalPlatformFees)} ฿`)
+        });
+        rows.push({
+            label: 'งบยิงแอด/โฆษณาต่อออเดอร์',
+            values: results.map(r => `-${formatMoney(r.adSpendPerOrder)} ฿`)
+        });
+        rows.push({
+            label: 'เงินโอนสุทธิเข้าบัญชี (Net Payout)',
+            values: results.map(r => `${formatMoney(r.netPayout)} ฿`)
+        });
+        rows.push({
+            label: 'ราคาขายขั้นต่ำที่ไม่ขาดทุน (Breakeven)',
+            values: results.map(r => `${formatMoney(r.breakevenPrice)} ฿`)
+        });
+
+        const maxProfitRes = results.reduce((max, cur) => cur.netProfit > max.netProfit ? cur : max, results[0]);
+        const maxProfitIdx = results.indexOf(maxProfitRes);
+
+        rows.push({
+            label: 'กำไรสุทธิต่อออเดอร์ (Net Profit)',
+            values: results.map(r => `${formatMoney(r.netProfit)} ฿ (Margin ${formatNum(r.profitMarginPct, 1)}%)`),
+            bestIndex: maxProfitIdx,
+            highlight: true
+        });
+
+        winnerIndex = maxProfitIdx;
+        const minProfit = Math.min(...results.map(r => r.netProfit));
+        const diffProfit = maxProfitRes.netProfit - minProfit;
+        deltaSummary = `🏆 ทางเลือกที่สร้างกำไรสุทธิสูงสุดคือ "${items[winnerIndex].label}" กำไรต่อออเดอร์ ${formatMoney(maxProfitRes.netProfit)} บาท (Margin ${formatNum(maxProfitRes.profitMarginPct, 1)}%)${diffProfit > 0 ? ` มากกว่าทางเลือกต่ำสุด ${formatMoney(diffProfit)} บาท` : ''}`;
 
     } else {
         rows.push({
@@ -4365,6 +4611,14 @@ function getToolSummaryText(toolId, stateObj) {
             const typeLabel = calc.wageType === 'daily' ? 'พนักงานรายวัน' : (calc.wageType === 'hourly' ? 'รายชั่วโมง' : 'พนักงานรายเดือน');
             return `⏱️ สรุปค่าล่วงเวลา (OT) & ทำงานวันหยุด\n${divider}\n• การจ้าง: ${typeLabel} (ฐาน ${formatMoney(calc.wageBase)} บ. / คิดชั่วโมงละ ${formatMoney(calc.hourlyRate)} บ.)\n• OT วันทำงานปกติ (1.5 เท่า): ${calc.otWeekdayHours} ชม. (+${formatMoney(calc.otWeekdayPay)} บ.)\n• ทำงานในวันหยุด (${calc.holidayMultiplier} เท่า): ${calc.holidayWorkHours} ชม. (+${formatMoney(calc.holidayWorkPay)} บ.)\n• OT ในวันหยุด (3.0 เท่า): ${calc.holidayOtHours} ชม. (+${formatMoney(calc.holidayOtPay)} บ.)\n${calc.shiftAllowance > 0 ? `• เงินค่ากะ/เบี้ยเลี้ยง: +${formatMoney(calc.shiftAllowance)} บาท\n` : ''}${divider}\n💰 รวมค่าล่วงเวลา OT พิเศษ: +${formatMoney(calc.totalOtPay)} บาท (${formatNum(calc.totalHours, 1)} ชม.)\n💵 ยอดเงินได้รวมประจำงวด: ${formatMoney(calc.totalEarnings)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'ecommerce_profit': {
+            const st = state.ecommerce_profit || {};
+            const calc = (typeof calculateEcommerceProfit === 'function')
+                ? calculateEcommerceProfit(st)
+                : { platform: 'shopee', sellingPrice: 350, productCost: 150, packagingCost: 10, totalPlatformFees: 43.87, netPayout: 341.13, netProfit: 116.13, profitMarginPct: 33.2, breakevenPrice: 211.23, isProfit: true, adSpendPerOrder: 30 };
+            const platLabel = calc.platform === 'shopee' ? 'Shopee' : (calc.platform === 'lazada' ? 'Lazada' : (calc.platform === 'tiktok' ? 'TikTok Shop' : (calc.platform === 'direct' ? 'ขายตรง/LINE' : 'กำหนดเอง')));
+            return `🛍️ สรุปกำไรขายของออนไลน์ (${platLabel})\n${divider}\n• ราคาขายตั้งต้น: ${formatMoney(calc.sellingPrice)} บาท\n• ต้นทุนสินค้า + แพ็คเกจ: ${formatMoney(calc.productCost + calc.packagingCost)} บาท\n• ค่าธรรมเนียมแพลตฟอร์ม: -${formatMoney(calc.totalPlatformFees)} บาท\n${calc.adSpendPerOrder > 0 ? `• ค่ายิงแอด/โฆษณา: -${formatMoney(calc.adSpendPerOrder)} บาท\n` : ''}• เงินโอนเข้าบัญชีจริง: ${formatMoney(calc.netPayout)} บาท\n• จุดคุ้มทุน (Breakeven): ${formatMoney(calc.breakevenPrice)} บาท\n${divider}\n${calc.isProfit ? '💰 กำไรสุทธิต่อชิ้น' : '⚠️ ขาดทุนต่อชิ้น'}: ${formatMoney(calc.netProfit)} บาท (Margin ${formatNum(calc.profitMarginPct, 1)}%)\n(คำนวณโดย Multitools Calculator)`;
+        }
         default: {
             const statusText = document.getElementById('sharedStatusText')?.innerText?.trim();
             return `📋 สรุปผล: ${title}\n${divider}\n${statusText || 'คำนวณเรียบร้อยแล้ว'}\n(คำนวณโดย Multitools Calculator)`;
@@ -5515,12 +5769,475 @@ function renderSalaryTool(container) {
     else setStatusBanner('success', `จัดสรรเงินเดือน ${formatMoney(income)} บาทเรียบร้อย · ออม/ลงทุน ${formatMoney(savings)} บาทต่อเดือน`);
 }
 
+/* -----------------------------------------------------------
+ * PURE ENGINE: คำนวณกำไรสุทธิขายของออนไลน์ & ค่าธรรมเนียมแพลตฟอร์ม
+ * Shopee, Lazada, TikTok Shop, Direct Sales (Line/FB)
+ * ----------------------------------------------------------- */
+function calculateEcommerceProfit(params) {
+    const p = params || {};
+    const platform = p.platform || 'shopee'; // 'shopee' | 'lazada' | 'tiktok' | 'direct' | 'custom'
+    const sellingPrice = Math.max(0, numberOrDefault(p.sellingPrice, 350));
+    const productCost = Math.max(0, numberOrDefault(p.productCost, 150));
+    const packagingCost = Math.max(0, numberOrDefault(p.packagingCost, 10));
+    const shopVoucher = Math.max(0, numberOrDefault(p.shopVoucher, 0));
+    const customerShipping = Math.max(0, numberOrDefault(p.customerShipping, 35));
+    const sellerShipping = Math.max(0, numberOrDefault(p.sellerShipping, 35));
+    const adSpendPerOrder = Math.max(0, numberOrDefault(p.adSpendPerOrder, 0));
+
+    // อัตราค่าธรรมเนียม (%)
+    const commissionRatePct = Math.max(0, numberOrDefault(p.commissionRatePct, platform === 'tiktok' ? 4.0 : (platform === 'direct' ? 0.0 : 5.0)));
+    const serviceFeePct = Math.max(0, numberOrDefault(p.serviceFeePct, platform === 'shopee' ? 4.0 : (platform === 'lazada' ? 3.0 : 0.0)));
+    const transactionRatePct = Math.max(0, numberOrDefault(p.transactionRatePct, platform === 'direct' ? 0.0 : 3.0));
+    const isVatApplied = p.isVatApplied !== false && p.isVatApplied !== 'no';
+    const vatOnFeePct = isVatApplied ? 7.0 : 0.0;
+
+    // 1. มูลค่าสินค้าหลังหักคูปองร้านค้า (Net Merchandise Value)
+    const effectiveSellingPrice = Math.max(0, sellingPrice - shopVoucher);
+    // มูลค่ารวมที่ผู้ซื้อชำระทั้งหมด (Gross Order Value)
+    const orderGrossValue = effectiveSellingPrice + customerShipping;
+
+    // 2. คำนวณค่าธรรมเนียมแพลตฟอร์ม
+    // - ค่าคอมมิชชัน คิดจากราคาขายหักคูปองร้าน (ไม่รวมค่าส่ง)
+    const commissionFeePreVat = effectiveSellingPrice * (commissionRatePct / 100);
+    // - ค่าบริการโปรแกรมส่งฟรี / เหรียญคืน คิดจากราคาขายหักคูปองร้าน
+    const serviceFeePreVat = effectiveSellingPrice * (serviceFeePct / 100);
+    // - ค่าธรรมเนียมการชำระเงิน/ธุรกรรม คิดจากยอดรวมที่ผู้ซื้อจ่ายทั้งหมด (รวมค่าส่ง)
+    const transactionFeePreVat = orderGrossValue * (transactionRatePct / 100);
+
+    const totalPlatformFeesPreVat = commissionFeePreVat + serviceFeePreVat + transactionFeePreVat;
+    const platformVat = totalPlatformFeesPreVat * (vatOnFeePct / 100);
+    const totalPlatformFees = totalPlatformFeesPreVat + platformVat;
+
+    // 3. ต้นทุนค่าจัดส่งส่วนต่าง (กรณีร้านช่วยออกค่าส่ง หรือค่าส่งจริงแพงกว่าที่ลูกค้าจ่าย)
+    const shippingDifference = Math.max(0, sellerShipping - customerShipping);
+
+    // 4. ต้นทุนรวมทั้งหมด
+    const totalDirectCosts = productCost + packagingCost + shopVoucher + shippingDifference + adSpendPerOrder;
+    const totalCosts = totalDirectCosts + totalPlatformFees;
+
+    // 5. ยอดเงินโอนเข้าบัญชีร้านค้าจากแพลตฟอร์ม (Net Payout)
+    // = ยอดที่ผู้ซื้อจ่าย - ค่าธรรมเนียมแพลตฟอร์ม - ค่าส่งจริงที่ขนส่งหัก
+    const netPayout = Math.max(0, orderGrossValue - totalPlatformFees - sellerShipping);
+
+    // 6. กำไรสุทธิ (Net Profit)
+    const netProfit = sellingPrice - totalCosts;
+    const isProfit = netProfit >= 0;
+
+    // 7. อัตราส่วนทางการเงิน
+    const profitMarginPct = sellingPrice > 0 ? (netProfit / sellingPrice) * 100 : 0;
+    const directCostBase = productCost + packagingCost;
+    const markupPct = directCostBase > 0 ? (netProfit / directCostBase) * 100 : 0;
+    const roiPct = totalCosts > 0 ? (netProfit / totalCosts) * 100 : 0;
+
+    // 8. จุดคุ้มทุน (ราคาขายขั้นต่ำที่ไม่ขาดทุน: Breakeven Selling Price)
+    // Breakeven Price P: P * (1 - TotalFeeRate) = productCost + packagingCost + adSpend + shippingDiff
+    const totalFeeRateDecimal = ((commissionRatePct + serviceFeePct + transactionRatePct) * (1 + vatOnFeePct / 100)) / 100;
+    let breakevenPrice = 0;
+    if (totalFeeRateDecimal < 0.99) {
+        const requiredCost = productCost + packagingCost + adSpendPerOrder + shippingDifference;
+        breakevenPrice = requiredCost / (1 - totalFeeRateDecimal);
+    }
+
+    return {
+        platform,
+        sellingPrice,
+        productCost,
+        packagingCost,
+        shopVoucher,
+        customerShipping,
+        sellerShipping,
+        adSpendPerOrder,
+        commissionRatePct,
+        serviceFeePct,
+        transactionRatePct,
+        isVatApplied,
+        vatOnFeePct,
+        effectiveSellingPrice,
+        orderGrossValue,
+        commissionFeePreVat,
+        serviceFeePreVat,
+        transactionFeePreVat,
+        totalPlatformFeesPreVat,
+        platformVat,
+        totalPlatformFees,
+        shippingDifference,
+        totalDirectCosts,
+        totalCosts,
+        netPayout,
+        netProfit,
+        isProfit,
+        profitMarginPct,
+        markupPct,
+        roiPct,
+        breakevenPrice
+    };
+}
+
+/* -----------------------------------------------------------
+ * UI RENDERER: กำไรสุทธิขายของออนไลน์ & Shopee/TikTok Fees
+ * ----------------------------------------------------------- */
+function renderEcommerceProfitTool(container) {
+    const st = appState.ecommerce_profit || {
+        platform: 'shopee',
+        sellingPrice: '350',
+        productCost: '150',
+        packagingCost: '10',
+        shopVoucher: '0',
+        customerShipping: '35',
+        sellerShipping: '35',
+        adSpendPerOrder: '30',
+        commissionRatePct: '5.0',
+        serviceFeePct: '4.0',
+        transactionRatePct: '3.0',
+        isVatApplied: 'yes'
+    };
+
+    const calc = calculateEcommerceProfit({
+        platform: st.platform,
+        sellingPrice: parseNumericInput(st.sellingPrice),
+        productCost: parseNumericInput(st.productCost),
+        packagingCost: parseNumericInput(st.packagingCost),
+        shopVoucher: parseNumericInput(st.shopVoucher),
+        customerShipping: parseNumericInput(st.customerShipping),
+        sellerShipping: parseNumericInput(st.sellerShipping),
+        adSpendPerOrder: parseNumericInput(st.adSpendPerOrder),
+        commissionRatePct: parseNumericInput(st.commissionRatePct),
+        serviceFeePct: parseNumericInput(st.serviceFeePct),
+        transactionRatePct: parseNumericInput(st.transactionRatePct),
+        isVatApplied: st.isVatApplied !== 'no'
+    });
+
+    const isShopee = st.platform === 'shopee';
+    const isLazada = st.platform === 'lazada';
+    const isTiktok = st.platform === 'tiktok';
+    const isDirect = st.platform === 'direct';
+    const isCustom = st.platform === 'custom';
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-3 p-1">
+            <!-- Platform Selector -->
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2" style="box-shadow:var(--app-elevation)">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-bold text-neutral-600 dark:text-neutral-400">เลือกแพลตฟอร์มขายสินค้า</label>
+                    <span class="text-[11px] font-semibold text-emerald-600">ค่าธรรมเนียมปี 2025/2026</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 text-xs font-semibold">
+                    <button type="button" class="btn-ecom-plat py-2 px-1.5 rounded-lg border text-center transition-all cursor-pointer ${isShopee ? 'bg-orange-50 border-orange-500 text-orange-700 font-bold shadow-sm' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'}" data-plat="shopee">
+                        🟠 Shopee
+                    </button>
+                    <button type="button" class="btn-ecom-plat py-2 px-1.5 rounded-lg border text-center transition-all cursor-pointer ${isLazada ? 'bg-blue-50 border-blue-500 text-blue-700 font-bold shadow-sm' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'}" data-plat="lazada">
+                        🔵 Lazada
+                    </button>
+                    <button type="button" class="btn-ecom-plat py-2 px-1.5 rounded-lg border text-center transition-all cursor-pointer ${isTiktok ? 'bg-neutral-900 border-neutral-900 text-white font-bold shadow-sm' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'}" data-plat="tiktok">
+                        ⚫ TikTok
+                    </button>
+                    <button type="button" class="btn-ecom-plat py-2 px-1.5 rounded-lg border text-center transition-all cursor-pointer ${isDirect ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-bold shadow-sm' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'}" data-plat="direct">
+                        🟢 ขายตรง (LINE)
+                    </button>
+                    <button type="button" class="btn-ecom-plat py-2 px-1.5 rounded-lg border text-center transition-all cursor-pointer ${isCustom ? 'bg-purple-50 border-purple-500 text-purple-700 font-bold shadow-sm' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'}" data-plat="custom">
+                        ⚙️ กำหนดเอง
+                    </button>
+                </div>
+            </div>
+
+            <!-- Card 1: ราคาขายและโปรโมชัน -->
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-3" style="box-shadow:var(--app-elevation)">
+                <div class="text-xs font-bold text-neutral-800 border-b border-neutral-100 pb-1.5 flex justify-between items-center">
+                    <span>1. ราคาขายและโปรโมชันหน้าร้าน</span>
+                    <span class="text-[11px] font-normal text-neutral-500">ใส่ราคาตั้งขาย</span>
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-neutral-600 block mb-1">ราคาตั้งขายต่อชิ้น (บาท)</label>
+                    <div class="relative">
+                        <input id="ecomSellingPrice" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.sellingPrice))}" class="airbnb-input w-full font-bold text-base text-[var(--color-ink)] pr-12" placeholder="เช่น 350">
+                        <span class="absolute right-3 top-2.5 text-xs text-neutral-400">บาท</span>
+                    </div>
+                    <!-- Quick Price Step Chips -->
+                    <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+                        <span class="text-[11px] text-neutral-400">บวกราคา:</span>
+                        <button type="button" class="btn-quick-price px-2 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-add="10">+10</button>
+                        <button type="button" class="btn-quick-price px-2 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-add="20">+20</button>
+                        <button type="button" class="btn-quick-price px-2 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-add="50">+50</button>
+                        <button type="button" class="btn-quick-price px-2 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-add="100">+100</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="text-xs font-medium text-neutral-600 block mb-1">คูปองส่วนลดที่ร้านออกให้ (บาท)</label>
+                        <input id="ecomShopVoucher" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.shopVoucher))}" class="airbnb-input w-full text-xs" placeholder="เช่น 20 (ถ้าไม่มีใส่ 0)">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-neutral-600 block mb-1">ค่าส่งที่ลูกค้าจ่ายหน้าร้าน (บาท)</label>
+                        <input id="ecomCustomerShipping" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.customerShipping))}" class="airbnb-input w-full text-xs" placeholder="เช่น 35">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: ต้นทุนสินค้าและการดำเนินการ -->
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-3" style="box-shadow:var(--app-elevation)">
+                <div class="text-xs font-bold text-neutral-800 border-b border-neutral-100 pb-1.5">
+                    2. ต้นทุนสินค้า ค่าแพ็ค และค่าโฆษณา
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="text-xs font-medium text-neutral-600 block mb-1">ราคาทุนสินค้า / ผลิต (บาท)</label>
+                        <input id="ecomProductCost" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.productCost))}" class="airbnb-input w-full text-xs font-semibold" placeholder="เช่น 150">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-neutral-600 block mb-1">ค่ากล่อง / เทป / ซองแพ็ค (บาท)</label>
+                        <input id="ecomPackagingCost" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.packagingCost))}" class="airbnb-input w-full text-xs" placeholder="เช่น 10">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-neutral-600 block mb-1">ค่าส่งจริงที่ขนส่งหัก (บาท)</label>
+                        <input id="ecomSellerShipping" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.sellerShipping))}" class="airbnb-input w-full text-xs" placeholder="เช่น 35">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-neutral-600 block mb-1">งบยิงแอด/โฆษณาเฉลี่ยต่อออเดอร์ (บาท)</label>
+                        <input id="ecomAdSpend" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.adSpendPerOrder))}" class="airbnb-input w-full text-xs" placeholder="เช่น 30 (ถ้าไม่ยิงใส่ 0)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: อัตราค่าธรรมเนียมแพลตฟอร์ม -->
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-2.5" style="box-shadow:var(--app-elevation)">
+                <div class="text-xs font-bold text-neutral-800 border-b border-neutral-100 pb-1.5 flex justify-between items-center">
+                    <span>3. โครงสร้างค่าธรรมเนียม (${escapeHTML(calc.platform.toUpperCase())})</span>
+                    <label class="flex items-center gap-1.5 text-[11px] text-neutral-600 cursor-pointer">
+                        <input id="ecomVatCheck" type="checkbox" ${calc.isVatApplied ? 'checked' : ''} class="rounded border-neutral-300 text-emerald-600">
+                        <span>คิด VAT 7% เพิ่มบนค่าธรรมเนียม</span>
+                    </label>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                        <label class="text-[11px] text-neutral-500 block mb-1">คอมมิชชัน (%)</label>
+                        <input id="ecomCommission" type="number" step="0.1" value="${st.commissionRatePct}" class="airbnb-input w-full text-xs text-center font-semibold">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-neutral-500 block mb-1">โปรแกรมส่งฟรี (%)</label>
+                        <input id="ecomService" type="number" step="0.1" value="${st.serviceFeePct}" class="airbnb-input w-full text-xs text-center font-semibold">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-neutral-500 block mb-1">ธุรกรรม/ชำระเงิน (%)</label>
+                        <input id="ecomTransaction" type="number" step="0.1" value="${st.transactionRatePct}" class="airbnb-input w-full text-xs text-center font-semibold">
+                    </div>
+                </div>
+            </div>
+
+            <!-- HERO SUMMARY CARD -->
+            <div class="rounded-[var(--app-card-radius)] p-4 border ${calc.isProfit ? 'bg-emerald-50/70 border-emerald-300 text-emerald-950' : 'bg-red-50/70 border-red-300 text-red-950'} space-y-3" style="box-shadow:var(--app-elevation)">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-xs uppercase font-bold tracking-wider ${calc.isProfit ? 'text-emerald-700' : 'text-red-700'}">
+                            ${calc.isProfit ? '💰 กำไรสุทธิต่อออเดอร์ (Net Profit)' : '⚠️ ขาดทุนต่อออเดอร์ (Net Loss)'}
+                        </span>
+                        <div class="text-2xl sm:text-3xl font-extrabold mt-0.5 ${calc.isProfit ? 'text-emerald-700' : 'text-red-700'}">
+                            ${formatMoney(calc.netProfit)} บาท
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-block px-2.5 py-1 text-xs font-bold rounded-full ${calc.isProfit ? 'bg-emerald-200 text-emerald-900' : 'bg-red-200 text-red-900'}">
+                            Margin ${formatNum(calc.profitMarginPct, 1)}%
+                        </span>
+                        <div class="text-[11px] text-neutral-500 mt-1">
+                            Markup: ${formatNum(calc.markupPct, 1)}%
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sub KPI Grid -->
+                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-black/10">
+                    <div class="bg-white/80 rounded-lg p-2.5 border border-black/5">
+                        <div class="text-[11px] text-neutral-500 font-medium">ราคาขายขั้นต่ำที่ไม่ขาดทุน (Breakeven)</div>
+                        <div class="text-base font-bold text-[var(--color-ink)] mt-0.5">${formatMoney(calc.breakevenPrice)} ฿</div>
+                        <div class="text-[10px] text-neutral-400">ขายต่ำกว่านี้จะเริ่มเข้าเนื้อ</div>
+                    </div>
+                    <div class="bg-white/80 rounded-lg p-2.5 border border-black/5">
+                        <div class="text-[11px] text-neutral-500 font-medium">เงินโอนเข้าบัญชีจริง (Net Payout)</div>
+                        <div class="text-base font-bold text-emerald-800 mt-0.5">${formatMoney(calc.netPayout)} ฿</div>
+                        <div class="text-[10px] text-neutral-400">หลังหักค่าธรรมเนียมและค่าส่ง</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ITEMIZED COST BREAKDOWN -->
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
+                <div class="font-bold text-neutral-800 border-b border-neutral-100 pb-1.5 flex justify-between">
+                    <span>ตารางแจกแจงค่าธรรมเนียมและต้นทุน</span>
+                    <span>สัดส่วน</span>
+                </div>
+                <div class="flex justify-between py-0.5">
+                    <span class="text-neutral-600">1. ต้นทุนตัวสินค้า (COGS)</span>
+                    <b class="text-neutral-800">${formatMoney(calc.productCost)} ฿ (${calc.sellingPrice > 0 ? formatNum((calc.productCost / calc.sellingPrice) * 100, 1) : 0}%)</b>
+                </div>
+                <div class="flex justify-between py-0.5">
+                    <span class="text-neutral-600">2. ค่ากล่องและบรรจุภัณฑ์</span>
+                    <b class="text-neutral-800">${formatMoney(calc.packagingCost)} ฿</b>
+                </div>
+                <div class="flex justify-between py-0.5">
+                    <span class="text-neutral-600">3. คูปองส่วนลดร้านค้า</span>
+                    <b class="text-neutral-800">${formatMoney(calc.shopVoucher)} ฿</b>
+                </div>
+                <div class="flex justify-between py-0.5">
+                    <span class="text-neutral-600">4. รวมค่าธรรมเนียมแพลตฟอร์ม ${calc.isVatApplied ? '(รวม VAT 7%)' : ''}</span>
+                    <b class="text-red-600">-${formatMoney(calc.totalPlatformFees)} ฿ (${calc.sellingPrice > 0 ? formatNum((calc.totalPlatformFees / calc.sellingPrice) * 100, 1) : 0}%)</b>
+                </div>
+                <div class="pl-3 space-y-0.5 text-[11px] text-neutral-500 border-l-2 border-red-200">
+                    <div class="flex justify-between">
+                        <span>• ค่าคอมมิชชัน (${calc.commissionRatePct}%)</span>
+                        <span>${formatMoney(calc.commissionFeePreVat)} ฿</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>• ค่าบริการโปรแกรมส่งฟรี (${calc.serviceFeePct}%)</span>
+                        <span>${formatMoney(calc.serviceFeePreVat)} ฿</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>• ค่าธุรกรรมการชำระเงิน (${calc.transactionRatePct}%)</span>
+                        <span>${formatMoney(calc.transactionFeePreVat)} ฿</span>
+                    </div>
+                    ${calc.isVatApplied ? `
+                        <div class="flex justify-between text-neutral-600">
+                            <span>• ภาษีมูลค่าเพิ่ม (VAT 7% บนค่าธรรมเนียม)</span>
+                            <span>${formatMoney(calc.platformVat)} ฿</span>
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="flex justify-between py-0.5">
+                    <span class="text-neutral-600">5. ค่าขนส่งส่วนต่างที่ร้านออกเพิ่ม</span>
+                    <b class="text-neutral-800">${formatMoney(calc.shippingDifference)} ฿</b>
+                </div>
+                <div class="flex justify-between py-0.5">
+                    <span class="text-neutral-600">6. ค่ายิงแอด/โฆษณาต่อออเดอร์</span>
+                    <b class="text-neutral-800">${formatMoney(calc.adSpendPerOrder)} ฿</b>
+                </div>
+                <div class="border-t border-neutral-200 pt-1.5 flex justify-between font-bold text-neutral-900">
+                    <span>รวมต้นทุนค่าใช้จ่ายทั้งหมด (Total Costs)</span>
+                    <span class="text-red-700">${formatMoney(calc.totalCosts)} ฿</span>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button id="btnPrintEcomReceipt" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm">
+                        🖨️ พิมพ์ใบสรุปกำไร / บันทึก PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Event Handlers
+    // 1. Platform switcher
+    container.querySelectorAll('.btn-ecom-plat').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const plat = btn.dataset.plat;
+            st.platform = plat;
+            if (plat === 'shopee') {
+                st.commissionRatePct = '5.0';
+                st.serviceFeePct = '4.0';
+                st.transactionRatePct = '3.0';
+                st.isVatApplied = 'yes';
+            } else if (plat === 'lazada') {
+                st.commissionRatePct = '5.0';
+                st.serviceFeePct = '3.0';
+                st.transactionRatePct = '3.0';
+                st.isVatApplied = 'yes';
+            } else if (plat === 'tiktok') {
+                st.commissionRatePct = '4.0';
+                st.serviceFeePct = '0.0';
+                st.transactionRatePct = '3.0';
+                st.isVatApplied = 'yes';
+            } else if (plat === 'direct') {
+                st.commissionRatePct = '0.0';
+                st.serviceFeePct = '0.0';
+                st.transactionRatePct = '0.0';
+                st.isVatApplied = 'no';
+            }
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    // 2. Quick price step adders
+    container.querySelectorAll('.btn-quick-price').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const add = parseFloat(btn.dataset.add) || 0;
+            const current = parseNumericInput(st.sellingPrice) || 0;
+            st.sellingPrice = formatInputDisplay(String(current + add));
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    // 3. Inputs formatting and binding
+    const bindInput = (id, stateKey) => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.addEventListener('change', () => {
+            st[stateKey] = input.value;
+            persistAppState();
+            renderActiveTool();
+        });
+        input.addEventListener('blur', () => {
+            const formatted = formatInputDisplay(input.value);
+            st[stateKey] = formatted;
+            input.value = formatted;
+            persistAppState();
+        });
+    };
+
+    bindInput('ecomSellingPrice', 'sellingPrice');
+    bindInput('ecomProductCost', 'productCost');
+    bindInput('ecomPackagingCost', 'packagingCost');
+    bindInput('ecomShopVoucher', 'shopVoucher');
+    bindInput('ecomCustomerShipping', 'customerShipping');
+    bindInput('ecomSellerShipping', 'sellerShipping');
+    bindInput('ecomAdSpend', 'adSpendPerOrder');
+
+    // Fee rates binding
+    const bindFee = (id, stateKey) => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.addEventListener('change', () => {
+            st[stateKey] = input.value;
+            st.platform = 'custom';
+            persistAppState();
+            renderActiveTool();
+        });
+    };
+    bindFee('ecomCommission', 'commissionRatePct');
+    bindFee('ecomService', 'serviceFeePct');
+    bindFee('ecomTransaction', 'transactionRatePct');
+
+    const vatCheck = document.getElementById('ecomVatCheck');
+    if (vatCheck) {
+        vatCheck.addEventListener('change', () => {
+            st.isVatApplied = vatCheck.checked ? 'yes' : 'no';
+            persistAppState();
+            renderActiveTool();
+        });
+    }
+
+    container.querySelector('#btnPrintEcomReceipt')?.addEventListener('click', () => {
+        triggerPrintReceipt('ecommerce_profit');
+    });
+
+    // Status Banner
+    if (calc.sellingPrice <= 0) {
+        setStatusBanner('empty', 'กรุณาระบุราคาตั้งขายต่อชิ้นเพื่อคำนวณกำไรและค่าธรรมเนียม');
+    } else if (calc.isProfit) {
+        setStatusBanner('success', `กำไรสุทธิ <b>${formatMoney(calc.netProfit)} บาท/ออเดอร์</b> (Margin ${formatNum(calc.profitMarginPct, 1)}%) · เงินโอนเข้าบัญชี ${formatMoney(calc.netPayout)} บาท`);
+    } else {
+        setStatusBanner('empty', `⚠️ ขาดทุน <b>${formatMoney(Math.abs(calc.netProfit))} บาท</b> · ราคาขายขั้นต่ำที่ไม่ขาดทุนคือ ${formatMoney(calc.breakevenPrice)} บาท`);
+    }
+}
+
 (function(root) {
     const exportsObj = {
         renderVatTool,
         renderVatWhtTool,
         renderPercentTool,
-        renderSalaryTool
+        renderSalaryTool,
+        calculateEcommerceProfit,
+        renderEcommerceProfitTool
     };
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = exportsObj;
@@ -5653,10 +6370,17 @@ function renderCurrencyTool(container) {
 }
 
 /* -----------------------------------------------------------
- * TOOL 15: เงินกู้ (Loan Payment Calculator)
+ * TOOL 15: เงินกู้ (Loan Payment Calculator & Refinance)
  * ----------------------------------------------------------- */
 function renderLoanTool(container) {
     const st = appState.loan;
+    st.tab = st.tab || 'amortization'; // 'amortization' | 'refinance'
+
+    if (st.tab === 'refinance') {
+        renderHomeRefinanceTool(container);
+        return;
+    }
+
     const P = numberOrDefault(st.principal, 0);
     const annualRate = numberOrDefault(st.interestRate, 0);
     const n = integerOrDefault(st.months, 0);
@@ -5698,6 +6422,14 @@ function renderLoanTool(container) {
 
     container.innerHTML = `
         <div class="flex flex-col gap-1.5">
+            <div class="segment-group grid-cols-2 mb-1">
+                <button type="button" class="segment-btn loan-tab-btn ${st.tab !== 'refinance' ? 'active' : ''}" data-tab="amortization">
+                    📊 ผ่อนชำระ & ตารางโปะ
+                </button>
+                <button type="button" class="segment-btn loan-tab-btn ${st.tab === 'refinance' ? 'active' : ''}" data-tab="refinance">
+                    🔄 รีไฟแนนซ์ vs Retention (ธปท.)
+                </button>
+            </div>
             ${createKeypadFieldHTML(0, 'วงเงินกู้ (เงินต้น)', st.principal, 'บาท', 'เช่น 500,000')}
             ${createKeypadFieldHTML(1, 'อัตราดอกเบี้ยต่อปี', st.interestRate, '% ต่อปี', 'เช่น 4.5')}
             ${createKeypadFieldHTML(2, 'ระยะเวลาผ่อนชำระ', st.months, 'เดือน', 'เช่น 36')}
@@ -5706,6 +6438,14 @@ function renderLoanTool(container) {
     `;
 
     attachFieldClickListeners(container);
+
+    container.querySelectorAll('.loan-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.tab = btn.dataset.tab;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
 
     const loanRoot = container.firstElementChild;
     loanRoot.insertAdjacentHTML('afterbegin', `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-2"><label class="text-xs text-[#6a6a6a] block mb-1">วิธีคำนวณดอกเบี้ย</label><select id="loanCalcMethod" class="w-full font-semibold text-sm bg-transparent outline-none"><option value="reducing" ${st.calcMethod !== 'flat' ? 'selected' : ''}>ลดต้นลดดอก</option><option value="flat" ${st.calcMethod === 'flat' ? 'selected' : ''}>ค่างวดคงที่ (Flat Rate)</option></select></div>`);
@@ -5766,6 +6506,413 @@ function renderLoanTool(container) {
     } else {
         setStatusBanner('success', `🏦 ผ่อนเดือนละ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(monthlyPay)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">ดอกเบี้ยรวม: ${formatMoney(totalInterest)} ฿ | โปะเพิ่ม: ${formatMoney(extra)} ฿/เดือน | เหลือ ${extraMonths} เดือน</span><span class="text-xs font-bold block text-[var(--app-accent)]">ประหยัดดอกเบี้ย ${formatMoney(interestSaved)} ฿ และลดระยะเวลา ${monthsSaved} เดือน</span>`);
     }
+}
+
+/* -----------------------------------------------------------
+ * PURE ENGINE: รีไฟแนนซ์บ้าน vs Retention ธนาคารเดิม & จุดคุ้มทุน (ธปท.)
+ * ----------------------------------------------------------- */
+function calculateHomeRefinance(params) {
+    const p = params || {};
+    const principal = Math.max(0, numberOrDefault(p.principal, 2000000));
+    const months = Math.max(12, integerOrDefault(p.months, 240)); // default 20 years remaining
+    const currentRate = Math.max(0, numberOrDefault(p.currentRate, 5.50));
+    const retentionRate = Math.max(0, numberOrDefault(p.retentionRate, 3.80));
+    const retentionFee = Math.max(0, numberOrDefault(p.retentionFee, 0));
+    const refinanceRate = Math.max(0, numberOrDefault(p.refinanceRate, 2.99));
+    const isGovReduced = p.isGovReducedMortgage === 'yes' || p.isGovReducedMortgage === true;
+    const appraisalFee = Math.max(0, numberOrDefault(p.appraisalFee, 2800));
+    const insuranceFee = Math.max(0, numberOrDefault(p.insuranceFee, 2000));
+    const otherRefinanceFees = Math.max(0, numberOrDefault(p.otherRefinanceFees, 0));
+
+    // Refinance Upfront Fees
+    const mortgageFeeRate = isGovReduced ? 0.0001 : 0.01; // 0.01% or 1.0%
+    const mortgageFee = principal * mortgageFeeRate;
+    const stampDuty = Math.min(10000, principal * 0.0005); // 0.05% capped at 10,000 THB
+    const totalRefinanceFees = mortgageFee + appraisalFee + stampDuty + insuranceFee + otherRefinanceFees;
+
+    // Helper: calculate 3-year amortization (36 months based on BOT standard)
+    const calc3Years = (rate) => {
+        if (principal <= 0 || months <= 0) {
+            return { monthlyPay: 0, totalPaid3Y: 0, interestPaid3Y: 0, principalPaid3Y: 0, endBalance3Y: 0 };
+        }
+        const i = (rate / 100) / 12;
+        const monthlyPay = i > 0
+            ? principal * (i * Math.pow(1 + i, months)) / (Math.pow(1 + i, months) - 1)
+            : principal / months;
+
+        let bal = principal;
+        let totalInterest = 0;
+        let totalPrincipal = 0;
+        const horizon = Math.min(36, months);
+
+        for (let m = 0; m < horizon; m++) {
+            const interest = bal * i;
+            const prinPart = Math.min(bal, Math.max(0, monthlyPay - interest));
+            totalInterest += interest;
+            totalPrincipal += prinPart;
+            bal -= prinPart;
+            if (bal <= 0.01) break;
+        }
+
+        return {
+            monthlyPay,
+            totalPaid3Y: (totalInterest + totalPrincipal),
+            interestPaid3Y: totalInterest,
+            principalPaid3Y: totalPrincipal,
+            endBalance3Y: Math.max(0, bal)
+        };
+    };
+
+    // 1. Current Floating Rate (3 years)
+    const currentPlan = calc3Years(currentRate);
+
+    // 2. Retention Plan (3 years)
+    const retentionPlan = calc3Years(retentionRate);
+    const retentionInterestSaved = Math.max(0, currentPlan.interestPaid3Y - retentionPlan.interestPaid3Y);
+    const retentionNetSavings = retentionInterestSaved - retentionFee;
+
+    // 3. Refinance Plan (3 years)
+    const refinancePlan = calc3Years(refinanceRate);
+    const refinanceInterestSaved = Math.max(0, currentPlan.interestPaid3Y - refinancePlan.interestPaid3Y);
+    const refinanceNetSavings = refinanceInterestSaved - totalRefinanceFees;
+
+    // 4. Comparison: Refinance vs Retention
+    const netSavingsAdvantage = refinanceNetSavings - retentionNetSavings; // positive = Refinance is better
+    const interestSavedAdvantage = refinanceInterestSaved - retentionInterestSaved;
+    const costDifference = Math.max(0, totalRefinanceFees - retentionFee);
+
+    // Breakeven month: how many months of extra interest savings from refinance cover the upfront cost difference
+    let breakevenMonth = null;
+    const monthlyExtraInterestSaved = (retentionPlan.interestPaid3Y - refinancePlan.interestPaid3Y) / 36;
+    if (monthlyExtraInterestSaved > 0 && costDifference > 0) {
+        breakevenMonth = Math.ceil(costDifference / monthlyExtraInterestSaved);
+    } else if (costDifference <= 0) {
+        breakevenMonth = 0;
+    }
+
+    const isRefinanceBetter = netSavingsAdvantage > 0 && (breakevenMonth !== null && breakevenMonth <= 36);
+
+    let recommendation = '';
+    if (isRefinanceBetter) {
+        recommendation = `🏆 แนะนำ "รีไฟแนนซ์ (ย้ายธนาคารใหม่)" คุ้มทุนในเดือนที่ ${breakevenMonth} และประหยัดสุทธิ 3 ปีได้มากกว่า Retention ถึง ${formatMoney(netSavingsAdvantage)} บาท`;
+    } else if (retentionNetSavings > 0) {
+        recommendation = `🏆 แนะนำ "Retention (ขอลดดอกเบี้ยแบงก์เดิม)" คุ้มค่ากว่า ได้ผลประหยัดสุทธิ 3 ปี ${formatMoney(retentionNetSavings)} บาท โดยไม่ต้องเสียเวลายื่นกู้และจ่ายค่าธรรมเนียมย้ายค่าย`;
+    } else {
+        recommendation = `ควรรอเจรจาอัตราดอกเบี้ยโปรโมชันที่ดีกว่านี้ เนื่องจากดอกเบี้ยที่ประหยัดได้ยังไม่คุ้มค่าธรรมเนียม`;
+    }
+
+    return {
+        principal,
+        months,
+        currentRate,
+        retentionRate,
+        retentionFee,
+        refinanceRate,
+        isGovReduced,
+        mortgageFee,
+        stampDuty,
+        appraisalFee,
+        insuranceFee,
+        otherRefinanceFees,
+        totalRefinanceFees,
+        currentPlan,
+        retentionPlan,
+        retentionInterestSaved,
+        retentionNetSavings,
+        refinancePlan,
+        refinanceInterestSaved,
+        refinanceNetSavings,
+        netSavingsAdvantage,
+        interestSavedAdvantage,
+        monthlyExtraInterestSaved,
+        costDifference,
+        breakevenMonth,
+        isRefinanceBetter,
+        recommendation
+    };
+}
+
+/* -----------------------------------------------------------
+ * UI RENDERER: รีไฟแนนซ์บ้าน vs Retention ธนาคารเดิม & จุดคุ้มทุน
+ * ----------------------------------------------------------- */
+function renderHomeRefinanceTool(container) {
+    const st = appState.loan;
+    const calc = calculateHomeRefinance({
+        principal: parseNumericInput(st.principal),
+        months: integerOrDefault(st.months, 240),
+        currentRate: parseNumericInput(st.currentRate ?? '5.50'),
+        retentionRate: parseNumericInput(st.retentionRate ?? '3.80'),
+        retentionFee: parseNumericInput(st.retentionFee ?? '0'),
+        refinanceRate: parseNumericInput(st.refinanceRate ?? '2.99'),
+        isGovReducedMortgage: st.isGovReducedMortgage === 'yes',
+        appraisalFee: parseNumericInput(st.appraisalFee ?? '2800'),
+        insuranceFee: parseNumericInput(st.insuranceFee ?? '2000'),
+        otherRefinanceFees: parseNumericInput(st.otherRefinanceFees ?? '0')
+    });
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-3 p-1">
+            <!-- Mode Switcher Tabs -->
+            <div class="segment-group grid-cols-2 mb-0.5">
+                <button type="button" class="segment-btn loan-tab-btn" data-tab="amortization">
+                    📊 ผ่อนชำระ & ตารางโปะ
+                </button>
+                <button type="button" class="segment-btn loan-tab-btn active" data-tab="refinance">
+                    🔄 รีไฟแนนซ์ vs Retention (ธปท.)
+                </button>
+            </div>
+
+            <!-- Principal & Term Inputs -->
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-3" style="box-shadow:var(--app-elevation)">
+                <div class="text-xs font-bold text-neutral-800 border-b border-neutral-100 pb-1.5 flex justify-between items-center">
+                    <span>1. ยอดหนี้คงเหลือและระยะเวลา</span>
+                    <span class="text-[11px] font-medium text-emerald-600">อิงแนวทาง ธปท. 3 ปีแรก</span>
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-neutral-600 block mb-1">ยอดหนี้บ้านคงเหลือ (Principal Balance)</label>
+                    <div class="relative">
+                        <input id="refinancePrincipal" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.principal))}" class="airbnb-input w-full font-bold text-base text-[var(--color-ink)] pr-12" placeholder="เช่น 2,000,000">
+                        <span class="absolute right-3 top-2.5 text-xs text-neutral-400">บาท</span>
+                    </div>
+                    <!-- Quick Principal Chips -->
+                    <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+                        <span class="text-[11px] text-neutral-400">เลือกด่วน:</span>
+                        <button type="button" class="btn-quick-principal px-2.5 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-p="1000000">1.0 ล้าน</button>
+                        <button type="button" class="btn-quick-principal px-2.5 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-p="2000000">2.0 ล้าน</button>
+                        <button type="button" class="btn-quick-principal px-2.5 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-p="3000000">3.0 ล้าน</button>
+                        <button type="button" class="btn-quick-principal px-2.5 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-p="5000000">5.0 ล้าน</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-xs font-medium text-neutral-600 block mb-1">ระยะเวลาผ่อนที่เหลืออยู่ (เดือน / ปี)</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="relative">
+                            <input id="refinanceMonths" type="number" min="12" max="480" value="${st.months || 240}" class="airbnb-input w-full font-semibold text-xs pr-12">
+                            <span class="absolute right-3 top-2 text-xs text-neutral-400">เดือน</span>
+                        </div>
+                        <div class="flex items-center text-xs font-bold text-neutral-700 bg-neutral-50 rounded-lg px-3 border border-neutral-200">
+                            ≈ ${(integerOrDefault(st.months, 240) / 12).toFixed(1)} ปี
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Input Cards (3 Options) -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <!-- Option 1: Existing Floating -->
+                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2">
+                    <div class="text-xs font-bold text-neutral-700 border-b pb-1">
+                        1. ดอกเบี้ยเดิมลอยตัว
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-neutral-500 block mb-0.5">ดอกเบี้ย MRR เดิม (%)</label>
+                        <input id="refinanceCurrentRate" type="number" step="0.01" value="${st.currentRate ?? '5.50'}" class="airbnb-input w-full text-xs font-bold text-center">
+                    </div>
+                    <div class="pt-1 border-t text-[11px] space-y-1 text-neutral-600">
+                        <div class="flex justify-between">
+                            <span>ผ่อนต่อเดือน:</span>
+                            <b class="text-neutral-800">${formatMoney(calc.currentPlan.monthlyPay)} ฿</b>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>ดอกเบี้ย 3 ปี:</span>
+                            <b class="text-red-600">${formatMoney(calc.currentPlan.interestPaid3Y)} ฿</b>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Option 2: Retention -->
+                <div class="bg-emerald-50/50 border border-emerald-300 rounded-[var(--app-card-radius)] p-3 space-y-2">
+                    <div class="text-xs font-bold text-emerald-800 border-b border-emerald-200 pb-1 flex justify-between">
+                        <span>2. ขอลดแบงก์เดิม</span>
+                        <span class="text-[10px] bg-emerald-100 text-emerald-800 px-1 rounded">Retention</span>
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-emerald-700 block mb-0.5">ดอกเบี้ย Retention เฉลี่ย (%)</label>
+                        <input id="refinanceRetentionRate" type="number" step="0.01" value="${st.retentionRate ?? '3.80'}" class="airbnb-input w-full text-xs font-bold text-center text-emerald-900 border-emerald-300">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-neutral-500 block mb-0.5">ค่าธรรมเนียม Retention (ถ้ามี)</label>
+                        <input id="refinanceRetentionFee" type="number" value="${st.retentionFee ?? '0'}" class="airbnb-input w-full text-xs text-center">
+                    </div>
+                    <div class="pt-1 border-t border-emerald-200 text-[11px] space-y-1 text-emerald-950 font-medium">
+                        <div class="flex justify-between">
+                            <span>ผ่อนต่อเดือน:</span>
+                            <b>${formatMoney(calc.retentionPlan.monthlyPay)} ฿</b>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>ประหยัดสุทธิ 3 ปี:</span>
+                            <b class="text-emerald-700">+${formatMoney(calc.retentionNetSavings)} ฿</b>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Option 3: Refinance -->
+                <div class="bg-blue-50/50 border border-blue-300 rounded-[var(--app-card-radius)] p-3 space-y-2">
+                    <div class="text-xs font-bold text-blue-800 border-b border-blue-200 pb-1 flex justify-between">
+                        <span>3. ย้ายธนาคารใหม่</span>
+                        <span class="text-[10px] bg-blue-100 text-blue-800 px-1 rounded">Refinance</span>
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-blue-700 block mb-0.5">ดอกเบี้ยเฉลี่ย 3 ปีแรก (%)</label>
+                        <input id="refinanceNewRate" type="number" step="0.01" value="${st.refinanceRate ?? '2.99'}" class="airbnb-input w-full text-xs font-bold text-center text-blue-900 border-blue-300">
+                    </div>
+                    <div class="pt-1 text-[11px] space-y-1 text-blue-950 font-medium">
+                        <label class="flex items-center gap-1.5 text-[10px] text-neutral-600 cursor-pointer mb-1">
+                            <input id="refinanceGovReduced" type="checkbox" ${calc.isGovReduced ? 'checked' : ''} class="rounded text-blue-600">
+                            <span>มาตรการรัฐ (จำนอง 0.01%)</span>
+                        </label>
+                        <div class="flex justify-between">
+                            <span>รวมค่าใช้จ่ายย้าย:</span>
+                            <b class="text-neutral-700">-${formatMoney(calc.totalRefinanceFees)} ฿</b>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>ผ่อนต่อเดือน:</span>
+                            <b>${formatMoney(calc.refinancePlan.monthlyPay)} ฿</b>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>ประหยัดสุทธิ 3 ปี:</span>
+                            <b class="text-blue-700">+${formatMoney(calc.refinanceNetSavings)} ฿</b>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HERO RECOMMENDATION BOX -->
+            <div class="rounded-[var(--app-card-radius)] p-4 border ${calc.isRefinanceBetter ? 'bg-blue-50 border-blue-300 text-blue-950' : 'bg-emerald-50 border-emerald-300 text-emerald-950'} space-y-3" style="box-shadow:var(--app-elevation)">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-extrabold uppercase tracking-wider ${calc.isRefinanceBetter ? 'text-blue-700' : 'text-emerald-700'}">
+                            💡 ผลวิเคราะห์ความคุ้มค่าตามแนวทาง ธปท.
+                        </span>
+                        <div class="text-lg sm:text-xl font-bold mt-1 text-[var(--color-ink)]">
+                            ${escapeHTML(calc.recommendation)}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-black/10 text-xs">
+                    <div class="bg-white/80 rounded-lg p-2 border border-black/5">
+                        <div class="text-[10px] text-neutral-500">จุดคุ้มทุน (Breakeven)</div>
+                        <div class="text-sm font-bold text-neutral-800 mt-0.5">
+                            ${calc.breakevenMonth !== null ? (calc.breakevenMonth === 0 ? 'คุ้มทุนทันที' : `เดือนที่ ${calc.breakevenMonth} (ปีที่ ${(calc.breakevenMonth / 12).toFixed(1)})`) : 'ไม่คุ้มทุน'}
+                        </div>
+                        <div class="text-[9px] text-neutral-400">จากส่วนต่างค่าธรรมเนียม</div>
+                    </div>
+                    <div class="bg-white/80 rounded-lg p-2 border border-black/5">
+                        <div class="text-[10px] text-neutral-500">ประหยัดดอกเบี้ย 3 ปี (Refinance)</div>
+                        <div class="text-sm font-bold text-blue-700 mt-0.5">+${formatMoney(calc.refinanceInterestSaved)} ฿</div>
+                        <div class="text-[9px] text-neutral-400">เทียบกับไม่ทำอะไรเลย</div>
+                    </div>
+                    <div class="bg-white/80 rounded-lg p-2 border border-black/5 col-span-2 sm:col-span-1">
+                        <div class="text-[10px] text-neutral-500">ประหยัดดอกเบี้ย 3 ปี (Retention)</div>
+                        <div class="text-sm font-bold text-emerald-700 mt-0.5">+${formatMoney(calc.retentionInterestSaved)} ฿</div>
+                        <div class="text-[9px] text-neutral-400">ไม่มีค่าธรรมเนียมย้ายค่าย</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ITEMIZED REFINANCE CLOSING COSTS BREAKDOWN -->
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
+                <div class="font-bold text-neutral-800 border-b border-neutral-100 pb-1.5 flex justify-between">
+                    <span>รายละเอียดค่าใช้จ่ายในการรีไฟแนนซ์ (Refinance Closing Costs)</span>
+                    <span>ประมาณการ</span>
+                </div>
+                <div class="flex justify-between py-0.5">
+                    <span class="text-neutral-600">1. ค่าจดจำนองที่ดิน (${calc.isGovReduced ? 'มาตรการรัฐ 0.01%' : 'อัตราปกติ 1.0%'})</span>
+                    <b class="text-neutral-800">${formatMoney(calc.mortgageFee)} บาท</b>
+                </div>
+                <div class="flex justify-between py-0.5">
+                    <span class="text-neutral-600">2. ค่าประเมินราคาหลักทรัพย์</span>
+                    <b class="text-neutral-800">${formatMoney(calc.appraisalFee)} บาท</b>
+                </div>
+                <div class="flex justify-between py-0.5">
+                    <span class="text-neutral-600">3. ค่าอากรแสตมป์สัญญาเงินกู้ (0.05% สูงสุด 10,000 บ.)</span>
+                    <b class="text-neutral-800">${formatMoney(calc.stampDuty)} บาท</b>
+                </div>
+                <div class="flex justify-between py-0.5">
+                    <span class="text-neutral-600">4. ค่าเบี้ยประกันอัคคีภัย (ประมาณการ)</span>
+                    <b class="text-neutral-800">${formatMoney(calc.insuranceFee)} บาท</b>
+                </div>
+                <div class="border-t border-neutral-200 pt-1.5 flex justify-between font-bold text-neutral-900">
+                    <span>รวมค่าใช้จ่ายดำเนินการรีไฟแนนซ์ทั้งหมด</span>
+                    <span class="text-red-700">${formatMoney(calc.totalRefinanceFees)} บาท</span>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button id="btnPrintRefinanceSummary" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm">
+                        🖨️ พิมพ์เอกสารวิเคราะห์รีไฟแนนซ์ / PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Event Listeners
+    container.querySelectorAll('.loan-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.tab = btn.dataset.tab;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    container.querySelectorAll('.btn-quick-principal').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.principal = formatInputDisplay(btn.dataset.p);
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    const bindInput = (id, key) => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.addEventListener('change', () => {
+            st[key] = input.value;
+            persistAppState();
+            renderActiveTool();
+        });
+        input.addEventListener('blur', () => {
+            const formatted = formatInputDisplay(input.value);
+            st[key] = formatted;
+            input.value = formatted;
+            persistAppState();
+        });
+    };
+
+    bindInput('refinancePrincipal', 'principal');
+
+    document.getElementById('refinanceMonths')?.addEventListener('change', (e) => {
+        st.months = e.target.value;
+        persistAppState();
+        renderActiveTool();
+    });
+
+    const bindRate = (id, key) => {
+        document.getElementById(id)?.addEventListener('change', (e) => {
+            st[key] = e.target.value;
+            persistAppState();
+            renderActiveTool();
+        });
+    };
+    bindRate('refinanceCurrentRate', 'currentRate');
+    bindRate('refinanceRetentionRate', 'retentionRate');
+    bindRate('refinanceRetentionFee', 'retentionFee');
+    bindRate('refinanceNewRate', 'refinanceRate');
+
+    document.getElementById('refinanceGovReduced')?.addEventListener('change', (e) => {
+        st.isGovReducedMortgage = e.target.checked ? 'yes' : 'no';
+        persistAppState();
+        renderActiveTool();
+    });
+
+    container.querySelector('#btnPrintRefinanceSummary')?.addEventListener('click', () => {
+        triggerPrintReceipt('loan');
+    });
+
+    // Status Banner
+    setStatusBanner('success', `🏠 แนะนำ: <b>${calc.isRefinanceBetter ? 'รีไฟแนนซ์' : 'Retention'}</b> · ประหยัดสุทธิ 3 ปี <b>${formatMoney(calc.isRefinanceBetter ? calc.refinanceNetSavings : calc.retentionNetSavings)} บาท</b>${calc.breakevenMonth !== null ? ` (จุดคุ้มทุนเดือนที่ ${calc.breakevenMonth})` : ''}`);
 }
 
 /* -----------------------------------------------------------
@@ -5943,6 +7090,8 @@ function renderSavingsTool(container) {
         loadFrankfurterRates,
         renderCurrencyTool,
         renderLoanTool,
+        calculateHomeRefinance,
+        renderHomeRefinanceTool,
         renderSavingsTool
     };
     if (typeof module !== 'undefined' && module.exports) {
@@ -10636,36 +11785,36 @@ function renderOvertimeTool(container) {
     const calc = calculateOvertimePay(st);
 
     container.innerHTML = `
-        <div class="finance-thai-tool flex flex-col gap-4 p-1">
+        <div class="finance-thai-tool overtime-tool flex flex-col gap-3 p-1">
             <!-- 1. Wage Type Selector -->
-            <div class="segment-group grid-cols-3 balanced-segment-modes">
-                <button type="button" class="segment-btn ot-type-btn ${st.wageType === 'monthly' ? 'active' : ''}" data-type="monthly">
-                    💼 พนักงานรายเดือน
+            <div class="segment-group grid-cols-3 balanced-segment-modes" role="group" aria-label="ประเภทค่าจ้าง">
+                <button type="button" aria-pressed="${st.wageType === 'monthly'}" class="segment-btn ot-type-btn ${st.wageType === 'monthly' ? 'active' : ''}" data-type="monthly">
+                    รายเดือน
                 </button>
-                <button type="button" class="segment-btn ot-type-btn ${st.wageType === 'daily' ? 'active' : ''}" data-type="daily">
-                    ⏱️ พนักงานรายวัน
+                <button type="button" aria-pressed="${st.wageType === 'daily'}" class="segment-btn ot-type-btn ${st.wageType === 'daily' ? 'active' : ''}" data-type="daily">
+                    รายวัน
                 </button>
-                <button type="button" class="segment-btn ot-type-btn ${st.wageType === 'hourly' ? 'active' : ''}" data-type="hourly">
-                    ⌛ รายชั่วโมง
+                <button type="button" aria-pressed="${st.wageType === 'hourly'}" class="segment-btn ot-type-btn ${st.wageType === 'hourly' ? 'active' : ''}" data-type="hourly">
+                    รายชั่วโมง
                 </button>
             </div>
 
             <!-- 2. Base Wage Input Card -->
             <div class="themed-tool-card p-4 space-y-3">
-                <div class="font-bold text-sm text-[var(--app-ink)] flex items-center justify-between">
-                    <span>1. ข้อมูลฐานค่าจ้าง (Base Wage)</span>
-                    <span class="text-xs font-semibold px-2 py-0.5 rounded bg-[var(--app-accent-soft)] text-[var(--app-ink)]">
+                <div class="ot-section-heading font-bold text-xs text-[var(--app-ink)]">
+                    <span>1. ข้อมูลฐานค่าจ้าง</span>
+                    <span class="tool-metric-chip">
                         อัตราคิดฐาน ${formatMoney(calc.hourlyRate)} บ./ชม.
                     </span>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">
                             ${st.wageType === 'monthly' ? 'เงินเดือนฐาน (บาท/เดือน)' : (st.wageType === 'daily' ? 'ค่าจ้างรายวัน (บาท/วัน)' : 'ค่าจ้างรายชั่วโมง (บาท/ชม.)')}
                         </label>
                         <div class="relative">
-                            <input id="otWageBaseInput" type="text" inputmode="decimal" value="${formatInputDisplay(st.wageBase)}" placeholder="เช่น 25,000" class="airbnb-input w-full pr-12 text-sm font-semibold">
+                            <input id="otWageBaseInput" aria-label="ฐานค่าจ้าง" type="text" inputmode="decimal" value="${formatInputDisplay(st.wageBase)}" placeholder="เช่น 25,000" class="airbnb-input w-full pr-12 text-sm font-semibold">
                             <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--app-muted)]">บาท</span>
                         </div>
                     </div>
@@ -10674,43 +11823,43 @@ function renderOvertimeTool(container) {
                             ชั่วโมงทำงานปกติใน 1 วัน
                         </label>
                         <div class="relative">
-                            <input id="otWorkHoursInput" type="number" min="1" max="24" value="${st.workHoursPerDay || '8'}" class="airbnb-input w-full pr-14 text-sm font-semibold">
+                            <input id="otWorkHoursInput" aria-label="ชั่วโมงทำงานปกติต่อวัน" type="number" min="1" max="24" value="${st.workHoursPerDay || '8'}" class="airbnb-input w-full pr-14 text-sm font-semibold">
                             <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--app-muted)]">ชม./วัน</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="text-[11px] text-[var(--app-muted)] pt-1 flex items-center gap-1.5">
-                    <span>ℹ️ เกณฑ์กฎหมายแรงงาน:</span>
+                <div class="text-[11px] text-[var(--app-muted)] pt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                    <span>ฐานค่าจ้างที่ใช้:</span>
                     <span>รายวัน = ${formatMoney(calc.dailyRate)} บ. | ต่อชั่วโมง = <b>${formatMoney(calc.hourlyRate)} บ.</b></span>
                 </div>
             </div>
 
             <!-- 3. OT Hours Input Card -->
-            <div class="themed-tool-card p-4 space-y-4">
-                <div class="font-bold text-sm text-[var(--app-ink)] flex items-center justify-between">
-                    <span>2. บันทึกจำนวนชั่วโมงล่วงเวลา & วันหยุด</span>
+            <div class="themed-tool-card p-4 space-y-3">
+                <div class="ot-section-heading font-bold text-xs text-[var(--app-ink)]">
+                    <span>2. ชั่วโมงล่วงเวลาและทำงานวันหยุด</span>
                     <span class="text-xs text-[var(--app-muted)]">รวม ${formatNum(calc.totalHours, 1)} ชั่วโมง</span>
                 </div>
 
                 <!-- Section 61: OT Weekday (1.5x) -->
-                <div class="p-3 rounded-lg border border-[var(--app-hairline)] bg-[var(--app-surface-soft)] space-y-2">
-                    <div class="flex items-center justify-between">
+                <div class="themed-subcard p-3 space-y-2">
+                    <div class="ot-rate-heading">
                         <div>
                             <span class="font-semibold text-xs text-[var(--app-ink)]">ล่วงเวลาวันทำงานปกติ (OT 1.5 เท่า)</span>
                             <span class="text-[11px] text-[var(--app-muted)] block">พ.ร.บ. คุ้มครองแรงงาน ม.61</span>
                         </div>
                         <span class="text-xs font-bold text-[var(--app-accent)]">+${formatMoney(calc.rate1_5)} บ./ชม.</span>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <div class="relative flex-1">
-                            <input id="otWeekdayHoursInput" type="number" min="0" step="0.5" value="${st.otWeekdayHours || '0'}" class="airbnb-input w-full pr-12 text-sm font-semibold">
+                    <div class="ot-hours-row">
+                        <div class="relative min-w-0 flex-1">
+                            <input id="otWeekdayHoursInput" aria-label="ชั่วโมงล่วงเวลาวันทำงานปกติ" type="number" min="0" step="0.5" value="${st.otWeekdayHours || '0'}" class="airbnb-input w-full pr-12 text-sm font-semibold">
                             <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--app-muted)]">ชม.</span>
                         </div>
                         <div class="flex items-center gap-1 shrink-0">
-                            <button type="button" class="tool-chip-btn text-xs px-2 py-1 ot-add-btn" data-target="otWeekdayHoursInput" data-add="1">+1</button>
-                            <button type="button" class="tool-chip-btn text-xs px-2 py-1 ot-add-btn" data-target="otWeekdayHoursInput" data-add="2">+2</button>
-                            <button type="button" class="tool-chip-btn text-xs px-2 py-1 ot-add-btn" data-target="otWeekdayHoursInput" data-add="4">+4</button>
+                            <button type="button" class="tool-chip-btn ot-add-btn" data-target="otWeekdayHoursInput" data-add="1" aria-label="เพิ่มชั่วโมงล่วงเวลาวันทำงานปกติ 1 ชั่วโมง">+1</button>
+                            <button type="button" class="tool-chip-btn ot-add-btn" data-target="otWeekdayHoursInput" data-add="2" aria-label="เพิ่มชั่วโมงล่วงเวลาวันทำงานปกติ 2 ชั่วโมง">+2</button>
+                            <button type="button" class="tool-chip-btn ot-add-btn" data-target="otWeekdayHoursInput" data-add="4" aria-label="เพิ่มชั่วโมงล่วงเวลาวันทำงานปกติ 4 ชั่วโมง">+4</button>
                         </div>
                     </div>
                     <div class="text-right text-xs font-semibold text-[var(--app-ink)]">
@@ -10719,22 +11868,22 @@ function renderOvertimeTool(container) {
                 </div>
 
                 <!-- Section 62: Holiday Work (1x or 2x) -->
-                <div class="p-3 rounded-lg border border-[var(--app-hairline)] bg-[var(--app-surface-soft)] space-y-2">
-                    <div class="flex items-center justify-between">
+                <div class="themed-subcard p-3 space-y-2">
+                    <div class="ot-rate-heading">
                         <div>
                             <span class="font-semibold text-xs text-[var(--app-ink)]">ทำงานในวันหยุดตามเวลาปกติ (${calc.holidayMultiplier} เท่า)</span>
                             <span class="text-[11px] text-[var(--app-muted)] block">พ.ร.บ. คุ้มครองแรงงาน ม.62 (${st.wageType === 'monthly' ? 'รายเดือนได้เพิ่ม 1 เท่า' : 'รายวันได้ 2 เท่า'})</span>
                         </div>
                         <span class="text-xs font-bold text-[var(--app-accent)]">+${formatMoney(calc.rateHolidayWork)} บ./ชม.</span>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <div class="relative flex-1">
-                            <input id="otHolidayWorkHoursInput" type="number" min="0" step="0.5" value="${st.holidayWorkHours || '0'}" class="airbnb-input w-full pr-12 text-sm font-semibold">
+                    <div class="ot-hours-row">
+                        <div class="relative min-w-0 flex-1">
+                            <input id="otHolidayWorkHoursInput" aria-label="ชั่วโมงทำงานในวันหยุด" type="number" min="0" step="0.5" value="${st.holidayWorkHours || '0'}" class="airbnb-input w-full pr-12 text-sm font-semibold">
                             <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--app-muted)]">ชม.</span>
                         </div>
                         <div class="flex items-center gap-1 shrink-0">
-                            <button type="button" class="tool-chip-btn text-xs px-2 py-1 ot-add-btn" data-target="otHolidayWorkHoursInput" data-add="4">+4</button>
-                            <button type="button" class="tool-chip-btn text-xs px-2 py-1 ot-add-btn" data-target="otHolidayWorkHoursInput" data-add="8">+8</button>
+                            <button type="button" class="tool-chip-btn ot-add-btn" data-target="otHolidayWorkHoursInput" data-add="4" aria-label="เพิ่มชั่วโมงทำงานในวันหยุด 4 ชั่วโมง">+4</button>
+                            <button type="button" class="tool-chip-btn ot-add-btn" data-target="otHolidayWorkHoursInput" data-add="8" aria-label="เพิ่มชั่วโมงทำงานในวันหยุด 8 ชั่วโมง">+8</button>
                         </div>
                     </div>
                     <div class="text-right text-xs font-semibold text-[var(--app-ink)]">
@@ -10743,23 +11892,23 @@ function renderOvertimeTool(container) {
                 </div>
 
                 <!-- Section 63: Holiday OT (3.0x) -->
-                <div class="p-3 rounded-lg border border-[var(--app-hairline)] bg-[var(--app-surface-soft)] space-y-2">
-                    <div class="flex items-center justify-between">
+                <div class="themed-subcard p-3 space-y-2">
+                    <div class="ot-rate-heading">
                         <div>
                             <span class="font-semibold text-xs text-[var(--app-ink)]">ล่วงเวลาในวันหยุดเกินเวลาปกติ (OT 3 เท่า)</span>
                             <span class="text-[11px] text-[var(--app-muted)] block">พ.ร.บ. คุ้มครองแรงงาน ม.63 (ทำเกิน 8 ชม. ในวันหยุด)</span>
                         </div>
                         <span class="text-xs font-bold text-[var(--app-accent)]">+${formatMoney(calc.rate3_0)} บ./ชม.</span>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <div class="relative flex-1">
-                            <input id="otHolidayOtHoursInput" type="number" min="0" step="0.5" value="${st.holidayOtHours || '0'}" class="airbnb-input w-full pr-12 text-sm font-semibold">
+                    <div class="ot-hours-row">
+                        <div class="relative min-w-0 flex-1">
+                            <input id="otHolidayOtHoursInput" aria-label="ชั่วโมงล่วงเวลาในวันหยุด" type="number" min="0" step="0.5" value="${st.holidayOtHours || '0'}" class="airbnb-input w-full pr-12 text-sm font-semibold">
                             <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--app-muted)]">ชม.</span>
                         </div>
                         <div class="flex items-center gap-1 shrink-0">
-                            <button type="button" class="tool-chip-btn text-xs px-2 py-1 ot-add-btn" data-target="otHolidayOtHoursInput" data-add="1">+1</button>
-                            <button type="button" class="tool-chip-btn text-xs px-2 py-1 ot-add-btn" data-target="otHolidayOtHoursInput" data-add="2">+2</button>
-                            <button type="button" class="tool-chip-btn text-xs px-2 py-1 ot-add-btn" data-target="otHolidayOtHoursInput" data-add="4">+4</button>
+                            <button type="button" class="tool-chip-btn ot-add-btn" data-target="otHolidayOtHoursInput" data-add="1" aria-label="เพิ่มชั่วโมงล่วงเวลาในวันหยุด 1 ชั่วโมง">+1</button>
+                            <button type="button" class="tool-chip-btn ot-add-btn" data-target="otHolidayOtHoursInput" data-add="2" aria-label="เพิ่มชั่วโมงล่วงเวลาในวันหยุด 2 ชั่วโมง">+2</button>
+                            <button type="button" class="tool-chip-btn ot-add-btn" data-target="otHolidayOtHoursInput" data-add="4" aria-label="เพิ่มชั่วโมงล่วงเวลาในวันหยุด 4 ชั่วโมง">+4</button>
                         </div>
                     </div>
                     <div class="text-right text-xs font-semibold text-[var(--app-ink)]">
@@ -10773,7 +11922,7 @@ function renderOvertimeTool(container) {
                         เงินค่ากะ / เบี้ยเลี้ยงพิเศษอื่นๆ (ถ้ามี)
                     </label>
                     <div class="relative">
-                        <input id="otAllowanceInput" type="text" inputmode="decimal" value="${formatInputDisplay(st.shiftAllowance)}" placeholder="0" class="airbnb-input w-full pr-12 text-sm">
+                        <input id="otAllowanceInput" aria-label="เงินค่ากะและเบี้ยเลี้ยง" type="text" inputmode="decimal" value="${formatInputDisplay(st.shiftAllowance)}" placeholder="0" class="airbnb-input w-full pr-12 text-sm">
                         <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--app-muted)]">บาท</span>
                     </div>
                 </div>
@@ -10781,7 +11930,7 @@ function renderOvertimeTool(container) {
 
             <!-- 4. Result Highlight Card -->
             <div class="themed-result-card theme-result-highlight p-5 text-center space-y-1">
-                <div class="text-xs font-semibold text-[var(--app-muted)]">รวมค่าล่วงเวลาและค่าทำงานวันหยุดสุทธิ</div>
+                <div class="text-xs font-semibold text-[var(--app-muted)]">รวมค่าล่วงเวลา ค่าทำงานวันหยุด และเบี้ยเลี้ยง</div>
                 <div class="themed-result-value text-2xl md:text-3xl font-extrabold text-[var(--app-accent)]">
                     +${formatMoney(calc.totalOtPay)} บาท
                 </div>
@@ -10792,31 +11941,31 @@ function renderOvertimeTool(container) {
 
             <!-- 5. Breakdown Summary Table -->
             <div class="themed-tool-card p-4 space-y-1 text-xs">
-                <div class="font-bold text-[var(--app-ink)] mb-1">สรุปแจกแจงสิทธิประโยชน์ตามกฎหมายแรงงาน</div>
+                <div class="font-bold text-[var(--app-ink)] mb-1">รายละเอียดค่าล่วงเวลาและค่าทำงานวันหยุด</div>
                 
-                <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
-                    <span class="text-[var(--app-muted)]">ฐานค่าจ้างเฉลี่ยต่อชั่วโมง (หาร 30 วัน/8 ชม.)</span>
+                <div class="tool-summary-row flex justify-between gap-3 py-2">
+                    <span class="text-[var(--app-muted)]">ฐานค่าจ้างต่อชั่วโมง</span>
                     <b>${formatMoney(calc.hourlyRate)} บาท/ชม.</b>
                 </div>
-                <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                <div class="tool-summary-row flex justify-between gap-3 py-2">
                     <span class="text-[var(--app-muted)]">OT วันทำงานปกติ ม.61 (1.5 เท่า × ${calc.otWeekdayHours} ชม.)</span>
                     <b class="text-[var(--app-ink)]">+${formatMoney(calc.otWeekdayPay)} บาท</b>
                 </div>
-                <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                <div class="tool-summary-row flex justify-between gap-3 py-2">
                     <span class="text-[var(--app-muted)]">ทำงานในวันหยุด ม.62 (${calc.holidayMultiplier} เท่า × ${calc.holidayWorkHours} ชม.)</span>
                     <b class="text-[var(--app-ink)]">+${formatMoney(calc.holidayWorkPay)} บาท</b>
                 </div>
-                <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                <div class="tool-summary-row flex justify-between gap-3 py-2">
                     <span class="text-[var(--app-muted)]">OT ในวันหยุด ม.63 (3.0 เท่า × ${calc.holidayOtHours} ชม.)</span>
                     <b class="text-[var(--app-ink)]">+${formatMoney(calc.holidayOtPay)} บาท</b>
                 </div>
                 ${calc.shiftAllowance > 0 ? `
-                    <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)]">
+                    <div class="tool-summary-row flex justify-between gap-3 py-2">
                         <span class="text-[var(--app-muted)]">เงินค่ากะ / เบี้ยเลี้ยงพิเศษ</span>
                         <b>+${formatMoney(calc.shiftAllowance)} บาท</b>
                     </div>
                 ` : ''}
-                <div class="tool-summary-row flex justify-between gap-3 py-2 border-b border-[var(--app-hairline)] font-bold text-sm">
+                <div class="tool-summary-row flex justify-between gap-3 py-2 font-bold text-sm">
                     <span class="text-[var(--app-ink)]">รวมเงินค่าล่วงเวลาทั้งหมด</span>
                     <b class="text-[var(--app-accent)]">+${formatMoney(calc.totalOtPay)} บาท</b>
                 </div>
@@ -11149,6 +12298,21 @@ function clearCurrentTool() {
             holidayOtHours: '',
             shiftAllowance: ''
         };
+    } else if (id === 'ecommerce_profit') {
+        appState.ecommerce_profit = {
+            platform: 'shopee',
+            sellingPrice: '',
+            productCost: '',
+            packagingCost: '',
+            shopVoucher: '',
+            customerShipping: '',
+            sellerShipping: '',
+            adSpendPerOrder: '',
+            commissionRatePct: '5.0',
+            serviceFeePct: '4.0',
+            transactionRatePct: '3.0',
+            isVatApplied: 'yes'
+        };
     }
     rememberToolClear(snapshot);
     renderActiveTool();
@@ -11343,6 +12507,21 @@ function loadDemoForCurrentTool() {
             holidayWorkHours: '8',
             holidayOtHours: '4',
             shiftAllowance: '1200'
+        };
+    } else if (id === 'ecommerce_profit') {
+        appState.ecommerce_profit = {
+            platform: 'shopee',
+            sellingPrice: '390',
+            productCost: '140',
+            packagingCost: '12',
+            shopVoucher: '20',
+            customerShipping: '35',
+            sellerShipping: '35',
+            adSpendPerOrder: '35',
+            commissionRatePct: '5.0',
+            serviceFeePct: '4.0',
+            transactionRatePct: '3.0',
+            isVatApplied: 'yes'
         };
     }
     renderActiveTool();

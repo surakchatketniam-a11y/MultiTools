@@ -188,6 +188,20 @@ function getComparisonPresets(toolId) {
                 label: 'ทางเลือก 3: พนักงานรายวัน 500 บ. (OT วันหยุดเต็มวัน + OT ดึก 4 ชม.)',
                 state: { wageType: 'daily', wageBase: '500', workHoursPerDay: '8', otWeekdayHours: '10', holidayWorkHours: '8', holidayOtHours: '4', shiftAllowance: '800' }
             }
+        ],
+        ecommerce_profit: [
+            {
+                label: 'ทางเลือก 1: Shopee (ราคา 350 บ. ยิงแอด 30 บ.)',
+                state: { platform: 'shopee', sellingPrice: '350', productCost: '150', packagingCost: '10', shopVoucher: '0', customerShipping: '35', sellerShipping: '35', adSpendPerOrder: '30', commissionRatePct: '5.0', serviceFeePct: '4.0', transactionRatePct: '3.0', isVatApplied: 'yes' }
+            },
+            {
+                label: 'ทางเลือก 2: TikTok Shop (ราคา 350 บ. ยิงแอด 20 บ.)',
+                state: { platform: 'tiktok', sellingPrice: '350', productCost: '150', packagingCost: '10', shopVoucher: '0', customerShipping: '35', sellerShipping: '35', adSpendPerOrder: '20', commissionRatePct: '4.0', serviceFeePct: '0.0', transactionRatePct: '3.0', isVatApplied: 'yes' }
+            },
+            {
+                label: 'ทางเลือก 3: ขายตรง LINE Shop (ราคา 320 บ. ไม่เสียคอม)',
+                state: { platform: 'direct', sellingPrice: '320', productCost: '150', packagingCost: '10', shopVoucher: '0', customerShipping: '35', sellerShipping: '35', adSpendPerOrder: '15', commissionRatePct: '0.0', serviceFeePct: '0.0', transactionRatePct: '0.0', isVatApplied: 'no' }
+            }
         ]
     };
     return presets[toolId] || [];
@@ -879,6 +893,59 @@ function compareCalculations(toolId, itemsList) {
         const minOt = Math.min(...results.map(r => r.totalOtPay));
         const diffOt = maxOtRes.totalOtPay - minOt;
         deltaSummary = `🏆 ทางเลือกที่ได้ค่าล่วงเวลา (OT) สูงสุดคือ "${items[winnerIndex].label}" ได้รับค่า OT รวม ${formatMoney(maxOtRes.totalOtPay)} บาท${diffOt > 0 ? ` (มากกว่าทางเลือกต่ำสุด ${formatMoney(diffOt)} บาท)` : ''}`;
+
+    } else if (toolId === 'ecommerce_profit') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            const calc = (typeof calculateEcommerceProfit === 'function')
+                ? calculateEcommerceProfit(st)
+                : { platform: 'shopee', sellingPrice: 0, productCost: 0, packagingCost: 0, totalPlatformFees: 0, adSpendPerOrder: 0, totalCosts: 0, netPayout: 0, netProfit: 0, profitMarginPct: 0, breakevenPrice: 0 };
+            return calc;
+        });
+
+        rows.push({
+            label: 'ช่องทาง / แพลตฟอร์ม',
+            values: results.map(r => r.platform.toUpperCase())
+        });
+        rows.push({
+            label: 'ราคาขายต่อชิ้น (Selling Price)',
+            values: results.map(r => `${formatMoney(r.sellingPrice)} ฿`)
+        });
+        rows.push({
+            label: 'ต้นทุนสินค้า + บรรจุภัณฑ์',
+            values: results.map(r => `${formatMoney(r.productCost + r.packagingCost)} ฿`)
+        });
+        rows.push({
+            label: 'ค่าธรรมเนียมแพลตฟอร์มรวม VAT',
+            values: results.map(r => `-${formatMoney(r.totalPlatformFees)} ฿`)
+        });
+        rows.push({
+            label: 'งบยิงแอด/โฆษณาต่อออเดอร์',
+            values: results.map(r => `-${formatMoney(r.adSpendPerOrder)} ฿`)
+        });
+        rows.push({
+            label: 'เงินโอนสุทธิเข้าบัญชี (Net Payout)',
+            values: results.map(r => `${formatMoney(r.netPayout)} ฿`)
+        });
+        rows.push({
+            label: 'ราคาขายขั้นต่ำที่ไม่ขาดทุน (Breakeven)',
+            values: results.map(r => `${formatMoney(r.breakevenPrice)} ฿`)
+        });
+
+        const maxProfitRes = results.reduce((max, cur) => cur.netProfit > max.netProfit ? cur : max, results[0]);
+        const maxProfitIdx = results.indexOf(maxProfitRes);
+
+        rows.push({
+            label: 'กำไรสุทธิต่อออเดอร์ (Net Profit)',
+            values: results.map(r => `${formatMoney(r.netProfit)} ฿ (Margin ${formatNum(r.profitMarginPct, 1)}%)`),
+            bestIndex: maxProfitIdx,
+            highlight: true
+        });
+
+        winnerIndex = maxProfitIdx;
+        const minProfit = Math.min(...results.map(r => r.netProfit));
+        const diffProfit = maxProfitRes.netProfit - minProfit;
+        deltaSummary = `🏆 ทางเลือกที่สร้างกำไรสุทธิสูงสุดคือ "${items[winnerIndex].label}" กำไรต่อออเดอร์ ${formatMoney(maxProfitRes.netProfit)} บาท (Margin ${formatNum(maxProfitRes.profitMarginPct, 1)}%)${diffProfit > 0 ? ` มากกว่าทางเลือกต่ำสุด ${formatMoney(diffProfit)} บาท` : ''}`;
 
     } else {
         rows.push({

@@ -230,6 +230,21 @@ function clearCurrentTool() {
             holidayOtHours: '',
             shiftAllowance: ''
         };
+    } else if (id === 'ecommerce_profit') {
+        appState.ecommerce_profit = {
+            platform: 'shopee',
+            sellingPrice: '',
+            productCost: '',
+            packagingCost: '',
+            shopVoucher: '',
+            customerShipping: '',
+            sellerShipping: '',
+            adSpendPerOrder: '',
+            commissionRatePct: '5.0',
+            serviceFeePct: '4.0',
+            transactionRatePct: '3.0',
+            isVatApplied: 'yes'
+        };
     }
     rememberToolClear(snapshot);
     renderActiveTool();
@@ -424,6 +439,21 @@ function loadDemoForCurrentTool() {
             holidayWorkHours: '8',
             holidayOtHours: '4',
             shiftAllowance: '1200'
+        };
+    } else if (id === 'ecommerce_profit') {
+        appState.ecommerce_profit = {
+            platform: 'shopee',
+            sellingPrice: '390',
+            productCost: '140',
+            packagingCost: '12',
+            shopVoucher: '20',
+            customerShipping: '35',
+            sellerShipping: '35',
+            adSpendPerOrder: '35',
+            commissionRatePct: '5.0',
+            serviceFeePct: '4.0',
+            transactionRatePct: '3.0',
+            isVatApplied: 'yes'
         };
     }
     renderActiveTool();

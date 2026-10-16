@@ -236,12 +236,475 @@ function renderSalaryTool(container) {
     else setStatusBanner('success', `จัดสรรเงินเดือน ${formatMoney(income)} บาทเรียบร้อย · ออม/ลงทุน ${formatMoney(savings)} บาทต่อเดือน`);
 }
 
+/* -----------------------------------------------------------
+ * PURE ENGINE: คำนวณกำไรสุทธิขายของออนไลน์ & ค่าธรรมเนียมแพลตฟอร์ม
+ * Shopee, Lazada, TikTok Shop, Direct Sales (Line/FB)
+ * ----------------------------------------------------------- */
+function calculateEcommerceProfit(params) {
+    const p = params || {};
+    const platform = p.platform || 'shopee'; // 'shopee' | 'lazada' | 'tiktok' | 'direct' | 'custom'
+    const sellingPrice = Math.max(0, numberOrDefault(p.sellingPrice, 350));
+    const productCost = Math.max(0, numberOrDefault(p.productCost, 150));
+    const packagingCost = Math.max(0, numberOrDefault(p.packagingCost, 10));
+    const shopVoucher = Math.max(0, numberOrDefault(p.shopVoucher, 0));
+    const customerShipping = Math.max(0, numberOrDefault(p.customerShipping, 35));
+    const sellerShipping = Math.max(0, numberOrDefault(p.sellerShipping, 35));
+    const adSpendPerOrder = Math.max(0, numberOrDefault(p.adSpendPerOrder, 0));
+
+    // อัตราค่าธรรมเนียม (%)
+    const commissionRatePct = Math.max(0, numberOrDefault(p.commissionRatePct, platform === 'tiktok' ? 4.0 : (platform === 'direct' ? 0.0 : 5.0)));
+    const serviceFeePct = Math.max(0, numberOrDefault(p.serviceFeePct, platform === 'shopee' ? 4.0 : (platform === 'lazada' ? 3.0 : 0.0)));
+    const transactionRatePct = Math.max(0, numberOrDefault(p.transactionRatePct, platform === 'direct' ? 0.0 : 3.0));
+    const isVatApplied = p.isVatApplied !== false && p.isVatApplied !== 'no';
+    const vatOnFeePct = isVatApplied ? 7.0 : 0.0;
+
+    // 1. มูลค่าสินค้าหลังหักคูปองร้านค้า (Net Merchandise Value)
+    const effectiveSellingPrice = Math.max(0, sellingPrice - shopVoucher);
+    // มูลค่ารวมที่ผู้ซื้อชำระทั้งหมด (Gross Order Value)
+    const orderGrossValue = effectiveSellingPrice + customerShipping;
+
+    // 2. คำนวณค่าธรรมเนียมแพลตฟอร์ม
+    // - ค่าคอมมิชชัน คิดจากราคาขายหักคูปองร้าน (ไม่รวมค่าส่ง)
+    const commissionFeePreVat = effectiveSellingPrice * (commissionRatePct / 100);
+    // - ค่าบริการโปรแกรมส่งฟรี / เหรียญคืน คิดจากราคาขายหักคูปองร้าน
+    const serviceFeePreVat = effectiveSellingPrice * (serviceFeePct / 100);
+    // - ค่าธรรมเนียมการชำระเงิน/ธุรกรรม คิดจากยอดรวมที่ผู้ซื้อจ่ายทั้งหมด (รวมค่าส่ง)
+    const transactionFeePreVat = orderGrossValue * (transactionRatePct / 100);
+
+    const totalPlatformFeesPreVat = commissionFeePreVat + serviceFeePreVat + transactionFeePreVat;
+    const platformVat = totalPlatformFeesPreVat * (vatOnFeePct / 100);
+    const totalPlatformFees = totalPlatformFeesPreVat + platformVat;
+
+    // 3. ต้นทุนค่าจัดส่งส่วนต่าง (กรณีร้านช่วยออกค่าส่ง หรือค่าส่งจริงแพงกว่าที่ลูกค้าจ่าย)
+    const shippingDifference = Math.max(0, sellerShipping - customerShipping);
+
+    // 4. ต้นทุนรวมทั้งหมด
+    const totalDirectCosts = productCost + packagingCost + shopVoucher + shippingDifference + adSpendPerOrder;
+    const totalCosts = totalDirectCosts + totalPlatformFees;
+
+    // 5. ยอดเงินโอนเข้าบัญชีร้านค้าจากแพลตฟอร์ม (Net Payout)
+    // = ยอดที่ผู้ซื้อจ่าย - ค่าธรรมเนียมแพลตฟอร์ม - ค่าส่งจริงที่ขนส่งหัก
+    const netPayout = Math.max(0, orderGrossValue - totalPlatformFees - sellerShipping);
+
+    // 6. กำไรสุทธิ (Net Profit)
+    const netProfit = sellingPrice - totalCosts;
+    const isProfit = netProfit >= 0;
+
+    // 7. อัตราส่วนทางการเงิน
+    const profitMarginPct = sellingPrice > 0 ? (netProfit / sellingPrice) * 100 : 0;
+    const directCostBase = productCost + packagingCost;
+    const markupPct = directCostBase > 0 ? (netProfit / directCostBase) * 100 : 0;
+    const roiPct = totalCosts > 0 ? (netProfit / totalCosts) * 100 : 0;
+
+    // 8. จุดคุ้มทุน (ราคาขายขั้นต่ำที่ไม่ขาดทุน: Breakeven Selling Price)
+    // Breakeven Price P: P * (1 - TotalFeeRate) = productCost + packagingCost + adSpend + shippingDiff
+    const totalFeeRateDecimal = ((commissionRatePct + serviceFeePct + transactionRatePct) * (1 + vatOnFeePct / 100)) / 100;
+    let breakevenPrice = 0;
+    if (totalFeeRateDecimal < 0.99) {
+        const requiredCost = productCost + packagingCost + adSpendPerOrder + shippingDifference;
+        breakevenPrice = requiredCost / (1 - totalFeeRateDecimal);
+    }
+
+    return {
+        platform,
+        sellingPrice,
+        productCost,
+        packagingCost,
+        shopVoucher,
+        customerShipping,
+        sellerShipping,
+        adSpendPerOrder,
+        commissionRatePct,
+        serviceFeePct,
+        transactionRatePct,
+        isVatApplied,
+        vatOnFeePct,
+        effectiveSellingPrice,
+        orderGrossValue,
+        commissionFeePreVat,
+        serviceFeePreVat,
+        transactionFeePreVat,
+        totalPlatformFeesPreVat,
+        platformVat,
+        totalPlatformFees,
+        shippingDifference,
+        totalDirectCosts,
+        totalCosts,
+        netPayout,
+        netProfit,
+        isProfit,
+        profitMarginPct,
+        markupPct,
+        roiPct,
+        breakevenPrice
+    };
+}
+
+/* -----------------------------------------------------------
+ * UI RENDERER: กำไรสุทธิขายของออนไลน์ & Shopee/TikTok Fees
+ * ----------------------------------------------------------- */
+function renderEcommerceProfitTool(container) {
+    const st = appState.ecommerce_profit || {
+        platform: 'shopee',
+        sellingPrice: '350',
+        productCost: '150',
+        packagingCost: '10',
+        shopVoucher: '0',
+        customerShipping: '35',
+        sellerShipping: '35',
+        adSpendPerOrder: '30',
+        commissionRatePct: '5.0',
+        serviceFeePct: '4.0',
+        transactionRatePct: '3.0',
+        isVatApplied: 'yes'
+    };
+
+    const calc = calculateEcommerceProfit({
+        platform: st.platform,
+        sellingPrice: parseNumericInput(st.sellingPrice),
+        productCost: parseNumericInput(st.productCost),
+        packagingCost: parseNumericInput(st.packagingCost),
+        shopVoucher: parseNumericInput(st.shopVoucher),
+        customerShipping: parseNumericInput(st.customerShipping),
+        sellerShipping: parseNumericInput(st.sellerShipping),
+        adSpendPerOrder: parseNumericInput(st.adSpendPerOrder),
+        commissionRatePct: parseNumericInput(st.commissionRatePct),
+        serviceFeePct: parseNumericInput(st.serviceFeePct),
+        transactionRatePct: parseNumericInput(st.transactionRatePct),
+        isVatApplied: st.isVatApplied !== 'no'
+    });
+
+    const isShopee = st.platform === 'shopee';
+    const isLazada = st.platform === 'lazada';
+    const isTiktok = st.platform === 'tiktok';
+    const isDirect = st.platform === 'direct';
+    const isCustom = st.platform === 'custom';
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-3 p-1">
+            <!-- Platform Selector -->
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2" style="box-shadow:var(--app-elevation)">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-bold text-neutral-600 dark:text-neutral-400">เลือกแพลตฟอร์มขายสินค้า</label>
+                    <span class="text-[11px] font-semibold text-emerald-600">ค่าธรรมเนียมปี 2025/2026</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 text-xs font-semibold">
+                    <button type="button" class="btn-ecom-plat py-2 px-1.5 rounded-lg border text-center transition-all cursor-pointer ${isShopee ? 'bg-orange-50 border-orange-500 text-orange-700 font-bold shadow-sm' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'}" data-plat="shopee">
+                        🟠 Shopee
+                    </button>
+                    <button type="button" class="btn-ecom-plat py-2 px-1.5 rounded-lg border text-center transition-all cursor-pointer ${isLazada ? 'bg-blue-50 border-blue-500 text-blue-700 font-bold shadow-sm' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'}" data-plat="lazada">
+                        🔵 Lazada
+                    </button>
+                    <button type="button" class="btn-ecom-plat py-2 px-1.5 rounded-lg border text-center transition-all cursor-pointer ${isTiktok ? 'bg-neutral-900 border-neutral-900 text-white font-bold shadow-sm' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'}" data-plat="tiktok">
+                        ⚫ TikTok
+                    </button>
+                    <button type="button" class="btn-ecom-plat py-2 px-1.5 rounded-lg border text-center transition-all cursor-pointer ${isDirect ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-bold shadow-sm' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'}" data-plat="direct">
+                        🟢 ขายตรง (LINE)
+                    </button>
+                    <button type="button" class="btn-ecom-plat py-2 px-1.5 rounded-lg border text-center transition-all cursor-pointer ${isCustom ? 'bg-purple-50 border-purple-500 text-purple-700 font-bold shadow-sm' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'}" data-plat="custom">
+                        ⚙️ กำหนดเอง
+                    </button>
+                </div>
+            </div>
+
+            <!-- Card 1: ราคาขายและโปรโมชัน -->
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-3" style="box-shadow:var(--app-elevation)">
+                <div class="text-xs font-bold text-neutral-800 border-b border-neutral-100 pb-1.5 flex justify-between items-center">
+                    <span>1. ราคาขายและโปรโมชันหน้าร้าน</span>
+                    <span class="text-[11px] font-normal text-neutral-500">ใส่ราคาตั้งขาย</span>
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-neutral-600 block mb-1">ราคาตั้งขายต่อชิ้น (บาท)</label>
+                    <div class="relative">
+                        <input id="ecomSellingPrice" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.sellingPrice))}" class="airbnb-input w-full font-bold text-base text-[var(--color-ink)] pr-12" placeholder="เช่น 350">
+                        <span class="absolute right-3 top-2.5 text-xs text-neutral-400">บาท</span>
+                    </div>
+                    <!-- Quick Price Step Chips -->
+                    <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+                        <span class="text-[11px] text-neutral-400">บวกราคา:</span>
+                        <button type="button" class="btn-quick-price px-2 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-add="10">+10</button>
+                        <button type="button" class="btn-quick-price px-2 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-add="20">+20</button>
+                        <button type="button" class="btn-quick-price px-2 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-add="50">+50</button>
+                        <button type="button" class="btn-quick-price px-2 py-0.5 text-xs font-medium rounded-full border border-neutral-200 bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition cursor-pointer" data-add="100">+100</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="text-xs font-medium text-neutral-600 block mb-1">คูปองส่วนลดที่ร้านออกให้ (บาท)</label>
+                        <input id="ecomShopVoucher" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.shopVoucher))}" class="airbnb-input w-full text-xs" placeholder="เช่น 20 (ถ้าไม่มีใส่ 0)">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-neutral-600 block mb-1">ค่าส่งที่ลูกค้าจ่ายหน้าร้าน (บาท)</label>
+                        <input id="ecomCustomerShipping" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.customerShipping))}" class="airbnb-input w-full text-xs" placeholder="เช่น 35">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: ต้นทุนสินค้าและการดำเนินการ -->
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-3" style="box-shadow:var(--app-elevation)">
+                <div class="text-xs font-bold text-neutral-800 border-b border-neutral-100 pb-1.5">
+                    2. ต้นทุนสินค้า ค่าแพ็ค และค่าโฆษณา
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="text-xs font-medium text-neutral-600 block mb-1">ราคาทุนสินค้า / ผลิต (บาท)</label>
+                        <input id="ecomProductCost" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.productCost))}" class="airbnb-input w-full text-xs font-semibold" placeholder="เช่น 150">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-neutral-600 block mb-1">ค่ากล่อง / เทป / ซองแพ็ค (บาท)</label>
+                        <input id="ecomPackagingCost" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.packagingCost))}" class="airbnb-input w-full text-xs" placeholder="เช่น 10">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-neutral-600 block mb-1">ค่าส่งจริงที่ขนส่งหัก (บาท)</label>
+                        <input id="ecomSellerShipping" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.sellerShipping))}" class="airbnb-input w-full text-xs" placeholder="เช่น 35">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-neutral-600 block mb-1">งบยิงแอด/โฆษณาเฉลี่ยต่อออเดอร์ (บาท)</label>
+                        <input id="ecomAdSpend" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.adSpendPerOrder))}" class="airbnb-input w-full text-xs" placeholder="เช่น 30 (ถ้าไม่ยิงใส่ 0)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: อัตราค่าธรรมเนียมแพลตฟอร์ม -->
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-2.5" style="box-shadow:var(--app-elevation)">
+                <div class="text-xs font-bold text-neutral-800 border-b border-neutral-100 pb-1.5 flex justify-between items-center">
+                    <span>3. โครงสร้างค่าธรรมเนียม (${escapeHTML(calc.platform.toUpperCase())})</span>
+                    <label class="flex items-center gap-1.5 text-[11px] text-neutral-600 cursor-pointer">
+                        <input id="ecomVatCheck" type="checkbox" ${calc.isVatApplied ? 'checked' : ''} class="rounded border-neutral-300 text-emerald-600">
+                        <span>คิด VAT 7% เพิ่มบนค่าธรรมเนียม</span>
+                    </label>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                        <label class="text-[11px] text-neutral-500 block mb-1">คอมมิชชัน (%)</label>
+                        <input id="ecomCommission" type="number" step="0.1" value="${st.commissionRatePct}" class="airbnb-input w-full text-xs text-center font-semibold">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-neutral-500 block mb-1">โปรแกรมส่งฟรี (%)</label>
+                        <input id="ecomService" type="number" step="0.1" value="${st.serviceFeePct}" class="airbnb-input w-full text-xs text-center font-semibold">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-neutral-500 block mb-1">ธุรกรรม/ชำระเงิน (%)</label>
+                        <input id="ecomTransaction" type="number" step="0.1" value="${st.transactionRatePct}" class="airbnb-input w-full text-xs text-center font-semibold">
+                    </div>
+                </div>
+            </div>
+
+            <!-- HERO SUMMARY CARD -->
+            <div class="rounded-[var(--app-card-radius)] p-4 border ${calc.isProfit ? 'bg-emerald-50/70 border-emerald-300 text-emerald-950' : 'bg-red-50/70 border-red-300 text-red-950'} space-y-3" style="box-shadow:var(--app-elevation)">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-xs uppercase font-bold tracking-wider ${calc.isProfit ? 'text-emerald-700' : 'text-red-700'}">
+                            ${calc.isProfit ? '💰 กำไรสุทธิต่อออเดอร์ (Net Profit)' : '⚠️ ขาดทุนต่อออเดอร์ (Net Loss)'}
+                        </span>
+                        <div class="text-2xl sm:text-3xl font-extrabold mt-0.5 ${calc.isProfit ? 'text-emerald-700' : 'text-red-700'}">
+                            ${formatMoney(calc.netProfit)} บาท
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-block px-2.5 py-1 text-xs font-bold rounded-full ${calc.isProfit ? 'bg-emerald-200 text-emerald-900' : 'bg-red-200 text-red-900'}">
+                            Margin ${formatNum(calc.profitMarginPct, 1)}%
+                        </span>
+                        <div class="text-[11px] text-neutral-500 mt-1">
+                            Markup: ${formatNum(calc.markupPct, 1)}%
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sub KPI Grid -->
+                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-black/10">
+                    <div class="bg-white/80 rounded-lg p-2.5 border border-black/5">
+                        <div class="text-[11px] text-neutral-500 font-medium">ราคาขายขั้นต่ำที่ไม่ขาดทุน (Breakeven)</div>
+                        <div class="text-base font-bold text-[var(--color-ink)] mt-0.5">${formatMoney(calc.breakevenPrice)} ฿</div>
+                        <div class="text-[10px] text-neutral-400">ขายต่ำกว่านี้จะเริ่มเข้าเนื้อ</div>
+                    </div>
+                    <div class="bg-white/80 rounded-lg p-2.5 border border-black/5">
+                        <div class="text-[11px] text-neutral-500 font-medium">เงินโอนเข้าบัญชีจริง (Net Payout)</div>
+                        <div class="text-base font-bold text-emerald-800 mt-0.5">${formatMoney(calc.netPayout)} ฿</div>
+                        <div class="text-[10px] text-neutral-400">หลังหักค่าธรรมเนียมและค่าส่ง</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ITEMIZED COST BREAKDOWN -->
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 space-y-2 text-xs" style="box-shadow:var(--app-elevation)">
+                <div class="font-bold text-neutral-800 border-b border-neutral-100 pb-1.5 flex justify-between">
+                    <span>ตารางแจกแจงค่าธรรมเนียมและต้นทุน</span>
+                    <span>สัดส่วน</span>
+                </div>
+                <div class="flex justify-between py-0.5">
+                    <span class="text-neutral-600">1. ต้นทุนตัวสินค้า (COGS)</span>
+                    <b class="text-neutral-800">${formatMoney(calc.productCost)} ฿ (${calc.sellingPrice > 0 ? formatNum((calc.productCost / calc.sellingPrice) * 100, 1) : 0}%)</b>
+                </div>
+                <div class="flex justify-between py-0.5">
+                    <span class="text-neutral-600">2. ค่ากล่องและบรรจุภัณฑ์</span>
+                    <b class="text-neutral-800">${formatMoney(calc.packagingCost)} ฿</b>
+                </div>
+                <div class="flex justify-between py-0.5">
+                    <span class="text-neutral-600">3. คูปองส่วนลดร้านค้า</span>
+                    <b class="text-neutral-800">${formatMoney(calc.shopVoucher)} ฿</b>
+                </div>
+                <div class="flex justify-between py-0.5">
+                    <span class="text-neutral-600">4. รวมค่าธรรมเนียมแพลตฟอร์ม ${calc.isVatApplied ? '(รวม VAT 7%)' : ''}</span>
+                    <b class="text-red-600">-${formatMoney(calc.totalPlatformFees)} ฿ (${calc.sellingPrice > 0 ? formatNum((calc.totalPlatformFees / calc.sellingPrice) * 100, 1) : 0}%)</b>
+                </div>
+                <div class="pl-3 space-y-0.5 text-[11px] text-neutral-500 border-l-2 border-red-200">
+                    <div class="flex justify-between">
+                        <span>• ค่าคอมมิชชัน (${calc.commissionRatePct}%)</span>
+                        <span>${formatMoney(calc.commissionFeePreVat)} ฿</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>• ค่าบริการโปรแกรมส่งฟรี (${calc.serviceFeePct}%)</span>
+                        <span>${formatMoney(calc.serviceFeePreVat)} ฿</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>• ค่าธุรกรรมการชำระเงิน (${calc.transactionRatePct}%)</span>
+                        <span>${formatMoney(calc.transactionFeePreVat)} ฿</span>
+                    </div>
+                    ${calc.isVatApplied ? `
+                        <div class="flex justify-between text-neutral-600">
+                            <span>• ภาษีมูลค่าเพิ่ม (VAT 7% บนค่าธรรมเนียม)</span>
+                            <span>${formatMoney(calc.platformVat)} ฿</span>
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="flex justify-between py-0.5">
+                    <span class="text-neutral-600">5. ค่าขนส่งส่วนต่างที่ร้านออกเพิ่ม</span>
+                    <b class="text-neutral-800">${formatMoney(calc.shippingDifference)} ฿</b>
+                </div>
+                <div class="flex justify-between py-0.5">
+                    <span class="text-neutral-600">6. ค่ายิงแอด/โฆษณาต่อออเดอร์</span>
+                    <b class="text-neutral-800">${formatMoney(calc.adSpendPerOrder)} ฿</b>
+                </div>
+                <div class="border-t border-neutral-200 pt-1.5 flex justify-between font-bold text-neutral-900">
+                    <span>รวมต้นทุนค่าใช้จ่ายทั้งหมด (Total Costs)</span>
+                    <span class="text-red-700">${formatMoney(calc.totalCosts)} ฿</span>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button id="btnPrintEcomReceipt" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm">
+                        🖨️ พิมพ์ใบสรุปกำไร / บันทึก PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Event Handlers
+    // 1. Platform switcher
+    container.querySelectorAll('.btn-ecom-plat').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const plat = btn.dataset.plat;
+            st.platform = plat;
+            if (plat === 'shopee') {
+                st.commissionRatePct = '5.0';
+                st.serviceFeePct = '4.0';
+                st.transactionRatePct = '3.0';
+                st.isVatApplied = 'yes';
+            } else if (plat === 'lazada') {
+                st.commissionRatePct = '5.0';
+                st.serviceFeePct = '3.0';
+                st.transactionRatePct = '3.0';
+                st.isVatApplied = 'yes';
+            } else if (plat === 'tiktok') {
+                st.commissionRatePct = '4.0';
+                st.serviceFeePct = '0.0';
+                st.transactionRatePct = '3.0';
+                st.isVatApplied = 'yes';
+            } else if (plat === 'direct') {
+                st.commissionRatePct = '0.0';
+                st.serviceFeePct = '0.0';
+                st.transactionRatePct = '0.0';
+                st.isVatApplied = 'no';
+            }
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    // 2. Quick price step adders
+    container.querySelectorAll('.btn-quick-price').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const add = parseFloat(btn.dataset.add) || 0;
+            const current = parseNumericInput(st.sellingPrice) || 0;
+            st.sellingPrice = formatInputDisplay(String(current + add));
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    // 3. Inputs formatting and binding
+    const bindInput = (id, stateKey) => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.addEventListener('change', () => {
+            st[stateKey] = input.value;
+            persistAppState();
+            renderActiveTool();
+        });
+        input.addEventListener('blur', () => {
+            const formatted = formatInputDisplay(input.value);
+            st[stateKey] = formatted;
+            input.value = formatted;
+            persistAppState();
+        });
+    };
+
+    bindInput('ecomSellingPrice', 'sellingPrice');
+    bindInput('ecomProductCost', 'productCost');
+    bindInput('ecomPackagingCost', 'packagingCost');
+    bindInput('ecomShopVoucher', 'shopVoucher');
+    bindInput('ecomCustomerShipping', 'customerShipping');
+    bindInput('ecomSellerShipping', 'sellerShipping');
+    bindInput('ecomAdSpend', 'adSpendPerOrder');
+
+    // Fee rates binding
+    const bindFee = (id, stateKey) => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.addEventListener('change', () => {
+            st[stateKey] = input.value;
+            st.platform = 'custom';
+            persistAppState();
+            renderActiveTool();
+        });
+    };
+    bindFee('ecomCommission', 'commissionRatePct');
+    bindFee('ecomService', 'serviceFeePct');
+    bindFee('ecomTransaction', 'transactionRatePct');
+
+    const vatCheck = document.getElementById('ecomVatCheck');
+    if (vatCheck) {
+        vatCheck.addEventListener('change', () => {
+            st.isVatApplied = vatCheck.checked ? 'yes' : 'no';
+            persistAppState();
+            renderActiveTool();
+        });
+    }
+
+    container.querySelector('#btnPrintEcomReceipt')?.addEventListener('click', () => {
+        triggerPrintReceipt('ecommerce_profit');
+    });
+
+    // Status Banner
+    if (calc.sellingPrice <= 0) {
+        setStatusBanner('empty', 'กรุณาระบุราคาตั้งขายต่อชิ้นเพื่อคำนวณกำไรและค่าธรรมเนียม');
+    } else if (calc.isProfit) {
+        setStatusBanner('success', `กำไรสุทธิ <b>${formatMoney(calc.netProfit)} บาท/ออเดอร์</b> (Margin ${formatNum(calc.profitMarginPct, 1)}%) · เงินโอนเข้าบัญชี ${formatMoney(calc.netPayout)} บาท`);
+    } else {
+        setStatusBanner('empty', `⚠️ ขาดทุน <b>${formatMoney(Math.abs(calc.netProfit))} บาท</b> · ราคาขายขั้นต่ำที่ไม่ขาดทุนคือ ${formatMoney(calc.breakevenPrice)} บาท`);
+    }
+}
+
 (function(root) {
     const exportsObj = {
         renderVatTool,
         renderVatWhtTool,
         renderPercentTool,
-        renderSalaryTool
+        renderSalaryTool,
+        calculateEcommerceProfit,
+        renderEcommerceProfitTool
     };
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = exportsObj;

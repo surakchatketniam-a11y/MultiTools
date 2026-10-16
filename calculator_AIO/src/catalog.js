@@ -32,6 +32,7 @@ var TOOLS_CATALOG = [
     { id: 'vat',        group: 'biz', category: 'fav', menuTitle: 'ภาษีมูลค่าเพิ่ม (VAT)', headerTitle: 'เครื่องคำนวณภาษีมูลค่าเพิ่ม', usesSharedKeypad: true, keywords: 'vat ภาษี 7% มูลค่าเพิ่ม ถอด vat รวม vat' },
     { id: 'vat_wht',    group: 'biz', category: 'fav', menuTitle: 'VAT + หัก ณ ที่จ่าย', headerTitle: 'VAT + หัก ณ ที่จ่าย', usesSharedKeypad: false, keywords: 'vat wht หัก ณ ที่จ่าย 1% 2% 3% 5% ภาษีหัก ณ ที่จ่าย วางบิล' },
     { id: 'percent',    group: 'biz', category: 'fav', menuTitle: 'เปอร์เซ็นต์ & กำไร', headerTitle: 'เครื่องคำนวณเปอร์เซ็นต์', usesSharedKeypad: true, keywords: 'percent เปอร์เซ็นต์ กำไร margin markup ร้อยละ สัดส่วน' },
+    { id: 'ecommerce_profit', group: 'biz', category: 'fav', menuTitle: 'กำไรขายของออนไลน์', headerTitle: 'คำนวณกำไรขายของออนไลน์ & ค่าธรรมเนียม (Shopee/Lazada/TikTok)', usesSharedKeypad: false, keywords: 'ecommerce profit กำไร ขายของออนไลน์ shopee lazada tiktok fee ค่าธรรมเนียม คอมมิชชัน ธุรกรรม ค่าส่ง ยิงแอด จุดคุ้มทุน breakeven profit margin มาร์เก็ตเพลส' },
     { id: 'salary',     group: 'biz', category: 'all', menuTitle: 'จัดการเงินเดือน 50/30/20', headerTitle: 'เครื่องมือจัดการเงินเดือน', usesSharedKeypad: true, keywords: 'salary เงินเดือน 50 30 20 รายจ่าย เงินเก็บ ออมเงิน หนี้' },
 
     // หมวดหมู่ที่ 3: การเงิน & วางแผน

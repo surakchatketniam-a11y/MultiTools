@@ -283,11 +283,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 32 tools classified into 5 valid groups with search keywords', () => {
+test('catalog contains exactly 33 tools classified into 5 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 5);
-    assert.equal(TOOLS_CATALOG.length, 32);
+    assert.equal(TOOLS_CATALOG.length, 33);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -413,7 +413,7 @@ test('thai official holidays: Songkran, fixed holidays and lunar Buddhist observ
     assert.equal(ctx.isThaiOfficialHoliday(new Date('2026-10-14T00:00:00')), false);
 });
 
-test('all 32 tools have complete and valid clear and demo data mappings', () => {
+test('all 33 tools have complete and valid clear and demo data mappings', () => {
     const rawAppStateMatch = html.match(/const appState = \{[\s\S]*?\n        \};/);
     assert.ok(rawAppStateMatch, 'appState must be defined');
 
@@ -429,7 +429,7 @@ test('all 32 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 32);
+    assert.equal(ctx.TOOLS_CATALOG.length, 33);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -861,7 +861,54 @@ test('formal print-to-pdf: generates accurate Thai receipt documents for loan, s
     assert.ok(otDoc.includes('รวมค่าล่วงเวลา OT สุทธิ'));
     assert.ok(otDoc.includes('ล่วงเวลาวันทำงานปกติ (ม.61)'));
 
-    // 15. Generic Calculator Fallback
+    // 15. E-Commerce Net Profit Formal Receipt
+    const ecomState = {
+        activeToolId: 'ecommerce_profit',
+        ecommerce_profit: {
+            platform: 'shopee',
+            sellingPrice: '390',
+            productCost: '140',
+            packagingCost: '12',
+            shopVoucher: '20',
+            customerShipping: '35',
+            sellerShipping: '35',
+            adSpendPerOrder: '35',
+            commissionRatePct: '5.0',
+            serviceFeePct: '4.0',
+            transactionRatePct: '3.0',
+            isVatApplied: 'yes'
+        }
+    };
+    const ecomDoc = ctx.generateFormalPrintHTML('ecommerce_profit', ecomState);
+    assert.ok(ecomDoc.includes('ใบวิเคราะห์โครงสร้างต้นทุน กำไรสุทธิ และค่าธรรมเนียมขายของออนไลน์'));
+    assert.ok(ecomDoc.includes('390.00 บาท'));
+    assert.ok(ecomDoc.includes('Shopee Thailand'));
+    assert.ok(ecomDoc.includes('รวมค่าธรรมเนียมแพลตฟอร์มทั้งสิ้น'));
+
+    // 16. Mortgage Refinance vs Retention Formal Receipt (Bank of Thailand BOT guidelines)
+    const refiState = {
+        activeToolId: 'loan',
+        loan: {
+            tab: 'refinance',
+            principal: '2,000,000',
+            months: '240',
+            currentRate: '5.50',
+            retentionRate: '3.80',
+            retentionFee: '0',
+            refinanceRate: '2.99',
+            isGovReducedMortgage: 'no',
+            appraisalFee: '2800',
+            insuranceFee: '2000'
+        }
+    };
+    const refiDoc = ctx.generateFormalPrintHTML('loan', refiState);
+    assert.ok(refiDoc.includes('เอกสารสรุปผลวิเคราะห์การรีไฟแนนซ์บ้าน vs ขอลดดอกเบี้ย (Retention)'));
+    assert.ok(refiDoc.includes('2,000,000.00 บาท'));
+    assert.ok(refiDoc.includes('เปรียบเทียบ 3 ทางเลือกในรอบ 3 ปี (36 งวดแรก อิงเกณฑ์ ธปท.)'));
+    assert.ok(refiDoc.includes('ประมาณการค่าใช้จ่ายในการย้ายธนาคาร (Refinance Closing Costs)'));
+    assert.ok(refiDoc.includes('คำแนะนำความคุ้มค่า (ธปท.)'));
+
+    // 17. Generic Calculator Fallback
     const genericDoc = ctx.generateFormalPrintHTML('tip', { activeToolId: 'tip' });
     assert.ok(genericDoc.includes('MULTITOOLS AIO'));
     assert.ok(genericDoc.includes('เอกสารสรุปผลการคำนวณ'));
@@ -872,7 +919,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     const ctx = context();
 
     // 1. Presets availability
-    for (const toolId of ['loan', 'savings', 'vat_wht', 'salary', 'tax_personal', 'property_transfer', 'gold_thai', 'electricity_bill', 'car_loan', 'social_security', 'labor_severance', 'legal_interest', 'ot_calc']) {
+    for (const toolId of ['loan', 'savings', 'vat_wht', 'salary', 'tax_personal', 'property_transfer', 'gold_thai', 'electricity_bill', 'car_loan', 'social_security', 'labor_severance', 'legal_interest', 'ot_calc', 'ecommerce_profit']) {
         const presets = ctx.getComparisonPresets(toolId);
         assert.ok(Array.isArray(presets) && presets.length >= 3, `Presets for ${toolId} must have at least 3 items`);
         assert.ok(presets[0].label && presets[0].state, `Preset item must have label and state`);
@@ -1062,7 +1109,20 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.equal(otComp.winnerIndex, 1, 'More OT hours and holiday work must yield higher OT pay');
     assert.ok(otComp.deltaSummary.includes('ทางเลือก B'));
 
-    // 15. Print Comparison Sheet Generator
+    // 15. E-commerce comparison
+    const ecomA = {
+        label: 'Shopee (ราคา 350 บ.)',
+        state: { platform: 'shopee', sellingPrice: '350', productCost: '150', packagingCost: '10', shopVoucher: '0', customerShipping: '35', sellerShipping: '35', adSpendPerOrder: '30', commissionRatePct: '5.0', serviceFeePct: '4.0', transactionRatePct: '3.0', isVatApplied: 'yes' }
+    };
+    const ecomB = {
+        label: 'ขายตรง LINE Shop (ราคา 320 บ.)',
+        state: { platform: 'direct', sellingPrice: '320', productCost: '150', packagingCost: '10', shopVoucher: '0', customerShipping: '35', sellerShipping: '35', adSpendPerOrder: '15', commissionRatePct: '0.0', serviceFeePct: '0.0', transactionRatePct: '0.0', isVatApplied: 'no' }
+    };
+    const ecomComp = ctx.compareCalculations('ecommerce_profit', [ecomA, ecomB]);
+    assert.ok(ecomComp);
+    assert.ok(ecomComp.deltaSummary.includes('ทางเลือกที่สร้างกำไรสุทธิสูงสุด'));
+
+    // 16. Print Comparison Sheet Generator
     const printHTML = ctx.generateComparePrintHTML(loanComp);
     assert.ok(printHTML.includes('MULTITOOLS AIO'));
     assert.ok(printHTML.includes('ตารางวิเคราะห์และเปรียบเทียบชุดคำนวณ'));
@@ -1071,7 +1131,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('🏆 คุ้มค่าที่สุด'));
 });
 
-test('all 32 tool renderers are modularized and exported across the 5 tool groups', () => {
+test('all 33 tool renderers are modularized and exported across the 5 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -1105,10 +1165,11 @@ test('all 32 tool renderers are modularized and exported across the 5 tool group
         social_security:   'renderSocialSecurityTool',
         labor_severance:   'renderLaborSeveranceTool',
         legal_interest:    'renderLegalInterestTool',
-        ot_calc:           'renderOvertimeTool'
+        ot_calc:           'renderOvertimeTool',
+        ecommerce_profit:  'renderEcommerceProfitTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 32);
+    assert.equal(Object.keys(rendererMap).length, 33);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -2148,6 +2209,177 @@ test('pure engine calculateOvertimePay: Section 61 (1.5x), Section 62 (1x/2x), S
     assert.match(summaryOt, /OT วันทำงานปกติ/);
     assert.match(summaryOt, /ทำงานในวันหยุด/);
     assert.match(summaryOt, /รวมค่าล่วงเวลา OT พิเศษ/);
+});
+
+test('pure engine calculateEcommerceProfit: platform fee breakdown, VAT 7%, breakeven price, margin and summary text', () => {
+    const ctx = context();
+
+    // 1. Shopee standard sale: sellingPrice 350, cost 150, pack 10, voucher 0, shipping 35/35, ads 30
+    // commission 5%, service 4%, transaction 3% on (350+35=385), VAT 7%
+    // commission = 350 * 5% = 17.50
+    // service = 350 * 4% = 14.00
+    // transaction = 385 * 3% = 11.55
+    // preVat = 17.50 + 14.00 + 11.55 = 43.05
+    // vat = 43.05 * 7% = 3.0135
+    // totalPlatformFee = 43.05 + 3.0135 = 46.0635
+    // totalCosts = 150 + 10 + 0 + 30 + 46.0635 = 236.0635
+    // netProfit = 350 - 236.0635 = 113.9365 (round ~113.94)
+    // netPayout = 385 - 46.0635 - 35 = 303.9365
+    const shopeeCalc = ctx.calculateEcommerceProfit({
+        platform: 'shopee',
+        sellingPrice: 350,
+        productCost: 150,
+        packagingCost: 10,
+        shopVoucher: 0,
+        customerShipping: 35,
+        sellerShipping: 35,
+        adSpendPerOrder: 30,
+        commissionRatePct: 5.0,
+        serviceFeePct: 4.0,
+        transactionRatePct: 3.0,
+        isVatApplied: true
+    });
+    assert.equal(shopeeCalc.commissionFeePreVat, 17.5);
+    assert.equal(shopeeCalc.serviceFeePreVat, 14.0);
+    assert.ok(Math.abs(shopeeCalc.transactionFeePreVat - 11.55) < 0.01);
+    assert.ok(Math.abs(shopeeCalc.totalPlatformFees - 46.06) < 0.02);
+    assert.ok(Math.abs(shopeeCalc.netProfit - 113.94) < 0.02);
+    assert.ok(shopeeCalc.isProfit);
+    assert.ok(shopeeCalc.breakevenPrice > 190 && shopeeCalc.breakevenPrice < 230);
+
+    // 2. Direct Sales (No platform fees, no VAT)
+    const directCalc = ctx.calculateEcommerceProfit({
+        platform: 'direct',
+        sellingPrice: 300,
+        productCost: 120,
+        packagingCost: 10,
+        shopVoucher: 0,
+        customerShipping: 35,
+        sellerShipping: 35,
+        adSpendPerOrder: 20,
+        commissionRatePct: 0,
+        serviceFeePct: 0,
+        transactionRatePct: 0,
+        isVatApplied: false
+    });
+    assert.equal(directCalc.totalPlatformFees, 0);
+    // netProfit = 300 - (120 + 10 + 20) = 150
+    assert.equal(directCalc.netProfit, 150);
+    assert.equal(directCalc.profitMarginPct, 50.0);
+    assert.equal(directCalc.breakevenPrice, 150);
+
+    // 3. Loss scenario: high costs, breakeven indicator
+    const lossCalc = ctx.calculateEcommerceProfit({
+        platform: 'shopee',
+        sellingPrice: 100,
+        productCost: 90,
+        packagingCost: 10,
+        adSpendPerOrder: 20
+    });
+    assert.equal(lossCalc.isProfit, false);
+    assert.ok(lossCalc.netProfit < 0);
+
+    // 4. Summary text check
+    const summaryEcom = ctx.getToolSummaryText('ecommerce_profit', {
+        ecommerce_profit: {
+            platform: 'shopee',
+            sellingPrice: '350',
+            productCost: '150',
+            packagingCost: '10',
+            shopVoucher: '0',
+            customerShipping: '35',
+            sellerShipping: '35',
+            adSpendPerOrder: '30'
+        }
+    });
+    assert.match(summaryEcom, /สรุปกำไรขายของออนไลน์ \(Shopee\)/);
+    assert.match(summaryEcom, /350\.00 บาท/);
+    assert.match(summaryEcom, /ต้นทุนสินค้า/);
+    assert.match(summaryEcom, /ค่าธรรมเนียมแพลตฟอร์ม/);
+    assert.match(summaryEcom, /กำไรสุทธิต่อชิ้น/);
+});
+
+test('pure engine calculateHomeRefinance: Bank of Thailand 3-year horizon, closing costs, breakeven month, and recommendations', () => {
+    const ctx = context();
+
+    // 1. Standard Refinance Scenario:
+    // Loan: 2,000,000 THB, 240 months
+    // Current rate: 5.50%
+    // Retention rate: 3.80%, retention fee: 0 THB
+    // Refinance rate: 2.99%
+    // Closing costs:
+    //   - mortgageFee: 1.0% of 2M = 20,000
+    //   - appraisalFee: 2,800
+    //   - stampDuty: 0.05% of 2M = 1,000
+    //   - insuranceFee: 2,000
+    //   - totalRefinanceFees: 20,000 + 2,800 + 1,000 + 2,000 = 25,800
+    const calcRefi = ctx.calculateHomeRefinance({
+        principal: 2000000,
+        months: 240,
+        currentRate: 5.50,
+        retentionRate: 3.80,
+        retentionFee: 0,
+        refinanceRate: 2.99,
+        isGovReducedMortgage: false,
+        appraisalFee: 2800,
+        insuranceFee: 2000,
+        otherRefinanceFees: 0
+    });
+
+    assert.equal(calcRefi.principal, 2000000);
+    assert.equal(calcRefi.months, 240);
+    assert.equal(calcRefi.mortgageFee, 20000);
+    assert.equal(calcRefi.stampDuty, 1000);
+    assert.equal(calcRefi.appraisalFee, 2800);
+    assert.equal(calcRefi.insuranceFee, 2000);
+    assert.equal(calcRefi.totalRefinanceFees, 25800);
+
+    // Amortization 3 years checks
+    assert.ok(calcRefi.currentPlan.monthlyPay > calcRefi.retentionPlan.monthlyPay);
+    assert.ok(calcRefi.retentionPlan.monthlyPay > calcRefi.refinancePlan.monthlyPay);
+    assert.ok(calcRefi.refinanceInterestSaved > calcRefi.retentionInterestSaved);
+    assert.ok(calcRefi.refinanceNetSavings > 0);
+    assert.ok(calcRefi.breakevenMonth > 0 && calcRefi.breakevenMonth <= 36);
+    assert.equal(calcRefi.isRefinanceBetter, true);
+    assert.match(calcRefi.recommendation, /รีไฟแนนซ์/);
+
+    // 2. Government Reduced Mortgage Incentive (0.01% mortgage registration fee)
+    const calcGov = ctx.calculateHomeRefinance({
+        principal: 2000000,
+        months: 240,
+        currentRate: 5.50,
+        retentionRate: 3.80,
+        retentionFee: 0,
+        refinanceRate: 2.99,
+        isGovReducedMortgage: true,
+        appraisalFee: 2800,
+        insuranceFee: 2000,
+        otherRefinanceFees: 0
+    });
+    // Mortgage fee: 2M * 0.01% = 200 THB
+    assert.equal(calcGov.mortgageFee, 200);
+    assert.equal(calcGov.totalRefinanceFees, 6000); // 200 + 2800 + 1000 + 2000
+    assert.ok(calcGov.refinanceNetSavings > calcRefi.refinanceNetSavings);
+    assert.ok(calcGov.breakevenMonth < calcRefi.breakevenMonth);
+    assert.equal(calcGov.isRefinanceBetter, true);
+
+    // 3. Retention Superior Scenario (Bank gives competitive retention e.g. 3.05% vs refinance 2.99%)
+    const calcRetention = ctx.calculateHomeRefinance({
+        principal: 2000000,
+        months: 240,
+        currentRate: 5.50,
+        retentionRate: 3.05,
+        retentionFee: 0,
+        refinanceRate: 2.99,
+        isGovReducedMortgage: false,
+        appraisalFee: 2800,
+        insuranceFee: 2000,
+        otherRefinanceFees: 0
+    });
+    // Refinance costs 25,800, but only saves ~0.06% interest over 3 years (~3,000 THB), so closing costs far exceed extra savings
+    assert.equal(calcRetention.isRefinanceBetter, false);
+    assert.ok(calcRetention.retentionNetSavings > calcRetention.refinanceNetSavings);
+    assert.match(calcRetention.recommendation, /Retention/);
 });
 
 

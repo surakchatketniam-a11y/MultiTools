@@ -877,6 +877,18 @@
         }
         .finance-thai-tool .airbnb-input { min-width: 0; }
         .finance-thai-tool .segment-btn { min-height: 44px; margin-inline: 2px; }
+        .overtime-tool .ot-section-heading {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .overtime-tool .ot-rate-heading { display: flex; flex-direction: column; gap: 4px; }
+        .overtime-tool .ot-hours-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .overtime-tool .ot-hours-row > .relative { flex-basis: 100px; }
+        .overtime-tool .ot-add-btn { min-width: 44px; min-height: 44px; padding: 6px 10px; }
+        .overtime-tool .airbnb-input:focus { border-width: 1px; box-shadow: 0 0 0 1px var(--app-accent); border-color: var(--app-accent); }
         .tool-summary-row + .tool-summary-row { border-top: 1px solid var(--app-hairline); }
         .tool-summary-row b { text-align: right; }
         html:is([data-theme="dark"], [data-theme="ferrari"]) .themed-tool-card,
@@ -1426,7 +1438,7 @@
             <div class="bg-white rounded-full px-3.5 py-1.5 border border-[var(--app-hairline)] flex items-center justify-between" style="box-shadow: var(--airbnb-shadow);">
                 <div class="flex items-center gap-2.5 min-w-0">
                     <div class="w-8 h-8 rounded-full bg-[var(--app-accent)] text-white flex flex-col items-center justify-center font-bold text-[9px] leading-none shrink-0">
-                        <span id="footerCatalogCount">32 in 1</span>
+                        <span id="footerCatalogCount">33 in 1</span>
                     </div>
                     <div class="leading-tight truncate">
                         <div class="text-xs sm:text-sm font-bold text-[#222222] truncate">มีตังค์ | เครื่องสารพัดคำนวณ Free+</div>
@@ -1767,7 +1779,16 @@
                 rateType: 'fixed',
                 promoMonths: '12',
                 rateAfter: '6.5',
-                calcMethod: 'reducing'
+                calcMethod: 'reducing',
+                tab: 'amortization',
+                currentRate: '5.50',
+                retentionRate: '3.80',
+                retentionFee: '0',
+                refinanceRate: '2.99',
+                isGovReducedMortgage: 'no',
+                appraisalFee: '2800',
+                insuranceFee: '2000',
+                otherRefinanceFees: '0'
             },
 
             // 16. Savings Calculator
@@ -1954,6 +1975,22 @@
                 holidayWorkHours: '8',
                 holidayOtHours: '4',
                 shiftAllowance: '0'
+            },
+
+            // 29. Online E-Commerce Seller Profit & Marketplace Fees
+            ecommerce_profit: {
+                platform: 'shopee',
+                sellingPrice: '350',
+                productCost: '150',
+                packagingCost: '10',
+                shopVoucher: '0',
+                customerShipping: '35',
+                sellerShipping: '35',
+                adSpendPerOrder: '30',
+                commissionRatePct: '5.0',
+                serviceFeePct: '4.0',
+                transactionRatePct: '3.0',
+                isVatApplied: 'yes'
             }
         };
 
@@ -1989,7 +2026,8 @@
             const keypadSection = document.getElementById('sharedKeypadSection');
             const keypadToolbar = document.getElementById('keypadToolbar');
 
-            if (toolMeta.usesSharedKeypad) {
+            const isLoanRefinance = toolMeta.id === 'loan' && appState.loan?.tab === 'refinance';
+            if (toolMeta.usesSharedKeypad && !isLoanRefinance) {
                 statusBanner.classList.remove('hidden');
                 keypadSection.classList.remove('hidden');
                 keypadToolbar?.classList.remove('hidden');
@@ -2033,6 +2071,7 @@
                 case 'labor_severance':  renderLaborSeveranceTool(topPanel); break;
                 case 'legal_interest':   renderLegalInterestTool(topPanel); break;
                 case 'ot_calc':          renderOvertimeTool(topPanel); break;
+                case 'ecommerce_profit': renderEcommerceProfitTool(topPanel); break;
             }
             if (editing) {
                 const replacement = topPanel.querySelector(`input[data-shared-field="${editing.index}"]`);

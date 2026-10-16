@@ -326,7 +326,101 @@ function generateFormalPrintHTML(toolId, stateObj) {
     let resultCards = [];
     let breakdownHTML = '';
 
-    if (curToolId === 'loan') {
+    if (curToolId === 'loan' && state.loan?.tab === 'refinance') {
+        docTitle = 'เอกสารสรุปผลวิเคราะห์การรีไฟแนนซ์บ้าน vs ขอลดดอกเบี้ย (Retention)';
+        docSubtitle = 'Bank of Thailand (BOT) Mortgage Refinance vs Retention Analysis Report';
+        const st = state.loan || {};
+        const calcFn = typeof calculateHomeRefinance === 'function' ? calculateHomeRefinance : (typeof globalThis !== 'undefined' ? globalThis.calculateHomeRefinance : null);
+        const calc = calcFn ? calcFn({
+            principal: parseNumericInput(st.principal),
+            months: integerOrDefault(st.months, 240),
+            currentRate: parseNumericInput(st.currentRate ?? '5.50'),
+            retentionRate: parseNumericInput(st.retentionRate ?? '3.80'),
+            retentionFee: parseNumericInput(st.retentionFee ?? '0'),
+            refinanceRate: parseNumericInput(st.refinanceRate ?? '2.99'),
+            isGovReducedMortgage: st.isGovReducedMortgage === 'yes',
+            appraisalFee: parseNumericInput(st.appraisalFee ?? '2800'),
+            insuranceFee: parseNumericInput(st.insuranceFee ?? '2000'),
+            otherRefinanceFees: parseNumericInput(st.otherRefinanceFees ?? '0')
+        }) : null;
+
+        if (calc) {
+            paramsRows = [
+                ['ยอดหนี้บ้านคงเหลือ (Principal)', `${formatMoney(calc.principal)} บาท`],
+                ['ระยะเวลาผ่อนที่เหลืออยู่', `${calc.months} เดือน (${(calc.months / 12).toFixed(1)} ปี)`],
+                ['อัตราดอกเบี้ยปัจจุบัน (อยู่อย่างเดิม)', `${formatNum(calc.currentRate, 2)}% ต่อปี`],
+                ['อัตราดอกเบี้ย Retention (ธนาคารเดิม)', `${formatNum(calc.retentionRate, 2)}% ต่อปี (ค่าธรรมเนียม ${formatMoney(calc.retentionFee)} บาท)`],
+                ['อัตราดอกเบี้ย Refinance (ย้ายธนาคาร)', `${formatNum(calc.refinanceRate, 2)}% ต่อปี`],
+                ['มาตรการรัฐ (ลดค่าจดจำนองเหลือ 0.01%)', calc.isGovReduced ? 'ใช้สิทธิ (0.01%)' : 'ไม่ใช้สิทธิ (อัตราปกติ 1.0%)'],
+                ['รวมค่าใช้จ่ายย้ายธนาคารทั้งหมด', `${formatMoney(calc.totalRefinanceFees)} บาท`]
+            ];
+
+            resultCards = [
+                { label: 'คำแนะนำความคุ้มค่า (ธปท.)', value: calc.recommendation, highlight: true },
+                { label: 'จุดคุ้มทุน (Breakeven)', value: calc.breakevenMonth !== null ? (calc.breakevenMonth === 0 ? 'คุ้มทุนทันที' : `เดือนที่ ${calc.breakevenMonth} (ปีที่ ${(calc.breakevenMonth / 12).toFixed(1)})`) : 'ไม่คุ้มทุน' },
+                { label: 'ประหยัดสุทธิ 3 ปี (Refinance ย้ายค่าย)', value: `${formatMoney(calc.refinanceNetSavings)} บาท`, highlight: calc.isRefinanceBetter },
+                { label: 'ประหยัดสุทธิ 3 ปี (Retention ขอลดดอก)', value: `${formatMoney(calc.retentionNetSavings)} บาท`, highlight: !calc.isRefinanceBetter },
+                { label: 'ผ่อนต่อเดือนเดิม vs รีไฟแนนซ์', value: `${formatMoney(calc.currentPlan.monthlyPay)} ➔ ${formatMoney(calc.refinancePlan.monthlyPay)} บาท` }
+            ];
+
+            breakdownHTML = `
+                <div style="margin-top: 24px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        เปรียบเทียบ 3 ทางเลือกในรอบ 3 ปี (36 งวดแรก อิงเกณฑ์ ธปท.)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 16px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                                <th style="padding: 6px 8px; text-align: left;">ทางเลือก</th>
+                                <th style="padding: 6px 8px; text-align: right;">ดอกเบี้ยต่อปี</th>
+                                <th style="padding: 6px 8px; text-align: right;">ค่างวด/เดือน</th>
+                                <th style="padding: 6px 8px; text-align: right;">ดอกเบี้ยรวม 3 ปี</th>
+                                <th style="padding: 6px 8px; text-align: right;">ค่าธรรมเนียม</th>
+                                <th style="padding: 6px 8px; text-align: right;">ประหยัดสุทธิ 3 ปี</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; font-weight: 600;">1. อยู่อย่างเดิม (ไม่ทำอะไร)</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.currentRate, 2)}%</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.currentPlan.monthlyPay)}</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #b91c1c;">${formatMoney(calc.currentPlan.totalInterest)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">-</td>
+                                <td style="padding: 6px 8px; text-align: right;">0 บาท (เกณฑ์ฐาน)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; ${!calc.isRefinanceBetter ? 'background: #ecfdf5; font-weight: 600;' : ''}">
+                                <td style="padding: 6px 8px;">2. ขอลดดอกเบี้ยเดิม (Retention) ${!calc.isRefinanceBetter ? '⭐' : ''}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.retentionRate, 2)}%</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.retentionPlan.monthlyPay)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.retentionPlan.totalInterest)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.retentionFee)}</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #15803d; font-weight: bold;">+${formatMoney(calc.retentionNetSavings)}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; ${calc.isRefinanceBetter ? 'background: #eff6ff; font-weight: 600;' : ''}">
+                                <td style="padding: 6px 8px;">3. ย้ายธนาคารใหม่ (Refinance) ${calc.isRefinanceBetter ? '⭐' : ''}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.refinanceRate, 2)}%</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.refinancePlan.monthlyPay)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.refinancePlan.totalInterest)}</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #b91c1c;">-${formatMoney(calc.totalRefinanceFees)}</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #1d4ed8; font-weight: bold;">+${formatMoney(calc.refinanceNetSavings)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4 style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">ประมาณการค่าใช้จ่ายในการย้ายธนาคาร (Refinance Closing Costs)</h4>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 4px 8px;">1. ค่าจดจำนองที่ดิน (${calc.isGovReduced ? 'มาตรการรัฐ 0.01%' : 'อัตราปกติ 1.0%'})</td><td style="padding: 4px 8px; text-align: right;">${formatMoney(calc.mortgageFee)} บาท</td></tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 4px 8px;">2. ค่าประเมินราคาหลักทรัพย์</td><td style="padding: 4px 8px; text-align: right;">${formatMoney(calc.appraisalFee)} บาท</td></tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 4px 8px;">3. ค่าอากรแสตมป์สัญญาเงินกู้ (0.05% สูงสุด 10,000 บาท)</td><td style="padding: 4px 8px; text-align: right;">${formatMoney(calc.stampDuty)} บาท</td></tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 4px 8px;">4. ค่าเบี้ยประกันอัคคีภัย (ประมาณการ)</td><td style="padding: 4px 8px; text-align: right;">${formatMoney(calc.insuranceFee)} บาท</td></tr>
+                            <tr style="border-top: 2px solid #cbd5e1; font-weight: 700; background: #f8fafc;"><td style="padding: 6px 8px;">รวมค่าใช้จ่ายดำเนินการรีไฟแนนซ์ทั้งหมด</td><td style="padding: 6px 8px; text-align: right; color: #b91c1c;">${formatMoney(calc.totalRefinanceFees)} บาท</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+    } else if (curToolId === 'loan') {
         docTitle = 'เอกสารสรุปผลการคำนวณสินเชื่อและตารางผ่อนชำระ';
         docSubtitle = 'Loan Amortization & Repayment Schedule Report';
         const st = state.loan || {};
@@ -1238,6 +1332,90 @@ function generateFormalPrintHTML(toolId, stateObj) {
                             <td style="padding: 8px; text-align: right;">${formatNum(calc.totalHours, 1)} ชม.</td>
                             <td style="padding: 8px;" colspan="2"></td>
                             <td style="padding: 8px; text-align: right; color: #0284c7; font-size: 12px;">+${formatMoney(calc.totalOtPay)} บาท</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+
+    } else if (curToolId === 'ecommerce_profit') {
+        docTitle = 'ใบวิเคราะห์โครงสร้างต้นทุน กำไรสุทธิ และค่าธรรมเนียมขายของออนไลน์';
+        docSubtitle = 'E-Commerce Net Profit & Platform Fee Statement (Shopee / Lazada / TikTok Shop)';
+        const st = state.ecommerce_profit || {};
+        const calc = (typeof calculateEcommerceProfit === 'function')
+            ? calculateEcommerceProfit(st)
+            : { platform: 'shopee', sellingPrice: 350, productCost: 150, packagingCost: 10, shopVoucher: 0, customerShipping: 35, sellerShipping: 35, adSpendPerOrder: 30, commissionFeePreVat: 17.5, serviceFeePreVat: 14.0, transactionFeePreVat: 11.55, platformVat: 3.01, totalPlatformFees: 46.06, shippingDifference: 0, totalCosts: 236.06, netPayout: 338.94, netProfit: 113.94, isProfit: true, profitMarginPct: 32.55, markupPct: 71.21, breakevenPrice: 216.57 };
+
+        const platLabel = calc.platform === 'shopee' ? 'Shopee Thailand' : (calc.platform === 'lazada' ? 'Lazada Thailand' : (calc.platform === 'tiktok' ? 'TikTok Shop Thailand' : (calc.platform === 'direct' ? 'ขายตรง / LINE / FB Shop' : 'กำหนดเอง (Custom Platform)')));
+
+        paramsRows = [
+            ['แพลตฟอร์มการขาย', platLabel],
+            ['ราคาขายตั้งต้นต่อชิ้น', `${formatMoney(calc.sellingPrice)} บาท`],
+            ['ต้นทุนสินค้าต่อชิ้น (COGS)', `${formatMoney(calc.productCost)} บาท`],
+            ['ค่ากล่องและบรรจุภัณฑ์', `${formatMoney(calc.packagingCost)} บาท`],
+            ['คูปองส่วนลดที่ร้านออกให้', `${formatMoney(calc.shopVoucher)} บาท`],
+            ['ค่าขนส่งที่ลูกค้าจ่าย vs จ่ายจริง', `${formatMoney(calc.customerShipping)} บ. / ${formatMoney(calc.sellerShipping)} บ.`],
+            ['งบโฆษณา/ยิงแอดเฉลี่ยต่อออเดอร์', `${formatMoney(calc.adSpendPerOrder)} บาท`],
+            ['การคิดภาษี VAT 7% บนค่าธรรมเนียม', calc.isVatApplied ? 'มีผลบังคับใช้ (คิด VAT 7%)' : 'ไม่คิด VAT']
+        ];
+
+        resultCards = [
+            { label: calc.isProfit ? '💰 กำไรสุทธิต่อชิ้น (Net Profit)' : '⚠️ ขาดทุนสุทธิต่อชิ้น (Net Loss)', value: `${formatMoney(calc.netProfit)} บาท`, highlight: true },
+            { label: 'อัตรากำไรสุทธิ (Profit Margin)', value: `${formatNum(calc.profitMarginPct, 1)}%` },
+            { label: 'ราคาขายขั้นต่ำที่ไม่ขาดทุน (Breakeven)', value: `${formatMoney(calc.breakevenPrice)} บาท` },
+            { label: 'เงินโอนสุทธิเข้าบัญชี (Net Payout)', value: `${formatMoney(calc.netPayout)} บาท` }
+        ];
+
+        breakdownHTML = `
+            <div style="margin-top: 20px;">
+                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                    ตารางแจกแจงโครงสร้างรายได้ ต้นทุน และค่าธรรมเนียม
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                            <th style="padding: 6px 8px; text-align: left;">รายการโครงสร้างการเงิน</th>
+                            <th style="padding: 6px 8px; text-align: right;">จำนวนเงิน (บาท)</th>
+                            <th style="padding: 6px 8px; text-align: left;">หมายเหตุ / เกณฑ์คำนวณ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;"><b>ราคาขายหน้าร้าน (Gross Selling Price)</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.sellingPrice)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">ราคาตั้งขายที่แสดงให้ผู้ซื้อเห็น</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">ต้นทุนสินค้าและบรรจุภัณฑ์</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #dc2626;">-${formatMoney(calc.productCost + calc.packagingCost)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">สินค้า ${formatMoney(calc.productCost)} บ. + กล่อง/แพ็ค ${formatMoney(calc.packagingCost)} บ.</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">คูปองส่วนลดที่ร้านออกให้</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #dc2626;">-${formatMoney(calc.shopVoucher)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">ร้านค้ารับภาระส่วนลดเอง</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background: #fff1f2;">
+                            <td style="padding: 6px 8px; color: #be123c;"><b>รวมค่าธรรมเนียมแพลตฟอร์มทั้งสิ้น</b></td>
+                            <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #be123c;">-${formatMoney(calc.totalPlatformFees)}</td>
+                            <td style="padding: 6px 8px; color: #be123c;">คอมมิชชัน + บริการส่งฟรี + ธุรกรรม + VAT 7%</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">ค่าส่งส่วนต่างที่ร้านออกเพิ่ม</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #dc2626;">-${formatMoney(calc.shippingDifference)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">กรณีค่าส่งจริงเกินจากที่เก็บลูกค้า</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 6px 8px;">งบโฆษณา/ยิงแอดเฉลี่ยต่อออเดอร์</td>
+                            <td style="padding: 6px 8px; text-align: right; color: #dc2626;">-${formatMoney(calc.adSpendPerOrder)}</td>
+                            <td style="padding: 6px 8px; color: #64748b;">ต้นทุนการตลาดต่อการสั่งซื้อ 1 ครั้ง</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                            <td style="padding: 8px;">กำไรสุทธิต่อชิ้นที่ได้รับจริง:</td>
+                            <td style="padding: 8px; text-align: right; color: ${calc.isProfit ? '#15803d' : '#b91c1c'}; font-size: 13px;">${formatMoney(calc.netProfit)} บาท</td>
+                            <td style="padding: 8px; color: #64748b;">Margin ${formatNum(calc.profitMarginPct, 1)}% | เงินโอนเข้าบัญชี ${formatMoney(calc.netPayout)} บ.</td>
                         </tr>
                     </tfoot>
                 </table>
