@@ -1789,16 +1789,7 @@
                 rateType: 'fixed',
                 promoMonths: '12',
                 rateAfter: '6.5',
-                calcMethod: 'reducing',
-                tab: 'amortization',
-                currentRate: '5.50',
-                retentionRate: '3.80',
-                retentionFee: '0',
-                refinanceRate: '2.99',
-                isGovReducedMortgage: 'no',
-                appraisalFee: '2800',
-                insuranceFee: '2000',
-                otherRefinanceFees: '0'
+                calcMethod: 'reducing'
             },
 
             // 16. Savings Calculator
@@ -2036,8 +2027,7 @@
             const keypadSection = document.getElementById('sharedKeypadSection');
             const keypadToolbar = document.getElementById('keypadToolbar');
 
-            const isLoanRefinance = toolMeta.id === 'loan' && appState.loan?.tab === 'refinance';
-            if (toolMeta.usesSharedKeypad && !isLoanRefinance) {
+            if (toolMeta.usesSharedKeypad) {
                 statusBanner.classList.remove('hidden');
                 keypadSection.classList.remove('hidden');
                 keypadToolbar?.classList.remove('hidden');
