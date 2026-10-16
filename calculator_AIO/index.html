@@ -919,6 +919,31 @@
         html:is([data-theme="dark"], [data-theme="ferrari"]) .themed-result-card.is-profit .themed-result-value { color: #6ee7a0; }
         html:is([data-theme="dark"], [data-theme="ferrari"]) .themed-result-card.is-loss .themed-result-value { color: #fda4af; }
 
+        /* Salary uses the same cards, mode selector and actions as other tools. */
+        .salary-tool { color: var(--app-ink); --salary-muted: var(--app-muted); container-type: inline-size; }
+        html[data-theme="classic"] .salary-tool { --salary-muted: var(--color-muted); }
+        .salary-tool .salary-muted { color: var(--salary-muted); }
+        .salary-tool .salary-modes .segment-btn { min-height: 44px; min-width: 0; margin: 0; padding: 8px; line-height: 1.5; transition: background-color 150ms ease, color 150ms ease; }
+        .salary-tool .salary-fields, .salary-tool .salary-goals { grid-template-columns: minmax(0, 1fr); }
+        .salary-tool .salary-percent-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .salary-tool .salary-fields label { line-height: 1.6; }
+        .salary-tool .airbnb-input { min-width: 0; min-height: 44px; color: var(--app-ink); }
+        .salary-tool .shared-number-input { color: var(--app-ink); }
+        .salary-tool .salary-inset { background-color: var(--app-surface-soft); border-radius: var(--app-btn-radius); }
+        .salary-tool .salary-row { flex-wrap: wrap; align-items: flex-start; gap: 4px 12px; }
+        .salary-tool .salary-row > :last-child:not(:first-child) { margin-left: auto; text-align: right; }
+        .salary-tool .salary-net-total { display: flex; flex-direction: column; gap: 8px; }
+        .salary-tool .salary-net-total .themed-result-value { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+        .salary-tool .salary-result.themed-result-card { background-color: var(--app-accent-soft); }
+        .salary-tool .salary-deduction { color: var(--app-body); }
+        .salary-tool .tool-action-btn.salary-primary { background-color: var(--app-accent); color: var(--app-on-accent, #ffffff); }
+        html[data-theme="dark"] .salary-tool .salary-primary { color: var(--app-shell-bg); }
+        .salary-tool .tool-action-btn { white-space: normal; line-height: 1.6; }
+        .salary-tool .tool-action-btn:active { transform: scale(.99); }
+        @container (min-width: 360px) { .salary-tool .salary-goals { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @container (max-width: 310px) { .salary-tool .salary-percent-grid { grid-template-columns: minmax(0, 1fr); } }
+        @media (prefers-reduced-motion: reduce) { .salary-tool .segment-btn { transition: none; } .salary-tool .tool-action-btn:active { transform: none; } }
+
         /* Guest Favorite / Rausch Pill Badge per DESIGN.md */
         .airbnb-badge {
             display: inline-flex;
@@ -1409,7 +1434,7 @@
             </div>
 
             <!-- Shared Custom 4x4 On-Screen Keypad -->
-            <section id="sharedKeypadSection" class="grid grid-cols-4 grid-rows-4 gap-2 flex-[1.42] pt-0.5 pb-1 shrink-0 min-h-[232px]">
+            <section id="sharedKeypadSection" class="keypad-collapsed grid grid-cols-4 grid-rows-4 gap-2 flex-[1.42] pt-0.5 pb-1 shrink-0 min-h-[232px]">
                 <!-- Row 1 -->
                 <button class="key-btn" data-key="7">7</button>
                 <button class="key-btn" data-key="8">8</button>
@@ -2050,7 +2075,7 @@
                 statusBanner.classList.remove('hidden');
                 keypadSection.classList.remove('hidden');
                 keypadToolbar?.classList.remove('hidden');
-                updateKeypadCollapseUI(false);
+                if (editingTool !== appState.activeToolId) updateKeypadCollapseUI(true);
             } else {
                 statusBanner.classList.add('hidden');
                 keypadSection.classList.add('hidden');

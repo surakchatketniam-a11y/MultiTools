@@ -137,6 +137,11 @@ function updateKeypadCollapseUI(collapsed) {
     const keypad = document.getElementById('sharedKeypadSection');
     const icon = document.getElementById('toggleKeypadIcon');
     const label = document.getElementById('toggleKeypadLabel');
+    const toggle = document.getElementById('toggleKeypadBtn');
+    toggle?.setAttribute('aria-expanded', String(!collapsed));
+    toggle?.setAttribute('aria-controls', 'sharedKeypadSection');
+    toggle?.setAttribute('aria-label', collapsed ? 'แสดงแป้นตัวเลข' : 'ซ่อนแป้นตัวเลข');
+    toggle?.setAttribute('title', collapsed ? 'แสดงแป้นตัวเลข' : 'ซ่อนแป้นตัวเลข');
     if (collapsed) {
         keypad?.classList.add('keypad-collapsed');
         icon?.classList.add('rotate-180');
@@ -166,13 +171,32 @@ function initKeypadListeners() {
         updateKeypadCollapseUI(isNowCollapsed);
     });
 
-    document.getElementById("toolTopPanel")?.addEventListener("focusin", (e) => {
-        if (e.target && e.target.matches("input, select")) {
-            const keypad = document.getElementById("sharedKeypadSection");
-            if (keypad?.classList.contains("keypad-collapsed")) {
-                updateKeypadCollapseUI(false);
-            }
+    // Only fields wired to the shared keypad may open it. Native numeric
+    // controls keep their own editor, so keys cannot change another field.
+    const panel = document.getElementById('toolTopPanel');
+    const sharedField = '#toolTopPanel input[data-shared-field]:not(:disabled):not([readonly])';
+    const keypadControls = '#sharedKeypadSection, #keypadToolbar';
+    panel?.addEventListener('focusin', event => {
+        updateKeypadCollapseUI(!event.target.matches(sharedField));
+    });
+    panel?.addEventListener('focusout', () => {
+        // Renderers replace focused fields synchronously and then restore focus.
+        queueMicrotask(() => {
+            if (!document.activeElement?.matches(sharedField) &&
+                !document.activeElement?.closest(keypadControls)) updateKeypadCollapseUI(true);
+        });
+    });
+    document.addEventListener('pointerdown', event => {
+        const target = event.target;
+        if (!target?.closest) return;
+        if (target.closest(keypadControls)) return;
+        const field = target.matches(sharedField) ? target : target.closest('#toolTopPanel [data-field-index]')?.querySelector('input[data-shared-field]:not(:disabled):not([readonly])');
+        if (field) {
+            updateKeypadCollapseUI(false);
+            return;
         }
+        updateKeypadCollapseUI(true);
+        if (document.activeElement?.matches(sharedField)) document.activeElement.blur();
     });
 
     if (typeof window !== "undefined") {
@@ -189,7 +213,7 @@ function initKeypadListeners() {
                 if (stdButton) { e.preventDefault(); stdButton.click(); }
                 return;
             }
-            if (e.key === "Escape") { e.preventDefault(); return; }
+            if (e.key === "Escape") { e.preventDefault(); updateKeypadCollapseUI(true); return; }
             if (!toolMeta.usesSharedKeypad) return;
             if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement?.tagName)) return;
             if (e.target?.closest?.("button, a, [role=\"button\"]")) return;
