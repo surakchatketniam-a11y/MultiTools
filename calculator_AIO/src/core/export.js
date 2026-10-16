@@ -1785,6 +1785,205 @@ function generateFormalPrintHTML(toolId, stateObj) {
             `;
         }
 
+    } else if (curToolId === 'construction_calc') {
+        docTitle = 'ใบประมาณการวัสดุก่อสร้างและปรับปรุงบ้าน (BOQ Material Estimate)';
+        docSubtitle = 'Construction & Renovation Material Estimation Sheet';
+        const st = state.construction_calc || {};
+        const tab = st.tab || 'tiles';
+        const calc = (typeof calculateConstructionMaterials === 'function')
+            ? calculateConstructionMaterials(st)
+            : {
+                tab: 'tiles', widthM: 4, lengthM: 5, areaSqm: 20, grossAreaSqm: 22,
+                tileWidthCm: 60, tileLengthCm: 60, piecesPerBox: 4, wastagePct: 10,
+                boxesNeeded: 16, grossPieces: 62, totalPurchasedPieces: 64, adhesiveBags: 5, groutBags: 7,
+                costs: { pricePerBox: 380, tileCost: 6080, adhesiveCost: 800, groutCost: 350, laborCost: 5000, totalEstimatedBudget: 12230 }
+            };
+
+        if (tab === 'tiles') {
+            paramsRows = [
+                ['หมวดหมู่งาน', 'งานกระเบื้องปูพื้นและผนัง (Floor & Wall Tiles)'],
+                ['ขนาดพื้นที่ปูจริง', `${formatNum(calc.areaSqm, 2)} ตารางเมตร (${calc.widthM} × ${calc.lengthM} ม.)`],
+                ['ขนาดกระเบื้องที่เลือก', `${calc.tileWidthCm} × ${calc.tileLengthCm} ซม. (${calc.piecesPerBox} แผ่น/กล่อง)`],
+                ['อัตราเผื่อเศษตัด & แตกหัก', `${calc.wastagePct}% (พื้นที่รวมเผื่อ ${formatNum(calc.grossAreaSqm, 2)} ตร.ม.)`],
+                ['ราคากระเบื้องต่อกล่อง', calc.costs.pricePerBox > 0 ? `${formatMoney(calc.costs.pricePerBox)} บาท/กล่อง` : 'ไม่ระบุ']
+            ];
+
+            resultCards = [
+                { label: 'จำนวนกระเบื้องที่ต้องสั่งซื้อ', value: `${calc.boxesNeeded} กล่อง (${calc.totalPurchasedPieces} แผ่น)`, highlight: true },
+                { label: 'ปูนกาวซีเมนต์ (20 กก.)', value: `${calc.adhesiveBags} ถุง` },
+                { label: 'กาวยาแนวร่อง (1 กก.)', value: `${calc.groutBags} ถุง` },
+                { label: 'ประมาณการงบประมาณรวม', value: `฿${formatMoney(calc.costs.totalEstimatedBudget)}`, highlight: true }
+            ];
+
+            breakdownHTML = `
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        ตารางแจกแจงรายการวัสดุกระเบื้อง (Tile Material Breakdown)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                                <th style="padding: 6px 8px; text-align: left;">รายการวัสดุ / ค่าแรง</th>
+                                <th style="padding: 6px 8px; text-align: right;">ปริมาณคำนวณ</th>
+                                <th style="padding: 6px 8px; text-align: right;">หน่วยนับ</th>
+                                <th style="padding: 6px 8px; text-align: right;">ประมาณการราคา</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; font-weight: 600;">กระเบื้อง ${calc.tileWidthCm}×${calc.tileLengthCm} ซม. (${calc.piecesPerBox} แผ่น/กล่อง)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #0369a1;">${calc.boxesNeeded}</td>
+                                <td style="padding: 6px 8px; text-align: right;">กล่อง (${calc.totalPurchasedPieces} แผ่น)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.tileCost)} ฿</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px;">ปูนกาวซีเมนต์ปูกระเบื้อง (ถุงละ 20 กก. ~4.5 ตร.ม.)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${calc.adhesiveBags}</td>
+                                <td style="padding: 6px 8px; text-align: right;">ถุง</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.adhesiveCost)} ฿</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px;">กาวยาแนวร่องกระเบื้อง (ถุงละ 1 กก. ~3.5 ตร.ม.)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${calc.groutBags}</td>
+                                <td style="padding: 6px 8px; text-align: right;">ถุง</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.groutCost)} ฿</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px;">ค่าแรงปูกระเบื้อง (${formatNum(calc.areaSqm, 2)} ตร.ม.)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatNum(calc.areaSqm, 2)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">ตร.ม.</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.laborCost)} ฿</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                                <td colspan="3" style="padding: 8px;">รวมประมาณการงบประมาณทั้งสิ้น:</td>
+                                <td style="padding: 8px; text-align: right; color: #0284c7; font-size: 12px;">${formatMoney(calc.costs.totalEstimatedBudget)} ฿</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+        } else if (tab === 'paint') {
+            paramsRows = [
+                ['หมวดหมู่งาน', 'งานสีทาอาคารและผนัง (Architectural Painting)'],
+                ['ขนาดผนังคำนวณ', `${calc.wallWidthM} ม. × สูง ${calc.wallHeightM} ม. (หักช่องเปิด ${calc.deductAreaSqm} ตร.ม.)`],
+                ['พื้นที่ผนังสุทธิ', `${formatNum(calc.wallAreaSqm, 2)} ตารางเมตร`],
+                ['จำนวนเที่ยวทาสีทับหน้า', `${calc.topcoat.coats} เที่ยว`],
+                ['อัตราเผื่อสูญเสีย', `${calc.wastagePct}% (พื้นที่คิดสี ${formatNum(calc.effectiveAreaSqm, 2)} ตร.ม.)`]
+            ];
+
+            resultCards = [
+                { label: 'สีทับหน้า (' + calc.topcoat.coats + ' เที่ยว)', value: `${calc.topcoat.pail5Gal > 0 ? `${calc.topcoat.pail5Gal} ถังใหญ่ 5GL` : ''}${calc.topcoat.can1Gal > 0 ? ` + ${calc.topcoat.can1Gal} GL` : ''}`, highlight: true },
+                { label: 'ปริมาณเนื้อสีทับหน้า', value: `${formatNum(calc.topcoat.litersNeeded, 1)} ลิตร` },
+                { label: 'สีรองพื้น (Primer 1 เที่ยว)', value: `${calc.primer.pail5Gal > 0 ? `${calc.primer.pail5Gal} ถังใหญ่` : ''}${calc.primer.can1Gal > 0 ? ` + ${calc.primer.can1Gal} GL` : ''} (${formatNum(calc.primer.litersNeeded, 1)} ลิตร)` },
+                { label: 'ประมาณการงบประมาณรวม', value: `฿${formatMoney(calc.costs.totalEstimatedBudget)}`, highlight: true }
+            ];
+
+            breakdownHTML = `
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        ตารางแจกแจงรายการสีทาอาคาร (Paint Material Breakdown)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                                <th style="padding: 6px 8px; text-align: left;">รายการสี / ค่าแรง</th>
+                                <th style="padding: 6px 8px; text-align: right;">ปริมาณคำนวณ</th>
+                                <th style="padding: 6px 8px; text-align: right;">บรรจุภัณฑ์แนะนำ</th>
+                                <th style="padding: 6px 8px; text-align: right;">ประมาณการราคา</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; font-weight: 600;">สีรองพื้นปูน (Primer 1 เที่ยว)</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.primer.litersNeeded, 1)} ลิตร</td>
+                                <td style="padding: 6px 8px; text-align: right;">${calc.primer.pail5Gal > 0 ? `${calc.primer.pail5Gal} ถังใหญ่ (5GL)` : ''}${calc.primer.can1Gal > 0 ? ` ${calc.primer.can1Gal} GL` : ''}</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.primerCost)} ฿</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; font-weight: 600;">สีทับหน้า (${calc.topcoat.coats} เที่ยว)</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #0369a1; font-weight: 700;">${formatNum(calc.topcoat.litersNeeded, 1)} ลิตร</td>
+                                <td style="padding: 6px 8px; text-align: right;">${calc.topcoat.pail5Gal > 0 ? `${calc.topcoat.pail5Gal} ถังใหญ่ (5GL)` : ''}${calc.topcoat.can1Gal > 0 ? ` ${calc.topcoat.can1Gal} GL` : ''}</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.topcoatCost)} ฿</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px;">ค่าแรงทาสี (${formatNum(calc.wallAreaSqm, 2)} ตร.ม.)</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.wallAreaSqm, 2)} ตร.ม.</td>
+                                <td style="padding: 6px 8px; text-align: right;">-</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.laborCost)} ฿</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                                <td colspan="3" style="padding: 8px;">รวมประมาณการงบประมาณทั้งสิ้น:</td>
+                                <td style="padding: 8px; text-align: right; color: #0284c7; font-size: 12px;">${formatMoney(calc.costs.totalEstimatedBudget)} ฿</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+        } else {
+            paramsRows = [
+                ['หมวดหมู่งาน', 'งานคอนกรีตเทพื้นและปรับระดับ (Concrete Slab & Pavement)'],
+                ['ขนาดพื้นที่เทพื้น', `${calc.slabWidthM} ม. × ${calc.slabLengthM} ม. (${formatNum(calc.slabAreaSqm, 2)} ตร.ม.)`],
+                ['ความหนาของพื้นคอนกรีต', `${calc.slabThicknessCm} เซนติเมตร`],
+                ['อัตราเผื่อยุบตัว & หกหล่น', `${calc.wastagePct}%`],
+                ['ประเภทคอนกรีต', calc.concreteType === 'ready_mix' ? 'คอนกรีตผสมเสร็จ (รถโม่ Ready-Mixed)' : 'ผสมเองหน้างาน (Site-Mixed 1:2:4)']
+            ];
+
+            resultCards = [
+                { label: 'คอนกรีตผสมเสร็จที่ต้องสั่ง', value: `${calc.readyMixOrderCubicM} คิว (m³)`, highlight: true },
+                { label: 'ปริมาตรคอนกรีตสุทธิ', value: `${formatNum(calc.netVolumeCubicM, 2)} คิว (รวมเผื่อ ${formatNum(calc.grossVolumeCubicM, 2)} คิว)` },
+                { label: 'ตะแกรงเหล็กไวร์เมช', value: `${formatNum(calc.wireMeshSqm, 2)} ตารางเมตร` },
+                { label: 'ประมาณการงบประมาณรวม', value: `฿${formatMoney(calc.costs.totalEstimatedBudget)}`, highlight: true }
+            ];
+
+            breakdownHTML = `
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        ตารางแจกแจงรายการคอนกรีตเทพื้น (Concrete Slab Breakdown)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                                <th style="padding: 6px 8px; text-align: left;">รายการวัสดุ / ค่าแรง</th>
+                                <th style="padding: 6px 8px; text-align: right;">ปริมาณคำนวณ</th>
+                                <th style="padding: 6px 8px; text-align: right;">หน่วยนับ</th>
+                                <th style="padding: 6px 8px; text-align: right;">ประมาณการราคา</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; font-weight: 600;">${calc.concreteType === 'ready_mix' ? 'คอนกรีตผสมเสร็จ (สั่งรถโม่)' : 'ปูนซีเมนต์ผสมเอง (ปูน+ทราย+หิน)'}</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #0369a1; font-weight: 700;">${calc.readyMixOrderCubicM}</td>
+                                <td style="padding: 6px 8px; text-align: right;">คิว (m³)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.concreteMaterialCost)} ฿</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px;">ตะแกรงเหล็กไวร์เมช (เผื่อทาบ 10%)</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.wireMeshSqm, 2)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">ตร.ม.</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.wireMeshCost)} ฿</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px;">ค่าแรงเทและปรับระดับ (${formatNum(calc.slabAreaSqm, 2)} ตร.ม.)</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.slabAreaSqm, 2)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">ตร.ม.</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.laborCost)} ฿</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                                <td colspan="3" style="padding: 8px;">รวมประมาณการงบประมาณทั้งสิ้น:</td>
+                                <td style="padding: 8px; text-align: right; color: #0284c7; font-size: 12px;">${formatMoney(calc.costs.totalEstimatedBudget)} ฿</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+        }
+
     } else {
         // Generic Fallback for other calculators
         const summary = (typeof getToolSummaryText === 'function') ? getToolSummaryText(curToolId) : '';

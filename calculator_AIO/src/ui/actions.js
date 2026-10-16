@@ -284,6 +284,44 @@ function clearCurrentTool() {
                 { id: '1', name: '', packPrice: '', packSize: '1000', packUnit: 'g', useAmount: '', useUnit: 'g', yieldPct: '100' }
             ]
         };
+    } else if (id === 'construction_calc') {
+        appState.construction_calc = {
+            tab: appState.construction_calc?.tab || 'tiles',
+            tileWidth: '',
+            tileLength: '',
+            tileSizePreset: '60x60',
+            tileCustomWidthCm: '60',
+            tileCustomLengthCm: '60',
+            tileCustomPcsPerBox: '4',
+            tileWastagePct: '10',
+            tilePricePerBox: '',
+            tileLaborPerSqm: '',
+            adhesivePricePerBag: '160',
+            groutPricePerBag: '50',
+
+            paintWallWidth: '',
+            paintWallHeight: '',
+            paintDeductArea: '',
+            paintCoats: '2',
+            paintWastagePct: '10',
+            paintPrimerPrice5Gal: '1800',
+            paintPrimerPrice1Gal: '450',
+            paintTopcoatPrice5Gal: '2400',
+            paintTopcoatPrice1Gal: '600',
+            paintLaborPerSqm: '',
+
+            slabWidth: '',
+            slabLength: '',
+            slabThickness: '10',
+            concreteWastagePct: '5',
+            concreteType: 'ready_mix',
+            concretePricePerCubic: '2000',
+            wireMeshPricePerSqm: '35',
+            concreteLaborPerSqm: '',
+            cementBagPrice: '145',
+            sandPricePerCubic: '450',
+            gravelPricePerCubic: '500'
+        };
     }
     rememberToolClear(snapshot);
     renderActiveTool();
@@ -549,6 +587,44 @@ function loadDemoForCurrentTool() {
                 { id: '4', name: 'ใบกะเพรา + พริกกระเทียม', packPrice: '50', packSize: '500', packUnit: 'g', useAmount: '30', useUnit: 'g', yieldPct: '90' },
                 { id: '5', name: 'น้ำมันพืช & ซอสปรุงรส', packPrice: '65', packSize: '1000', packUnit: 'ml', useAmount: '25', useUnit: 'ml', yieldPct: '100' }
             ]
+        };
+    } else if (id === 'construction_calc') {
+        appState.construction_calc = {
+            tab: 'tiles',
+            tileWidth: '4',
+            tileLength: '5',
+            tileSizePreset: '60x60',
+            tileCustomWidthCm: '60',
+            tileCustomLengthCm: '60',
+            tileCustomPcsPerBox: '4',
+            tileWastagePct: '10',
+            tilePricePerBox: '380',
+            tileLaborPerSqm: '250',
+            adhesivePricePerBag: '160',
+            groutPricePerBag: '50',
+
+            paintWallWidth: '16',
+            paintWallHeight: '2.8',
+            paintDeductArea: '4',
+            paintCoats: '2',
+            paintWastagePct: '10',
+            paintPrimerPrice5Gal: '1800',
+            paintPrimerPrice1Gal: '450',
+            paintTopcoatPrice5Gal: '2400',
+            paintTopcoatPrice1Gal: '600',
+            paintLaborPerSqm: '70',
+
+            slabWidth: '4',
+            slabLength: '6',
+            slabThickness: '10',
+            concreteWastagePct: '5',
+            concreteType: 'ready_mix',
+            concretePricePerCubic: '2000',
+            wireMeshPricePerSqm: '35',
+            concreteLaborPerSqm: '150',
+            cementBagPrice: '145',
+            sandPricePerCubic: '450',
+            gravelPricePerCubic: '500'
         };
     }
     renderActiveTool();

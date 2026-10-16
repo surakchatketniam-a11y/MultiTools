@@ -27,6 +27,7 @@ var TOOLS_CATALOG = [
     { id: 'gold_thai',  group: 'shop', category: 'fav', menuTitle: 'ราคาทองคำไทย', headerTitle: 'คำนวณราคาทองคำไทย (แท่ง/รูปพรรณ/กำเหน็จ)', usesSharedKeypad: false, keywords: 'gold thai ทอง ราคาทอง ทองคำ ทองแท่ง ทองรูปพรรณ สลึง กำเหน็จ เยาวราช สมาคมค้าทองคำ ออมทอง' },
     { id: 'tip',        group: 'shop', category: 'all', menuTitle: 'ทิป & หารบิล', headerTitle: 'เครื่องคำนวณทิป & หารค่าอาหาร', usesSharedKeypad: true, keywords: 'tip ทิป หารค่าข้าว บิล หารคน split bill ร้านอาหาร' },
     { id: 'unit',       group: 'shop', category: 'fav', menuTitle: 'แปลงหน่วย', headerTitle: 'ตัวแปลงหน่วย', usesSharedKeypad: true, keywords: 'unit แปลงหน่วย ตารางวา ไร่ เมตร กิโลกรัม ลิตร นิ้ว ฟุต' },
+    { id: 'construction_calc', group: 'shop', category: 'fav', menuTitle: 'คำนวณวัสดุก่อสร้าง', headerTitle: 'คำนวณวัสดุก่อสร้าง & ปรับปรุงบ้าน (กระเบื้อง/สี/ปูน)', usesSharedKeypad: true, keywords: 'construction calc วัสดุก่อสร้าง ปรับปรุงบ้าน ซ่อมบ้าน กระเบื้อง ปูกระเบื้อง สีทาบ้าน ทาสี ปูน คอนกรีต เทพื้น ปูนกาว ยาแนว ไวร์เมช อิฐ ตารางเมตร คิว boq ช่างปูน ค่าแรง' },
 
     // หมวดหมู่ที่ 2: ธุรกิจ & ค้าขาย
     { id: 'vat',        group: 'biz', category: 'fav', menuTitle: 'ภาษีมูลค่าเพิ่ม (VAT)', headerTitle: 'เครื่องคำนวณภาษีมูลค่าเพิ่ม', usesSharedKeypad: true, keywords: 'vat ภาษี 7% มูลค่าเพิ่ม ถอด vat รวม vat' },

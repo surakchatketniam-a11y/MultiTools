@@ -500,6 +500,21 @@ function getToolSummaryText(toolId, stateObj) {
             }
             return `🍳 สรุปต้นทุนสูตรอาหาร & เครื่องดื่ม: ${rName}\n${divider}\n• ขนาดสูตร: ${portionText}\n• ต้นทุนวัตถุดิบ/เสิร์ฟ: ${formatMoney(calc.summary.rawCostPerPortion)} บาท\n• เผื่อสูญเสีย/เครื่องปรุง (${calc.hiddenCostBufferPct}%): +${formatMoney(calc.summary.hiddenCostBuffer)} บาท\n• บรรจุภัณฑ์/กล่อง: +${formatMoney(calc.summary.packagingCost)} บาท\n${divider}\n💰 ต้นทุนรวมต่อเสิร์ฟ: ${formatMoney(calc.summary.totalCostPerPortion)} บาท\n🎯 ราคาแนะนำ (Food Cost ${calc.targetFoodCostPct}%): ${formatMoney(calc.summary.suggestedSellingPrice)} บาท (ปัดเศษการค้า: ${formatMoney(calc.summary.suggestedPriceRounded)} บ.)${profitSummary}\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'construction_calc': {
+            const st = state.construction_calc || {};
+            const tab = st.tab || 'tiles';
+            const calc = (typeof calculateConstructionMaterials === 'function')
+                ? calculateConstructionMaterials(st)
+                : { tab: 'tiles', boxesNeeded: 0, grossPieces: 0, totalPurchasedPieces: 0, areaSqm: 0, grossAreaSqm: 0, adhesiveBags: 0, groutBags: 0, costs: { totalEstimatedBudget: 0 } };
+
+            if (tab === 'tiles') {
+                return `🧱 สรุปคำนวณกระเบื้องปูพื้น & ผนัง\n${divider}\n• พื้นที่ปูสุทธิ: ${formatNum(calc.areaSqm, 2)} ตร.ม. (รวมเผื่อ ${calc.wastagePct}%: ${formatNum(calc.grossAreaSqm, 2)} ตร.ม.)\n• ขนาดกระเบื้อง: ${calc.tileWidthCm}x${calc.tileLengthCm} ซม. (${calc.piecesPerBox} แผ่น/กล่อง)\n• จำนวนที่ต้องใช้: ${calc.grossPieces} แผ่น\n----------------------------------\n📦 จำนวนกระเบื้องที่ต้องสั่งซื้อ: ${calc.boxesNeeded} กล่อง (${calc.totalPurchasedPieces} แผ่น)\n• ปูนกาวซีเมนต์ (ถุง 20 กก.): ${calc.adhesiveBags} ถุง\n• กาวยาแนวร่อง (ถุง 1 กก.): ${calc.groutBags} ถุง\n${calc.costs.totalEstimatedBudget > 0 ? `💰 ประมาณการงบประมาณรวม: ${formatMoney(calc.costs.totalEstimatedBudget)} บาท\n` : ''}(คำนวณโดย Multitools Calculator)`;
+            } else if (tab === 'paint') {
+                return `🎨 สรุปคำนวณสีทาอาคาร & ผนัง\n${divider}\n• พื้นที่ผนังสุทธิ: ${formatNum(calc.wallAreaSqm, 2)} ตร.ม. (รวมเผื่อ ${calc.wastagePct}%: ${formatNum(calc.effectiveAreaSqm, 2)} ตร.ม.)\n• สีรองพื้น (Primer 1 เที่ยว): ${calc.primer.pail5Gal > 0 ? `${calc.primer.pail5Gal} ถังใหญ่ 5GL` : ''}${calc.primer.can1Gal > 0 ? ` ${calc.primer.can1Gal} แกลลอน` : ''} (${formatNum(calc.primer.litersNeeded, 1)} ลิตร)\n----------------------------------\n🖌️ สีทับหน้า (${calc.topcoat.coats} เที่ยว): ${calc.topcoat.pail5Gal > 0 ? `${calc.topcoat.pail5Gal} ถังใหญ่ 5GL` : ''}${calc.topcoat.can1Gal > 0 ? ` ${calc.topcoat.can1Gal} แกลลอน` : ''} (${formatNum(calc.topcoat.litersNeeded, 1)} ลิตร)\n${calc.costs.totalEstimatedBudget > 0 ? `💰 ประมาณการงบประมาณรวม: ${formatMoney(calc.costs.totalEstimatedBudget)} บาท\n` : ''}(คำนวณโดย Multitools Calculator)`;
+            } else {
+                return `🏗️ สรุปคำนวณคอนกรีตเทพื้น & ปูน\n${divider}\n• พื้นที่เทพื้น: ${formatNum(calc.slabAreaSqm, 2)} ตร.ม. (หนา ${calc.slabThicknessCm} ซม.)\n• ปริมาตรคอนกรีตสุทธิ: ${formatNum(calc.netVolumeCubicM, 2)} คิว (m³)\n• ปริมาตรรวมเผื่อ ${calc.wastagePct}%: ${formatNum(calc.grossVolumeCubicM, 2)} คิว (m³)\n----------------------------------\n🚛 สั่งคอนกรีตผสมเสร็จ (รถโม่): ${calc.readyMixOrderCubicM} คิว\n• ตะแกรงเหล็กไวร์เมช: ${formatNum(calc.wireMeshSqm, 2)} ตร.ม.\n${calc.concreteType === 'site_mix' ? `• สัดส่วนผสมเอง: ปูน ${calc.siteMix.cementBags50kg} ถุง / ทราย ${formatNum(calc.siteMix.sandCubicM, 2)} คิว / หิน ${formatNum(calc.siteMix.gravelCubicM, 2)} คิว\n` : ''}${calc.costs.totalEstimatedBudget > 0 ? `💰 ประมาณการงบประมาณรวม: ${formatMoney(calc.costs.totalEstimatedBudget)} บาท\n` : ''}(คำนวณโดย Multitools Calculator)`;
+            }
+        }
         default: {
             const statusText = document.getElementById('sharedStatusText')?.innerText?.trim();
             return `📋 สรุปผล: ${title}\n${divider}\n${statusText || 'คำนวณเรียบร้อยแล้ว'}\n(คำนวณโดย Multitools Calculator)`;

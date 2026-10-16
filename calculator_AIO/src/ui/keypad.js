@@ -27,6 +27,29 @@ function getToolFieldBindings(toolId) {
             return [
                 { get: () => appState.unit.val, set: (v) => { appState.unit.val = v; } }
             ];
+        case 'construction_calc': {
+            const st = appState.construction_calc || {};
+            const tab = st.tab || 'tiles';
+            if (tab === 'tiles') {
+                return [
+                    { get: () => (appState.construction_calc ? appState.construction_calc.tileWidth : ''), set: (v) => { if (appState.construction_calc) appState.construction_calc.tileWidth = v; } },
+                    { get: () => (appState.construction_calc ? appState.construction_calc.tileLength : ''), set: (v) => { if (appState.construction_calc) appState.construction_calc.tileLength = v; } },
+                    { get: () => (appState.construction_calc ? appState.construction_calc.tilePricePerBox : ''), set: (v) => { if (appState.construction_calc) appState.construction_calc.tilePricePerBox = v; } }
+                ];
+            } else if (tab === 'paint') {
+                return [
+                    { get: () => (appState.construction_calc ? appState.construction_calc.paintWallWidth : ''), set: (v) => { if (appState.construction_calc) appState.construction_calc.paintWallWidth = v; } },
+                    { get: () => (appState.construction_calc ? appState.construction_calc.paintWallHeight : ''), set: (v) => { if (appState.construction_calc) appState.construction_calc.paintWallHeight = v; } },
+                    { get: () => (appState.construction_calc ? appState.construction_calc.paintDeductArea : ''), set: (v) => { if (appState.construction_calc) appState.construction_calc.paintDeductArea = v; } }
+                ];
+            } else {
+                return [
+                    { get: () => (appState.construction_calc ? appState.construction_calc.slabWidth : ''), set: (v) => { if (appState.construction_calc) appState.construction_calc.slabWidth = v; } },
+                    { get: () => (appState.construction_calc ? appState.construction_calc.slabLength : ''), set: (v) => { if (appState.construction_calc) appState.construction_calc.slabLength = v; } },
+                    { get: () => (appState.construction_calc ? appState.construction_calc.slabThickness : ''), set: (v) => { if (appState.construction_calc) appState.construction_calc.slabThickness = v; } }
+                ];
+            }
+        }
         case 'discount':
             return [
                 { get: () => appState.discount.price, set: (v) => { appState.discount.price = v; } },

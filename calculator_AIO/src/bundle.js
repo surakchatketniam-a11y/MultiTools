@@ -33,6 +33,7 @@ var TOOLS_CATALOG = [
     { id: 'gold_thai',  group: 'shop', category: 'fav', menuTitle: 'ราคาทองคำไทย', headerTitle: 'คำนวณราคาทองคำไทย (แท่ง/รูปพรรณ/กำเหน็จ)', usesSharedKeypad: false, keywords: 'gold thai ทอง ราคาทอง ทองคำ ทองแท่ง ทองรูปพรรณ สลึง กำเหน็จ เยาวราช สมาคมค้าทองคำ ออมทอง' },
     { id: 'tip',        group: 'shop', category: 'all', menuTitle: 'ทิป & หารบิล', headerTitle: 'เครื่องคำนวณทิป & หารค่าอาหาร', usesSharedKeypad: true, keywords: 'tip ทิป หารค่าข้าว บิล หารคน split bill ร้านอาหาร' },
     { id: 'unit',       group: 'shop', category: 'fav', menuTitle: 'แปลงหน่วย', headerTitle: 'ตัวแปลงหน่วย', usesSharedKeypad: true, keywords: 'unit แปลงหน่วย ตารางวา ไร่ เมตร กิโลกรัม ลิตร นิ้ว ฟุต' },
+    { id: 'construction_calc', group: 'shop', category: 'fav', menuTitle: 'คำนวณวัสดุก่อสร้าง', headerTitle: 'คำนวณวัสดุก่อสร้าง & ปรับปรุงบ้าน (กระเบื้อง/สี/ปูน)', usesSharedKeypad: true, keywords: 'construction calc วัสดุก่อสร้าง ปรับปรุงบ้าน ซ่อมบ้าน กระเบื้อง ปูกระเบื้อง สีทาบ้าน ทาสี ปูน คอนกรีต เทพื้น ปูนกาว ยาแนว ไวร์เมช อิฐ ตารางเมตร คิว boq ช่างปูน ค่าแรง' },
 
     // หมวดหมู่ที่ 2: ธุรกิจ & ค้าขาย
     { id: 'vat',        group: 'biz', category: 'fav', menuTitle: 'ภาษีมูลค่าเพิ่ม (VAT)', headerTitle: 'เครื่องคำนวณภาษีมูลค่าเพิ่ม', usesSharedKeypad: true, keywords: 'vat ภาษี 7% มูลค่าเพิ่ม ถอด vat รวม vat' },
@@ -154,6 +155,17 @@ function hasInvalidNumericInput(toolId, stateObj) {
         if (invalid(st.batchYield) || invalid(st.targetFoodCostPct) || invalid(st.sellingPrice) || invalid(st.packagingCost) || invalid(st.hiddenCostBufferPct)) return true;
         const ings = Array.isArray(st.ingredients) ? st.ingredients : [];
         return ings.some(i => invalid(i.packPrice) || invalid(i.packSize) || invalid(i.useAmount) || invalid(i.yieldPct));
+    }
+    if (curToolId === 'construction_calc') {
+        const st = state.construction_calc || {};
+        const tab = st.tab || 'tiles';
+        if (tab === 'tiles') {
+            return invalid(st.tileWidth) || invalid(st.tileLength) || invalid(st.tilePricePerBox) || invalid(st.tileLaborPerSqm) || invalid(st.adhesivePricePerBag);
+        } else if (tab === 'paint') {
+            return invalid(st.paintWallWidth) || invalid(st.paintWallHeight) || invalid(st.paintDeductArea) || invalid(st.paintCoats) || invalid(st.paintLaborPerSqm);
+        } else {
+            return invalid(st.slabWidth) || invalid(st.slabLength) || invalid(st.slabThickness) || invalid(st.concretePricePerCubic) || invalid(st.concreteLaborPerSqm);
+        }
     }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
@@ -2261,6 +2273,205 @@ function generateFormalPrintHTML(toolId, stateObj) {
             `;
         }
 
+    } else if (curToolId === 'construction_calc') {
+        docTitle = 'ใบประมาณการวัสดุก่อสร้างและปรับปรุงบ้าน (BOQ Material Estimate)';
+        docSubtitle = 'Construction & Renovation Material Estimation Sheet';
+        const st = state.construction_calc || {};
+        const tab = st.tab || 'tiles';
+        const calc = (typeof calculateConstructionMaterials === 'function')
+            ? calculateConstructionMaterials(st)
+            : {
+                tab: 'tiles', widthM: 4, lengthM: 5, areaSqm: 20, grossAreaSqm: 22,
+                tileWidthCm: 60, tileLengthCm: 60, piecesPerBox: 4, wastagePct: 10,
+                boxesNeeded: 16, grossPieces: 62, totalPurchasedPieces: 64, adhesiveBags: 5, groutBags: 7,
+                costs: { pricePerBox: 380, tileCost: 6080, adhesiveCost: 800, groutCost: 350, laborCost: 5000, totalEstimatedBudget: 12230 }
+            };
+
+        if (tab === 'tiles') {
+            paramsRows = [
+                ['หมวดหมู่งาน', 'งานกระเบื้องปูพื้นและผนัง (Floor & Wall Tiles)'],
+                ['ขนาดพื้นที่ปูจริง', `${formatNum(calc.areaSqm, 2)} ตารางเมตร (${calc.widthM} × ${calc.lengthM} ม.)`],
+                ['ขนาดกระเบื้องที่เลือก', `${calc.tileWidthCm} × ${calc.tileLengthCm} ซม. (${calc.piecesPerBox} แผ่น/กล่อง)`],
+                ['อัตราเผื่อเศษตัด & แตกหัก', `${calc.wastagePct}% (พื้นที่รวมเผื่อ ${formatNum(calc.grossAreaSqm, 2)} ตร.ม.)`],
+                ['ราคากระเบื้องต่อกล่อง', calc.costs.pricePerBox > 0 ? `${formatMoney(calc.costs.pricePerBox)} บาท/กล่อง` : 'ไม่ระบุ']
+            ];
+
+            resultCards = [
+                { label: 'จำนวนกระเบื้องที่ต้องสั่งซื้อ', value: `${calc.boxesNeeded} กล่อง (${calc.totalPurchasedPieces} แผ่น)`, highlight: true },
+                { label: 'ปูนกาวซีเมนต์ (20 กก.)', value: `${calc.adhesiveBags} ถุง` },
+                { label: 'กาวยาแนวร่อง (1 กก.)', value: `${calc.groutBags} ถุง` },
+                { label: 'ประมาณการงบประมาณรวม', value: `฿${formatMoney(calc.costs.totalEstimatedBudget)}`, highlight: true }
+            ];
+
+            breakdownHTML = `
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        ตารางแจกแจงรายการวัสดุกระเบื้อง (Tile Material Breakdown)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                                <th style="padding: 6px 8px; text-align: left;">รายการวัสดุ / ค่าแรง</th>
+                                <th style="padding: 6px 8px; text-align: right;">ปริมาณคำนวณ</th>
+                                <th style="padding: 6px 8px; text-align: right;">หน่วยนับ</th>
+                                <th style="padding: 6px 8px; text-align: right;">ประมาณการราคา</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; font-weight: 600;">กระเบื้อง ${calc.tileWidthCm}×${calc.tileLengthCm} ซม. (${calc.piecesPerBox} แผ่น/กล่อง)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 700; color: #0369a1;">${calc.boxesNeeded}</td>
+                                <td style="padding: 6px 8px; text-align: right;">กล่อง (${calc.totalPurchasedPieces} แผ่น)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.tileCost)} ฿</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px;">ปูนกาวซีเมนต์ปูกระเบื้อง (ถุงละ 20 กก. ~4.5 ตร.ม.)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${calc.adhesiveBags}</td>
+                                <td style="padding: 6px 8px; text-align: right;">ถุง</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.adhesiveCost)} ฿</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px;">กาวยาแนวร่องกระเบื้อง (ถุงละ 1 กก. ~3.5 ตร.ม.)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${calc.groutBags}</td>
+                                <td style="padding: 6px 8px; text-align: right;">ถุง</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.groutCost)} ฿</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px;">ค่าแรงปูกระเบื้อง (${formatNum(calc.areaSqm, 2)} ตร.ม.)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatNum(calc.areaSqm, 2)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">ตร.ม.</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.laborCost)} ฿</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                                <td colspan="3" style="padding: 8px;">รวมประมาณการงบประมาณทั้งสิ้น:</td>
+                                <td style="padding: 8px; text-align: right; color: #0284c7; font-size: 12px;">${formatMoney(calc.costs.totalEstimatedBudget)} ฿</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+        } else if (tab === 'paint') {
+            paramsRows = [
+                ['หมวดหมู่งาน', 'งานสีทาอาคารและผนัง (Architectural Painting)'],
+                ['ขนาดผนังคำนวณ', `${calc.wallWidthM} ม. × สูง ${calc.wallHeightM} ม. (หักช่องเปิด ${calc.deductAreaSqm} ตร.ม.)`],
+                ['พื้นที่ผนังสุทธิ', `${formatNum(calc.wallAreaSqm, 2)} ตารางเมตร`],
+                ['จำนวนเที่ยวทาสีทับหน้า', `${calc.topcoat.coats} เที่ยว`],
+                ['อัตราเผื่อสูญเสีย', `${calc.wastagePct}% (พื้นที่คิดสี ${formatNum(calc.effectiveAreaSqm, 2)} ตร.ม.)`]
+            ];
+
+            resultCards = [
+                { label: 'สีทับหน้า (' + calc.topcoat.coats + ' เที่ยว)', value: `${calc.topcoat.pail5Gal > 0 ? `${calc.topcoat.pail5Gal} ถังใหญ่ 5GL` : ''}${calc.topcoat.can1Gal > 0 ? ` + ${calc.topcoat.can1Gal} GL` : ''}`, highlight: true },
+                { label: 'ปริมาณเนื้อสีทับหน้า', value: `${formatNum(calc.topcoat.litersNeeded, 1)} ลิตร` },
+                { label: 'สีรองพื้น (Primer 1 เที่ยว)', value: `${calc.primer.pail5Gal > 0 ? `${calc.primer.pail5Gal} ถังใหญ่` : ''}${calc.primer.can1Gal > 0 ? ` + ${calc.primer.can1Gal} GL` : ''} (${formatNum(calc.primer.litersNeeded, 1)} ลิตร)` },
+                { label: 'ประมาณการงบประมาณรวม', value: `฿${formatMoney(calc.costs.totalEstimatedBudget)}`, highlight: true }
+            ];
+
+            breakdownHTML = `
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        ตารางแจกแจงรายการสีทาอาคาร (Paint Material Breakdown)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                                <th style="padding: 6px 8px; text-align: left;">รายการสี / ค่าแรง</th>
+                                <th style="padding: 6px 8px; text-align: right;">ปริมาณคำนวณ</th>
+                                <th style="padding: 6px 8px; text-align: right;">บรรจุภัณฑ์แนะนำ</th>
+                                <th style="padding: 6px 8px; text-align: right;">ประมาณการราคา</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; font-weight: 600;">สีรองพื้นปูน (Primer 1 เที่ยว)</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.primer.litersNeeded, 1)} ลิตร</td>
+                                <td style="padding: 6px 8px; text-align: right;">${calc.primer.pail5Gal > 0 ? `${calc.primer.pail5Gal} ถังใหญ่ (5GL)` : ''}${calc.primer.can1Gal > 0 ? ` ${calc.primer.can1Gal} GL` : ''}</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.primerCost)} ฿</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; font-weight: 600;">สีทับหน้า (${calc.topcoat.coats} เที่ยว)</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #0369a1; font-weight: 700;">${formatNum(calc.topcoat.litersNeeded, 1)} ลิตร</td>
+                                <td style="padding: 6px 8px; text-align: right;">${calc.topcoat.pail5Gal > 0 ? `${calc.topcoat.pail5Gal} ถังใหญ่ (5GL)` : ''}${calc.topcoat.can1Gal > 0 ? ` ${calc.topcoat.can1Gal} GL` : ''}</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.topcoatCost)} ฿</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px;">ค่าแรงทาสี (${formatNum(calc.wallAreaSqm, 2)} ตร.ม.)</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.wallAreaSqm, 2)} ตร.ม.</td>
+                                <td style="padding: 6px 8px; text-align: right;">-</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.laborCost)} ฿</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                                <td colspan="3" style="padding: 8px;">รวมประมาณการงบประมาณทั้งสิ้น:</td>
+                                <td style="padding: 8px; text-align: right; color: #0284c7; font-size: 12px;">${formatMoney(calc.costs.totalEstimatedBudget)} ฿</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+        } else {
+            paramsRows = [
+                ['หมวดหมู่งาน', 'งานคอนกรีตเทพื้นและปรับระดับ (Concrete Slab & Pavement)'],
+                ['ขนาดพื้นที่เทพื้น', `${calc.slabWidthM} ม. × ${calc.slabLengthM} ม. (${formatNum(calc.slabAreaSqm, 2)} ตร.ม.)`],
+                ['ความหนาของพื้นคอนกรีต', `${calc.slabThicknessCm} เซนติเมตร`],
+                ['อัตราเผื่อยุบตัว & หกหล่น', `${calc.wastagePct}%`],
+                ['ประเภทคอนกรีต', calc.concreteType === 'ready_mix' ? 'คอนกรีตผสมเสร็จ (รถโม่ Ready-Mixed)' : 'ผสมเองหน้างาน (Site-Mixed 1:2:4)']
+            ];
+
+            resultCards = [
+                { label: 'คอนกรีตผสมเสร็จที่ต้องสั่ง', value: `${calc.readyMixOrderCubicM} คิว (m³)`, highlight: true },
+                { label: 'ปริมาตรคอนกรีตสุทธิ', value: `${formatNum(calc.netVolumeCubicM, 2)} คิว (รวมเผื่อ ${formatNum(calc.grossVolumeCubicM, 2)} คิว)` },
+                { label: 'ตะแกรงเหล็กไวร์เมช', value: `${formatNum(calc.wireMeshSqm, 2)} ตารางเมตร` },
+                { label: 'ประมาณการงบประมาณรวม', value: `฿${formatMoney(calc.costs.totalEstimatedBudget)}`, highlight: true }
+            ];
+
+            breakdownHTML = `
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        ตารางแจกแจงรายการคอนกรีตเทพื้น (Concrete Slab Breakdown)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                                <th style="padding: 6px 8px; text-align: left;">รายการวัสดุ / ค่าแรง</th>
+                                <th style="padding: 6px 8px; text-align: right;">ปริมาณคำนวณ</th>
+                                <th style="padding: 6px 8px; text-align: right;">หน่วยนับ</th>
+                                <th style="padding: 6px 8px; text-align: right;">ประมาณการราคา</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px; font-weight: 600;">${calc.concreteType === 'ready_mix' ? 'คอนกรีตผสมเสร็จ (สั่งรถโม่)' : 'ปูนซีเมนต์ผสมเอง (ปูน+ทราย+หิน)'}</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #0369a1; font-weight: 700;">${calc.readyMixOrderCubicM}</td>
+                                <td style="padding: 6px 8px; text-align: right;">คิว (m³)</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.concreteMaterialCost)} ฿</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px;">ตะแกรงเหล็กไวร์เมช (เผื่อทาบ 10%)</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.wireMeshSqm, 2)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">ตร.ม.</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.wireMeshCost)} ฿</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 6px 8px;">ค่าแรงเทและปรับระดับ (${formatNum(calc.slabAreaSqm, 2)} ตร.ม.)</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.slabAreaSqm, 2)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">ตร.ม.</td>
+                                <td style="padding: 6px 8px; text-align: right; font-weight: 600;">${formatMoney(calc.costs.laborCost)} ฿</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                                <td colspan="3" style="padding: 8px;">รวมประมาณการงบประมาณทั้งสิ้น:</td>
+                                <td style="padding: 8px; text-align: right; color: #0284c7; font-size: 12px;">${formatMoney(calc.costs.totalEstimatedBudget)} ฿</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+        }
+
     } else {
         // Generic Fallback for other calculators
         const summary = (typeof getToolSummaryText === 'function') ? getToolSummaryText(curToolId) : '';
@@ -3164,6 +3375,50 @@ function getComparisonPresets(toolId) {
                     distance: '200',
                     efficiency: '15',
                     oilPrice: '36.50'
+                }
+            }
+        ],
+        construction_calc: [
+            {
+                label: 'ทางเลือก 1: กระเบื้องแกรนิตโต้ 60x60 ซม. (ห้อง 20 ตร.ม.)',
+                state: {
+                    tab: 'tiles',
+                    tileWidth: '4',
+                    tileLength: '5',
+                    tileSizePreset: '60x60',
+                    tileWastagePct: '10',
+                    tilePricePerBox: '380',
+                    tileLaborPerSqm: '250',
+                    adhesivePricePerBag: '160',
+                    groutPricePerBag: '50'
+                }
+            },
+            {
+                label: 'ทางเลือก 2: กระเบื้องหินอ่อน 60x120 ซม. (ห้อง 20 ตร.ม.)',
+                state: {
+                    tab: 'tiles',
+                    tileWidth: '4',
+                    tileLength: '5',
+                    tileSizePreset: '60x120',
+                    tileWastagePct: '10',
+                    tilePricePerBox: '750',
+                    tileLaborPerSqm: '300',
+                    adhesivePricePerBag: '160',
+                    groutPricePerBag: '50'
+                }
+            },
+            {
+                label: 'ทางเลือก 3: กระเบื้องมาตรฐาน 40x40 ซม. (ห้อง 20 ตร.ม.)',
+                state: {
+                    tab: 'tiles',
+                    tileWidth: '4',
+                    tileLength: '5',
+                    tileSizePreset: '40x40',
+                    tileWastagePct: '10',
+                    tilePricePerBox: '220',
+                    tileLaborPerSqm: '220',
+                    adhesivePricePerBag: '160',
+                    groutPricePerBag: '50'
                 }
             }
         ]
@@ -4115,6 +4370,108 @@ function compareCalculations(toolId, itemsList) {
                 values: results.map(r => `${formatMoney(r.costPerKm)} ฿/กม.`)
             });
             deltaSummary = `เปรียบเทียบข้อมูลต้นทุนพลังงาน ${items.length} ทางเลือก`;
+        }
+
+    } else if (toolId === 'construction_calc') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            return (typeof calculateConstructionMaterials === 'function')
+                ? calculateConstructionMaterials(st)
+                : { tab: 'tiles', areaSqm: 0, grossAreaSqm: 0, boxesNeeded: 0, grossPieces: 0, totalPurchasedPieces: 0, adhesiveBags: 0, groutBags: 0, costs: { totalEstimatedBudget: 0 } };
+        });
+
+        const isAllTiles = results.every(r => r.tab === 'tiles');
+        const isAllPaint = results.every(r => r.tab === 'paint');
+        const isAllConcrete = results.every(r => r.tab === 'concrete');
+
+        if (isAllTiles) {
+            rows.push({
+                label: 'ขนาดพื้นที่ปูจริง',
+                values: results.map(r => `${formatNum(r.areaSqm, 2)} ตร.ม.`)
+            });
+            rows.push({
+                label: 'ขนาดกระเบื้อง & แผ่น/กล่อง',
+                values: results.map(r => `${r.tileWidthCm}×${r.tileLengthCm} ซม. (${r.piecesPerBox} แผ่น)`)
+            });
+            rows.push({
+                label: 'พื้นที่รวมเผื่อเศษ (' + (results[0]?.wastagePct || 10) + '%)',
+                values: results.map(r => `${formatNum(r.grossAreaSqm, 2)} ตร.ม.`)
+            });
+            rows.push({
+                label: 'จำนวนแผ่นที่ต้องใช้',
+                values: results.map(r => `${r.grossPieces} แผ่น`)
+            });
+            rows.push({
+                label: 'จำนวนกล่องที่ต้องสั่งซื้อ',
+                values: results.map(r => `${r.boxesNeeded} กล่อง (${r.totalPurchasedPieces} แผ่น)`)
+            });
+            rows.push({
+                label: 'ปูนกาวซีเมนต์ & กาวยาแนว',
+                values: results.map(r => `ปูนกาว ${r.adhesiveBags} ถุง / ยาแนว ${r.groutBags} ถุง`)
+            });
+        } else if (isAllPaint) {
+            rows.push({
+                label: 'พื้นที่ผนังสุทธิ',
+                values: results.map(r => `${formatNum(r.wallAreaSqm, 2)} ตร.ม.`)
+            });
+            rows.push({
+                label: 'สีรองพื้น (Primer 1 เที่ยว)',
+                values: results.map(r => `${formatNum(r.primer.litersNeeded, 1)} ลิตร`)
+            });
+            rows.push({
+                label: 'สีทับหน้า (' + (results[0]?.topcoat?.coats || 2) + ' เที่ยว)',
+                values: results.map(r => `${formatNum(r.topcoat.litersNeeded, 1)} ลิตร`)
+            });
+            rows.push({
+                label: 'บรรจุภัณฑ์แนะนำ (สีทับหน้า)',
+                values: results.map(r => `${r.topcoat.pail5Gal > 0 ? `${r.topcoat.pail5Gal} ถังใหญ่ 5GL` : ''}${r.topcoat.can1Gal > 0 ? ` ${r.topcoat.can1Gal} GL` : ''}`)
+            });
+        } else if (isAllConcrete) {
+            rows.push({
+                label: 'พื้นที่ & ความหนา',
+                values: results.map(r => `${formatNum(r.slabAreaSqm, 2)} ตร.ม. (หนา ${r.slabThicknessCm} ซม.)`)
+            });
+            rows.push({
+                label: 'ปริมาตรสุทธิ / รวมเผื่อ',
+                values: results.map(r => `${formatNum(r.netVolumeCubicM, 2)} / ${formatNum(r.grossVolumeCubicM, 2)} คิว`)
+            });
+            rows.push({
+                label: 'คอนกรีตรถโม่สั่งซื้อ',
+                values: results.map(r => `${r.readyMixOrderCubicM} คิว`)
+            });
+            rows.push({
+                label: 'ตะแกรงเหล็กไวร์เมช',
+                values: results.map(r => `${formatNum(r.wireMeshSqm, 2)} ตร.ม.`)
+            });
+        } else {
+            rows.push({
+                label: 'หมวดหมู่งาน',
+                values: results.map(r => r.tab === 'tiles' ? 'กระเบื้อง' : (r.tab === 'paint' ? 'สีทาอาคาร' : 'คอนกรีต'))
+            });
+        }
+
+        const validBudgets = results.filter(r => r.costs && r.costs.totalEstimatedBudget > 0);
+        if (validBudgets.length > 0) {
+            const minBudgetRes = validBudgets.reduce((min, cur) => cur.costs.totalEstimatedBudget < min.costs.totalEstimatedBudget ? cur : min, validBudgets[0]);
+            const minBudgetIdx = results.indexOf(minBudgetRes);
+            const maxBudget = Math.max(...validBudgets.map(r => r.costs.totalEstimatedBudget));
+            const diffBudget = maxBudget - minBudgetRes.costs.totalEstimatedBudget;
+
+            rows.push({
+                label: 'ประมาณการงบประมาณรวม',
+                values: results.map(r => `${formatMoney(r.costs.totalEstimatedBudget)} ฿`),
+                bestIndex: minBudgetIdx,
+                highlight: true
+            });
+
+            winnerIndex = minBudgetIdx;
+            deltaSummary = `🏆 ทางเลือกที่ประหยัดงบประมาณที่สุดคือ "${items[winnerIndex].label}" งบประมาณเพียง ${formatMoney(minBudgetRes.costs.totalEstimatedBudget)} บาท${diffBudget > 0 ? ` (ประหยัดกว่าทางเลือกสูงสุด ${formatMoney(diffBudget)} บาท)` : ''}`;
+        } else {
+            rows.push({
+                label: 'จำนวนวัสดุหลักที่ต้องสั่ง',
+                values: results.map(r => r.tab === 'tiles' ? `${r.boxesNeeded} กล่อง` : (r.tab === 'paint' ? `${formatNum(r.topcoat.litersNeeded, 1)} ลิตร` : `${r.readyMixOrderCubicM} คิว`))
+            });
+            deltaSummary = `เปรียบเทียบรายการวัสดุก่อสร้าง ${items.length} ทางเลือก`;
         }
 
     } else {
@@ -5393,6 +5750,21 @@ function getToolSummaryText(toolId, stateObj) {
             }
             return `🍳 สรุปต้นทุนสูตรอาหาร & เครื่องดื่ม: ${rName}\n${divider}\n• ขนาดสูตร: ${portionText}\n• ต้นทุนวัตถุดิบ/เสิร์ฟ: ${formatMoney(calc.summary.rawCostPerPortion)} บาท\n• เผื่อสูญเสีย/เครื่องปรุง (${calc.hiddenCostBufferPct}%): +${formatMoney(calc.summary.hiddenCostBuffer)} บาท\n• บรรจุภัณฑ์/กล่อง: +${formatMoney(calc.summary.packagingCost)} บาท\n${divider}\n💰 ต้นทุนรวมต่อเสิร์ฟ: ${formatMoney(calc.summary.totalCostPerPortion)} บาท\n🎯 ราคาแนะนำ (Food Cost ${calc.targetFoodCostPct}%): ${formatMoney(calc.summary.suggestedSellingPrice)} บาท (ปัดเศษการค้า: ${formatMoney(calc.summary.suggestedPriceRounded)} บ.)${profitSummary}\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'construction_calc': {
+            const st = state.construction_calc || {};
+            const tab = st.tab || 'tiles';
+            const calc = (typeof calculateConstructionMaterials === 'function')
+                ? calculateConstructionMaterials(st)
+                : { tab: 'tiles', boxesNeeded: 0, grossPieces: 0, totalPurchasedPieces: 0, areaSqm: 0, grossAreaSqm: 0, adhesiveBags: 0, groutBags: 0, costs: { totalEstimatedBudget: 0 } };
+
+            if (tab === 'tiles') {
+                return `🧱 สรุปคำนวณกระเบื้องปูพื้น & ผนัง\n${divider}\n• พื้นที่ปูสุทธิ: ${formatNum(calc.areaSqm, 2)} ตร.ม. (รวมเผื่อ ${calc.wastagePct}%: ${formatNum(calc.grossAreaSqm, 2)} ตร.ม.)\n• ขนาดกระเบื้อง: ${calc.tileWidthCm}x${calc.tileLengthCm} ซม. (${calc.piecesPerBox} แผ่น/กล่อง)\n• จำนวนที่ต้องใช้: ${calc.grossPieces} แผ่น\n----------------------------------\n📦 จำนวนกระเบื้องที่ต้องสั่งซื้อ: ${calc.boxesNeeded} กล่อง (${calc.totalPurchasedPieces} แผ่น)\n• ปูนกาวซีเมนต์ (ถุง 20 กก.): ${calc.adhesiveBags} ถุง\n• กาวยาแนวร่อง (ถุง 1 กก.): ${calc.groutBags} ถุง\n${calc.costs.totalEstimatedBudget > 0 ? `💰 ประมาณการงบประมาณรวม: ${formatMoney(calc.costs.totalEstimatedBudget)} บาท\n` : ''}(คำนวณโดย Multitools Calculator)`;
+            } else if (tab === 'paint') {
+                return `🎨 สรุปคำนวณสีทาอาคาร & ผนัง\n${divider}\n• พื้นที่ผนังสุทธิ: ${formatNum(calc.wallAreaSqm, 2)} ตร.ม. (รวมเผื่อ ${calc.wastagePct}%: ${formatNum(calc.effectiveAreaSqm, 2)} ตร.ม.)\n• สีรองพื้น (Primer 1 เที่ยว): ${calc.primer.pail5Gal > 0 ? `${calc.primer.pail5Gal} ถังใหญ่ 5GL` : ''}${calc.primer.can1Gal > 0 ? ` ${calc.primer.can1Gal} แกลลอน` : ''} (${formatNum(calc.primer.litersNeeded, 1)} ลิตร)\n----------------------------------\n🖌️ สีทับหน้า (${calc.topcoat.coats} เที่ยว): ${calc.topcoat.pail5Gal > 0 ? `${calc.topcoat.pail5Gal} ถังใหญ่ 5GL` : ''}${calc.topcoat.can1Gal > 0 ? ` ${calc.topcoat.can1Gal} แกลลอน` : ''} (${formatNum(calc.topcoat.litersNeeded, 1)} ลิตร)\n${calc.costs.totalEstimatedBudget > 0 ? `💰 ประมาณการงบประมาณรวม: ${formatMoney(calc.costs.totalEstimatedBudget)} บาท\n` : ''}(คำนวณโดย Multitools Calculator)`;
+            } else {
+                return `🏗️ สรุปคำนวณคอนกรีตเทพื้น & ปูน\n${divider}\n• พื้นที่เทพื้น: ${formatNum(calc.slabAreaSqm, 2)} ตร.ม. (หนา ${calc.slabThicknessCm} ซม.)\n• ปริมาตรคอนกรีตสุทธิ: ${formatNum(calc.netVolumeCubicM, 2)} คิว (m³)\n• ปริมาตรรวมเผื่อ ${calc.wastagePct}%: ${formatNum(calc.grossVolumeCubicM, 2)} คิว (m³)\n----------------------------------\n🚛 สั่งคอนกรีตผสมเสร็จ (รถโม่): ${calc.readyMixOrderCubicM} คิว\n• ตะแกรงเหล็กไวร์เมช: ${formatNum(calc.wireMeshSqm, 2)} ตร.ม.\n${calc.concreteType === 'site_mix' ? `• สัดส่วนผสมเอง: ปูน ${calc.siteMix.cementBags50kg} ถุง / ทราย ${formatNum(calc.siteMix.sandCubicM, 2)} คิว / หิน ${formatNum(calc.siteMix.gravelCubicM, 2)} คิว\n` : ''}${calc.costs.totalEstimatedBudget > 0 ? `💰 ประมาณการงบประมาณรวม: ${formatMoney(calc.costs.totalEstimatedBudget)} บาท\n` : ''}(คำนวณโดย Multitools Calculator)`;
+            }
+        }
         default: {
             const statusText = document.getElementById('sharedStatusText')?.innerText?.trim();
             return `📋 สรุปผล: ${title}\n${divider}\n${statusText || 'คำนวณเรียบร้อยแล้ว'}\n(คำนวณโดย Multitools Calculator)`;
@@ -5514,6 +5886,29 @@ function getToolFieldBindings(toolId) {
             return [
                 { get: () => appState.unit.val, set: (v) => { appState.unit.val = v; } }
             ];
+        case 'construction_calc': {
+            const st = appState.construction_calc || {};
+            const tab = st.tab || 'tiles';
+            if (tab === 'tiles') {
+                return [
+                    { get: () => (appState.construction_calc ? appState.construction_calc.tileWidth : ''), set: (v) => { if (appState.construction_calc) appState.construction_calc.tileWidth = v; } },
+                    { get: () => (appState.construction_calc ? appState.construction_calc.tileLength : ''), set: (v) => { if (appState.construction_calc) appState.construction_calc.tileLength = v; } },
+                    { get: () => (appState.construction_calc ? appState.construction_calc.tilePricePerBox : ''), set: (v) => { if (appState.construction_calc) appState.construction_calc.tilePricePerBox = v; } }
+                ];
+            } else if (tab === 'paint') {
+                return [
+                    { get: () => (appState.construction_calc ? appState.construction_calc.paintWallWidth : ''), set: (v) => { if (appState.construction_calc) appState.construction_calc.paintWallWidth = v; } },
+                    { get: () => (appState.construction_calc ? appState.construction_calc.paintWallHeight : ''), set: (v) => { if (appState.construction_calc) appState.construction_calc.paintWallHeight = v; } },
+                    { get: () => (appState.construction_calc ? appState.construction_calc.paintDeductArea : ''), set: (v) => { if (appState.construction_calc) appState.construction_calc.paintDeductArea = v; } }
+                ];
+            } else {
+                return [
+                    { get: () => (appState.construction_calc ? appState.construction_calc.slabWidth : ''), set: (v) => { if (appState.construction_calc) appState.construction_calc.slabWidth = v; } },
+                    { get: () => (appState.construction_calc ? appState.construction_calc.slabLength : ''), set: (v) => { if (appState.construction_calc) appState.construction_calc.slabLength = v; } },
+                    { get: () => (appState.construction_calc ? appState.construction_calc.slabThickness : ''), set: (v) => { if (appState.construction_calc) appState.construction_calc.slabThickness = v; } }
+                ];
+            }
+        }
         case 'discount':
             return [
                 { get: () => appState.discount.price, set: (v) => { appState.discount.price = v; } },
@@ -6326,13 +6721,746 @@ function renderUnitConverterTool(container) {
     }
 }
 
+/* -----------------------------------------------------------
+ * PURE ENGINE: คำนวณวัสดุก่อสร้าง & ปรับปรุงบ้าน (Construction Materials)
+ * ----------------------------------------------------------- */
+function calculateConstructionMaterials(params = {}) {
+    const toNum = (val, def = 0) => {
+        if (typeof val === 'number') return Number.isFinite(val) ? val : def;
+        if (typeof parseNumericInput === 'function') {
+            const parsed = parseNumericInput(val);
+            return Number.isFinite(parsed) ? parsed : def;
+        }
+        const clean = String(val ?? '').trim().replace(/,/g, '');
+        const n = parseFloat(clean);
+        return Number.isFinite(n) ? n : def;
+    };
+    const round2 = (v) => Math.round(v * 100) / 100;
+    const ceil = Math.ceil;
+
+    const tab = params.tab || 'tiles'; // 'tiles' | 'paint' | 'concrete'
+
+    // 1. TILES
+    if (tab === 'tiles') {
+        const widthM = Math.max(0, toNum(params.tileWidth, 0));
+        const lengthM = Math.max(0, toNum(params.tileLength, 0));
+        const areaSqm = round2(widthM * lengthM);
+
+        const sizePreset = params.tileSizePreset || '60x60';
+        let tileWidthCm = 60, tileLengthCm = 60, piecesPerBox = 4;
+        if (sizePreset === '30x30') {
+            tileWidthCm = 30; tileLengthCm = 30; piecesPerBox = 11;
+        } else if (sizePreset === '40x40') {
+            tileWidthCm = 40; tileLengthCm = 40; piecesPerBox = 6;
+        } else if (sizePreset === '60x60') {
+            tileWidthCm = 60; tileLengthCm = 60; piecesPerBox = 4;
+        } else if (sizePreset === '60x120') {
+            tileWidthCm = 60; tileLengthCm = 120; piecesPerBox = 2;
+        } else if (sizePreset === 'custom') {
+            tileWidthCm = Math.max(1, toNum(params.tileCustomWidthCm, 60));
+            tileLengthCm = Math.max(1, toNum(params.tileCustomLengthCm, 60));
+            piecesPerBox = Math.max(1, Math.round(toNum(params.tileCustomPcsPerBox, 4)));
+        }
+
+        const tileAreaSqm = (tileWidthCm / 100) * (tileLengthCm / 100);
+        const boxCoverageSqm = tileAreaSqm * piecesPerBox;
+
+        const wastagePct = Math.max(0, toNum(params.tileWastagePct, 10));
+        const grossAreaSqm = round2(areaSqm * (1 + (wastagePct / 100)));
+
+        const netPieces = tileAreaSqm > 0 ? (areaSqm / tileAreaSqm) : 0;
+        const grossPieces = tileAreaSqm > 0 ? ceil(grossAreaSqm / tileAreaSqm) : 0;
+
+        const boxesNeeded = boxCoverageSqm > 0 ? ceil(grossAreaSqm / boxCoverageSqm) : 0;
+        const totalPurchasedPieces = boxesNeeded * piecesPerBox;
+
+        // Adhesive: 20kg bag covers ~4.5 sqm
+        const adhesiveBags = grossAreaSqm > 0 ? ceil(grossAreaSqm / 4.5) : 0;
+        // Grout: 1kg bag covers ~3.5 sqm
+        const groutBags = grossAreaSqm > 0 ? ceil(grossAreaSqm / 3.5) : 0;
+
+        const pricePerBox = Math.max(0, toNum(params.tilePricePerBox, 0));
+        const adhesivePricePerBag = Math.max(0, toNum(params.adhesivePricePerBag, 160));
+        const groutPricePerBag = Math.max(0, toNum(params.groutPricePerBag, 50));
+        const laborRatePerSqm = Math.max(0, toNum(params.tileLaborPerSqm, 0));
+
+        const tileCost = boxesNeeded * pricePerBox;
+        const adhesiveCost = adhesiveBags * adhesivePricePerBag;
+        const groutCost = groutBags * groutPricePerBag;
+        const laborCost = round2(areaSqm * laborRatePerSqm);
+        const totalEstimatedBudget = round2(tileCost + adhesiveCost + groutCost + laborCost);
+
+        return {
+            tab: 'tiles',
+            widthM,
+            lengthM,
+            areaSqm,
+            grossAreaSqm,
+            sizePreset,
+            tileWidthCm,
+            tileLengthCm,
+            tileAreaSqm: round2(tileAreaSqm),
+            piecesPerBox,
+            boxCoverageSqm: round2(boxCoverageSqm),
+            wastagePct,
+            netPieces: Math.round(netPieces * 10) / 10,
+            grossPieces,
+            boxesNeeded,
+            totalPurchasedPieces,
+            adhesiveBags,
+            groutBags,
+            costs: {
+                pricePerBox,
+                tileCost: round2(tileCost),
+                adhesiveCost: round2(adhesiveCost),
+                groutCost: round2(groutCost),
+                laborCost: round2(laborCost),
+                totalEstimatedBudget
+            }
+        };
+    }
+
+    // 2. PAINT
+    if (tab === 'paint') {
+        const wallWidthM = Math.max(0, toNum(params.paintWallWidth, 0));
+        const wallHeightM = Math.max(0, toNum(params.paintWallHeight, 0));
+        const deductAreaSqm = Math.max(0, toNum(params.paintDeductArea, 0));
+        const wallAreaSqm = Math.max(0, round2((wallWidthM * wallHeightM) - deductAreaSqm));
+
+        const wastagePct = Math.max(0, toNum(params.paintWastagePct, 10));
+        const effectiveAreaSqm = round2(wallAreaSqm * (1 + (wastagePct / 100)));
+
+        const primerCoats = 1;
+        const primerSqmLiter = 8.5;
+        const primerLitersNeeded = primerSqmLiter > 0 ? (effectiveAreaSqm * primerCoats / primerSqmLiter) : 0;
+
+        const topcoatCoats = Math.max(1, Math.round(toNum(params.paintCoats, 2)));
+        const topcoatSqmLiter = 8.0;
+        const topcoatLitersNeeded = topcoatSqmLiter > 0 ? (effectiveAreaSqm * topcoatCoats / topcoatSqmLiter) : 0;
+
+        const calcCans = (liters) => {
+            if (liters <= 0) return { pail5Gal: 0, can1Gal: 0, totalLiters: 0 };
+            const pail5L = 18.925;
+            const can1L = 3.785;
+            let pail5Gal = Math.floor(liters / pail5L);
+            let remLiters = liters - (pail5Gal * pail5L);
+            let can1Gal = ceil(remLiters / can1L);
+            if (can1Gal >= 5) {
+                pail5Gal += 1;
+                can1Gal = 0;
+            }
+            return { pail5Gal, can1Gal, totalLiters: round2(liters) };
+        };
+
+        const primerPackages = calcCans(primerLitersNeeded);
+        const topcoatPackages = calcCans(topcoatLitersNeeded);
+
+        const primerPrice5Gal = Math.max(0, toNum(params.paintPrimerPrice5Gal, 1800));
+        const primerPrice1Gal = Math.max(0, toNum(params.paintPrimerPrice1Gal, 450));
+        const topcoatPrice5Gal = Math.max(0, toNum(params.paintTopcoatPrice5Gal, 2400));
+        const topcoatPrice1Gal = Math.max(0, toNum(params.paintTopcoatPrice1Gal, 600));
+        const laborRatePerSqm = Math.max(0, toNum(params.paintLaborPerSqm, 0));
+
+        const primerCost = (primerPackages.pail5Gal * primerPrice5Gal) + (primerPackages.can1Gal * primerPrice1Gal);
+        const topcoatCost = (topcoatPackages.pail5Gal * topcoatPrice5Gal) + (topcoatPackages.can1Gal * topcoatPrice1Gal);
+        const laborCost = round2(wallAreaSqm * laborRatePerSqm);
+        const totalEstimatedBudget = round2(primerCost + topcoatCost + laborCost);
+
+        return {
+            tab: 'paint',
+            wallWidthM,
+            wallHeightM,
+            deductAreaSqm,
+            wallAreaSqm,
+            effectiveAreaSqm,
+            wastagePct,
+            primer: {
+                coats: primerCoats,
+                litersNeeded: round2(primerLitersNeeded),
+                pail5Gal: primerPackages.pail5Gal,
+                can1Gal: primerPackages.can1Gal,
+                cost: round2(primerCost)
+            },
+            topcoat: {
+                coats: topcoatCoats,
+                litersNeeded: round2(topcoatLitersNeeded),
+                pail5Gal: topcoatPackages.pail5Gal,
+                can1Gal: topcoatPackages.can1Gal,
+                cost: round2(topcoatCost)
+            },
+            costs: {
+                primerCost: round2(primerCost),
+                topcoatCost: round2(topcoatCost),
+                laborCost: round2(laborCost),
+                totalEstimatedBudget
+            }
+        };
+    }
+
+    // 3. CONCRETE
+    const slabWidthM = Math.max(0, toNum(params.slabWidth, 0));
+    const slabLengthM = Math.max(0, toNum(params.slabLength, 0));
+    const slabThicknessCm = Math.max(0, toNum(params.slabThickness, 10));
+    const slabThicknessM = slabThicknessCm / 100;
+
+    const slabAreaSqm = round2(slabWidthM * slabLengthM);
+    const netVolumeCubicM = round2(slabAreaSqm * slabThicknessM);
+
+    const wastagePct = Math.max(0, toNum(params.concreteWastagePct, 5));
+    const grossVolumeCubicM = round2(netVolumeCubicM * (1 + (wastagePct / 100)));
+
+    const readyMixOrderCubicM = Math.round(ceil(grossVolumeCubicM * 4) / 4 * 100) / 100;
+
+    const siteMix = {
+        cementBags50kg: ceil(grossVolumeCubicM * 6.8),
+        sandCubicM: round2(grossVolumeCubicM * 0.50),
+        gravelCubicM: round2(grossVolumeCubicM * 0.85),
+        waterLiters: Math.round(grossVolumeCubicM * 180)
+    };
+
+    const wireMeshSqm = round2(slabAreaSqm * 1.10);
+
+    const concreteType = params.concreteType || 'ready_mix';
+    const pricePerCubicM = Math.max(0, toNum(params.concretePricePerCubic, 2000));
+    const pricePerWireMeshSqm = Math.max(0, toNum(params.wireMeshPricePerSqm, 35));
+    const laborRatePerSqm = Math.max(0, toNum(params.concreteLaborPerSqm, 0));
+
+    let concreteMaterialCost = 0;
+    if (concreteType === 'ready_mix') {
+        concreteMaterialCost = readyMixOrderCubicM * pricePerCubicM;
+    } else {
+        const cementBagPrice = Math.max(0, toNum(params.cementBagPrice, 145));
+        const sandPrice = Math.max(0, toNum(params.sandPricePerCubic, 450));
+        const gravelPrice = Math.max(0, toNum(params.gravelPricePerCubic, 500));
+        concreteMaterialCost = (siteMix.cementBags50kg * cementBagPrice) + (siteMix.sandCubicM * sandPrice) + (siteMix.gravelCubicM * gravelPrice);
+    }
+    const wireMeshCost = wireMeshSqm * pricePerWireMeshSqm;
+    const laborCost = round2(slabAreaSqm * laborRatePerSqm);
+    const totalEstimatedBudget = round2(concreteMaterialCost + wireMeshCost + laborCost);
+
+    return {
+        tab: 'concrete',
+        slabWidthM,
+        slabLengthM,
+        slabThicknessCm,
+        slabAreaSqm,
+        netVolumeCubicM,
+        grossVolumeCubicM,
+        wastagePct,
+        readyMixOrderCubicM,
+        siteMix,
+        wireMeshSqm,
+        concreteType,
+        costs: {
+            concreteMaterialCost: round2(concreteMaterialCost),
+            wireMeshCost: round2(wireMeshCost),
+            laborCost: round2(laborCost),
+            totalEstimatedBudget
+        }
+    };
+}
+
+/* -----------------------------------------------------------
+ * RENDERER: คำนวณวัสดุก่อสร้าง & ปรับปรุงบ้าน (construction_calc)
+ * ----------------------------------------------------------- */
+function renderConstructionTool(container) {
+    if (!appState.construction_calc) {
+        appState.construction_calc = {
+            tab: 'tiles',
+            tileWidth: '4',
+            tileLength: '5',
+            tileSizePreset: '60x60',
+            tileCustomWidthCm: '60',
+            tileCustomLengthCm: '60',
+            tileCustomPcsPerBox: '4',
+            tileWastagePct: '10',
+            tilePricePerBox: '350',
+            tileLaborPerSqm: '250',
+            adhesivePricePerBag: '160',
+            groutPricePerBag: '50',
+
+            paintWallWidth: '16',
+            paintWallHeight: '2.8',
+            paintDeductArea: '4',
+            paintCoats: '2',
+            paintWastagePct: '10',
+            paintPrimerPrice5Gal: '1800',
+            paintPrimerPrice1Gal: '450',
+            paintTopcoatPrice5Gal: '2400',
+            paintTopcoatPrice1Gal: '600',
+            paintLaborPerSqm: '70',
+
+            slabWidth: '4',
+            slabLength: '6',
+            slabThickness: '10',
+            concreteWastagePct: '5',
+            concreteType: 'ready_mix',
+            concretePricePerCubic: '2000',
+            wireMeshPricePerSqm: '35',
+            concreteLaborPerSqm: '150',
+            cementBagPrice: '145',
+            sandPricePerCubic: '450',
+            gravelPricePerCubic: '500'
+        };
+    }
+
+    const st = appState.construction_calc;
+    const tab = st.tab || 'tiles';
+    const calc = calculateConstructionMaterials(st);
+
+    let html = `
+        <div class="construction-calc-tool flex flex-col gap-3 p-1">
+            <!-- Mode / Category Segmented Buttons -->
+            <div class="segment-group grid-cols-3" role="group" aria-label="หมวดหมู่วัสดุก่อสร้าง">
+                <button type="button" id="btnConstTabTiles" aria-pressed="${tab === 'tiles'}" class="segment-btn ${tab === 'tiles' ? 'active' : ''}" style="min-height: 44px;">
+                    กระเบื้องปูพื้น & ผนัง
+                </button>
+                <button type="button" id="btnConstTabPaint" aria-pressed="${tab === 'paint'}" class="segment-btn ${tab === 'paint' ? 'active' : ''}" style="min-height: 44px;">
+                    สีทาอาคาร & ผนัง
+                </button>
+                <button type="button" id="btnConstTabConcrete" aria-pressed="${tab === 'concrete'}" class="segment-btn ${tab === 'concrete' ? 'active' : ''}" style="min-height: 44px;">
+                    คอนกรีตเทพื้น & ปูน
+                </button>
+            </div>
+    `;
+
+    if (tab === 'tiles') {
+        html += `
+            <!-- Keypad Fields for Tiles -->
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'ความกว้างพื้นที่ปู', st.tileWidth, 'เมตร', 'เช่น 4')}
+                ${createKeypadFieldHTML(1, 'ความยาวพื้นที่ปู', st.tileLength, 'เมตร', 'เช่น 5')}
+                ${createKeypadFieldHTML(2, 'ราคากระเบื้องต่อกล่อง', st.tilePricePerBox, 'บาท/กล่อง', 'เช่น 350')}
+            </div>
+
+            <!-- Tile Size Presets -->
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ขนาดกระเบื้องมาตรฐาน</div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button type="button" class="tool-chip-btn tile-size-chip ${st.tileSizePreset === '30x30' ? 'active font-bold border-[var(--app-accent)]' : ''}" data-size="30x30" style="min-height: 44px;">
+                        30x30 ซม. (11 แผ่น)
+                    </button>
+                    <button type="button" class="tool-chip-btn tile-size-chip ${st.tileSizePreset === '40x40' ? 'active font-bold border-[var(--app-accent)]' : ''}" data-size="40x40" style="min-height: 44px;">
+                        40x40 ซม. (6 แผ่น)
+                    </button>
+                    <button type="button" class="tool-chip-btn tile-size-chip ${st.tileSizePreset === '60x60' ? 'active font-bold border-[var(--app-accent)]' : ''}" data-size="60x60" style="min-height: 44px;">
+                        60x60 ซม. (4 แผ่น)
+                    </button>
+                    <button type="button" class="tool-chip-btn tile-size-chip ${st.tileSizePreset === '60x120' ? 'active font-bold border-[var(--app-accent)]' : ''}" data-size="60x120" style="min-height: 44px;">
+                        60x120 ซม. (2 แผ่น)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Wastage & Labor Options -->
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="flex justify-between items-center">
+                    <span class="font-semibold text-[var(--app-ink)]">อัตราเผื่อเศษตัด & แตกหัก</span>
+                    <span class="text-[var(--app-accent)] font-semibold" id="tileWastageDisplay">${st.tileWastagePct || '10'}%</span>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" class="tool-chip-btn tile-waste-chip ${st.tileWastagePct === '5' ? 'active font-bold' : ''}" data-waste="5" style="min-height: 44px;">
+                        เผื่อ 5% (ปูตรง)
+                    </button>
+                    <button type="button" class="tool-chip-btn tile-waste-chip ${st.tileWastagePct === '10' ? 'active font-bold' : ''}" data-waste="10" style="min-height: 44px;">
+                        เผื่อ 10% (มาตรฐาน)
+                    </button>
+                    <button type="button" class="tool-chip-btn tile-waste-chip ${st.tileWastagePct === '15' ? 'active font-bold' : ''}" data-waste="15" style="min-height: 44px;">
+                        เผื่อ 15% (ลายก้างปลา)
+                    </button>
+                </div>
+                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-[var(--app-hairline)]">
+                    <div>
+                        <label for="constTileLaborInput" class="text-[var(--app-muted)] text-[11px] block">ค่าแรงปูต่อ ตร.ม. (บาท)</label>
+                        <input id="constTileLaborInput" type="text" inputmode="decimal" class="airbnb-input text-right text-xs" style="min-height: 44px;" value="${escapeHTML(st.tileLaborPerSqm || '')}" placeholder="เช่น 250">
+                    </div>
+                    <div>
+                        <label for="constTileAdhesiveInput" class="text-[var(--app-muted)] text-[11px] block">ราคาปูนกาว (บ./ถุง 20กก.)</label>
+                        <input id="constTileAdhesiveInput" type="text" inputmode="decimal" class="airbnb-input text-right text-xs" style="min-height: 44px;" value="${escapeHTML(st.adhesivePricePerBag || '160')}" placeholder="160">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Card for Tiles -->
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">สรุปวัสดุกระเบื้องที่ต้องสั่งซื้อ</div>
+                <div class="flex justify-between items-baseline">
+                    <span class="text-xs font-semibold text-[var(--app-muted)]">จำนวนกระเบื้อง</span>
+                    <span class="text-2xl font-bold font-mono text-[var(--app-accent)]" id="tileResultBoxes">
+                        ${calc.boxesNeeded} กล่อง
+                    </span>
+                </div>
+                <div class="text-right text-xs text-[var(--app-muted)]" id="tileResultPieces">
+                    (รวม ${calc.grossPieces} แผ่น / ซื้อจริง ${calc.totalPurchasedPieces} แผ่น)
+                </div>
+
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-[var(--app-muted)]">พื้นที่ปูสุทธิ</span>
+                        <b class="text-[var(--app-ink)] font-mono" id="tileAreaDisplay">${formatNum(calc.areaSqm, 2)} ตร.ม. (รวมเผื่อ ${formatNum(calc.grossAreaSqm, 2)} ตร.ม.)</b>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-[var(--app-muted)]">ปูนกาวซีเมนต์ (ถุงละ 20 กก.)</span>
+                        <b class="text-[var(--app-ink)] font-mono" id="tileAdhesiveDisplay">${calc.adhesiveBags} ถุง</b>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-[var(--app-muted)]">กาวยาแนวร่องกระเบื้อง (ถุงละ 1 กก.)</span>
+                        <b class="text-[var(--app-ink)] font-mono" id="tileGroutDisplay">${calc.groutBags} ถุง</b>
+                    </div>
+                    <div class="flex justify-between pt-1 border-t border-[var(--app-hairline)] text-sm font-semibold">
+                        <span class="text-[var(--app-ink)]">ประมาณการงบประมาณรวม</span>
+                        <span class="text-[var(--app-accent)] font-mono" id="tileTotalBudgetDisplay">฿${formatMoney(calc.costs.totalEstimatedBudget)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else if (tab === 'paint') {
+        html += `
+            <!-- Keypad Fields for Paint -->
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'ความยาวรอบห้องหรือผนัง', st.paintWallWidth, 'เมตร', 'เช่น 16')}
+                ${createKeypadFieldHTML(1, 'ความสูงของผนัง', st.paintWallHeight, 'เมตร', 'เช่น 2.8')}
+                ${createKeypadFieldHTML(2, 'หักพื้นที่ประตู/หน้าต่าง', st.paintDeductArea, 'ตร.ม.', 'เช่น 4')}
+            </div>
+
+            <!-- Quick Room Size Presets -->
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ขนาดห้องยอดนิยม (รอบห้อง 4 ด้าน)</div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" class="tool-chip-btn paint-room-preset" data-perim="12" data-h="2.8" style="min-height: 44px;">
+                        ห้อง 3x3 ม. (12 ม.)
+                    </button>
+                    <button type="button" class="tool-chip-btn paint-room-preset" data-perim="16" data-h="2.8" style="min-height: 44px;">
+                        ห้อง 4x4 ม. (16 ม.)
+                    </button>
+                    <button type="button" class="tool-chip-btn paint-room-preset" data-perim="20" data-h="2.8" style="min-height: 44px;">
+                        ทาวน์โฮม 4x6 ม. (20 ม.)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Coats & Pricing Options -->
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">จำนวนเที่ยวทาสีทับหน้า</div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" class="tool-chip-btn paint-coat-chip ${st.paintCoats === '1' ? 'active font-bold' : ''}" data-coat="1" style="min-height: 44px;">
+                        ทา 1 เที่ยว
+                    </button>
+                    <button type="button" class="tool-chip-btn paint-coat-chip ${st.paintCoats === '2' || !st.paintCoats ? 'active font-bold' : ''}" data-coat="2" style="min-height: 44px;">
+                        ทา 2 เที่ยว (มาตรฐาน)
+                    </button>
+                    <button type="button" class="tool-chip-btn paint-coat-chip ${st.paintCoats === '3' ? 'active font-bold' : ''}" data-coat="3" style="min-height: 44px;">
+                        ทา 3 เที่ยว (เน้นเข้ม)
+                    </button>
+                </div>
+                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-[var(--app-hairline)]">
+                    <div>
+                        <label for="constPaintLaborInput" class="text-[var(--app-muted)] text-[11px] block">ค่าแรงทาสีต่อ ตร.ม. (บาท)</label>
+                        <input id="constPaintLaborInput" type="text" inputmode="decimal" class="airbnb-input text-right text-xs" style="min-height: 44px;" value="${escapeHTML(st.paintLaborPerSqm || '')}" placeholder="เช่น 70">
+                    </div>
+                    <div>
+                        <label for="constPaintTopcoatPriceInput" class="text-[var(--app-muted)] text-[11px] block">สีทับหน้า (บ./ถัง 5GL)</label>
+                        <input id="constPaintTopcoatPriceInput" type="text" inputmode="decimal" class="airbnb-input text-right text-xs" style="min-height: 44px;" value="${escapeHTML(st.paintTopcoatPrice5Gal || '2400')}" placeholder="2400">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Card for Paint -->
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">สรุปปริมาณสีที่ต้องสั่งซื้อ</div>
+                <div class="flex justify-between items-baseline">
+                    <span class="text-xs font-semibold text-[var(--app-muted)]">สีทับหน้า (${calc.topcoat.coats} เที่ยว)</span>
+                    <span class="text-2xl font-bold font-mono text-[var(--app-accent)]" id="paintTopcoatDisplay">
+                        ${calc.topcoat.pail5Gal > 0 ? `${calc.topcoat.pail5Gal} ถังใหญ่` : ''}${calc.topcoat.can1Gal > 0 ? ` ${calc.topcoat.can1Gal} แกลลอน` : ''}${calc.topcoat.pail5Gal === 0 && calc.topcoat.can1Gal === 0 ? '0 แกลลอน' : ''}
+                    </span>
+                </div>
+                <div class="text-right text-xs text-[var(--app-muted)]" id="paintTopcoatLitersDisplay">
+                    (ปริมาณเนื้อสี ${formatNum(calc.topcoat.litersNeeded, 1)} ลิตร)
+                </div>
+
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-[var(--app-muted)]">พื้นที่ผนังสุทธิ</span>
+                        <b class="text-[var(--app-ink)] font-mono" id="paintAreaDisplay">${formatNum(calc.wallAreaSqm, 2)} ตร.ม. (รวมเผื่อ ${formatNum(calc.effectiveAreaSqm, 2)} ตร.ม.)</b>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-[var(--app-muted)]">สีรองพื้น (Primer 1 เที่ยว)</span>
+                        <b class="text-[var(--app-ink)] font-mono" id="paintPrimerDisplay">
+                            ${calc.primer.pail5Gal > 0 ? `${calc.primer.pail5Gal} ถังใหญ่` : ''}${calc.primer.can1Gal > 0 ? ` ${calc.primer.can1Gal} GL` : ''}${calc.primer.pail5Gal === 0 && calc.primer.can1Gal === 0 ? '0 GL' : ''} (${formatNum(calc.primer.litersNeeded, 1)} ลิตร)
+                        </b>
+                    </div>
+                    <div class="flex justify-between pt-1 border-t border-[var(--app-hairline)] text-sm font-semibold">
+                        <span class="text-[var(--app-ink)]">ประมาณการงบประมาณรวม</span>
+                        <span class="text-[var(--app-accent)] font-mono" id="paintTotalBudgetDisplay">฿${formatMoney(calc.costs.totalEstimatedBudget)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        // Concrete Tab
+        html += `
+            <!-- Keypad Fields for Concrete -->
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'ความกว้างพื้นที่เทพื้น', st.slabWidth, 'เมตร', 'เช่น 4')}
+                ${createKeypadFieldHTML(1, 'ความยาวพื้นที่เทพื้น', st.slabLength, 'เมตร', 'เช่น 6')}
+                ${createKeypadFieldHTML(2, 'ความหนาคอนกรีต', st.slabThickness, 'ซม.', 'เช่น 10')}
+            </div>
+
+            <!-- Quick Thickness Presets -->
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ความหนาคอนกรีตตามประเภทการใช้งาน</div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" class="tool-chip-btn concrete-thick-chip ${st.slabThickness === '8' ? 'active font-bold' : ''}" data-thick="8" style="min-height: 44px;">
+                        8 ซม. (ทางเดิน/ซักล้าง)
+                    </button>
+                    <button type="button" class="tool-chip-btn concrete-thick-chip ${st.slabThickness === '10' || !st.slabThickness ? 'active font-bold' : ''}" data-thick="10" style="min-height: 44px;">
+                        10 ซม. (พื้นบ้าน/ห้อง)
+                    </button>
+                    <button type="button" class="tool-chip-btn concrete-thick-chip ${st.slabThickness === '15' ? 'active font-bold' : ''}" data-thick="15" style="min-height: 44px;">
+                        15 ซม. (โรงจอดรถ)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Concrete Mix Type Options -->
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ประเภทคอนกรีต</div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" class="tool-chip-btn concrete-type-chip ${st.concreteType !== 'site_mix' ? 'active font-bold border-[var(--app-accent)]' : ''}" data-type="ready_mix" style="min-height: 44px;">
+                        รถโม่ผสมเสร็จ (คิว)
+                    </button>
+                    <button type="button" class="tool-chip-btn concrete-type-chip ${st.concreteType === 'site_mix' ? 'active font-bold border-[var(--app-accent)]' : ''}" data-type="site_mix" style="min-height: 44px;">
+                        ผสมเอง (ปูน+ทราย+หิน)
+                    </button>
+                </div>
+                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-[var(--app-hairline)]">
+                    <div>
+                        <label for="constConcretePriceInput" class="text-[var(--app-muted)] text-[11px] block">ราคาคอนกรีตผสมเสร็จ (บ./คิว)</label>
+                        <input id="constConcretePriceInput" type="text" inputmode="decimal" class="airbnb-input text-right text-xs" style="min-height: 44px;" value="${escapeHTML(st.concretePricePerCubic || '2000')}" placeholder="2000">
+                    </div>
+                    <div>
+                        <label for="constConcreteLaborInput" class="text-[var(--app-muted)] text-[11px] block">ค่าแรงเทปรับระดับ (บ./ตร.ม.)</label>
+                        <input id="constConcreteLaborInput" type="text" inputmode="decimal" class="airbnb-input text-right text-xs" style="min-height: 44px;" value="${escapeHTML(st.concreteLaborPerSqm || '')}" placeholder="เช่น 150">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Card for Concrete -->
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">สรุปคอนกรีตและวัสดุเทพื้น</div>
+                <div class="flex justify-between items-baseline">
+                    <span class="text-xs font-semibold text-[var(--app-muted)]">คอนกรีตที่ต้องสั่ง</span>
+                    <span class="text-2xl font-bold font-mono text-[var(--app-accent)]" id="concreteVolumeDisplay">
+                        ${calc.readyMixOrderCubicM} คิว (m³)
+                    </span>
+                </div>
+                <div class="text-right text-xs text-[var(--app-muted)]" id="concreteExactVolumeDisplay">
+                    (ปริมาตรคำนวณ ${formatNum(calc.grossVolumeCubicM, 2)} คิว รวมเผื่อ ${calc.wastagePct}%)
+                </div>
+
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-[var(--app-muted)]">พื้นที่เทพื้นคอนกรีต</span>
+                        <b class="text-[var(--app-ink)] font-mono" id="concreteAreaDisplay">${formatNum(calc.slabAreaSqm, 2)} ตร.ม. (หนา ${calc.slabThicknessCm} ซม.)</b>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-[var(--app-muted)]">ตะแกรงเหล็กไวร์เมช (เผื่อทาบ 10%)</span>
+                        <b class="text-[var(--app-ink)] font-mono" id="concreteWireMeshDisplay">${formatNum(calc.wireMeshSqm, 2)} ตร.ม.</b>
+                    </div>
+
+                    ${st.concreteType === 'site_mix' ? `
+                        <div class="p-2.5 rounded bg-[var(--app-surface-soft)] space-y-1 mt-1 border border-[var(--app-hairline)]">
+                            <div class="font-semibold text-[var(--app-ink)] text-[11px]">สัดส่วนผสมเอง (สูตร 1:2:4 มาตรฐาน):</div>
+                            <div class="flex justify-between text-[11px]"><span class="text-[var(--app-muted)]">• ปูนซีเมนต์ปอร์ตแลนด์ (50 กก.)</span><b class="font-mono">${calc.siteMix.cementBags50kg} ถุง</b></div>
+                            <div class="flex justify-between text-[11px]"><span class="text-[var(--app-muted)]">• ทรายหยาบ</span><b class="font-mono">${formatNum(calc.siteMix.sandCubicM, 2)} คิว</b></div>
+                            <div class="flex justify-between text-[11px]"><span class="text-[var(--app-muted)]">• หินก่อสร้าง 1-2</span><b class="font-mono">${formatNum(calc.siteMix.gravelCubicM, 2)} คิว</b></div>
+                        </div>
+                    ` : ''}
+
+                    <div class="flex justify-between pt-1 border-t border-[var(--app-hairline)] text-sm font-semibold">
+                        <span class="text-[var(--app-ink)]">ประมาณการงบประมาณรวม</span>
+                        <span class="text-[var(--app-accent)] font-mono" id="concreteTotalBudgetDisplay">฿${formatMoney(calc.costs.totalEstimatedBudget)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    html += `</div>`;
+    container.innerHTML = html;
+
+    // Attach shared keypad field click listeners
+    attachFieldClickListeners(container);
+
+    // Tab Switch Handlers
+    document.getElementById('btnConstTabTiles')?.addEventListener('click', () => {
+        st.tab = 'tiles';
+        persistAppState();
+        renderActiveTool();
+    });
+    document.getElementById('btnConstTabPaint')?.addEventListener('click', () => {
+        st.tab = 'paint';
+        persistAppState();
+        renderActiveTool();
+    });
+    document.getElementById('btnConstTabConcrete')?.addEventListener('click', () => {
+        st.tab = 'concrete';
+        persistAppState();
+        renderActiveTool();
+    });
+
+    // Tiles Event Listeners
+    if (tab === 'tiles') {
+        container.querySelectorAll('.tile-size-chip').forEach(btn => {
+            btn.addEventListener('click', () => {
+                st.tileSizePreset = btn.dataset.size;
+                persistAppState();
+                renderActiveTool();
+            });
+        });
+        container.querySelectorAll('.tile-waste-chip').forEach(btn => {
+            btn.addEventListener('click', () => {
+                st.tileWastagePct = btn.dataset.waste;
+                persistAppState();
+                renderActiveTool();
+            });
+        });
+        const laborInput = document.getElementById('constTileLaborInput');
+        if (laborInput) {
+            laborInput.addEventListener('input', () => {
+                st.tileLaborPerSqm = laborInput.value;
+                updateConstructionDOM();
+            });
+        }
+        const adhesiveInput = document.getElementById('constTileAdhesiveInput');
+        if (adhesiveInput) {
+            adhesiveInput.addEventListener('input', () => {
+                st.adhesivePricePerBag = adhesiveInput.value;
+                updateConstructionDOM();
+            });
+        }
+    }
+
+    // Paint Event Listeners
+    if (tab === 'paint') {
+        container.querySelectorAll('.paint-room-preset').forEach(btn => {
+            btn.addEventListener('click', () => {
+                st.paintWallWidth = btn.dataset.perim;
+                st.paintWallHeight = btn.dataset.h;
+                persistAppState();
+                renderActiveTool();
+            });
+        });
+        container.querySelectorAll('.paint-coat-chip').forEach(btn => {
+            btn.addEventListener('click', () => {
+                st.paintCoats = btn.dataset.coat;
+                persistAppState();
+                renderActiveTool();
+            });
+        });
+        const laborInput = document.getElementById('constPaintLaborInput');
+        if (laborInput) {
+            laborInput.addEventListener('input', () => {
+                st.paintLaborPerSqm = laborInput.value;
+                updateConstructionDOM();
+            });
+        }
+        const topcoatPriceInput = document.getElementById('constPaintTopcoatPriceInput');
+        if (topcoatPriceInput) {
+            topcoatPriceInput.addEventListener('input', () => {
+                st.paintTopcoatPrice5Gal = topcoatPriceInput.value;
+                updateConstructionDOM();
+            });
+        }
+    }
+
+    // Concrete Event Listeners
+    if (tab === 'concrete') {
+        container.querySelectorAll('.concrete-thick-chip').forEach(btn => {
+            btn.addEventListener('click', () => {
+                st.slabThickness = btn.dataset.thick;
+                persistAppState();
+                renderActiveTool();
+            });
+        });
+        container.querySelectorAll('.concrete-type-chip').forEach(btn => {
+            btn.addEventListener('click', () => {
+                st.concreteType = btn.dataset.type;
+                persistAppState();
+                renderActiveTool();
+            });
+        });
+        const priceInput = document.getElementById('constConcretePriceInput');
+        if (priceInput) {
+            priceInput.addEventListener('input', () => {
+                st.concretePricePerCubic = priceInput.value;
+                updateConstructionDOM();
+            });
+        }
+        const laborInput = document.getElementById('constConcreteLaborInput');
+        if (laborInput) {
+            laborInput.addEventListener('input', () => {
+                st.concreteLaborPerSqm = laborInput.value;
+                updateConstructionDOM();
+            });
+        }
+    }
+
+    // Helper to update DOM live without tearing down buttons
+    function updateConstructionDOM() {
+        const curCalc = calculateConstructionMaterials(st);
+        if (tab === 'tiles') {
+            const boxesEl = document.getElementById('tileResultBoxes');
+            if (boxesEl) boxesEl.textContent = `${curCalc.boxesNeeded} กล่อง`;
+            const pcsEl = document.getElementById('tileResultPieces');
+            if (pcsEl) pcsEl.textContent = `(รวม ${curCalc.grossPieces} แผ่น / ซื้อจริง ${curCalc.totalPurchasedPieces} แผ่น)`;
+            const areaEl = document.getElementById('tileAreaDisplay');
+            if (areaEl) areaEl.textContent = `${formatNum(curCalc.areaSqm, 2)} ตร.ม. (รวมเผื่อ ${formatNum(curCalc.grossAreaSqm, 2)} ตร.ม.)`;
+            const adhEl = document.getElementById('tileAdhesiveDisplay');
+            if (adhEl) adhEl.textContent = `${curCalc.adhesiveBags} ถุง`;
+            const groutEl = document.getElementById('tileGroutDisplay');
+            if (groutEl) groutEl.textContent = `${curCalc.groutBags} ถุง`;
+            const budgetEl = document.getElementById('tileTotalBudgetDisplay');
+            if (budgetEl) budgetEl.textContent = `฿${formatMoney(curCalc.costs.totalEstimatedBudget)}`;
+        } else if (tab === 'paint') {
+            const topcoatEl = document.getElementById('paintTopcoatDisplay');
+            if (topcoatEl) {
+                topcoatEl.textContent = `${curCalc.topcoat.pail5Gal > 0 ? `${curCalc.topcoat.pail5Gal} ถังใหญ่` : ''}${curCalc.topcoat.can1Gal > 0 ? ` ${curCalc.topcoat.can1Gal} แกลลอน` : ''}${curCalc.topcoat.pail5Gal === 0 && curCalc.topcoat.can1Gal === 0 ? '0 แกลลอน' : ''}`;
+            }
+            const litersEl = document.getElementById('paintTopcoatLitersDisplay');
+            if (litersEl) litersEl.textContent = `(ปริมาณเนื้อสี ${formatNum(curCalc.topcoat.litersNeeded, 1)} ลิตร)`;
+            const areaEl = document.getElementById('paintAreaDisplay');
+            if (areaEl) areaEl.textContent = `${formatNum(curCalc.wallAreaSqm, 2)} ตร.ม. (รวมเผื่อ ${formatNum(curCalc.effectiveAreaSqm, 2)} ตร.ม.)`;
+            const primerEl = document.getElementById('paintPrimerDisplay');
+            if (primerEl) {
+                primerEl.textContent = `${curCalc.primer.pail5Gal > 0 ? `${curCalc.primer.pail5Gal} ถังใหญ่` : ''}${curCalc.primer.can1Gal > 0 ? ` ${curCalc.primer.can1Gal} GL` : ''}${curCalc.primer.pail5Gal === 0 && curCalc.primer.can1Gal === 0 ? '0 GL' : ''} (${formatNum(curCalc.primer.litersNeeded, 1)} ลิตร)`;
+            }
+            const budgetEl = document.getElementById('paintTotalBudgetDisplay');
+            if (budgetEl) budgetEl.textContent = `฿${formatMoney(curCalc.costs.totalEstimatedBudget)}`;
+        } else {
+            const volEl = document.getElementById('concreteVolumeDisplay');
+            if (volEl) volEl.textContent = `${curCalc.readyMixOrderCubicM} คิว (m³)`;
+            const exactEl = document.getElementById('concreteExactVolumeDisplay');
+            if (exactEl) exactEl.textContent = `(ปริมาตรคำนวณ ${formatNum(curCalc.grossVolumeCubicM, 2)} คิว รวมเผื่อ ${curCalc.wastagePct}%)`;
+            const areaEl = document.getElementById('concreteAreaDisplay');
+            if (areaEl) areaEl.textContent = `${formatNum(curCalc.slabAreaSqm, 2)} ตร.ม. (หนา ${curCalc.slabThicknessCm} ซม.)`;
+            const wireEl = document.getElementById('concreteWireMeshDisplay');
+            if (wireEl) wireEl.textContent = `${formatNum(curCalc.wireMeshSqm, 2)} ตร.ม.`;
+            const budgetEl = document.getElementById('concreteTotalBudgetDisplay');
+            if (budgetEl) budgetEl.textContent = `฿${formatMoney(curCalc.costs.totalEstimatedBudget)}`;
+        }
+    }
+}
+
 (function(root) {
     const exportsObj = {
         UNIT_CATEGORIES,
         renderUnitPriceTool,
         renderDiscountTool,
         renderTipTool,
-        renderUnitConverterTool
+        renderUnitConverterTool,
+        calculateConstructionMaterials,
+        renderConstructionTool
     };
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = exportsObj;
@@ -15446,6 +16574,44 @@ function clearCurrentTool() {
                 { id: '1', name: '', packPrice: '', packSize: '1000', packUnit: 'g', useAmount: '', useUnit: 'g', yieldPct: '100' }
             ]
         };
+    } else if (id === 'construction_calc') {
+        appState.construction_calc = {
+            tab: appState.construction_calc?.tab || 'tiles',
+            tileWidth: '',
+            tileLength: '',
+            tileSizePreset: '60x60',
+            tileCustomWidthCm: '60',
+            tileCustomLengthCm: '60',
+            tileCustomPcsPerBox: '4',
+            tileWastagePct: '10',
+            tilePricePerBox: '',
+            tileLaborPerSqm: '',
+            adhesivePricePerBag: '160',
+            groutPricePerBag: '50',
+
+            paintWallWidth: '',
+            paintWallHeight: '',
+            paintDeductArea: '',
+            paintCoats: '2',
+            paintWastagePct: '10',
+            paintPrimerPrice5Gal: '1800',
+            paintPrimerPrice1Gal: '450',
+            paintTopcoatPrice5Gal: '2400',
+            paintTopcoatPrice1Gal: '600',
+            paintLaborPerSqm: '',
+
+            slabWidth: '',
+            slabLength: '',
+            slabThickness: '10',
+            concreteWastagePct: '5',
+            concreteType: 'ready_mix',
+            concretePricePerCubic: '2000',
+            wireMeshPricePerSqm: '35',
+            concreteLaborPerSqm: '',
+            cementBagPrice: '145',
+            sandPricePerCubic: '450',
+            gravelPricePerCubic: '500'
+        };
     }
     rememberToolClear(snapshot);
     renderActiveTool();
@@ -15711,6 +16877,44 @@ function loadDemoForCurrentTool() {
                 { id: '4', name: 'ใบกะเพรา + พริกกระเทียม', packPrice: '50', packSize: '500', packUnit: 'g', useAmount: '30', useUnit: 'g', yieldPct: '90' },
                 { id: '5', name: 'น้ำมันพืช & ซอสปรุงรส', packPrice: '65', packSize: '1000', packUnit: 'ml', useAmount: '25', useUnit: 'ml', yieldPct: '100' }
             ]
+        };
+    } else if (id === 'construction_calc') {
+        appState.construction_calc = {
+            tab: 'tiles',
+            tileWidth: '4',
+            tileLength: '5',
+            tileSizePreset: '60x60',
+            tileCustomWidthCm: '60',
+            tileCustomLengthCm: '60',
+            tileCustomPcsPerBox: '4',
+            tileWastagePct: '10',
+            tilePricePerBox: '380',
+            tileLaborPerSqm: '250',
+            adhesivePricePerBag: '160',
+            groutPricePerBag: '50',
+
+            paintWallWidth: '16',
+            paintWallHeight: '2.8',
+            paintDeductArea: '4',
+            paintCoats: '2',
+            paintWastagePct: '10',
+            paintPrimerPrice5Gal: '1800',
+            paintPrimerPrice1Gal: '450',
+            paintTopcoatPrice5Gal: '2400',
+            paintTopcoatPrice1Gal: '600',
+            paintLaborPerSqm: '70',
+
+            slabWidth: '4',
+            slabLength: '6',
+            slabThickness: '10',
+            concreteWastagePct: '5',
+            concreteType: 'ready_mix',
+            concretePricePerCubic: '2000',
+            wireMeshPricePerSqm: '35',
+            concreteLaborPerSqm: '150',
+            cementBagPrice: '145',
+            sandPricePerCubic: '450',
+            gravelPricePerCubic: '500'
         };
     }
     renderActiveTool();

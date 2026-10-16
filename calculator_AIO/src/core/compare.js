@@ -332,6 +332,50 @@ function getComparisonPresets(toolId) {
                     oilPrice: '36.50'
                 }
             }
+        ],
+        construction_calc: [
+            {
+                label: 'ทางเลือก 1: กระเบื้องแกรนิตโต้ 60x60 ซม. (ห้อง 20 ตร.ม.)',
+                state: {
+                    tab: 'tiles',
+                    tileWidth: '4',
+                    tileLength: '5',
+                    tileSizePreset: '60x60',
+                    tileWastagePct: '10',
+                    tilePricePerBox: '380',
+                    tileLaborPerSqm: '250',
+                    adhesivePricePerBag: '160',
+                    groutPricePerBag: '50'
+                }
+            },
+            {
+                label: 'ทางเลือก 2: กระเบื้องหินอ่อน 60x120 ซม. (ห้อง 20 ตร.ม.)',
+                state: {
+                    tab: 'tiles',
+                    tileWidth: '4',
+                    tileLength: '5',
+                    tileSizePreset: '60x120',
+                    tileWastagePct: '10',
+                    tilePricePerBox: '750',
+                    tileLaborPerSqm: '300',
+                    adhesivePricePerBag: '160',
+                    groutPricePerBag: '50'
+                }
+            },
+            {
+                label: 'ทางเลือก 3: กระเบื้องมาตรฐาน 40x40 ซม. (ห้อง 20 ตร.ม.)',
+                state: {
+                    tab: 'tiles',
+                    tileWidth: '4',
+                    tileLength: '5',
+                    tileSizePreset: '40x40',
+                    tileWastagePct: '10',
+                    tilePricePerBox: '220',
+                    tileLaborPerSqm: '220',
+                    adhesivePricePerBag: '160',
+                    groutPricePerBag: '50'
+                }
+            }
         ]
     };
     return presets[toolId] || [];
@@ -1281,6 +1325,108 @@ function compareCalculations(toolId, itemsList) {
                 values: results.map(r => `${formatMoney(r.costPerKm)} ฿/กม.`)
             });
             deltaSummary = `เปรียบเทียบข้อมูลต้นทุนพลังงาน ${items.length} ทางเลือก`;
+        }
+
+    } else if (toolId === 'construction_calc') {
+        const results = items.map(item => {
+            const st = item.state || {};
+            return (typeof calculateConstructionMaterials === 'function')
+                ? calculateConstructionMaterials(st)
+                : { tab: 'tiles', areaSqm: 0, grossAreaSqm: 0, boxesNeeded: 0, grossPieces: 0, totalPurchasedPieces: 0, adhesiveBags: 0, groutBags: 0, costs: { totalEstimatedBudget: 0 } };
+        });
+
+        const isAllTiles = results.every(r => r.tab === 'tiles');
+        const isAllPaint = results.every(r => r.tab === 'paint');
+        const isAllConcrete = results.every(r => r.tab === 'concrete');
+
+        if (isAllTiles) {
+            rows.push({
+                label: 'ขนาดพื้นที่ปูจริง',
+                values: results.map(r => `${formatNum(r.areaSqm, 2)} ตร.ม.`)
+            });
+            rows.push({
+                label: 'ขนาดกระเบื้อง & แผ่น/กล่อง',
+                values: results.map(r => `${r.tileWidthCm}×${r.tileLengthCm} ซม. (${r.piecesPerBox} แผ่น)`)
+            });
+            rows.push({
+                label: 'พื้นที่รวมเผื่อเศษ (' + (results[0]?.wastagePct || 10) + '%)',
+                values: results.map(r => `${formatNum(r.grossAreaSqm, 2)} ตร.ม.`)
+            });
+            rows.push({
+                label: 'จำนวนแผ่นที่ต้องใช้',
+                values: results.map(r => `${r.grossPieces} แผ่น`)
+            });
+            rows.push({
+                label: 'จำนวนกล่องที่ต้องสั่งซื้อ',
+                values: results.map(r => `${r.boxesNeeded} กล่อง (${r.totalPurchasedPieces} แผ่น)`)
+            });
+            rows.push({
+                label: 'ปูนกาวซีเมนต์ & กาวยาแนว',
+                values: results.map(r => `ปูนกาว ${r.adhesiveBags} ถุง / ยาแนว ${r.groutBags} ถุง`)
+            });
+        } else if (isAllPaint) {
+            rows.push({
+                label: 'พื้นที่ผนังสุทธิ',
+                values: results.map(r => `${formatNum(r.wallAreaSqm, 2)} ตร.ม.`)
+            });
+            rows.push({
+                label: 'สีรองพื้น (Primer 1 เที่ยว)',
+                values: results.map(r => `${formatNum(r.primer.litersNeeded, 1)} ลิตร`)
+            });
+            rows.push({
+                label: 'สีทับหน้า (' + (results[0]?.topcoat?.coats || 2) + ' เที่ยว)',
+                values: results.map(r => `${formatNum(r.topcoat.litersNeeded, 1)} ลิตร`)
+            });
+            rows.push({
+                label: 'บรรจุภัณฑ์แนะนำ (สีทับหน้า)',
+                values: results.map(r => `${r.topcoat.pail5Gal > 0 ? `${r.topcoat.pail5Gal} ถังใหญ่ 5GL` : ''}${r.topcoat.can1Gal > 0 ? ` ${r.topcoat.can1Gal} GL` : ''}`)
+            });
+        } else if (isAllConcrete) {
+            rows.push({
+                label: 'พื้นที่ & ความหนา',
+                values: results.map(r => `${formatNum(r.slabAreaSqm, 2)} ตร.ม. (หนา ${r.slabThicknessCm} ซม.)`)
+            });
+            rows.push({
+                label: 'ปริมาตรสุทธิ / รวมเผื่อ',
+                values: results.map(r => `${formatNum(r.netVolumeCubicM, 2)} / ${formatNum(r.grossVolumeCubicM, 2)} คิว`)
+            });
+            rows.push({
+                label: 'คอนกรีตรถโม่สั่งซื้อ',
+                values: results.map(r => `${r.readyMixOrderCubicM} คิว`)
+            });
+            rows.push({
+                label: 'ตะแกรงเหล็กไวร์เมช',
+                values: results.map(r => `${formatNum(r.wireMeshSqm, 2)} ตร.ม.`)
+            });
+        } else {
+            rows.push({
+                label: 'หมวดหมู่งาน',
+                values: results.map(r => r.tab === 'tiles' ? 'กระเบื้อง' : (r.tab === 'paint' ? 'สีทาอาคาร' : 'คอนกรีต'))
+            });
+        }
+
+        const validBudgets = results.filter(r => r.costs && r.costs.totalEstimatedBudget > 0);
+        if (validBudgets.length > 0) {
+            const minBudgetRes = validBudgets.reduce((min, cur) => cur.costs.totalEstimatedBudget < min.costs.totalEstimatedBudget ? cur : min, validBudgets[0]);
+            const minBudgetIdx = results.indexOf(minBudgetRes);
+            const maxBudget = Math.max(...validBudgets.map(r => r.costs.totalEstimatedBudget));
+            const diffBudget = maxBudget - minBudgetRes.costs.totalEstimatedBudget;
+
+            rows.push({
+                label: 'ประมาณการงบประมาณรวม',
+                values: results.map(r => `${formatMoney(r.costs.totalEstimatedBudget)} ฿`),
+                bestIndex: minBudgetIdx,
+                highlight: true
+            });
+
+            winnerIndex = minBudgetIdx;
+            deltaSummary = `🏆 ทางเลือกที่ประหยัดงบประมาณที่สุดคือ "${items[winnerIndex].label}" งบประมาณเพียง ${formatMoney(minBudgetRes.costs.totalEstimatedBudget)} บาท${diffBudget > 0 ? ` (ประหยัดกว่าทางเลือกสูงสุด ${formatMoney(diffBudget)} บาท)` : ''}`;
+        } else {
+            rows.push({
+                label: 'จำนวนวัสดุหลักที่ต้องสั่ง',
+                values: results.map(r => r.tab === 'tiles' ? `${r.boxesNeeded} กล่อง` : (r.tab === 'paint' ? `${formatNum(r.topcoat.litersNeeded, 1)} ลิตร` : `${r.readyMixOrderCubicM} คิว`))
+            });
+            deltaSummary = `เปรียบเทียบรายการวัสดุก่อสร้าง ${items.length} ทางเลือก`;
         }
 
     } else {

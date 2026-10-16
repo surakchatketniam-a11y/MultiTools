@@ -283,11 +283,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 35 tools classified into 5 valid groups with search keywords', () => {
+test('catalog contains exactly 36 tools classified into 5 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 5);
-    assert.equal(TOOLS_CATALOG.length, 35);
+    assert.equal(TOOLS_CATALOG.length, 36);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -431,7 +431,7 @@ test('thai official holidays: Songkran, fixed holidays and lunar Buddhist observ
     assert.equal(ctx.isThaiOfficialHoliday(new Date('2026-10-14T00:00:00')), false);
 });
 
-test('all 35 tools have complete and valid clear and demo data mappings', () => {
+test('all 36 tools have complete and valid clear and demo data mappings', () => {
     const rawAppStateMatch = html.match(/const appState = \{[\s\S]*?\n        \};/);
     assert.ok(rawAppStateMatch, 'appState must be defined');
 
@@ -447,7 +447,7 @@ test('all 35 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 35);
+    assert.equal(ctx.TOOLS_CATALOG.length, 36);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -1183,13 +1183,14 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('🏆 คุ้มค่าที่สุด'));
 });
 
-test('all 35 tool renderers are modularized and exported across the 5 tool groups', () => {
+test('all 36 tool renderers are modularized and exported across the 5 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
         discount:          'renderDiscountTool',
         tip:               'renderTipTool',
         unit:              'renderUnitConverterTool',
+        construction_calc: 'renderConstructionTool',
         vat:               'renderVatTool',
         vat_wht:           'renderVatWhtTool',
         percent:           'renderPercentTool',
@@ -1223,7 +1224,7 @@ test('all 35 tool renderers are modularized and exported across the 5 tool group
         food_costing:      'renderFoodCostingTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 35);
+    assert.equal(Object.keys(rendererMap).length, 36);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -2948,4 +2949,148 @@ test('fuel_cost: fuel consumption and EV charging comparison', () => {
     assert.equal(ctx.hasInvalidNumericInput('fuel_cost', { fuel_cost: { mode: 'fuel', distance: 'abc', efficiency: '15', oilPrice: '36.50', tollFee: '0', passengers: '1' } }), true);
     assert.equal(ctx.hasInvalidNumericInput('fuel_cost', { fuel_cost: { mode: 'ev', distance: '100', evEfficiency: '6.5', electricityRate: '2.90', chargingLossPct: '10', batteryCapacity: '60', compareIceEfficiency: '15', compareFuelPrice: '36.50', yearlyKm: '20000' } }), false);
     assert.equal(ctx.hasInvalidNumericInput('fuel_cost', { fuel_cost: { mode: 'ev', distance: '100', evEfficiency: 'notanumber', electricityRate: '2.90', chargingLossPct: '10', batteryCapacity: '60', compareIceEfficiency: '15', compareFuelPrice: '36.50', yearlyKm: '20000' } }), true);
+});
+
+test('construction_calc: tiles, paint, and concrete calculations', () => {
+    const ctx = context();
+
+    // 1. Tiles calculation
+    const tilesRes = ctx.calculateConstructionMaterials({
+        tab: 'tiles',
+        tileWidth: '4',
+        tileLength: '5',
+        tileSizePreset: '60x60',
+        tilePiecesPerBox: '4',
+        tileWastagePct: '10',
+        tilePricePerBox: '350',
+        adhesivePricePerBag: '160',
+        groutPricePerBag: '50',
+        tileLaborPerSqm: '250'
+    });
+    assert.equal(tilesRes.widthM, 4);
+    assert.equal(tilesRes.lengthM, 5);
+    assert.equal(tilesRes.areaSqm, 20);
+    assert.equal(tilesRes.grossAreaSqm, 22);
+    assert.equal(tilesRes.tileAreaSqm, 0.36);
+    assert.equal(tilesRes.boxCoverageSqm, 1.44);
+    assert.equal(tilesRes.boxesNeeded, 16); // ceil(22 / 1.44) = 16
+    assert.equal(tilesRes.totalPurchasedPieces, 64); // 16 * 4
+    assert.equal(tilesRes.adhesiveBags, 5); // ceil(22 / 4.5) = 5
+    assert.equal(tilesRes.groutBags, 7); // ceil(22 / 3.5) = 7
+    assert.equal(tilesRes.costs.tileCost, 5600); // 16 * 350
+    assert.equal(tilesRes.costs.adhesiveCost, 800); // 5 * 160
+    assert.equal(tilesRes.costs.groutCost, 350); // 7 * 50
+    assert.equal(tilesRes.costs.laborCost, 5000); // 20 * 250
+    assert.equal(tilesRes.costs.totalEstimatedBudget, 11750);
+
+    // 2. Paint calculation
+    const paintRes = ctx.calculateConstructionMaterials({
+        tab: 'paint',
+        paintWallWidth: '12',
+        paintWallHeight: '2.8',
+        paintDeductArea: '4',
+        paintCoats: '2',
+        paintWastagePct: '10',
+        paintPrimerPrice5Gal: '1800',
+        paintPrimerPrice1Gal: '450',
+        paintTopcoatPrice5Gal: '2400',
+        paintTopcoatPrice1Gal: '600',
+        paintLaborPerSqm: '60'
+    });
+    assert.equal(paintRes.wallWidthM, 12);
+    assert.equal(paintRes.wallHeightM, 2.8);
+    assert.equal(paintRes.deductAreaSqm, 4);
+    assert.equal(paintRes.wallAreaSqm, 29.6); // 12 * 2.8 - 4 = 33.6 - 4 = 29.6
+    assert.equal(paintRes.effectiveAreaSqm, 32.56); // 29.6 * 1.10 = 32.56
+    assert.equal(paintRes.primer.coats, 1);
+    assert.ok(Math.abs(paintRes.primer.litersNeeded - 3.83) <= 0.05); // 32.56 / 8.5 ~= 3.83 L
+    assert.equal(paintRes.topcoat.coats, 2);
+    assert.ok(Math.abs(paintRes.topcoat.litersNeeded - 8.14) <= 0.05); // (32.56 * 2) / 8.0 = 8.14 L
+    assert.equal(paintRes.costs.laborCost, 1776); // 29.6 * 60
+
+    // 3. Concrete calculation: Ready-mix
+    const concreteRes = ctx.calculateConstructionMaterials({
+        tab: 'concrete',
+        slabWidth: '4',
+        slabLength: '6',
+        slabThickness: '10',
+        concreteWastagePct: '5',
+        concreteType: 'ready_mix',
+        concretePricePerCubic: '2000',
+        wireMeshPricePerSqm: '35',
+        concreteLaborPerSqm: '80'
+    });
+    assert.equal(concreteRes.slabWidthM, 4);
+    assert.equal(concreteRes.slabLengthM, 6);
+    assert.equal(concreteRes.slabThicknessCm, 10);
+    assert.equal(concreteRes.slabAreaSqm, 24);
+    assert.equal(concreteRes.netVolumeCubicM, 2.4);
+    assert.equal(concreteRes.grossVolumeCubicM, 2.52); // 2.4 * 1.05 = 2.52
+    assert.equal(concreteRes.readyMixOrderCubicM, 2.75); // ceil(2.52 * 4) / 4 = 2.75
+    assert.equal(concreteRes.wireMeshSqm, 26.4); // 24 * 1.10 = 26.4
+    assert.equal(concreteRes.costs.concreteMaterialCost, 5500); // 2.75 * 2000
+    assert.equal(concreteRes.costs.wireMeshCost, 924); // 26.4 * 35
+    assert.equal(concreteRes.costs.laborCost, 1920); // 24 * 80
+    assert.equal(concreteRes.costs.totalEstimatedBudget, 8344); // 5500 + 924 + 1920
+
+    // 4. Concrete calculation: Site-mix
+    const siteMixRes = ctx.calculateConstructionMaterials({
+        tab: 'concrete',
+        slabWidth: '4',
+        slabLength: '6',
+        slabThickness: '10',
+        concreteWastagePct: '5',
+        concreteType: 'site_mix',
+        cementBagPrice: '145',
+        sandPricePerCubic: '450',
+        gravelPricePerCubic: '500',
+        wireMeshPricePerSqm: '35',
+        concreteLaborPerSqm: '80'
+    });
+    assert.equal(siteMixRes.siteMix.cementBags50kg, 18); // ceil(2.52 * 6.8) = ceil(17.136) = 18
+    assert.equal(siteMixRes.siteMix.sandCubicM, 1.26); // 2.52 * 0.50 = 1.26
+    assert.equal(siteMixRes.siteMix.gravelCubicM, 2.14); // 2.52 * 0.85 = 2.142 -> round2 = 2.14
+
+    // 5. Drawer summary text test
+    const tilesSummary = ctx.getToolSummaryText('construction_calc', {
+        construction_calc: { tab: 'tiles', tileWidth: '4', tileLength: '5', tileSizePreset: '60x60', tilePiecesPerBox: '4', tileWastagePct: '10', tilePricePerBox: '350', adhesivePricePerBag: '160', groutPricePerBag: '50', tileLaborPerSqm: '250' }
+    });
+    assert.match(tilesSummary, /สรุปคำนวณกระเบื้องปูพื้น & ผนัง/);
+    assert.match(tilesSummary, /16 กล่อง/);
+
+    const paintSummary = ctx.getToolSummaryText('construction_calc', {
+        construction_calc: { tab: 'paint', paintWallWidth: '12', paintWallHeight: '2.8', paintDeductArea: '4', paintCoats: '2', paintWastagePct: '10', paintPrimerPrice5Gal: '1800', paintPrimerPrice1Gal: '450', paintTopcoatPrice5Gal: '2400', paintTopcoatPrice1Gal: '600', paintLaborPerSqm: '60' }
+    });
+    assert.match(paintSummary, /สรุปคำนวณสีทาอาคาร & ผนัง/);
+    assert.match(paintSummary, /สีรองพื้น/);
+
+    const concreteSummary = ctx.getToolSummaryText('construction_calc', {
+        construction_calc: { tab: 'concrete', slabWidth: '4', slabLength: '6', slabThickness: '10', concreteWastagePct: '5', concreteType: 'ready_mix', concretePricePerCubic: '2000', wireMeshPricePerSqm: '35', concreteLaborPerSqm: '80' }
+    });
+    assert.match(concreteSummary, /สรุปคำนวณคอนกรีตเทพื้น & ปูน/);
+    assert.match(concreteSummary, /2\.75 คิว/);
+
+    // 6. Formal print sheet test
+    const printDoc = ctx.generateFormalPrintHTML('construction_calc', {
+        construction_calc: { tab: 'tiles', tileWidth: '4', tileLength: '5', tileSizePreset: '60x60', tilePiecesPerBox: '4', tileWastagePct: '10', tilePricePerBox: '350', adhesivePricePerBag: '160', groutPricePerBag: '50', tileLaborPerSqm: '250' }
+    });
+    assert.ok(printDoc.includes('ใบประมาณการวัสดุก่อสร้างและปรับปรุงบ้าน'));
+    assert.ok(printDoc.includes('Construction & Renovation Material Estimation Sheet'));
+    assert.ok(printDoc.includes('ตารางแจกแจงรายการวัสดุกระเบื้อง'));
+
+    // 7. Compare calculations test
+    const presets = ctx.getComparisonPresets('construction_calc');
+    assert.equal(presets.length, 3);
+    const compResult = ctx.compareCalculations('construction_calc', presets);
+    assert.ok(compResult);
+    assert.ok(compResult.rows.length >= 5);
+    assert.ok(compResult.deltaSummary.includes('ทางเลือกที่ประหยัดงบประมาณที่สุด'));
+
+    // 8. Input validation test
+    assert.equal(ctx.hasInvalidNumericInput('construction_calc', { construction_calc: { tab: 'tiles', tileWidth: '4', tileLength: '5', tileWastagePct: '10', tilePricePerBox: '350', adhesivePricePerBag: '160', groutPricePerBag: '50', tileLaborPerSqm: '0' } }), false);
+    assert.equal(ctx.hasInvalidNumericInput('construction_calc', { construction_calc: { tab: 'tiles', tileWidth: 'abc', tileLength: '5', tileWastagePct: '10', tilePricePerBox: '350', adhesivePricePerBag: '160', groutPricePerBag: '50', tileLaborPerSqm: '0' } }), true);
+    assert.equal(ctx.hasInvalidNumericInput('construction_calc', { construction_calc: { tab: 'paint', paintWallWidth: '10', paintWallHeight: '3', paintDeductArea: '2', paintCoats: '2', paintWastagePct: '10', paintPrimerPrice5Gal: '1800', paintPrimerPrice1Gal: '450', paintTopcoatPrice5Gal: '2400', paintTopcoatPrice1Gal: '600', paintLaborPerSqm: '0' } }), false);
+    assert.equal(ctx.hasInvalidNumericInput('construction_calc', { construction_calc: { tab: 'paint', paintWallWidth: '10', paintWallHeight: '3', paintDeductArea: 'notanumber', paintCoats: '2', paintWastagePct: '10', paintPrimerPrice5Gal: '1800', paintPrimerPrice1Gal: '450', paintTopcoatPrice5Gal: '2400', paintTopcoatPrice1Gal: '600', paintLaborPerSqm: '0' } }), true);
+    assert.equal(ctx.hasInvalidNumericInput('construction_calc', { construction_calc: { tab: 'concrete', slabWidth: '4', slabLength: '6', slabThickness: '10', concreteWastagePct: '5', concretePricePerCubic: '2000', wireMeshPricePerSqm: '35', concreteLaborPerSqm: '0' } }), false);
+    assert.equal(ctx.hasInvalidNumericInput('construction_calc', { construction_calc: { tab: 'concrete', slabWidth: '4', slabLength: '6', slabThickness: 'bad_input', concreteWastagePct: '5', concretePricePerCubic: '2000', wireMeshPricePerSqm: '35', concreteLaborPerSqm: '0' } }), true);
 });
