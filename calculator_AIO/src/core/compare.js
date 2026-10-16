@@ -383,10 +383,16 @@ function compareCalculations(toolId, itemsList) {
     } else if (toolId === 'salary') {
         const results = items.map(item => {
             const st = item.state || {};
-            const income = numberOrDefault(st.income, 0);
-            const needsPct = numberOrDefault(st.needsPct, 0);
-            const wantsPct = numberOrDefault(st.wantsPct, 0);
-            const savingsPct = numberOrDefault(st.savingsPct, 0);
+            let income = numberOrDefault(st.income, 0);
+            if (st.mode === 'net') {
+                const calc = (typeof calculateNetSalary === 'function')
+                    ? calculateNetSalary(st)
+                    : { netMonthly: income };
+                income = calc.netMonthly;
+            }
+            const needsPct = numberOrDefault(st.needsPct, 50);
+            const wantsPct = numberOrDefault(st.wantsPct, 30);
+            const savingsPct = numberOrDefault(st.savingsPct, 20);
             const needs = income * needsPct / 100;
             const wants = income * wantsPct / 100;
             const savings = income * savingsPct / 100;

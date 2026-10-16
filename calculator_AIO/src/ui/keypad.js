@@ -83,7 +83,16 @@ function getToolFieldBindings(toolId) {
             ].slice(0, appState.savings.mode === 'retirement' ? 3 : 4);
         case 'salary':
             return [
-                { get: () => appState.salary.income, set: (v) => { appState.salary.income = v; } },
+                {
+                    get: () => (appState.salary.mode === 'net' ? (appState.salary.baseSalary !== undefined ? appState.salary.baseSalary : appState.salary.income) : appState.salary.income),
+                    set: (v) => {
+                        if (appState.salary.mode === 'net') {
+                            appState.salary.baseSalary = v;
+                        } else {
+                            appState.salary.income = v;
+                        }
+                    }
+                },
                 { get: () => appState.salary.needsPct, set: (v) => { appState.salary.needsPct = v; } },
                 { get: () => appState.salary.wantsPct, set: (v) => { appState.salary.wantsPct = v; } },
                 { get: () => appState.salary.savingsPct, set: (v) => { appState.salary.savingsPct = v; } }

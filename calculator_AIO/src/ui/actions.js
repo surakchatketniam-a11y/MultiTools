@@ -63,6 +63,11 @@ function clearCurrentTool() {
         appState.vat_wht.amount = '';
     } else if (id === 'salary') {
         appState.salary.income = '';
+        appState.salary.baseSalary = '';
+        appState.salary.otAmount = '';
+        appState.salary.allowance = '';
+        appState.salary.bonusMonthly = '';
+        appState.salary.customDeduction = '';
     } else if (id === 'loan') {
         appState.loan.principal = '';
         appState.loan.extra = '0';
@@ -268,7 +273,23 @@ function loadDemoForCurrentTool() {
     } else if (id === 'vat_wht') {
         appState.vat_wht = { amount: '10000', vatRate: '7', whtRate: '3', mode: 'before' };
     } else if (id === 'salary') {
-        appState.salary = { income: '35000', needsPct: '50', wantsPct: '30', savingsPct: '20', emergencyPct: '10', debtPct: '10' };
+        appState.salary = {
+            mode: 'budget',
+            income: '35000',
+            needsPct: '50',
+            wantsPct: '30',
+            savingsPct: '20',
+            emergencyPct: '10',
+            debtPct: '10',
+            baseSalary: '35000',
+            otAmount: '3500',
+            allowance: '2000',
+            bonusMonthly: '0',
+            hasSocialSecurity: 'yes',
+            pvdPct: '3',
+            customDeduction: '0',
+            additionalDeductionsYearly: '0'
+        };
     } else if (id === 'fuel_cost') {
         appState.fuel_cost = { distance: '320', efficiency: '16', oilPrice: '35.50' };
     } else if (id === 'tip') {

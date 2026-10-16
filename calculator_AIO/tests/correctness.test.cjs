@@ -335,6 +335,24 @@ test('getToolSummaryText formats context-rich summary for key tools, and discoun
     assert.match(savingsText, /สรุปการวางแผนเงินออม/);
     assert.match(savingsText, /ยอดเงินออมสุทธิ:/);
 
+    // 4b. Salary summary (Net mode)
+    const salaryNetText = ctx.getToolSummaryText('salary', {
+        salary: {
+            mode: 'net',
+            baseSalary: '35000',
+            otAmount: '3500',
+            allowance: '2000',
+            bonusMonthly: '0',
+            hasSocialSecurity: 'yes',
+            pvdPct: '3',
+            customDeduction: '0'
+        }
+    });
+    assert.match(salaryNetText, /สรุปเงินเดือนสุทธิรับจริง/);
+    assert.match(salaryNetText, /35,000\.00 บาท/);
+    assert.match(salaryNetText, /40,500\.00 บาท/);
+    assert.match(salaryNetText, /38,038\.00 บาท/);
+
     // 5. Discount capping
     const discountRes = calculation(ctx, 'renderDiscountTool', null, '({finalPrice, saved, isOver100})');
     assert.equal(discountRes.finalPrice, 0);
@@ -697,6 +715,27 @@ test('formal print-to-pdf: generates accurate Thai receipt documents for loan, s
     assert.ok(salaryDoc.includes('12,000.00 บาท'), 'Wants 30% = 12,000');
     assert.ok(salaryDoc.includes('8,000.00 บาท'), 'Savings 20% = 8,000');
 
+    // 5b. Salary Net Mode Formal Receipt (Simulated Pay Slip)
+    const salaryNetState = {
+        activeToolId: 'salary',
+        salary: {
+            mode: 'net',
+            baseSalary: '35,000',
+            otAmount: '3,500',
+            allowance: '2,000',
+            bonusMonthly: '0',
+            hasSocialSecurity: 'yes',
+            pvdPct: '3',
+            customDeduction: '0'
+        }
+    };
+    const salaryNetDoc = ctx.generateFormalPrintHTML('salary', salaryNetState);
+    assert.ok(salaryNetDoc.includes('ใบแจ้งเงินเดือนและรายการหักภาษีจำลอง (Pay Slip)'));
+    assert.ok(salaryNetDoc.includes('40,500.00 บาท'), 'Gross salary 40,500');
+    assert.ok(salaryNetDoc.includes('-750.00'), 'SSO -750.00');
+    assert.ok(salaryNetDoc.includes('-1,050.00'), 'PVD -1,050.00');
+    assert.ok(salaryNetDoc.includes('38,038.00 บาท'), 'Net monthly 38,038');
+
     // 6. Tax Personal Formal Receipt
     const taxState = {
         activeToolId: 'tax_personal',
@@ -982,6 +1021,19 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     const salaryComp = ctx.compareCalculations('salary', [salaryA, salaryB]);
     assert.ok(salaryComp);
     assert.equal(salaryComp.winnerIndex, 1, 'Salary plan B with 40% savings must win for highest savings');
+
+    // 5b. Salary Net Mode comparison
+    const salaryNetA = {
+        label: 'งานเดิม 35k ไม่มี PVD',
+        state: { mode: 'net', baseSalary: '35,000', otAmount: '0', allowance: '0', pvdPct: '0', savingsPct: '20' }
+    };
+    const salaryNetB = {
+        label: 'งานใหม่ 45k มี PVD 5%',
+        state: { mode: 'net', baseSalary: '45,000', otAmount: '0', allowance: '0', pvdPct: '5', savingsPct: '20' }
+    };
+    const salaryNetComp = ctx.compareCalculations('salary', [salaryNetA, salaryNetB]);
+    assert.ok(salaryNetComp);
+    assert.equal(salaryNetComp.winnerIndex, 1, 'Salary Net B with higher income must win on absolute savings');
 
     // 6. Tax Personal comparison
     const taxA = {
@@ -2381,6 +2433,85 @@ test('pure engine calculateHomeRefinance: Bank of Thailand 3-year horizon, closi
     assert.ok(calcRetention.retentionNetSavings > calcRetention.refinanceNetSavings);
     assert.match(calcRetention.recommendation, /Retention/);
 });
+
+test('pure engine calculateNetSalary: statutory deductions, PVD, ภ.ง.ด.1 withholding tax, and take-home pay', () => {
+    const ctx = context();
+
+    // 1. Standard Thai employee: Base 35,000 + OT 3,500 + Allowance 2,000, PVD 3%, SSO yes
+    const emp1 = ctx.calculateNetSalary({
+        baseSalary: 35000,
+        otAmount: 3500,
+        allowance: 2000,
+        bonusMonthly: 0,
+        hasSocialSecurity: 'yes',
+        pvdPct: 3,
+        customDeduction: 0
+    });
+    assert.equal(emp1.grossMonthly, 40500);
+    assert.equal(emp1.annualGross, 486000);
+    assert.equal(emp1.ssoMonthly, 750); // capped at 15,000 * 5%
+    assert.equal(emp1.pvdMonthly, 1050); // 35,000 * 3%
+    assert.equal(emp1.annualTax, 7940);
+    assert.equal(emp1.taxMonthly, 662);
+    assert.equal(emp1.totalDeductions, 2462); // 750 + 1050 + 662
+    assert.equal(emp1.netMonthly, 38038);
+    assert.ok(emp1.effectiveDeductionPct > 6 && emp1.effectiveDeductionPct < 6.2);
+
+    // 2. Custom deduction (Student Loan กยศ 1,500 THB)
+    const empWithLoan = ctx.calculateNetSalary({
+        baseSalary: 35000,
+        otAmount: 3500,
+        allowance: 2000,
+        bonusMonthly: 0,
+        hasSocialSecurity: 'yes',
+        pvdPct: 3,
+        customDeduction: 1500
+    });
+    assert.equal(empWithLoan.customDeduction, 1500);
+    assert.equal(empWithLoan.totalDeductions, 3962);
+    assert.equal(empWithLoan.netMonthly, 36538);
+
+    // 3. Low salary under tax threshold: Base 15,000, no OT, no PVD
+    const empLow = ctx.calculateNetSalary({
+        baseSalary: 15000,
+        otAmount: 0,
+        allowance: 0,
+        hasSocialSecurity: 'yes',
+        pvdPct: 0,
+        customDeduction: 0
+    });
+    assert.equal(empLow.grossMonthly, 15000);
+    assert.equal(empLow.ssoMonthly, 750);
+    assert.equal(empLow.taxMonthly, 0); // net taxable 21,000 <= 150,000 (0% bracket)
+    assert.equal(empLow.totalDeductions, 750);
+    assert.equal(empLow.netMonthly, 14250);
+
+    // 4. Executive tier: Base 120,000, Allowance 10,000, Bonus 20,000, PVD 10%
+    const exec = ctx.calculateNetSalary({
+        baseSalary: 120000,
+        allowance: 10000,
+        bonusMonthly: 20000,
+        hasSocialSecurity: 'yes',
+        pvdPct: 10,
+        customDeduction: 0
+    });
+    assert.equal(exec.grossMonthly, 150000);
+    assert.equal(exec.annualGross, 1800000);
+    assert.equal(exec.ssoMonthly, 750);
+    assert.equal(exec.pvdMonthly, 12000); // 120,000 * 10%
+    assert.ok(exec.taxMonthly > 15000); // progressive tax brackets up to 25%
+    assert.ok(exec.netMonthly < exec.grossMonthly);
+    assert.ok(exec.effectiveDeductionPct > 15);
+
+    // 5. Zero / empty state safety
+    const emptyState = ctx.calculateNetSalary({});
+    assert.equal(emptyState.baseSalary, 0);
+    assert.equal(emptyState.grossMonthly, 0);
+    assert.equal(emptyState.totalDeductions, 0);
+    assert.equal(emptyState.netMonthly, 0);
+    assert.equal(emptyState.effectiveDeductionPct, 0);
+});
+
 
 
 

@@ -640,63 +640,140 @@ function generateFormalPrintHTML(toolId, stateObj) {
         `;
 
     } else if (curToolId === 'salary') {
-        docTitle = 'แผนการจัดสรรเงินเดือนและงบประมาณการเงิน (50/30/20)';
-        docSubtitle = 'Salary Budgeting & Allocation Plan';
         const st = state.salary || {};
-        const income = numberOrDefault(st.income, 0);
-        const needsPct = numberOrDefault(st.needsPct, 0);
-        const wantsPct = numberOrDefault(st.wantsPct, 0);
-        const savingsPct = numberOrDefault(st.savingsPct, 0);
-        const emergencyPct = numberOrDefault(st.emergencyPct, 0);
-        const debtPct = numberOrDefault(st.debtPct, 0);
+        if (st.mode === 'net') {
+            docTitle = 'ใบแจ้งเงินเดือนและรายการหักภาษีจำลอง (Pay Slip)';
+            docSubtitle = 'Monthly Net Take-Home Pay & Statutory Deductions';
+            const calc = (typeof calculateNetSalary === 'function')
+                ? calculateNetSalary(st)
+                : { baseSalary: 0, otAmount: 0, allowance: 0, bonusMonthly: 0, grossMonthly: 0, annualGross: 0, ssoMonthly: 0, pvdPct: 0, pvdMonthly: 0, taxMonthly: 0, customDeduction: 0, totalDeductions: 0, netMonthly: 0, effectiveDeductionPct: 0, annualTax: 0 };
 
-        const needs = income * needsPct / 100;
-        const wants = income * wantsPct / 100;
-        const savings = income * savingsPct / 100;
-        const emergency = income * emergencyPct / 100;
-        const debt = income * debtPct / 100;
+            paramsRows = [
+                ['เงินเดือนฐาน (Base Salary)', `${formatMoney(calc.baseSalary)} บาท/เดือน`],
+                ['ค่าล่วงเวลา (Overtime - OT)', `${formatMoney(calc.otAmount)} บาท/เดือน`],
+                ['เบี้ยขยัน / ค่าครองชีพ / ค่าตำแหน่ง', `${formatMoney(calc.allowance)} บาท/เดือน`],
+                ['โบนัสเฉลี่ย / รายได้พิเศษ', `${formatMoney(calc.bonusMonthly)} บาท/เดือน`],
+                ['รายได้รวมก่อนหัก (Gross Income)', `${formatMoney(calc.grossMonthly)} บาท/เดือน (${formatMoney(calc.annualGross)} บาท/ปี)`]
+            ];
 
-        paramsRows = [
-            ['เงินเดือนสุทธิที่ได้รับ', `${formatMoney(income)} บาท/เดือน (${formatMoney(income * 12)} บาท/ปี)`],
-            ['สัดส่วนค่าใช้จ่ายจำเป็น (Needs)', `${needsPct}%`],
-            ['สัดส่วนความต้องการ/ไลฟ์สไตล์ (Wants)', `${wantsPct}%`],
-            ['สัดส่วนเงินออมและลงทุน (Savings)', `${savingsPct}%`],
-            ['สัดส่วนสำรองฉุกเฉินเป้าหมาย', `${emergencyPct}%`],
-            ['สัดส่วนชำระหนี้เพิ่มเติม', `${debtPct}%`]
-        ];
+            resultCards = [
+                { label: 'รายได้รวมก่อนหัก (Gross)', value: `${formatMoney(calc.grossMonthly)} บาท` },
+                { label: 'รวมรายการหักทั้งสิ้น', value: `-${formatMoney(calc.totalDeductions)} บาท` },
+                { label: 'เงินเดือนสุทธิรับจริง (Net Pay)', value: `${formatMoney(calc.netMonthly)} บาท`, highlight: true },
+                { label: 'สัดส่วนเงินที่ถูกหัก', value: `${formatNum(calc.effectiveDeductionPct, 1)}%` }
+            ];
 
-        resultCards = [
-            { label: 'ค่าใช้จ่ายจำเป็น (Needs 50%)', value: `${formatMoney(needs)} บาท/เดือน` },
-            { label: 'ความต้องการ / ไลฟ์สไตล์ (Wants 30%)', value: `${formatMoney(wants)} บาท/เดือน` },
-            { label: 'เงินออมและลงทุน (Savings 20%)', value: `${formatMoney(savings)} บาท/เดือน`, highlight: true },
-            { label: 'เงินสำรองฉุกเฉินเป้าหมาย', value: `${formatMoney(emergency)} บาท/เดือน` }
-        ];
+            breakdownHTML = `
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        ตารางจำแนกรายการได้และรายการหักประจำเดือน (Earnings & Deductions Itemized)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 1.5px solid #cbd5e1; text-align: left;">
+                                <th style="padding: 8px 10px; color: #475569;">รายการได้ (Earnings)</th>
+                                <th style="padding: 8px 10px; text-align: right; color: #475569;">จำนวนเงิน (บาท)</th>
+                                <th style="padding: 8px 10px; color: #475569; border-left: 1px solid #e2e8f0;">รายการหัก (Deductions)</th>
+                                <th style="padding: 8px 10px; text-align: right; color: #475569;">จำนวนเงิน (บาท)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 8px 10px;">เงินเดือนฐาน</td>
+                                <td style="padding: 8px 10px; text-align: right; font-weight: 600;">${formatMoney(calc.baseSalary)}</td>
+                                <td style="padding: 8px 10px; border-left: 1px solid #e2e8f0;">ประกันสังคม (ม.33 5% สูงสุด 750)</td>
+                                <td style="padding: 8px 10px; text-align: right; color: #e11d48; font-weight: 600;">-${formatMoney(calc.ssoMonthly)}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 8px 10px;">ค่าล่วงเวลา (OT)</td>
+                                <td style="padding: 8px 10px; text-align: right; font-weight: 600;">${formatMoney(calc.otAmount)}</td>
+                                <td style="padding: 8px 10px; border-left: 1px solid #e2e8f0;">กองทุนสำรองเลี้ยงชีพ (PVD ${calc.pvdPct}%)</td>
+                                <td style="padding: 8px 10px; text-align: right; color: #e11d48; font-weight: 600;">-${formatMoney(calc.pvdMonthly)}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 8px 10px;">เบี้ยขยัน / ค่าครองชีพ / ค่าตำแหน่ง</td>
+                                <td style="padding: 8px 10px; text-align: right; font-weight: 600;">${formatMoney(calc.allowance)}</td>
+                                <td style="padding: 8px 10px; border-left: 1px solid #e2e8f0;">ภาษีเงินได้หัก ณ ที่จ่าย (ภ.ง.ด.1)</td>
+                                <td style="padding: 8px 10px; text-align: right; color: #e11d48; font-weight: 600;">-${formatMoney(calc.taxMonthly)}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 8px 10px;">โบนัส / เงินได้พิเศษอื่นๆ</td>
+                                <td style="padding: 8px 10px; text-align: right; font-weight: 600;">${formatMoney(calc.bonusMonthly)}</td>
+                                <td style="padding: 8px 10px; border-left: 1px solid #e2e8f0;">รายการหักอื่นๆ (กยศ./เงินกู้)</td>
+                                <td style="padding: 8px 10px; text-align: right; color: #e11d48; font-weight: 600;">-${formatMoney(calc.customDeduction)}</td>
+                            </tr>
+                            <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #cbd5e1;">
+                                <td style="padding: 10px;">รวมรายได้พึงประเมิน</td>
+                                <td style="padding: 10px; text-align: right; color: #0f172a;">${formatMoney(calc.grossMonthly)}</td>
+                                <td style="padding: 10px; border-left: 1px solid #e2e8f0;">รวมเงินหักทั้งหมด</td>
+                                <td style="padding: 10px; text-align: right; color: #e11d48;">-${formatMoney(calc.totalDeductions)}</td>
+                            </tr>
+                            <tr style="background: #ecfdf5; font-weight: 800; font-size: 13px; border-top: 1px solid #a7f3d0;">
+                                <td colspan="3" style="padding: 12px 10px; color: #065f46;">💰 เงินเดือนสุทธิที่โอนเข้าบัญชี (Net Take-Home Pay)</td>
+                                <td style="padding: 12px 10px; text-align: right; color: #059669; font-size: 14px;">${formatMoney(calc.netMonthly)} บาท</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else {
+            docTitle = 'แผนการจัดสรรเงินเดือนและงบประมาณการเงิน (50/30/20)';
+            docSubtitle = 'Salary Budgeting & Allocation Plan';
+            const income = numberOrDefault(st.income, 0);
+            const needsPct = numberOrDefault(st.needsPct, 0);
+            const wantsPct = numberOrDefault(st.wantsPct, 0);
+            const savingsPct = numberOrDefault(st.savingsPct, 0);
+            const emergencyPct = numberOrDefault(st.emergencyPct, 0);
+            const debtPct = numberOrDefault(st.debtPct, 0);
 
-        breakdownHTML = `
-            <div style="margin-top: 20px;">
-                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
-                    ตารางจำแนกการจัดสรรงบประมาณรายเดือนและรายปี (Budget Breakdown)
-                </h3>
-                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                    <thead>
-                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
-                            <th style="padding: 8px; text-align: left;">หมวดหมู่งบประมาณ</th>
-                            <th style="padding: 8px; text-align: center;">สัดส่วน</th>
-                            <th style="padding: 8px; text-align: right;">ยอดต่อเดือน (บาท)</th>
-                            <th style="padding: 8px; text-align: right;">ยอดต่อปี (บาท)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">1. ค่าใช้จ่ายจำเป็น (Needs) เช่น ค่าที่พัก อาหาร ค่าเดินทาง</td><td style="padding: 8px; text-align: center;">${needsPct}%</td><td style="padding: 8px; text-align: right; font-weight: 600;">${formatMoney(needs)}</td><td style="padding: 8px; text-align: right;">${formatMoney(needs * 12)}</td></tr>
-                        <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">2. ความต้องการส่วนตัว (Wants) เช่น ท่องเที่ยว ช้อปปิ้ง บันเทิง</td><td style="padding: 8px; text-align: center;">${wantsPct}%</td><td style="padding: 8px; text-align: right; font-weight: 600;">${formatMoney(wants)}</td><td style="padding: 8px; text-align: right;">${formatMoney(wants * 12)}</td></tr>
-                        <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">3. เงินออมและการลงทุน (Savings & Investments)</td><td style="padding: 8px; text-align: center;">${savingsPct}%</td><td style="padding: 8px; text-align: right; font-weight: 600; color: #15803d;">${formatMoney(savings)}</td><td style="padding: 8px; text-align: right; color: #15803d;">${formatMoney(savings * 12)}</td></tr>
-                        <tr style="border-bottom: 1px solid #e2e8f0; color: #2563eb;"><td style="padding: 8px;">• เป้าหมายเงินสำรองฉุกเฉิน (Emergency Fund)</td><td style="padding: 8px; text-align: center;">${emergencyPct}%</td><td style="padding: 8px; text-align: right;">${formatMoney(emergency)}</td><td style="padding: 8px; text-align: right;">${formatMoney(emergency * 12)}</td></tr>
-                        <tr style="border-bottom: 1px solid #e2e8f0; color: #7c3aed;"><td style="padding: 8px;">• แผนชำระหนี้เพิ่มเติม (Debt Acceleration)</td><td style="padding: 8px; text-align: center;">${debtPct}%</td><td style="padding: 8px; text-align: right;">${formatMoney(debt)}</td><td style="padding: 8px; text-align: right;">${formatMoney(debt * 12)}</td></tr>
-                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;"><td style="padding: 8px;">รวมทั้งสิ้น</td><td style="padding: 8px; text-align: center;">${needsPct + wantsPct + savingsPct}%</td><td style="padding: 8px; text-align: right;">${formatMoney(income)}</td><td style="padding: 8px; text-align: right;">${formatMoney(income * 12)}</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        `;
+            const needs = income * needsPct / 100;
+            const wants = income * wantsPct / 100;
+            const savings = income * savingsPct / 100;
+            const emergency = income * emergencyPct / 100;
+            const debt = income * debtPct / 100;
+
+            paramsRows = [
+                ['เงินเดือนสุทธิที่ได้รับ', `${formatMoney(income)} บาท/เดือน (${formatMoney(income * 12)} บาท/ปี)`],
+                ['สัดส่วนค่าใช้จ่ายจำเป็น (Needs)', `${needsPct}%`],
+                ['สัดส่วนความต้องการ/ไลฟ์สไตล์ (Wants)', `${wantsPct}%`],
+                ['สัดส่วนเงินออมและลงทุน (Savings)', `${savingsPct}%`],
+                ['สัดส่วนสำรองฉุกเฉินเป้าหมาย', `${emergencyPct}%`],
+                ['สัดส่วนชำระหนี้เพิ่มเติม', `${debtPct}%`]
+            ];
+
+            resultCards = [
+                { label: 'ค่าใช้จ่ายจำเป็น (Needs 50%)', value: `${formatMoney(needs)} บาท/เดือน` },
+                { label: 'ความต้องการ / ไลฟ์สไตล์ (Wants 30%)', value: `${formatMoney(wants)} บาท/เดือน` },
+                { label: 'เงินออมและลงทุน (Savings 20%)', value: `${formatMoney(savings)} บาท/เดือน`, highlight: true },
+                { label: 'เงินสำรองฉุกเฉินเป้าหมาย', value: `${formatMoney(emergency)} บาท/เดือน` }
+            ];
+
+            breakdownHTML = `
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        ตารางจำแนกการจัดสรรงบประมาณรายเดือนและรายปี (Budget Breakdown)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                                <th style="padding: 8px; text-align: left;">หมวดหมู่งบประมาณ</th>
+                                <th style="padding: 8px; text-align: center;">สัดส่วน</th>
+                                <th style="padding: 8px; text-align: right;">ยอดต่อเดือน (บาท)</th>
+                                <th style="padding: 8px; text-align: right;">ยอดต่อปี (บาท)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">1. ค่าใช้จ่ายจำเป็น (Needs) เช่น ค่าที่พัก อาหาร ค่าเดินทาง</td><td style="padding: 8px; text-align: center;">${needsPct}%</td><td style="padding: 8px; text-align: right; font-weight: 600;">${formatMoney(needs)}</td><td style="padding: 8px; text-align: right;">${formatMoney(needs * 12)}</td></tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">2. ความต้องการส่วนตัว (Wants) เช่น ท่องเที่ยว ช้อปปิ้ง บันเทิง</td><td style="padding: 8px; text-align: center;">${wantsPct}%</td><td style="padding: 8px; text-align: right; font-weight: 600;">${formatMoney(wants)}</td><td style="padding: 8px; text-align: right;">${formatMoney(wants * 12)}</td></tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">3. เงินออมและการลงทุน (Savings & Investments)</td><td style="padding: 8px; text-align: center;">${savingsPct}%</td><td style="padding: 8px; text-align: right; font-weight: 600; color: #15803d;">${formatMoney(savings)}</td><td style="padding: 8px; text-align: right; color: #15803d;">${formatMoney(savings * 12)}</td></tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; color: #2563eb;"><td style="padding: 8px;">• เป้าหมายเงินสำรองฉุกเฉิน (Emergency Fund)</td><td style="padding: 8px; text-align: center;">${emergencyPct}%</td><td style="padding: 8px; text-align: right;">${formatMoney(emergency)}</td><td style="padding: 8px; text-align: right;">${formatMoney(emergency * 12)}</td></tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; color: #7c3aed;"><td style="padding: 8px;">• แผนชำระหนี้เพิ่มเติม (Debt Acceleration)</td><td style="padding: 8px; text-align: center;">${debtPct}%</td><td style="padding: 8px; text-align: right;">${formatMoney(debt)}</td><td style="padding: 8px; text-align: right;">${formatMoney(debt * 12)}</td></tr>
+                            <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;"><td style="padding: 8px;">รวมทั้งสิ้น</td><td style="padding: 8px; text-align: center;">${needsPct + wantsPct + savingsPct}%</td><td style="padding: 8px; text-align: right;">${formatMoney(income)}</td><td style="padding: 8px; text-align: right;">${formatMoney(income * 12)}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
 
     } else if (curToolId === 'tax_personal') {
         docTitle = 'ใบสรุปการคำนวณภาษีเงินได้บุคคลธรรมดาและวางแผนลดหย่อน (ภ.ง.ด. 90/91)';

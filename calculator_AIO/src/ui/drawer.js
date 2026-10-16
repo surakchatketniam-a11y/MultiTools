@@ -337,6 +337,12 @@ function getToolSummaryText(toolId, stateObj) {
         }
         case 'salary': {
             const st = state.salary || {};
+            if (st.mode === 'net') {
+                const calc = (typeof calculateNetSalary === 'function')
+                    ? calculateNetSalary(st)
+                    : { baseSalary: 0, grossMonthly: 0, totalDeductions: 0, netMonthly: 0, ssoMonthly: 0, pvdMonthly: 0, taxMonthly: 0, customDeduction: 0, effectiveDeductionPct: 0 };
+                return `💵 สรุปเงินเดือนสุทธิรับจริง (Take-Home Pay)\n${divider}\n• เงินเดือนฐาน: ${formatMoney(calc.baseSalary)} บาท\n• รายได้รวมก่อนหัก: ${formatMoney(calc.grossMonthly)} บาท\n• ประกันสังคม (ม.33): -${formatMoney(calc.ssoMonthly)} บาท\n• กองทุนสำรองฯ (PVD): -${formatMoney(calc.pvdMonthly)} บาท\n• ภาษีหัก ณ ที่จ่าย (ภ.ง.ด.1): -${formatMoney(calc.taxMonthly)} บาท\n• รายการหักอื่นๆ: -${formatMoney(calc.customDeduction)} บาท\n${divider}\n💰 เงินเดือนสุทธิรับจริง: ${formatMoney(calc.netMonthly)} บาท/เดือน\n📉 รวมรายการหัก: -${formatMoney(calc.totalDeductions)} บาท (${formatNum(calc.effectiveDeductionPct, 1)}%)\n(คำนวณโดย Multitools Calculator)`;
+            }
             const income = parseNumericInput(st.income) || 0;
             const needs = income * (numberOrDefault(st.needsPct, 50) / 100);
             const wants = income * (numberOrDefault(st.wantsPct, 30) / 100);

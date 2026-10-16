@@ -39,7 +39,7 @@ var TOOLS_CATALOG = [
     { id: 'vat_wht',    group: 'biz', category: 'fav', menuTitle: 'VAT + หัก ณ ที่จ่าย', headerTitle: 'VAT + หัก ณ ที่จ่าย', usesSharedKeypad: false, keywords: 'vat wht หัก ณ ที่จ่าย 1% 2% 3% 5% ภาษีหัก ณ ที่จ่าย วางบิล' },
     { id: 'percent',    group: 'biz', category: 'fav', menuTitle: 'เปอร์เซ็นต์ & กำไร', headerTitle: 'เครื่องคำนวณเปอร์เซ็นต์', usesSharedKeypad: true, keywords: 'percent เปอร์เซ็นต์ กำไร margin markup ร้อยละ สัดส่วน' },
     { id: 'ecommerce_profit', group: 'biz', category: 'fav', menuTitle: 'กำไรขายของออนไลน์', headerTitle: 'คำนวณกำไรขายของออนไลน์ & ค่าธรรมเนียม (Shopee/Lazada/TikTok)', usesSharedKeypad: false, keywords: 'ecommerce profit กำไร ขายของออนไลน์ shopee lazada tiktok fee ค่าธรรมเนียม คอมมิชชัน ธุรกรรม ค่าส่ง ยิงแอด จุดคุ้มทุน breakeven profit margin มาร์เก็ตเพลส' },
-    { id: 'salary',     group: 'biz', category: 'all', menuTitle: 'จัดการเงินเดือน 50/30/20', headerTitle: 'เครื่องมือจัดการเงินเดือน', usesSharedKeypad: true, keywords: 'salary เงินเดือน 50 30 20 รายจ่าย เงินเก็บ ออมเงิน หนี้' },
+    { id: 'salary',     group: 'biz', category: 'fav', menuTitle: 'เงินเดือนสุทธิ & 50/30/20', headerTitle: 'คำนวณเงินเดือนสุทธิรับจริง (Take-Home Pay) & วางแผน 50/30/20', usesSharedKeypad: true, keywords: 'salary เงินเดือน เงินเดือนสุทธิ สลิปเงินเดือน net salary take home pay 50 30 20 รายจ่าย เงินเก็บ ออมเงิน หนี้ ประกันสังคม ภาษี ภงด1 PVD กยศ' },
 
     { id: 'loan',              group: 'finance', category: 'all', menuTitle: 'เงินกู้ & ผ่อนชำระ', headerTitle: 'เครื่องคำนวณเงินกู้', usesSharedKeypad: true, keywords: 'loan เงินกู้ ผ่อนบ้าน รีไฟแนนซ์ refinance retention โปะบ้าน ดอกเบี้ย ค่างวด ดอกเบี้ยคงที่ ค่างวดผ่อน ธปท จุดคุ้มทุน' },
     { id: 'savings',           group: 'finance', category: 'all', menuTitle: 'เงินออม & เกษียณ', headerTitle: 'เครื่องคำนวณเงินออม', usesSharedKeypad: true, keywords: 'savings เงินออม เกษียณ ดอกเบี้ยทบต้น เงินเฟ้อ ออมทรัพย์' },
@@ -1099,63 +1099,140 @@ function generateFormalPrintHTML(toolId, stateObj) {
         `;
 
     } else if (curToolId === 'salary') {
-        docTitle = 'แผนการจัดสรรเงินเดือนและงบประมาณการเงิน (50/30/20)';
-        docSubtitle = 'Salary Budgeting & Allocation Plan';
         const st = state.salary || {};
-        const income = numberOrDefault(st.income, 0);
-        const needsPct = numberOrDefault(st.needsPct, 0);
-        const wantsPct = numberOrDefault(st.wantsPct, 0);
-        const savingsPct = numberOrDefault(st.savingsPct, 0);
-        const emergencyPct = numberOrDefault(st.emergencyPct, 0);
-        const debtPct = numberOrDefault(st.debtPct, 0);
+        if (st.mode === 'net') {
+            docTitle = 'ใบแจ้งเงินเดือนและรายการหักภาษีจำลอง (Pay Slip)';
+            docSubtitle = 'Monthly Net Take-Home Pay & Statutory Deductions';
+            const calc = (typeof calculateNetSalary === 'function')
+                ? calculateNetSalary(st)
+                : { baseSalary: 0, otAmount: 0, allowance: 0, bonusMonthly: 0, grossMonthly: 0, annualGross: 0, ssoMonthly: 0, pvdPct: 0, pvdMonthly: 0, taxMonthly: 0, customDeduction: 0, totalDeductions: 0, netMonthly: 0, effectiveDeductionPct: 0, annualTax: 0 };
 
-        const needs = income * needsPct / 100;
-        const wants = income * wantsPct / 100;
-        const savings = income * savingsPct / 100;
-        const emergency = income * emergencyPct / 100;
-        const debt = income * debtPct / 100;
+            paramsRows = [
+                ['เงินเดือนฐาน (Base Salary)', `${formatMoney(calc.baseSalary)} บาท/เดือน`],
+                ['ค่าล่วงเวลา (Overtime - OT)', `${formatMoney(calc.otAmount)} บาท/เดือน`],
+                ['เบี้ยขยัน / ค่าครองชีพ / ค่าตำแหน่ง', `${formatMoney(calc.allowance)} บาท/เดือน`],
+                ['โบนัสเฉลี่ย / รายได้พิเศษ', `${formatMoney(calc.bonusMonthly)} บาท/เดือน`],
+                ['รายได้รวมก่อนหัก (Gross Income)', `${formatMoney(calc.grossMonthly)} บาท/เดือน (${formatMoney(calc.annualGross)} บาท/ปี)`]
+            ];
 
-        paramsRows = [
-            ['เงินเดือนสุทธิที่ได้รับ', `${formatMoney(income)} บาท/เดือน (${formatMoney(income * 12)} บาท/ปี)`],
-            ['สัดส่วนค่าใช้จ่ายจำเป็น (Needs)', `${needsPct}%`],
-            ['สัดส่วนความต้องการ/ไลฟ์สไตล์ (Wants)', `${wantsPct}%`],
-            ['สัดส่วนเงินออมและลงทุน (Savings)', `${savingsPct}%`],
-            ['สัดส่วนสำรองฉุกเฉินเป้าหมาย', `${emergencyPct}%`],
-            ['สัดส่วนชำระหนี้เพิ่มเติม', `${debtPct}%`]
-        ];
+            resultCards = [
+                { label: 'รายได้รวมก่อนหัก (Gross)', value: `${formatMoney(calc.grossMonthly)} บาท` },
+                { label: 'รวมรายการหักทั้งสิ้น', value: `-${formatMoney(calc.totalDeductions)} บาท` },
+                { label: 'เงินเดือนสุทธิรับจริง (Net Pay)', value: `${formatMoney(calc.netMonthly)} บาท`, highlight: true },
+                { label: 'สัดส่วนเงินที่ถูกหัก', value: `${formatNum(calc.effectiveDeductionPct, 1)}%` }
+            ];
 
-        resultCards = [
-            { label: 'ค่าใช้จ่ายจำเป็น (Needs 50%)', value: `${formatMoney(needs)} บาท/เดือน` },
-            { label: 'ความต้องการ / ไลฟ์สไตล์ (Wants 30%)', value: `${formatMoney(wants)} บาท/เดือน` },
-            { label: 'เงินออมและลงทุน (Savings 20%)', value: `${formatMoney(savings)} บาท/เดือน`, highlight: true },
-            { label: 'เงินสำรองฉุกเฉินเป้าหมาย', value: `${formatMoney(emergency)} บาท/เดือน` }
-        ];
+            breakdownHTML = `
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        ตารางจำแนกรายการได้และรายการหักประจำเดือน (Earnings & Deductions Itemized)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 1.5px solid #cbd5e1; text-align: left;">
+                                <th style="padding: 8px 10px; color: #475569;">รายการได้ (Earnings)</th>
+                                <th style="padding: 8px 10px; text-align: right; color: #475569;">จำนวนเงิน (บาท)</th>
+                                <th style="padding: 8px 10px; color: #475569; border-left: 1px solid #e2e8f0;">รายการหัก (Deductions)</th>
+                                <th style="padding: 8px 10px; text-align: right; color: #475569;">จำนวนเงิน (บาท)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 8px 10px;">เงินเดือนฐาน</td>
+                                <td style="padding: 8px 10px; text-align: right; font-weight: 600;">${formatMoney(calc.baseSalary)}</td>
+                                <td style="padding: 8px 10px; border-left: 1px solid #e2e8f0;">ประกันสังคม (ม.33 5% สูงสุด 750)</td>
+                                <td style="padding: 8px 10px; text-align: right; color: #e11d48; font-weight: 600;">-${formatMoney(calc.ssoMonthly)}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 8px 10px;">ค่าล่วงเวลา (OT)</td>
+                                <td style="padding: 8px 10px; text-align: right; font-weight: 600;">${formatMoney(calc.otAmount)}</td>
+                                <td style="padding: 8px 10px; border-left: 1px solid #e2e8f0;">กองทุนสำรองเลี้ยงชีพ (PVD ${calc.pvdPct}%)</td>
+                                <td style="padding: 8px 10px; text-align: right; color: #e11d48; font-weight: 600;">-${formatMoney(calc.pvdMonthly)}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 8px 10px;">เบี้ยขยัน / ค่าครองชีพ / ค่าตำแหน่ง</td>
+                                <td style="padding: 8px 10px; text-align: right; font-weight: 600;">${formatMoney(calc.allowance)}</td>
+                                <td style="padding: 8px 10px; border-left: 1px solid #e2e8f0;">ภาษีเงินได้หัก ณ ที่จ่าย (ภ.ง.ด.1)</td>
+                                <td style="padding: 8px 10px; text-align: right; color: #e11d48; font-weight: 600;">-${formatMoney(calc.taxMonthly)}</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 8px 10px;">โบนัส / เงินได้พิเศษอื่นๆ</td>
+                                <td style="padding: 8px 10px; text-align: right; font-weight: 600;">${formatMoney(calc.bonusMonthly)}</td>
+                                <td style="padding: 8px 10px; border-left: 1px solid #e2e8f0;">รายการหักอื่นๆ (กยศ./เงินกู้)</td>
+                                <td style="padding: 8px 10px; text-align: right; color: #e11d48; font-weight: 600;">-${formatMoney(calc.customDeduction)}</td>
+                            </tr>
+                            <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #cbd5e1;">
+                                <td style="padding: 10px;">รวมรายได้พึงประเมิน</td>
+                                <td style="padding: 10px; text-align: right; color: #0f172a;">${formatMoney(calc.grossMonthly)}</td>
+                                <td style="padding: 10px; border-left: 1px solid #e2e8f0;">รวมเงินหักทั้งหมด</td>
+                                <td style="padding: 10px; text-align: right; color: #e11d48;">-${formatMoney(calc.totalDeductions)}</td>
+                            </tr>
+                            <tr style="background: #ecfdf5; font-weight: 800; font-size: 13px; border-top: 1px solid #a7f3d0;">
+                                <td colspan="3" style="padding: 12px 10px; color: #065f46;">💰 เงินเดือนสุทธิที่โอนเข้าบัญชี (Net Take-Home Pay)</td>
+                                <td style="padding: 12px 10px; text-align: right; color: #059669; font-size: 14px;">${formatMoney(calc.netMonthly)} บาท</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else {
+            docTitle = 'แผนการจัดสรรเงินเดือนและงบประมาณการเงิน (50/30/20)';
+            docSubtitle = 'Salary Budgeting & Allocation Plan';
+            const income = numberOrDefault(st.income, 0);
+            const needsPct = numberOrDefault(st.needsPct, 0);
+            const wantsPct = numberOrDefault(st.wantsPct, 0);
+            const savingsPct = numberOrDefault(st.savingsPct, 0);
+            const emergencyPct = numberOrDefault(st.emergencyPct, 0);
+            const debtPct = numberOrDefault(st.debtPct, 0);
 
-        breakdownHTML = `
-            <div style="margin-top: 20px;">
-                <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
-                    ตารางจำแนกการจัดสรรงบประมาณรายเดือนและรายปี (Budget Breakdown)
-                </h3>
-                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                    <thead>
-                        <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
-                            <th style="padding: 8px; text-align: left;">หมวดหมู่งบประมาณ</th>
-                            <th style="padding: 8px; text-align: center;">สัดส่วน</th>
-                            <th style="padding: 8px; text-align: right;">ยอดต่อเดือน (บาท)</th>
-                            <th style="padding: 8px; text-align: right;">ยอดต่อปี (บาท)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">1. ค่าใช้จ่ายจำเป็น (Needs) เช่น ค่าที่พัก อาหาร ค่าเดินทาง</td><td style="padding: 8px; text-align: center;">${needsPct}%</td><td style="padding: 8px; text-align: right; font-weight: 600;">${formatMoney(needs)}</td><td style="padding: 8px; text-align: right;">${formatMoney(needs * 12)}</td></tr>
-                        <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">2. ความต้องการส่วนตัว (Wants) เช่น ท่องเที่ยว ช้อปปิ้ง บันเทิง</td><td style="padding: 8px; text-align: center;">${wantsPct}%</td><td style="padding: 8px; text-align: right; font-weight: 600;">${formatMoney(wants)}</td><td style="padding: 8px; text-align: right;">${formatMoney(wants * 12)}</td></tr>
-                        <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">3. เงินออมและการลงทุน (Savings & Investments)</td><td style="padding: 8px; text-align: center;">${savingsPct}%</td><td style="padding: 8px; text-align: right; font-weight: 600; color: #15803d;">${formatMoney(savings)}</td><td style="padding: 8px; text-align: right; color: #15803d;">${formatMoney(savings * 12)}</td></tr>
-                        <tr style="border-bottom: 1px solid #e2e8f0; color: #2563eb;"><td style="padding: 8px;">• เป้าหมายเงินสำรองฉุกเฉิน (Emergency Fund)</td><td style="padding: 8px; text-align: center;">${emergencyPct}%</td><td style="padding: 8px; text-align: right;">${formatMoney(emergency)}</td><td style="padding: 8px; text-align: right;">${formatMoney(emergency * 12)}</td></tr>
-                        <tr style="border-bottom: 1px solid #e2e8f0; color: #7c3aed;"><td style="padding: 8px;">• แผนชำระหนี้เพิ่มเติม (Debt Acceleration)</td><td style="padding: 8px; text-align: center;">${debtPct}%</td><td style="padding: 8px; text-align: right;">${formatMoney(debt)}</td><td style="padding: 8px; text-align: right;">${formatMoney(debt * 12)}</td></tr>
-                        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;"><td style="padding: 8px;">รวมทั้งสิ้น</td><td style="padding: 8px; text-align: center;">${needsPct + wantsPct + savingsPct}%</td><td style="padding: 8px; text-align: right;">${formatMoney(income)}</td><td style="padding: 8px; text-align: right;">${formatMoney(income * 12)}</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        `;
+            const needs = income * needsPct / 100;
+            const wants = income * wantsPct / 100;
+            const savings = income * savingsPct / 100;
+            const emergency = income * emergencyPct / 100;
+            const debt = income * debtPct / 100;
+
+            paramsRows = [
+                ['เงินเดือนสุทธิที่ได้รับ', `${formatMoney(income)} บาท/เดือน (${formatMoney(income * 12)} บาท/ปี)`],
+                ['สัดส่วนค่าใช้จ่ายจำเป็น (Needs)', `${needsPct}%`],
+                ['สัดส่วนความต้องการ/ไลฟ์สไตล์ (Wants)', `${wantsPct}%`],
+                ['สัดส่วนเงินออมและลงทุน (Savings)', `${savingsPct}%`],
+                ['สัดส่วนสำรองฉุกเฉินเป้าหมาย', `${emergencyPct}%`],
+                ['สัดส่วนชำระหนี้เพิ่มเติม', `${debtPct}%`]
+            ];
+
+            resultCards = [
+                { label: 'ค่าใช้จ่ายจำเป็น (Needs 50%)', value: `${formatMoney(needs)} บาท/เดือน` },
+                { label: 'ความต้องการ / ไลฟ์สไตล์ (Wants 30%)', value: `${formatMoney(wants)} บาท/เดือน` },
+                { label: 'เงินออมและลงทุน (Savings 20%)', value: `${formatMoney(savings)} บาท/เดือน`, highlight: true },
+                { label: 'เงินสำรองฉุกเฉินเป้าหมาย', value: `${formatMoney(emergency)} บาท/เดือน` }
+            ];
+
+            breakdownHTML = `
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase;">
+                        ตารางจำแนกการจัดสรรงบประมาณรายเดือนและรายปี (Budget Breakdown)
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+                                <th style="padding: 8px; text-align: left;">หมวดหมู่งบประมาณ</th>
+                                <th style="padding: 8px; text-align: center;">สัดส่วน</th>
+                                <th style="padding: 8px; text-align: right;">ยอดต่อเดือน (บาท)</th>
+                                <th style="padding: 8px; text-align: right;">ยอดต่อปี (บาท)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">1. ค่าใช้จ่ายจำเป็น (Needs) เช่น ค่าที่พัก อาหาร ค่าเดินทาง</td><td style="padding: 8px; text-align: center;">${needsPct}%</td><td style="padding: 8px; text-align: right; font-weight: 600;">${formatMoney(needs)}</td><td style="padding: 8px; text-align: right;">${formatMoney(needs * 12)}</td></tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">2. ความต้องการส่วนตัว (Wants) เช่น ท่องเที่ยว ช้อปปิ้ง บันเทิง</td><td style="padding: 8px; text-align: center;">${wantsPct}%</td><td style="padding: 8px; text-align: right; font-weight: 600;">${formatMoney(wants)}</td><td style="padding: 8px; text-align: right;">${formatMoney(wants * 12)}</td></tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px;">3. เงินออมและการลงทุน (Savings & Investments)</td><td style="padding: 8px; text-align: center;">${savingsPct}%</td><td style="padding: 8px; text-align: right; font-weight: 600; color: #15803d;">${formatMoney(savings)}</td><td style="padding: 8px; text-align: right; color: #15803d;">${formatMoney(savings * 12)}</td></tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; color: #2563eb;"><td style="padding: 8px;">• เป้าหมายเงินสำรองฉุกเฉิน (Emergency Fund)</td><td style="padding: 8px; text-align: center;">${emergencyPct}%</td><td style="padding: 8px; text-align: right;">${formatMoney(emergency)}</td><td style="padding: 8px; text-align: right;">${formatMoney(emergency * 12)}</td></tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0; color: #7c3aed;"><td style="padding: 8px;">• แผนชำระหนี้เพิ่มเติม (Debt Acceleration)</td><td style="padding: 8px; text-align: center;">${debtPct}%</td><td style="padding: 8px; text-align: right;">${formatMoney(debt)}</td><td style="padding: 8px; text-align: right;">${formatMoney(debt * 12)}</td></tr>
+                            <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;"><td style="padding: 8px;">รวมทั้งสิ้น</td><td style="padding: 8px; text-align: center;">${needsPct + wantsPct + savingsPct}%</td><td style="padding: 8px; text-align: right;">${formatMoney(income)}</td><td style="padding: 8px; text-align: right;">${formatMoney(income * 12)}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
 
     } else if (curToolId === 'tax_personal') {
         docTitle = 'ใบสรุปการคำนวณภาษีเงินได้บุคคลธรรมดาและวางแผนลดหย่อน (ภ.ง.ด. 90/91)';
@@ -2837,10 +2914,16 @@ function compareCalculations(toolId, itemsList) {
     } else if (toolId === 'salary') {
         const results = items.map(item => {
             const st = item.state || {};
-            const income = numberOrDefault(st.income, 0);
-            const needsPct = numberOrDefault(st.needsPct, 0);
-            const wantsPct = numberOrDefault(st.wantsPct, 0);
-            const savingsPct = numberOrDefault(st.savingsPct, 0);
+            let income = numberOrDefault(st.income, 0);
+            if (st.mode === 'net') {
+                const calc = (typeof calculateNetSalary === 'function')
+                    ? calculateNetSalary(st)
+                    : { netMonthly: income };
+                income = calc.netMonthly;
+            }
+            const needsPct = numberOrDefault(st.needsPct, 50);
+            const wantsPct = numberOrDefault(st.wantsPct, 30);
+            const savingsPct = numberOrDefault(st.savingsPct, 20);
             const needs = income * needsPct / 100;
             const wants = income * wantsPct / 100;
             const savings = income * savingsPct / 100;
@@ -4514,6 +4597,12 @@ function getToolSummaryText(toolId, stateObj) {
         }
         case 'salary': {
             const st = state.salary || {};
+            if (st.mode === 'net') {
+                const calc = (typeof calculateNetSalary === 'function')
+                    ? calculateNetSalary(st)
+                    : { baseSalary: 0, grossMonthly: 0, totalDeductions: 0, netMonthly: 0, ssoMonthly: 0, pvdMonthly: 0, taxMonthly: 0, customDeduction: 0, effectiveDeductionPct: 0 };
+                return `💵 สรุปเงินเดือนสุทธิรับจริง (Take-Home Pay)\n${divider}\n• เงินเดือนฐาน: ${formatMoney(calc.baseSalary)} บาท\n• รายได้รวมก่อนหัก: ${formatMoney(calc.grossMonthly)} บาท\n• ประกันสังคม (ม.33): -${formatMoney(calc.ssoMonthly)} บาท\n• กองทุนสำรองฯ (PVD): -${formatMoney(calc.pvdMonthly)} บาท\n• ภาษีหัก ณ ที่จ่าย (ภ.ง.ด.1): -${formatMoney(calc.taxMonthly)} บาท\n• รายการหักอื่นๆ: -${formatMoney(calc.customDeduction)} บาท\n${divider}\n💰 เงินเดือนสุทธิรับจริง: ${formatMoney(calc.netMonthly)} บาท/เดือน\n📉 รวมรายการหัก: -${formatMoney(calc.totalDeductions)} บาท (${formatNum(calc.effectiveDeductionPct, 1)}%)\n(คำนวณโดย Multitools Calculator)`;
+            }
             const income = parseNumericInput(st.income) || 0;
             const needs = income * (numberOrDefault(st.needsPct, 50) / 100);
             const wants = income * (numberOrDefault(st.wantsPct, 30) / 100);
@@ -4816,7 +4905,16 @@ function getToolFieldBindings(toolId) {
             ].slice(0, appState.savings.mode === 'retirement' ? 3 : 4);
         case 'salary':
             return [
-                { get: () => appState.salary.income, set: (v) => { appState.salary.income = v; } },
+                {
+                    get: () => (appState.salary.mode === 'net' ? (appState.salary.baseSalary !== undefined ? appState.salary.baseSalary : appState.salary.income) : appState.salary.income),
+                    set: (v) => {
+                        if (appState.salary.mode === 'net') {
+                            appState.salary.baseSalary = v;
+                        } else {
+                            appState.salary.income = v;
+                        }
+                    }
+                },
                 { get: () => appState.salary.needsPct, set: (v) => { appState.salary.needsPct = v; } },
                 { get: () => appState.salary.wantsPct, set: (v) => { appState.salary.wantsPct = v; } },
                 { get: () => appState.salary.savingsPct, set: (v) => { appState.salary.savingsPct = v; } }
@@ -5756,37 +5854,359 @@ function renderPercentTool(container) {
 }
 
 /* -----------------------------------------------------------
- * TOOL: จัดการเงินเดือน 50/30/20 (Salary Allocation)
+ * PURE ENGINE: คำนวณเงินเดือนสุทธิรับจริง (Net Salary / Take-Home Pay)
+ * รวม OT, โบนัส, เบี้ยขยัน, หักประกันสังคม ม.33 (5% สูงสุด 750),
+ * กองทุนสำรองเลี้ยงชีพ PVD, ภาษีหัก ณ ที่จ่าย ภ.ง.ด.1 และรายการหักอื่นๆ
+ * ----------------------------------------------------------- */
+function calculateNetSalary(params) {
+    const p = params || {};
+    const baseSalary = Math.max(0, numberOrDefault(p.baseSalary !== undefined ? p.baseSalary : p.income, 0));
+    const otAmount = Math.max(0, numberOrDefault(p.otAmount, 0));
+    const allowance = Math.max(0, numberOrDefault(p.allowance, 0));
+    const bonusMonthly = Math.max(0, numberOrDefault(p.bonusMonthly, 0));
+    const hasSocialSecurity = p.hasSocialSecurity !== 'no';
+    const pvdPct = Math.max(0, Math.min(15, numberOrDefault(p.pvdPct, 0)));
+    const customDeduction = Math.max(0, numberOrDefault(p.customDeduction, 0));
+    const additionalDeductionsYearly = Math.max(0, numberOrDefault(p.additionalDeductionsYearly, 0));
+
+    // 1. Gross Income รายได้พึงประเมินต่อเดือน
+    const grossMonthly = baseSalary + otAmount + allowance + bonusMonthly;
+    const annualGross = grossMonthly * 12;
+
+    // 2. Social Security ม.33 (5% ฐานค่าจ้าง 1,650 - 15,000 บาท = หัก 83 - 750 บาท/เดือน)
+    let ssoMonthly = 0;
+    if (hasSocialSecurity && baseSalary > 0) {
+        const ssoBase = Math.min(15000, Math.max(1650, baseSalary));
+        ssoMonthly = Math.min(750, Math.round(ssoBase * 0.05));
+    }
+    const annualSSO = ssoMonthly * 12;
+
+    // 3. Provident Fund (PVD % ของเงินเดือนฐาน ไม่เกิน 15%)
+    const pvdMonthly = (baseSalary > 0 && pvdPct > 0) ? Math.round(baseSalary * (pvdPct / 100)) : 0;
+    const annualPVD = Math.min(annualGross * 0.15, Math.min(500000, pvdMonthly * 12));
+
+    // 4. Monthly Withholding Tax (ภาษีเงินได้หัก ณ ที่จ่าย ภ.ง.ด.1 คำนวณตามสูตรกรมสรรพากร)
+    let annualTax = 0;
+    let taxMonthly = 0;
+    let netTaxableAnnual = 0;
+    if (annualGross > 0) {
+        const standardExpense = Math.min(100000, annualGross * 0.5);
+        const personalAllowance = 60000;
+        const totalDeductionsForTax = standardExpense + personalAllowance + annualSSO + annualPVD + additionalDeductionsYearly;
+        netTaxableAnnual = Math.max(0, annualGross - totalDeductionsForTax);
+
+        const brackets = [
+            { limit: 150000, rate: 0 },
+            { limit: 150000, rate: 0.05 },
+            { limit: 200000, rate: 0.10 },
+            { limit: 250000, rate: 0.15 },
+            { limit: 250000, rate: 0.20 },
+            { limit: 1000000, rate: 0.25 },
+            { limit: 3000000, rate: 0.30 },
+            { limit: Infinity, rate: 0.35 }
+        ];
+
+        let remaining = netTaxableAnnual;
+        for (const b of brackets) {
+            if (remaining <= 0) break;
+            const taxableChunk = Math.min(remaining, b.limit);
+            annualTax += taxableChunk * b.rate;
+            remaining -= taxableChunk;
+        }
+
+        taxMonthly = Math.round(annualTax / 12);
+    }
+
+    // 5. Total Deductions & Net Take-Home Pay
+    const totalDeductions = ssoMonthly + pvdMonthly + taxMonthly + customDeduction;
+    const netMonthly = Math.max(0, grossMonthly - totalDeductions);
+    const effectiveDeductionPct = grossMonthly > 0 ? (totalDeductions / grossMonthly) * 100 : 0;
+
+    return {
+        baseSalary,
+        otAmount,
+        allowance,
+        bonusMonthly,
+        grossMonthly,
+        annualGross,
+        hasSocialSecurity,
+        ssoMonthly,
+        annualSSO,
+        pvdPct,
+        pvdMonthly,
+        annualPVD,
+        customDeduction,
+        additionalDeductionsYearly,
+        netTaxableAnnual,
+        annualTax,
+        taxMonthly,
+        totalDeductions,
+        netMonthly,
+        effectiveDeductionPct
+    };
+}
+
+/* -----------------------------------------------------------
+ * TOOL: จัดการเงินเดือน 50/30/20 & เงินเดือนสุทธิรับจริง
  * ----------------------------------------------------------- */
 function renderSalaryTool(container) {
     const st = appState.salary;
-    const income = numberOrDefault(st.income, 0);
-    const needsPct = numberOrDefault(st.needsPct, 0);
-    const wantsPct = numberOrDefault(st.wantsPct, 0);
-    const savingsPct = numberOrDefault(st.savingsPct, 0);
-    const emergencyPct = numberOrDefault(st.emergencyPct, 0);
-    const debtPct = numberOrDefault(st.debtPct, 0);
-    const totalPct = needsPct + wantsPct + savingsPct;
-    const needs = income * needsPct / 100;
-    const wants = income * wantsPct / 100;
-    const savings = income * savingsPct / 100;
-    const emergency = income * emergencyPct / 100;
-    const debt = income * debtPct / 100;
+    const mode = st.mode || 'budget'; // 'budget' | 'net'
 
-    container.innerHTML = `<div class="flex flex-col gap-2"><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3"><div class="text-xs text-[#6a6a6a] mb-2">หลักการเริ่มต้น 50/30/20: ค่าใช้จ่ายจำเป็น / ความต้องการ / ออมและลงทุน</div>${createKeypadFieldHTML(0, 'เงินเดือนสุทธิที่ได้รับ', st.income, 'บาท/เดือน', 'เช่น 30,000')}</div><div class="grid grid-cols-3 gap-2">${[['salaryNeedsPct','ค่าใช้จ่ายจำเป็น (%)',st.needsPct],['salaryWantsPct','ไลฟ์สไตล์ (%)',st.wantsPct],['salarySavingsPct','ออม/ลงทุน (%)',st.savingsPct]].map(([id,label,value]) => `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-2"><label class="text-[10px] text-[#6a6a6a] block">${label}</label><input id="${id}" type="number" min="0" max="100" step="1" value="${value}" class="airbnb-input w-full"></div>`).join('')}</div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2"><div class="text-xs font-semibold text-[#6a6a6a]">เป้าหมายย่อยที่แนะนำ</div><div class="grid grid-cols-2 gap-2"><label class="text-xs">เงินสำรองฉุกเฉิน (% ของเงินเดือน)<input id="salaryEmergencyPct" type="number" min="0" max="100" value="${st.emergencyPct}" class="airbnb-input w-full mt-1"></label><label class="text-xs">ชำระหนี้เพิ่มเติม (% ของเงินเดือน)<input id="salaryDebtPct" type="number" min="0" max="100" value="${st.debtPct}" class="airbnb-input w-full mt-1"></label></div></div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2"><div class="flex justify-between"><span>ค่าใช้จ่ายจำเป็น</span><b>${formatMoney(needs)} บาท</b></div><div class="flex justify-between"><span>ความต้องการ/ไลฟ์สไตล์</span><b>${formatMoney(wants)} บาท</b></div><div class="flex justify-between"><span>ออมและลงทุน</span><b>${formatMoney(savings)} บาท</b></div><div class="flex justify-between text-[var(--app-accent)]"><span>เป้าหมายเงินฉุกเฉิน</span><b>${formatMoney(emergency)} บาท/เดือน</b></div><div class="flex justify-between"><span>แนวทางชำระหนี้เพิ่ม</span><b>${formatMoney(debt)} บาท/เดือน</b></div>${income > 0 ? `<div class="flex justify-end pt-2"><button id="btnPrintSalarySummary" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">🖨️ พิมพ์แผนการเงิน / PDF</button></div>` : ''}</div></div>`;
+    let html = `
+        <div class="flex flex-col gap-2">
+            <!-- Mode Selector Tabs -->
+            <div class="flex border-b border-[var(--app-hairline)] gap-2 pb-1">
+                <button type="button" id="btnSalaryModeBudget" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${mode !== 'net' ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent)] border border-[var(--app-accent)]' : 'text-[#6a6a6a] hover:bg-gray-100 dark:hover:bg-gray-800'}">
+                    💰 จัดสรรงบ 50/30/20
+                </button>
+                <button type="button" id="btnSalaryModeNet" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${mode === 'net' ? 'bg-[var(--app-accent-soft)] text-[var(--app-accent)] border border-[var(--app-accent)]' : 'text-[#6a6a6a] hover:bg-gray-100 dark:hover:bg-gray-800'}">
+                    💵 คำนวณเงินเดือนสุทธิ (Net Salary)
+                </button>
+            </div>
+    `;
+
+    if (mode === 'net') {
+        const calc = calculateNetSalary(st);
+
+        html += `
+            <div class="bg-[var(--app-surface-soft)] p-2.5 rounded-[var(--app-card-radius)] border border-[var(--app-hairline)] text-xs text-[#6a6a6a] flex items-center justify-between gap-2">
+                <span>คำนวณเงินเดือนสุทธิหลังหักภาษี ภ.ง.ด.1, ประกันสังคม และ PVD เพื่อส่งต่อยอดจริงไปจัดงบ</span>
+                <button type="button" id="btnSalaryQuickToBudget" class="text-xs font-semibold text-[var(--app-accent)] hover:underline whitespace-nowrap cursor-pointer">
+                    ไปหน้างบ 50/30/20 ↗
+                </button>
+            </div>
+
+            <!-- Card 1: รายได้พึงประเมิน (Earnings) -->
+            <div class="bg-white dark:bg-gray-800 border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-3">
+                <div class="flex justify-between items-center text-xs font-semibold text-gray-700 dark:text-gray-300">
+                    <span>💵 รายได้พึงประเมิน (Earnings)</span>
+                    <span class="text-[11px] text-gray-500">รวม ฿${formatMoney(calc.grossMonthly)}/เดือน</span>
+                </div>
+                ${createKeypadFieldHTML(0, 'เงินเดือนฐาน (Base Salary)', st.baseSalary !== undefined ? st.baseSalary : st.income, 'บาท/เดือน', 'เช่น 35,000')}
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-[10px] text-[#6a6a6a] block">ค่าล่วงเวลา (OT)</label>
+                        </div>
+                        <input id="netOtAmount" type="number" min="0" value="${st.otAmount || '0'}" class="airbnb-input w-full" placeholder="บาท">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-[#6a6a6a] block mb-1">เบี้ยขยัน/ค่าตำแหน่ง/อื่นๆ</label>
+                        <input id="netAllowance" type="number" min="0" value="${st.allowance || '0'}" class="airbnb-input w-full" placeholder="บาท">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-[#6a6a6a] block mb-1">โบนัส/คอมมิชชันเฉลี่ย</label>
+                        <input id="netBonusMonthly" type="number" min="0" value="${st.bonusMonthly || '0'}" class="airbnb-input w-full" placeholder="บาท">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: รายการหัก (Deductions) -->
+            <div class="bg-white dark:bg-gray-800 border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-3">
+                <div class="flex justify-between items-center text-xs font-semibold text-gray-700 dark:text-gray-300">
+                    <span>📉 รายการหักตามกฎหมายและสวัสดิการ (Deductions)</span>
+                    <span class="text-[11px] text-rose-500 font-bold">-฿${formatMoney(calc.totalDeductions)}</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                    <div>
+                        <label class="text-[10px] text-[#6a6a6a] block mb-1">ประกันสังคม ม.33 (5%)</label>
+                        <select id="netSocialSecurity" class="airbnb-input w-full text-xs">
+                            <option value="yes" ${st.hasSocialSecurity !== 'no' ? 'selected' : ''}>เป็นผู้ประกันตน ม.33 (หักสูงสุด 750 บ.)</option>
+                            <option value="no" ${st.hasSocialSecurity === 'no' ? 'selected' : ''}>ไม่หักประกันสังคม (0 บ.)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-[#6a6a6a] block mb-1">กองทุนสำรองฯ (PVD %)</label>
+                        <input id="netPvdPct" type="number" min="0" max="15" step="0.5" value="${st.pvdPct !== undefined ? st.pvdPct : '3'}" class="airbnb-input w-full text-xs" placeholder="% ของเงินเดือน">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-[#6a6a6a] block mb-1">หักอื่นๆ (กยศ./สหกรณ์/เงินกู้)</label>
+                        <input id="netCustomDeduction" type="number" min="0" value="${st.customDeduction || '0'}" class="airbnb-input w-full text-xs" placeholder="บาท">
+                    </div>
+                </div>
+                <div class="text-[11px] text-gray-500 bg-gray-50 dark:bg-gray-750 p-2 rounded-lg flex items-center justify-between">
+                    <span>ภาษีหัก ณ ที่จ่าย (ภ.ง.ด.1 คำนวณตามขั้นบันไดอัตโนมัติ):</span>
+                    <span class="font-bold text-gray-800 dark:text-gray-200">-${formatMoney(calc.taxMonthly)} บาท/ด. (ปีละ ${formatMoney(calc.annualTax)} บ.)</span>
+                </div>
+            </div>
+
+            <!-- Card 3: สรุปผลเงินเดือนสุทธิรับจริง (Net Salary Summary) -->
+            <div class="bg-white dark:bg-gray-800 border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2.5">
+                <div class="flex justify-between items-center text-xs text-gray-500">
+                    <span>รายได้รวมก่อนหัก (Gross Income)</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">${formatMoney(calc.grossMonthly)} บาท</span>
+                </div>
+                <div class="flex justify-between items-center text-xs text-rose-500">
+                    <span>รวมรายการหักทั้งสิ้น (Deductions ${formatNum(calc.effectiveDeductionPct, 1)}%)</span>
+                    <span class="font-semibold">-${formatMoney(calc.totalDeductions)} บาท</span>
+                </div>
+                <div class="border-t border-gray-100 dark:border-gray-700/60 pt-2 flex justify-between items-baseline">
+                    <span class="text-sm font-bold text-gray-800 dark:text-gray-200">💰 เงินเดือนสุทธิรับจริง (Take-Home Pay)</span>
+                    <span class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono tracking-tight">
+                        ฿${formatMoney(calc.netMonthly)}
+                    </span>
+                </div>
+
+                <!-- Breakdown Pills -->
+                <div class="grid grid-cols-3 gap-1.5 pt-1 text-[11px] text-center">
+                    <div class="p-1.5 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="block text-gray-400 text-[10px]">ประกันสังคม</span>
+                        <span class="font-semibold text-gray-700 dark:text-gray-300">-${formatMoney(calc.ssoMonthly)}</span>
+                    </div>
+                    <div class="p-1.5 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="block text-gray-400 text-[10px]">กองทุน PVD</span>
+                        <span class="font-semibold text-gray-700 dark:text-gray-300">-${formatMoney(calc.pvdMonthly)}</span>
+                    </div>
+                    <div class="p-1.5 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="block text-gray-400 text-[10px]">ภาษี ภ.ง.ด.1</span>
+                        <span class="font-semibold text-gray-700 dark:text-gray-300">-${formatMoney(calc.taxMonthly)}</span>
+                    </div>
+                </div>
+
+                <!-- One-click Handoff Button to 50/30/20 -->
+                <div class="pt-2 flex flex-col sm:flex-row gap-2">
+                    <button type="button" id="btnHandoffTo503020" class="flex-1 py-2.5 px-3 bg-[var(--app-accent)] hover:opacity-90 active:scale-[0.99] text-white rounded-[var(--app-btn-radius)] text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
+                        <span>✨ ส่งต่อยอดสุทธิ (฿${formatMoney(calc.netMonthly)}) ไปจัดงบ 50/30/20</span>
+                    </button>
+                    <button type="button" id="btnPrintSalarySummary" class="px-3 py-2 text-xs font-semibold rounded-[var(--app-btn-radius)] border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition flex items-center justify-center gap-1 cursor-pointer">
+                        🖨️ สลิปจำลอง / PDF
+                    </button>
+                </div>
+            </div>
+        `;
+    } else {
+        // 50/30/20 Budget mode
+        const income = numberOrDefault(st.income, 0);
+        const needsPct = numberOrDefault(st.needsPct, 0);
+        const wantsPct = numberOrDefault(st.wantsPct, 0);
+        const savingsPct = numberOrDefault(st.savingsPct, 0);
+        const emergencyPct = numberOrDefault(st.emergencyPct, 0);
+        const debtPct = numberOrDefault(st.debtPct, 0);
+        const totalPct = needsPct + wantsPct + savingsPct;
+        const needs = income * needsPct / 100;
+        const wants = income * wantsPct / 100;
+        const savings = income * savingsPct / 100;
+        const emergency = income * emergencyPct / 100;
+        const debt = income * debtPct / 100;
+
+        html += `
+            <div class="bg-[var(--app-surface-soft)] p-2.5 rounded-[var(--app-card-radius)] border border-[var(--app-hairline)] text-xs text-[#6a6a6a] flex items-center justify-between gap-2">
+                <span>💡 ไม่แน่ใจยอดรับจริงหลังหักภาษี ภ.ง.ด.1, ประกันสังคม และ PVD?</span>
+                <button type="button" id="btnQuickToNetMode" class="text-xs font-semibold text-[var(--app-accent)] hover:underline whitespace-nowrap cursor-pointer">
+                    คำนวณเงินเดือนสุทธิ ↗
+                </button>
+            </div>
+
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3">
+                <div class="text-xs text-[#6a6a6a] mb-2">หลักการเริ่มต้น 50/30/20: ค่าใช้จ่ายจำเป็น / ความต้องการ / ออมและลงทุน</div>
+                ${createKeypadFieldHTML(0, 'เงินเดือนสุทธิที่ได้รับ', st.income, 'บาท/เดือน', 'เช่น 30,000')}
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                ${[['salaryNeedsPct','ค่าใช้จ่ายจำเป็น (%)',st.needsPct],['salaryWantsPct','ไลฟ์สไตล์ (%)',st.wantsPct],['salarySavingsPct','ออม/ลงทุน (%)',st.savingsPct]].map(([id,label,value]) => `
+                    <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-2">
+                        <label class="text-[10px] text-[#6a6a6a] block">${label}</label>
+                        <input id="${id}" type="number" min="0" max="100" step="1" value="${value}" class="airbnb-input w-full">
+                    </div>
+                `).join('')}
+            </div>
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2">
+                <div class="text-xs font-semibold text-[#6a6a6a]">เป้าหมายย่อยที่แนะนำ</div>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="text-xs">เงินสำรองฉุกเฉิน (% ของเงินเดือน)
+                        <input id="salaryEmergencyPct" type="number" min="0" max="100" value="${st.emergencyPct}" class="airbnb-input w-full mt-1">
+                    </label>
+                    <label class="text-xs">ชำระหนี้เพิ่มเติม (% ของเงินเดือน)
+                        <input id="salaryDebtPct" type="number" min="0" max="100" value="${st.debtPct}" class="airbnb-input w-full mt-1">
+                    </label>
+                </div>
+            </div>
+            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2">
+                <div class="flex justify-between"><span>ค่าใช้จ่ายจำเป็น</span><b>${formatMoney(needs)} บาท</b></div>
+                <div class="flex justify-between"><span>ความต้องการ/ไลฟ์สไตล์</span><b>${formatMoney(wants)} บาท</b></div>
+                <div class="flex justify-between"><span>ออมและลงทุน</span><b>${formatMoney(savings)} บาท</b></div>
+                <div class="flex justify-between text-[var(--app-accent)]"><span>เป้าหมายเงินฉุกเฉิน</span><b>${formatMoney(emergency)} บาท/เดือน</b></div>
+                <div class="flex justify-between"><span>แนวทางชำระหนี้เพิ่ม</span><b>${formatMoney(debt)} บาท/เดือน</b></div>
+                ${income > 0 ? `<div class="flex justify-end pt-2"><button id="btnPrintSalarySummary" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">🖨️ พิมพ์แผนการเงิน / PDF</button></div>` : ''}
+            </div>
+        `;
+    }
+
+    html += `</div>`;
+    container.innerHTML = html;
     attachFieldClickListeners(container);
-    const save = (id, key) => document.getElementById(id)?.addEventListener('change', event => { st[key] = event.target.value; renderActiveTool(); });
-    save('salaryNeedsPct', 'needsPct');
-    save('salaryWantsPct', 'wantsPct');
-    save('salarySavingsPct', 'savingsPct');
-    save('salaryEmergencyPct', 'emergencyPct');
-    save('salaryDebtPct', 'debtPct');
-    container.querySelector('#btnPrintSalarySummary')?.addEventListener('click', () => {
-        triggerPrintReceipt('salary');
+
+    // Tab switcher events
+    container.querySelector('#btnSalaryModeBudget')?.addEventListener('click', () => {
+        st.mode = 'budget';
+        renderActiveTool();
     });
-    if (income <= 0) setStatusBanner('empty', 'กรุณากรอกเงินเดือนสุทธิที่ได้รับ');
-    else if (Math.abs(totalPct - 100) > 0.01) setStatusBanner('empty', `สัดส่วนหลักรวม ${formatNum(totalPct, 0)}% ควรปรับให้รวมเท่ากับ 100%`);
-    else setStatusBanner('success', `จัดสรรเงินเดือน ${formatMoney(income)} บาทเรียบร้อย · ออม/ลงทุน ${formatMoney(savings)} บาทต่อเดือน`);
+    container.querySelector('#btnSalaryModeNet')?.addEventListener('click', () => {
+        st.mode = 'net';
+        renderActiveTool();
+    });
+    container.querySelector('#btnQuickToNetMode')?.addEventListener('click', () => {
+        st.mode = 'net';
+        renderActiveTool();
+    });
+    container.querySelector('#btnSalaryQuickToBudget')?.addEventListener('click', () => {
+        st.mode = 'budget';
+        renderActiveTool();
+    });
+
+    if (mode === 'net') {
+        const calc = calculateNetSalary(st);
+        const saveNet = (id, key) => container.querySelector('#' + id)?.addEventListener('input', event => {
+            st[key] = event.target.value;
+            renderActiveTool();
+        });
+        saveNet('netOtAmount', 'otAmount');
+        saveNet('netAllowance', 'allowance');
+        saveNet('netBonusMonthly', 'bonusMonthly');
+        saveNet('netPvdPct', 'pvdPct');
+        saveNet('netCustomDeduction', 'customDeduction');
+        container.querySelector('#netSocialSecurity')?.addEventListener('change', event => {
+            st.hasSocialSecurity = event.target.value;
+            renderActiveTool();
+        });
+
+        // Handoff to 50/30/20
+        container.querySelector('#btnHandoffTo503020')?.addEventListener('click', () => {
+            st.income = String(calc.netMonthly);
+            st.mode = 'budget';
+            renderActiveTool();
+            setStatusBanner('success', `✨ ส่งต่อเงินเดือนสุทธิ <b>${formatMoney(calc.netMonthly)} บาท</b> ไปจัดงบ 50/30/20 เรียบร้อยแล้ว`);
+        });
+
+        container.querySelector('#btnPrintSalarySummary')?.addEventListener('click', () => {
+            triggerPrintReceipt('salary');
+        });
+
+        if (calc.grossMonthly <= 0) {
+            setStatusBanner('empty', 'กรุณากรอกเงินเดือนฐานเพื่อคำนวณเงินเดือนสุทธิรับจริง');
+        } else {
+            setStatusBanner('success', `เงินเดือนสุทธิรับจริง <b>${formatMoney(calc.netMonthly)} บาท/เดือน</b> (ถูกหักรวม ${formatNum(calc.effectiveDeductionPct, 1)}%)`);
+        }
+    } else {
+        const save = (id, key) => document.getElementById(id)?.addEventListener('change', event => { st[key] = event.target.value; renderActiveTool(); });
+        save('salaryNeedsPct', 'needsPct');
+        save('salaryWantsPct', 'wantsPct');
+        save('salarySavingsPct', 'savingsPct');
+        save('salaryEmergencyPct', 'emergencyPct');
+        save('salaryDebtPct', 'debtPct');
+        container.querySelector('#btnPrintSalarySummary')?.addEventListener('click', () => {
+            triggerPrintReceipt('salary');
+        });
+        const income = numberOrDefault(st.income, 0);
+        const needsPct = numberOrDefault(st.needsPct, 0);
+        const wantsPct = numberOrDefault(st.wantsPct, 0);
+        const savingsPct = numberOrDefault(st.savingsPct, 0);
+        const totalPct = needsPct + wantsPct + savingsPct;
+        const savings = income * savingsPct / 100;
+        if (income <= 0) setStatusBanner('empty', 'กรุณากรอกเงินเดือนสุทธิที่ได้รับ');
+        else if (Math.abs(totalPct - 100) > 0.01) setStatusBanner('empty', `สัดส่วนหลักรวม ${formatNum(totalPct, 0)}% ควรปรับให้รวมเท่ากับ 100%`);
+        else setStatusBanner('success', `จัดสรรเงินเดือน ${formatMoney(income)} บาทเรียบร้อย · ออม/ลงทุน ${formatMoney(savings)} บาทต่อเดือน`);
+    }
 }
 
 /* -----------------------------------------------------------
@@ -6256,6 +6676,7 @@ function renderEcommerceProfitTool(container) {
         renderVatWhtTool,
         renderPercentTool,
         renderSalaryTool,
+        calculateNetSalary,
         calculateEcommerceProfit,
         renderEcommerceProfitTool
     };
@@ -12143,6 +12564,11 @@ function clearCurrentTool() {
         appState.vat_wht.amount = '';
     } else if (id === 'salary') {
         appState.salary.income = '';
+        appState.salary.baseSalary = '';
+        appState.salary.otAmount = '';
+        appState.salary.allowance = '';
+        appState.salary.bonusMonthly = '';
+        appState.salary.customDeduction = '';
     } else if (id === 'loan') {
         appState.loan.principal = '';
         appState.loan.extra = '0';
@@ -12348,7 +12774,23 @@ function loadDemoForCurrentTool() {
     } else if (id === 'vat_wht') {
         appState.vat_wht = { amount: '10000', vatRate: '7', whtRate: '3', mode: 'before' };
     } else if (id === 'salary') {
-        appState.salary = { income: '35000', needsPct: '50', wantsPct: '30', savingsPct: '20', emergencyPct: '10', debtPct: '10' };
+        appState.salary = {
+            mode: 'budget',
+            income: '35000',
+            needsPct: '50',
+            wantsPct: '30',
+            savingsPct: '20',
+            emergencyPct: '10',
+            debtPct: '10',
+            baseSalary: '35000',
+            otAmount: '3500',
+            allowance: '2000',
+            bonusMonthly: '0',
+            hasSocialSecurity: 'yes',
+            pvdPct: '3',
+            customDeduction: '0',
+            additionalDeductionsYearly: '0'
+        };
     } else if (id === 'fuel_cost') {
         appState.fuel_cost = { distance: '320', efficiency: '16', oilPrice: '35.50' };
     } else if (id === 'tip') {
