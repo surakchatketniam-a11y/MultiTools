@@ -742,6 +742,25 @@
             background-color: var(--color-surface-soft);
         }
 
+        .standard-calc-display {
+            flex: 1 1 auto;
+            min-height: 160px;
+        }
+        .standard-calc-expression {
+            font-size: clamp(20px, 5vw, 24px);
+            line-height: 1.3;
+        }
+        .standard-calc-result {
+            font-size: clamp(36px, 8vw, 44px);
+            line-height: 1.2;
+        }
+        .standard-calc-keypad {
+            flex: 0 0 clamp(252px, 46%, 330px);
+        }
+        .standard-calc-keypad .key-btn {
+            min-height: 44px;
+        }
+
         /* Segmented Control Pill Tabs */
         .segment-group {
             background-color: var(--color-surface-strong);

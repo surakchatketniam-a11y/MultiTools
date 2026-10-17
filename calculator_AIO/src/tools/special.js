@@ -828,17 +828,17 @@ function renderHexTool(container) {
 function renderStandardCalcTool(container) {
     const st = appState.calc;
     container.innerHTML = `
-        <div class="flex flex-col h-full gap-2">
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 flex flex-col justify-between min-h-[125px]" style="box-shadow: var(--app-elevation);">
-                <div class="text-xs text-[#6a6a6a] flex justify-between items-center border-b border-[#ebebeb] pb-1.5">
-                    <span>ล่าสุด: ${st.history[0] ? `${formatCalcExpr(st.history[0].expr)} = ${st.history[0].res}` : '-'}</span>
-                    <button id="clearCalcHistBtn" class="text-[var(--app-accent)] font-semibold hover:underline">ล้างประวัติ</button>
+        <div class="standard-calc flex flex-col h-full gap-2">
+            <div class="standard-calc-display themed-result-card p-3.5 flex flex-col justify-between">
+                <div class="text-xs text-[var(--app-muted)] flex justify-between items-center gap-2 border-b border-[var(--app-hairline)] pb-1.5">
+                    <span class="min-w-0 break-all">ล่าสุด: ${st.history[0] ? `${formatCalcExpr(st.history[0].expr)} = ${st.history[0].res}` : '-'}</span>
+                    <button id="clearCalcHistBtn" class="shrink-0 min-h-[44px] text-[var(--app-accent)] font-semibold hover:underline">ล้างประวัติ</button>
                 </div>
-                <div class="text-right text-[#6a6a6a] text-lg font-mono break-all min-h-[28px] mt-1">${formatCalcExpr(st.expr) || '0'}</div>
-                <div class="text-right text-3xl font-bold text-[#222222] font-mono truncate">= ${st.result}</div>
+                <div class="standard-calc-expression text-right text-[var(--app-muted)] font-mono break-all min-h-[28px] mt-1">${formatCalcExpr(st.expr) || '0'}</div>
+                <div class="standard-calc-result text-right font-bold text-[var(--app-ink)] font-mono break-all">= ${st.result}</div>
             </div>
 
-            <div class="grid grid-cols-4 grid-rows-5 gap-2 flex-1">
+            <div class="standard-calc-keypad grid grid-cols-4 grid-rows-5 gap-2">
                 <button class="key-btn key-action text-xl" data-std="C">C</button>
                 <button class="key-btn key-action text-xl" data-std="()">( )</button>
                 <button class="key-btn key-action text-xl" data-std="%">%</button>
