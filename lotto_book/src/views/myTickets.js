@@ -64,8 +64,19 @@
                 ? tickets
                 : tickets.filter(t => t.drawDate === this.selectedDrawFilter);
 
+            const backupReminder = root.LottoStorage.shouldRemindBackup()
+                ? `<div role="status" class="bg-warning-soft text-ink p-4 rounded-lg border border-line flex flex-wrap items-center justify-between gap-3">
+                        <p class="text-base">ยังไม่ได้สำรองข้อมูลสลากล่าสุด ข้อมูลนี้เก็บในเบราว์เซอร์เครื่องนี้เท่านั้น ถ้าล้างข้อมูลเบราว์เซอร์หรือเปลี่ยนเครื่อง จะหายทั้งหมด</p>
+                        <div class="flex gap-2 text-base">
+                            <button type="button" id="btnBackupReminder" class="px-3 py-1.5 bg-action rounded-lg font-semibold">สำรองข้อมูลตอนนี้</button>
+                            <button type="button" id="btnSnoozeBackupReminder" class="px-3 py-1.5 bg-raised text-ink rounded-lg font-medium">ภายหลัง</button>
+                        </div>
+                    </div>`
+                : '';
+
             container.innerHTML = `
                 <div class="space-y-6">
+                    ${backupReminder}
                     <section class="color-panel tone-yellow bg-surface p-4 rounded-lg border border-line" aria-label="งวดถัดไป" data-next-draw="${nextDraw.date}">
                         <div class="flex flex-wrap items-center justify-between gap-3">
                             <div>
@@ -423,6 +434,19 @@
                     this.showImportModal(container);
                 });
             }
+
+            // Backup reminder banner
+            const btnBackupReminder = container.querySelector('#btnBackupReminder');
+            if (btnBackupReminder) {
+                btnBackupReminder.addEventListener('click', () => this.showExportModal());
+            }
+            const btnSnoozeBackup = container.querySelector('#btnSnoozeBackupReminder');
+            if (btnSnoozeBackup) {
+                btnSnoozeBackup.addEventListener('click', () => {
+                    root.LottoStorage.snoozeBackupReminder(7);
+                    this.render(container);
+                });
+            }
         },
 
         showExportModal() {
@@ -470,6 +494,7 @@
                 a.download = `lotto_book_backup_${new Date().toISOString().slice(0, 10)}.json`;
                 a.click();
                 URL.revokeObjectURL(url);
+                root.LottoStorage.markBackupDone();
                 closeModal();
                 root.LottoApp.showToast('ดาวน์โหลดไฟล์ JSON สำรองข้อมูลเรียบร้อยแล้ว', 'success');
             });

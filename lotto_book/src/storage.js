@@ -190,6 +190,29 @@
         },
 
         // ----------------------------------------------------
+        // BACKUP REMINDER
+        // ----------------------------------------------------
+        markBackupDone() {
+            this.setSettings({ lastBackupAt: new Date().toISOString(), backupRemindSnoozedUntil: null });
+        },
+
+        snoozeBackupReminder(days = 7) {
+            const until = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+            this.setSettings({ backupRemindSnoozedUntil: until });
+        },
+
+        // Remind only when tickets exist, no backup yet or last backup is older than maxAgeDays, and not snoozed.
+        shouldRemindBackup(maxAgeDays = 30) {
+            if (this.getTickets().length === 0) return false;
+            const settings = this.getSettings();
+            const now = Date.now();
+            if (settings.backupRemindSnoozedUntil && Date.parse(settings.backupRemindSnoozedUntil) > now) return false;
+            const last = Date.parse(settings.lastBackupAt);
+            if (!Number.isFinite(last)) return true;
+            return now - last > maxAgeDays * 24 * 60 * 60 * 1000;
+        },
+
+        // ----------------------------------------------------
         // EXPORT & IMPORT
         // ----------------------------------------------------
         exportDataJSON() {
