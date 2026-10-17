@@ -78,7 +78,7 @@ function renderUnitPriceTool(container) {
                 L:    { key: 'L',    label: 'L',    family: 'volume',  factor: 1,     baseUnit: 'ลิตร' }
             };
 
-            container.innerHTML = `<div class="text-xs text-[var(--app-muted)] px-1 pb-1">💡 เคล็ดลับ: พิมพ์ <b>ราคา เว้นวรรค จำนวน</b> ในช่องราคา เช่น <b>864 50</b> ระบบจะแยกช่องให้อัตโนมัติ</div>`;
+            container.innerHTML = `<div class="text-xs text-[var(--app-muted)] px-1 pb-1">เคล็ดลับ: พิมพ์ <b>ราคา เว้นวรรค จำนวน</b> ในช่องราคา เช่น <b>864 50</b> ระบบจะแยกช่องให้อัตโนมัติ</div>`;
 
             function refreshUnitPriceResults() {
                 persistAppState();
@@ -151,7 +151,7 @@ function renderUnitPriceTool(container) {
                 } else if (!liveItems.length) {
                     setStatusBanner('empty', 'กรุณาป้อนข้อมูลของคุณ');
                 } else if (hasMismatchedFamilies) {
-                    setStatusBanner('error', '⚠️ ชนิดหน่วยไม่ตรงกัน (กรุณาเลือกหน่วยกลุ่มเดียวกัน เช่น กรัม กับ กิโลกรัม)');
+                    setStatusBanner('error', 'ชนิดหน่วยไม่ตรงกัน (กรุณาเลือกหน่วยกลุ่มเดียวกัน เช่น กรัม กับ กิโลกรัม)');
                 } else if (liveItems.length === 1) {
                     setStatusBanner('info', `ตัวเลือก <b>${liveItems[0].id}</b>: ${formatUnitPrice(liveItems[0].normalizedPrice)} บาท/${liveItems[0].baseUnit} <span class="text-xs font-normal text-[#6a6a6a] block">ป้อนแถวอื่นเพิ่มเพื่อเปรียบเทียบความคุ้มค่า</span>`);
                 } else {
@@ -163,7 +163,7 @@ function renderUnitPriceTool(container) {
                         const diff = next.normalizedPrice - best.normalizedPrice;
                         setStatusBanner('success', `<span class="text-[var(--app-accent)]">★ ตัวเลือก ${bestLabels} คุ้มที่สุด</span> (${formatUnitPrice(best.normalizedPrice)} บาท/${best.baseUnit})<span class="text-xs font-medium block text-[#3f3f3f]">ถูกกว่าตัวเลือก ${next.id} ${pct}% หรือประหยัด ${formatUnitPrice(diff)} บาท/${best.baseUnit}</span>`);
                     } else {
-                        setStatusBanner('success', `⚖️ ตัวเลือก <b>${bestLabels}</b> ราคาต่อหน่วยเท่ากัน (${formatUnitPrice(liveMin)} บาท/${best.baseUnit})`);
+                        setStatusBanner('success', `ตัวเลือก <b>${bestLabels}</b> ราคาต่อหน่วยเท่ากัน (${formatUnitPrice(liveMin)} บาท/${best.baseUnit})`);
                     }
                 }
             }
@@ -346,9 +346,9 @@ function renderDiscountTool(container) {
     if (p <= 0) {
         setStatusBanner('empty', 'กรุณาป้อนราคาสินค้าและเปอร์เซ็นต์ส่วนลด');
     } else if (isOver100) {
-        setStatusBanner('error', `⚠️ ส่วนลดไม่ควรเกิน 100% (คำนวณสูงสุดที่ 100%) | ราคาสุทธิ: ${formatMoney(finalPrice)} บาท`);
+        setStatusBanner('error', `ส่วนลดไม่ควรเกิน 100% (คำนวณสูงสุดที่ 100%) | ราคาสุทธิ: ${formatMoney(finalPrice)} บาท`);
     } else {
-        setStatusBanner('success', `🏷️ ราคาสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(finalPrice)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">ประหยัดไป ${formatMoney(saved)} บาท</span>`);
+        setStatusBanner('success', `ราคาสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(finalPrice)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">ประหยัดไป ${formatMoney(saved)} บาท</span>`);
     }
 }
 
@@ -378,7 +378,7 @@ function renderTipTool(container) {
     if (bill <= 0) {
         setStatusBanner('empty', 'กรุณาป้อนยอดค่าอาหารเพื่อคำนวณทิปและหารจำนวนคน');
     } else {
-        setStatusBanner('success', `🍽️ ยอดรวมสุทธิ: <b>${formatMoney(totalBill)} ฿</b> (ทิป ${formatMoney(tipAmt)} ฿)<span class="text-sm font-bold block underline text-[var(--app-accent)]">หารเฉลี่ยคนละ: ${formatMoney(perPerson)} บาท (${people} คน)</span>`);
+        setStatusBanner('success', `ยอดรวมสุทธิ: <b>${formatMoney(totalBill)} ฿</b> (ทิป ${formatMoney(tipAmt)} ฿)<span class="text-sm font-bold block underline text-[var(--app-accent)]">หารเฉลี่ยคนละ: ${formatMoney(perPerson)} บาท (${people} คน)</span>`);
     }
 }
 
@@ -494,7 +494,7 @@ function renderUnitConverterTool(container) {
         const remAfterRai = totalSqm % 1600;
         const ngan = Math.floor(remAfterRai / 400);
         const sqWa = (remAfterRai % 400) / 4;
-        setStatusBanner('success', `📐 เท่ากับ <b>${rai} ไร่ ${ngan} งาน ${formatNum(sqWa, 2)} ตารางวา</b> (${formatNum(totalSqm, 2)} ตร.ม.)`);
+        setStatusBanner('success', `เท่ากับ <b>${rai} ไร่ ${ngan} งาน ${formatNum(sqWa, 2)} ตารางวา</b> (${formatNum(totalSqm, 2)} ตร.ม.)`);
     } else {
         setStatusBanner('info', `แปลงค่าจาก <b>${formatNum(inputVal, 4)} ${fromUnit.name}</b>`);
     }

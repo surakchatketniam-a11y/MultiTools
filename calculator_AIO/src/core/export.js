@@ -360,7 +360,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
                 { label: 'จุดคุ้มทุน (Breakeven)', value: calc.breakevenMonth !== null ? (calc.breakevenMonth === 0 ? 'คุ้มทุนทันที' : `เดือนที่ ${calc.breakevenMonth} (ปีที่ ${(calc.breakevenMonth / 12).toFixed(1)})`) : 'ไม่คุ้มทุน' },
                 { label: 'ประหยัดสุทธิ 3 ปี (Refinance ย้ายค่าย)', value: `${formatMoney(calc.refinanceNetSavings)} บาท`, highlight: calc.isRefinanceBetter },
                 { label: 'ประหยัดสุทธิ 3 ปี (Retention ขอลดดอก)', value: `${formatMoney(calc.retentionNetSavings)} บาท`, highlight: !calc.isRefinanceBetter },
-                { label: 'ผ่อนต่อเดือนเดิม vs รีไฟแนนซ์', value: `${formatMoney(calc.currentPlan.monthlyPay)} ➔ ${formatMoney(calc.refinancePlan.monthlyPay)} บาท` }
+                { label: 'ผ่อนต่อเดือนเดิม vs รีไฟแนนซ์', value: `${formatMoney(calc.currentPlan.monthlyPay)} ${formatMoney(calc.refinancePlan.monthlyPay)} บาท` }
             ];
 
             breakdownHTML = `
@@ -389,7 +389,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
                                 <td style="padding: 6px 8px; text-align: right;">0 บาท (เกณฑ์ฐาน)</td>
                             </tr>
                             <tr style="border-bottom: 1px solid #e2e8f0; ${!calc.isRefinanceBetter ? 'background: #ecfdf5; font-weight: 600;' : ''}">
-                                <td style="padding: 6px 8px;">2. ขอลดดอกเบี้ยเดิม (Retention) ${!calc.isRefinanceBetter ? '⭐' : ''}</td>
+                                <td style="padding: 6px 8px;">2. ขอลดดอกเบี้ยเดิม (Retention) ${!calc.isRefinanceBetter ? '' : ''}</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.retentionRate, 2)}%</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.retentionPlan.monthlyPay)}</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.retentionPlan.totalInterest)}</td>
@@ -397,7 +397,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
                                 <td style="padding: 6px 8px; text-align: right; color: #15803d; font-weight: bold;">+${formatMoney(calc.retentionNetSavings)}</td>
                             </tr>
                             <tr style="border-bottom: 1px solid #e2e8f0; ${calc.isRefinanceBetter ? 'background: #eff6ff; font-weight: 600;' : ''}">
-                                <td style="padding: 6px 8px;">3. ย้ายธนาคารใหม่ (Refinance) ${calc.isRefinanceBetter ? '⭐' : ''}</td>
+                                <td style="padding: 6px 8px;">3. ย้ายธนาคารใหม่ (Refinance) ${calc.isRefinanceBetter ? '' : ''}</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.refinanceRate, 2)}%</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.refinancePlan.monthlyPay)}</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.refinancePlan.totalInterest)}</td>
@@ -709,7 +709,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
                                 <td style="padding: 10px; text-align: right; color: #e11d48;">-${formatMoney(calc.totalDeductions)}</td>
                             </tr>
                             <tr style="background: #ecfdf5; font-weight: 800; font-size: 13px; border-top: 1px solid #a7f3d0;">
-                                <td colspan="3" style="padding: 12px 10px; color: #065f46;">💰 เงินเดือนสุทธิที่โอนเข้าบัญชี (Net Take-Home Pay)</td>
+                                <td colspan="3" style="padding: 12px 10px; color: #065f46;">เงินเดือนสุทธิที่โอนเข้าบัญชี (Net Take-Home Pay)</td>
                                 <td style="padding: 12px 10px; text-align: right; color: #059669; font-size: 14px;">${formatMoney(calc.netMonthly)} บาท</td>
                             </tr>
                         </tbody>
@@ -799,7 +799,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
             { label: 'ฐานภาษีสูงสุด (Marginal Rate)', value: `${calc.marginalRate}%` },
             { label: 'ภาษีคำนวณทั้งปี', value: `${formatMoney(calc.totalTax)} บาท` },
             {
-                label: calc.isRefund ? '🎉 ได้รับเงินคืนภาษี (Tax Refund)' : (calc.payableAmount > 0 ? '⚠️ ต้องชำระภาษีเพิ่มเติม' : '✓ ภาษีครบถ้วนพอดี'),
+                label: calc.isRefund ? 'ได้รับเงินคืนภาษี (Tax Refund)' : (calc.payableAmount > 0 ? 'ต้องชำระภาษีเพิ่มเติม' : '✓ ภาษีครบถ้วนพอดี'),
                 value: `${formatMoney(calc.isRefund ? calc.refundAmount : calc.payableAmount)} บาท`,
                 highlight: true
             }
@@ -861,8 +861,8 @@ function generateFormalPrintHTML(toolId, stateObj) {
 
         resultCards = [
             { label: 'ยอดรวมค่าใช้จ่ายทั้งหมด ณ กรมที่ดิน', value: `${formatMoney(calc.totalLandCost)} บาท`, highlight: true },
-            { label: '👤 ฝั่งผู้ซื้อต้องเตรียมชำระ', value: `${formatMoney(calc.buyerCost)} บาท` },
-            { label: '🏠 ฝั่งผู้ขายต้องเตรียมชำระ', value: `${formatMoney(calc.sellerCost)} บาท` }
+            { label: 'ฝั่งผู้ซื้อต้องเตรียมชำระ', value: `${formatMoney(calc.buyerCost)} บาท` },
+            { label: 'ฝั่งผู้ขายต้องเตรียมชำระ', value: `${formatMoney(calc.sellerCost)} บาท` }
         ];
 
         const rowsHTML = (calc.breakdown || []).map(r => `
@@ -929,19 +929,19 @@ function generateFormalPrintHTML(toolId, stateObj) {
 
         if (calc.mode === 'buy') {
             resultCards = [
-                { label: '💰 ราคาซื้อสุทธิที่หน้าร้าน', value: `${formatMoney(calc.totalBuyPrice)} บาท`, highlight: true },
+                { label: 'ราคาซื้อสุทธิที่หน้าร้าน', value: `${formatMoney(calc.totalBuyPrice)} บาท`, highlight: true },
                 { label: 'มูลค่าเนื้อทองคำ', value: `${formatMoney(calc.rawGoldValue)} บาท` },
                 { label: 'ค่ากำเหน็จ', value: `${formatMoney(calc.craftFee)} บาท` }
             ];
         } else if (calc.mode === 'sell') {
             resultCards = [
-                { label: '💵 ราคารับซื้อคืนขั้นต่ำ (สคบ.)', value: `${formatMoney(calc.sellBackValue)} บาท`, highlight: true },
+                { label: 'ราคารับซื้อคืนขั้นต่ำ (สคบ.)', value: `${formatMoney(calc.sellBackValue)} บาท`, highlight: true },
                 { label: 'เรทรับซื้อคืนสมาคม', value: `${formatMoney(calc.officialSellBackRate)} บาท/บาท` },
                 { label: 'หักจากราคาซื้อประมาณ', value: `-${formatMoney(calc.deductionFromSellPrice)} บาท` }
             ];
         } else {
             resultCards = [
-                { label: calc.isProfit ? '🎉 ผลกำไรจากการออมทอง' : '⚠️ ผลขาดทุนจากการออมทอง', value: `${calc.isProfit ? '+' : ''}${formatMoney(calc.profitLoss)} บาท (${formatNum(calc.profitLossPercent, 2)}%)`, highlight: true },
+                { label: calc.isProfit ? 'ผลกำไรจากการออมทอง' : 'ผลขาดทุนจากการออมทอง', value: `${calc.isProfit ? '+' : ''}${formatMoney(calc.profitLoss)} บาท (${formatNum(calc.profitLossPercent, 2)}%)`, highlight: true },
                 { label: 'มูลค่าตลาดปัจจุบัน', value: `${formatMoney(calc.currentMarketValue)} บาท` },
                 { label: 'ต้นทุนที่ลงทุนสะสม', value: `${formatMoney(calc.totalInvested)} บาท` }
             ];
@@ -996,7 +996,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
         ];
 
         resultCards = [
-            { label: '⚡ ค่าไฟฟ้ารวมสุทธิ (Total Bill)', value: `${formatMoney(calc.totalBill)} บาท`, highlight: true },
+            { label: 'ค่าไฟฟ้ารวมสุทธิ (Total Bill)', value: `${formatMoney(calc.totalBill)} บาท`, highlight: true },
             { label: 'ค่าไฟฟ้าฐานตามขั้นบันได', value: `${formatMoney(calc.baseEnergyCharge)} บาท` },
             { label: 'ค่า Ft รวม', value: `${formatMoney(calc.ftCharge)} บาท` },
             { label: 'ภาษีมูลค่าเพิ่ม (VAT 7%)', value: `${formatMoney(calc.vat7)} บาท` }
@@ -1135,14 +1135,14 @@ function generateFormalPrintHTML(toolId, stateObj) {
 
         if (calc.isPension) {
             resultCards = [
-                { label: '💰 เงินบำนาญชราภาพรายเดือน (ตลอดชีพ)', value: `${formatMoney(calc.monthlyPension)} บาท/เดือน`, highlight: true },
+                { label: 'เงินบำนาญชราภาพรายเดือน (ตลอดชีพ)', value: `${formatMoney(calc.monthlyPension)} บาท/เดือน`, highlight: true },
                 { label: 'ประมาณการเงินบำนาญรวมต่อปี', value: `${formatMoney(calc.yearlyPension)} บาท/ปี` },
                 { label: 'อัตราบำนาญที่ได้รับ', value: `${formatNum(calc.pensionRatePercent, 2)}% ของค่าจ้างเฉลี่ย` },
                 { label: 'รวมเงินสมทบสะสมกองทุนชราภาพ', value: `${formatMoney(calc.totalFundAccumulated)} บาท` }
             ];
         } else {
             resultCards = [
-                { label: '💰 เงินบำเหน็จชราภาพ (รับก้อนเดียว)', value: `${formatMoney(calc.lumpSumTotal)} บาท`, highlight: true },
+                { label: 'เงินบำเหน็จชราภาพ (รับก้อนเดียว)', value: `${formatMoney(calc.lumpSumTotal)} บาท`, highlight: true },
                 { label: 'รวมเงินสมทบสะสมกองทุนชราภาพ', value: `${formatMoney(calc.totalFundAccumulated)} บาท` },
                 { label: 'รวมเงินสมทบที่ลูกจ้างจ่ายสะสม', value: `${formatMoney(calc.totalWorkerContributed)} บาท` },
                 { label: 'เงื่อนไขการรับสิทธิ์', value: 'ส่งเงินสมทบน้อยกว่า 180 เดือน' }
@@ -1205,7 +1205,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
         ];
 
         resultCards = [
-            { label: '💰 รวมเงินชดเชยสุทธิที่ได้รับ', value: `${formatMoney(calc.totalSeverancePackage)} บาท`, highlight: true },
+            { label: 'รวมเงินชดเชยสุทธิที่ได้รับ', value: `${formatMoney(calc.totalSeverancePackage)} บาท`, highlight: true },
             { label: 'เงินชดเชยเลิกจ้าง (ม.118)', value: `${formatMoney(calc.severancePay)} บาท (${calc.severanceDays} วัน)` },
             { label: 'ค่าบอกกล่าวล่วงหน้า (ค่าตกใจ)', value: `${formatMoney(calc.noticePay)} บาท` },
             { label: 'สิทธิยกเว้นภาษีเงินได้', value: `${formatMoney(calc.taxExemptAmount)} บาท (สูงสุด 3 แสน)` }
@@ -1279,7 +1279,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
         ];
 
         resultCards = [
-            { label: '💰 ยอดหนี้รวมทั้งสิ้นที่ต้องชำระ', value: `${formatMoney(calc.totalPayable)} บาท`, highlight: true },
+            { label: 'ยอดหนี้รวมทั้งสิ้นที่ต้องชำระ', value: `${formatMoney(calc.totalPayable)} บาท`, highlight: true },
             { label: 'เงินต้นค้างชำระ', value: `${formatMoney(calc.principal)} บาท` },
             { label: 'ดอกเบี้ยผิดนัดชำระหนี้สะสม', value: `+${formatMoney(calc.totalInterest)} บาท` },
             { label: 'ดอกเบี้ยผิดนัดเฉลี่ยต่อวัน', value: `+${formatMoney(calc.dailyInterest)} บาท/วัน` }
@@ -1350,7 +1350,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
         ];
 
         resultCards = [
-            { label: '💰 รวมค่าล่วงเวลา OT สุทธิ', value: `+${formatMoney(calc.totalOtPay)} บาท`, highlight: true },
+            { label: 'รวมค่าล่วงเวลา OT สุทธิ', value: `+${formatMoney(calc.totalOtPay)} บาท`, highlight: true },
             { label: 'ยอดเงินได้รวมประจำงวด (ฐาน + OT)', value: `${formatMoney(calc.totalEarnings)} บาท` },
             { label: 'OT วันทำงานปกติ (1.5 เท่า)', value: `${formatMoney(calc.otWeekdayPay)} บาท (${calc.otWeekdayHours} ชม.)` },
             { label: 'ทำงานในวันหยุด (ม.62/63)', value: `${formatMoney(calc.holidayWorkPay + calc.holidayOtPay)} บาท` }
@@ -1437,7 +1437,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
         ];
 
         resultCards = [
-            { label: calc.isProfit ? '💰 กำไรสุทธิต่อชิ้น (Net Profit)' : '⚠️ ขาดทุนสุทธิต่อชิ้น (Net Loss)', value: `${formatMoney(calc.netProfit)} บาท`, highlight: true },
+            { label: calc.isProfit ? 'กำไรสุทธิต่อชิ้น (Net Profit)' : 'ขาดทุนสุทธิต่อชิ้น (Net Loss)', value: `${formatMoney(calc.netProfit)} บาท`, highlight: true },
             { label: 'อัตรากำไรสุทธิ (Profit Margin)', value: `${formatNum(calc.profitMarginPct, 1)}%` },
             { label: 'ราคาขายขั้นต่ำที่ไม่ขาดทุน (Breakeven)', value: `${formatMoney(calc.breakevenPrice)} บาท` },
             { label: 'เงินโอนสุทธิเข้าบัญชี (Net Payout)', value: `${formatMoney(calc.netPayout)} บาท` }

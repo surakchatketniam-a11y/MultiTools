@@ -69,7 +69,7 @@ function renderHealthTool(container) {
     if (bmi <= 0) {
         setStatusBanner('empty', 'ป้อนน้ำหนักและส่วนสูงเพื่อคำนวณค่า BMI และ BMR');
     } else {
-        setStatusBanner('success', `🏃 BMI: <b class="text-[var(--app-accent)] underline">${formatNum(bmi, 1)}</b> (${bmiCategory})<span class="text-xs font-medium block text-[#3f3f3f]">พลังงานพื้นฐาน (BMR): ${Math.round(bmr).toLocaleString()} kcal/วัน · พลังงานที่ใช้ต่อวัน (TDEE): <b>${Math.round(tdee).toLocaleString()} kcal/วัน</b></span>`);
+        setStatusBanner('success', `BMI: <b class="text-[var(--app-accent)] underline">${formatNum(bmi, 1)}</b> (${bmiCategory})<span class="text-xs font-medium block text-[#3f3f3f]">พลังงานพื้นฐาน (BMR): ${Math.round(bmr).toLocaleString()} kcal/วัน · พลังงานที่ใช้ต่อวัน (TDEE): <b>${Math.round(tdee).toLocaleString()} kcal/วัน</b></span>`);
     }
 }
 
@@ -104,15 +104,15 @@ function renderOvulationTool(container) {
 
             <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow: var(--app-elevation);">
                 <div class="flex justify-between items-center border-b border-[#ebebeb] pb-2.5">
-                    <span class="text-xs font-semibold text-[#222222]">🌸 วันตกไข่โดยประมาณ</span>
+                    <span class="text-xs font-semibold text-[#222222]">วันตกไข่โดยประมาณ</span>
                     <span class="text-sm font-bold text-[var(--app-accent)]">${formatThaiDate(toISO(ovulationDate))}</span>
                 </div>
                 <div class="flex justify-between items-center border-b border-[#ebebeb] pb-2.5">
-                    <span class="text-xs font-semibold text-[#222222]">💕 ช่วงเวลาเจริญพันธุ์</span>
+                    <span class="text-xs font-semibold text-[#222222]">ช่วงเวลาเจริญพันธุ์</span>
                     <span class="text-xs font-bold text-[var(--app-accent)]">${formatThaiDate(toISO(fertileStart))} - ${formatThaiDate(toISO(fertileEnd))}</span>
                 </div>
                 <div class="flex justify-between items-center">
-                    <span class="text-xs font-semibold text-[#6a6a6a]">📅 ประจำเดือนรอบถัดไป</span>
+                    <span class="text-xs font-semibold text-[#6a6a6a]">ประจำเดือนรอบถัดไป</span>
                     <span class="text-xs font-bold text-[#222222]">${formatThaiDate(toISO(nextPeriod))}</span>
                 </div>
             </div>
@@ -723,7 +723,7 @@ function renderFuelEffTool(container) {
     if (kmPerLiter <= 0) {
         setStatusBanner('empty', 'ป้อนระยะทางที่วิ่งและปริมาณน้ำมันที่ใช้');
     } else {
-        setStatusBanner('success', `🚗 อัตราสิ้นเปลือง: <span class="text-lg text-[var(--app-accent)] underline">${formatNum(kmPerLiter, 2)} กม./ลิตร</span><span class="text-xs font-medium block text-[#3f3f3f]">หรือคิดเป็น ${formatNum(literPer100Km, 2)} ลิตร ต่อ 100 กม.</span>`);
+        setStatusBanner('success', `อัตราสิ้นเปลือง: <span class="text-lg text-[var(--app-accent)] underline">${formatNum(kmPerLiter, 2)} กม./ลิตร</span><span class="text-xs font-medium block text-[#3f3f3f]">หรือคิดเป็น ${formatNum(literPer100Km, 2)} ลิตร ต่อ 100 กม.</span>`);
     }
 }
 

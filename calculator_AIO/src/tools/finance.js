@@ -41,14 +41,14 @@ async function loadFrankfurterRates(force = false) {
 function renderCurrencyTool(container) {
     const st = appState.currency;
     const currencies = [
-        { code: 'THB', name: '🇹🇭 THB - บาทไทย' },
-        { code: 'USD', name: '🇺🇸 USD - ดอลลาร์สหรัฐ' },
-        { code: 'EUR', name: '🇪🇺 EUR - ยูโร' },
-        { code: 'JPY', name: '🇯🇵 JPY - เยนญี่ปุ่น' },
-        { code: 'CNY', name: '🇨🇳 CNY - หยวนจีน' },
-        { code: 'GBP', name: '🇬🇧 GBP - ปอนด์อังกฤษ' },
-        { code: 'KRW', name: '🇰🇷 KRW - วอนเกาหลี' },
-        { code: 'SGD', name: '🇸🇬 SGD - ดอลลาร์สิงคโปร์' }
+        { code: 'THB', name: 'THB - บาทไทย' },
+        { code: 'USD', name: 'USD - ดอลลาร์สหรัฐ' },
+        { code: 'EUR', name: 'EUR - ยูโร' },
+        { code: 'JPY', name: 'JPY - เยนญี่ปุ่น' },
+        { code: 'CNY', name: 'CNY - หยวนจีน' },
+        { code: 'GBP', name: 'GBP - ปอนด์อังกฤษ' },
+        { code: 'KRW', name: 'KRW - วอนเกาหลี' },
+        { code: 'SGD', name: 'SGD - ดอลลาร์สิงคโปร์' }
     ];
 
     const amt = numberOrDefault(st.amount, 0);
@@ -113,7 +113,7 @@ function renderCurrencyTool(container) {
     if (amt <= 0) {
         setStatusBanner('empty', 'กรุณาป้อนจำนวนเงินที่ต้องการแปลง');
     } else {
-        setStatusBanner('success', `💱 ${formatNum(amt, 2)} ${st.from} = <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(converted)} ${st.to}</span>`);
+        setStatusBanner('success', `${formatNum(amt, 2)} ${st.from} = <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(converted)} ${st.to}</span>`);
     }
 }
 
@@ -205,13 +205,13 @@ function renderLoanTool(container) {
                 <div class="text-xs font-semibold text-[#6a6a6a]">ตารางผ่อนชำระ (${schedule.length} งวด)</div>
                 <div class="flex items-center gap-1.5 flex-wrap justify-end">
                     <button id="btnPrintLoanSummary" type="button" title="พิมพ์สรุปสินเชื่อหรือบันทึกเป็นไฟล์ PDF" class="px-2 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
-                        🖨️ พิมพ์/PDF
+                        พิมพ์/PDF
                     </button>
                     <button id="btnExportLoanMonthly" type="button" title="ดาวน์โหลดตารางผ่อนรายเดือนทุกงวดเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition-all shadow-sm flex items-center gap-1 cursor-pointer">
-                        📥 รายงวด (.CSV)
+                        รายงวด (.CSV)
                     </button>
                     <button id="btnExportLoanYearly" type="button" title="ดาวน์โหลดสรุปยอดผ่อนรายปีเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2 py-1 text-xs font-medium rounded-lg border border-[var(--app-hairline)] text-[#4a4a4a] bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
-                        📥 สรุปรายปี (.CSV)
+                        สรุปรายปี (.CSV)
                     </button>
                 </div>
             </div>
@@ -251,7 +251,7 @@ function renderLoanTool(container) {
     if (P <= 0 || n <= 0) {
         setStatusBanner('empty', 'ป้อนวงเงินกู้ ดอกเบี้ย และจำนวนเดือนเพื่อคำนวณยอดผ่อน');
     } else {
-        setStatusBanner('success', `🏦 ผ่อนเดือนละ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(monthlyPay)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">ดอกเบี้ยรวม: ${formatMoney(totalInterest)} ฿ | โปะเพิ่ม: ${formatMoney(extra)} ฿/เดือน | เหลือ ${extraMonths} เดือน</span><span class="text-xs font-bold block text-[var(--app-accent)]">ประหยัดดอกเบี้ย ${formatMoney(interestSaved)} ฿ และลดระยะเวลา ${monthsSaved} เดือน</span>`);
+        setStatusBanner('success', `ผ่อนเดือนละ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(monthlyPay)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">ดอกเบี้ยรวม: ${formatMoney(totalInterest)} ฿ | โปะเพิ่ม: ${formatMoney(extra)} ฿/เดือน | เหลือ ${extraMonths} เดือน</span><span class="text-xs font-bold block text-[var(--app-accent)]">ประหยัดดอกเบี้ย ${formatMoney(interestSaved)} ฿ และลดระยะเวลา ${monthsSaved} เดือน</span>`);
     }
 }
 
@@ -341,9 +341,9 @@ function calculateHomeRefinance(params) {
 
     let recommendation = '';
     if (isRefinanceBetter) {
-        recommendation = `🏆 แนะนำ "รีไฟแนนซ์ (ย้ายธนาคารใหม่)" คุ้มทุนในเดือนที่ ${breakevenMonth} และประหยัดสุทธิ 3 ปีได้มากกว่า Retention ถึง ${formatMoney(netSavingsAdvantage)} บาท`;
+        recommendation = `แนะนำ "รีไฟแนนซ์ (ย้ายธนาคารใหม่)" คุ้มทุนในเดือนที่ ${breakevenMonth} และประหยัดสุทธิ 3 ปีได้มากกว่า Retention ถึง ${formatMoney(netSavingsAdvantage)} บาท`;
     } else if (retentionNetSavings > 0) {
-        recommendation = `🏆 แนะนำ "Retention (ขอลดดอกเบี้ยแบงก์เดิม)" คุ้มค่ากว่า ได้ผลประหยัดสุทธิ 3 ปี ${formatMoney(retentionNetSavings)} บาท โดยไม่ต้องเสียเวลายื่นกู้และจ่ายค่าธรรมเนียมย้ายค่าย`;
+        recommendation = `แนะนำ "Retention (ขอลดดอกเบี้ยแบงก์เดิม)" คุ้มค่ากว่า ได้ผลประหยัดสุทธิ 3 ปี ${formatMoney(retentionNetSavings)} บาท โดยไม่ต้องเสียเวลายื่นกู้และจ่ายค่าธรรมเนียมย้ายค่าย`;
     } else {
         recommendation = `ควรรอเจรจาอัตราดอกเบี้ยโปรโมชันที่ดีกว่านี้ เนื่องจากดอกเบี้ยที่ประหยัดได้ยังไม่คุ้มค่าธรรมเนียม`;
     }
@@ -777,13 +777,13 @@ function renderSavingsTool(container) {
                 <div class="text-xs font-semibold text-[#6a6a6a]">ตารางเงินออมสะสม (${years} ปี)</div>
                 <div class="flex items-center gap-1.5 flex-wrap justify-end">
                     <button id="btnPrintSavingsSummary" type="button" title="พิมพ์แผนการออมเงินหรือบันทึกเป็นไฟล์ PDF" class="px-2 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
-                        🖨️ พิมพ์/PDF
+                        พิมพ์/PDF
                     </button>
                     <button id="btnExportSavingsMonthly" type="button" title="ดาวน์โหลดตารางเงินออมรายเดือนทุกงวดเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2 py-1 text-xs font-medium rounded-lg border border-[var(--app-hairline)] text-[#4a4a4a] bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
-                        📥 รายงวด (.CSV)
+                        รายงวด (.CSV)
                     </button>
                     <button id="btnExportSavingsYearly" type="button" title="ดาวน์โหลดสรุปเงินออมรายปีเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition-all shadow-sm flex items-center gap-1 cursor-pointer">
-                        📥 รายปี (.CSV)
+                        รายปี (.CSV)
                     </button>
                 </div>
             </div>
@@ -821,7 +821,7 @@ function renderSavingsTool(container) {
         setStatusBanner('empty', 'ป้อนเงินออมเริ่มต้นหรือเงินฝากรายเดือนเพื่อคำนวณผลตอบแทน');
     } else {
         const targetText = modeTarget > 0 ? ` | เป้าหมาย: ${formatMoney(modeTarget)} ฿ | ${totalBalance >= modeTarget ? 'ถึงเป้าหมายแล้ว' : 'ยังขาด ' + formatMoney(modeTarget - totalBalance) + ' ฿' + (requiredMonthly ? ' · ควรออมประมาณ ' + formatMoney(requiredMonthly) + ' ฿/เดือน' : '')}` : '';
-        setStatusBanner('success', `🐷 เงินออมรวมสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(totalBalance)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">เงินต้น: ${formatMoney(totalPrincipal)} ฿ | ดอกเบี้ย: +${formatMoney(interestEarned)} ฿ | มูลค่าหลังเงินเฟ้อ: ${formatMoney(realValue)} ฿${targetText}</span>`);
+        setStatusBanner('success', `เงินออมรวมสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(totalBalance)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">เงินต้น: ${formatMoney(totalPrincipal)} ฿ | ดอกเบี้ย: +${formatMoney(interestEarned)} ฿ | มูลค่าหลังเงินเฟ้อ: ${formatMoney(realValue)} ฿${targetText}</span>`);
     }
 }
 

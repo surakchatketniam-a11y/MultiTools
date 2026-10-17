@@ -1258,7 +1258,7 @@
             <!-- Instant Search Input (for Tools Tab) -->
             <div id="sidebarSearchContainer" class="px-4 pt-3 pb-2 border-b border-[var(--color-hairline-soft)] sticky top-0 bg-[var(--color-canvas)] z-10">
                 <div class="relative">
-                    <input type="search" id="sidebarSearchInput" placeholder="🔍 ค้นหาเครื่องมือ (เช่น vat, ลด, วัน)..." autocomplete="off" spellcheck="false" class="airbnb-input w-full text-xs py-2 pl-3 pr-8 rounded-lg bg-[var(--color-surface-soft)] text-[var(--color-ink)] border border-[var(--app-hairline)] focus:border-[var(--app-accent)]">
+                    <input type="search" id="sidebarSearchInput" placeholder="ค้นหาเครื่องมือ (เช่น vat, ลด, วัน)..." autocomplete="off" spellcheck="false" class="airbnb-input w-full text-xs py-2 pl-3 pr-8 rounded-lg bg-[var(--color-surface-soft)] text-[var(--color-ink)] border border-[var(--app-hairline)] focus:border-[var(--app-accent)]">
                     <button id="sidebarSearchClearBtn" type="button" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#999999] hover:text-[#333333] hidden" aria-label="ล้างคำค้น">✕</button>
                 </div>
             </div>
@@ -1267,7 +1267,7 @@
             <div class="pb-8" id="sidebarContentArea">
                 <!-- Category 1: รายการโปรด -->
                 <div id="sidebarFavSection">
-                    <div class="sidebar-category-header">⭐ รายการโปรด</div>
+                    <div class="sidebar-category-header">รายการโปรด</div>
                     <div id="sidebarFavList"></div>
                 </div>
 
@@ -1289,13 +1289,13 @@
                 <!-- Action Bar -->
                 <div class="flex items-center justify-between gap-1.5 px-1 flex-wrap">
                     <button id="btnSaveCurrentSet" type="button" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition flex items-center gap-1 shadow-sm cursor-pointer">
-                        ⭐ บันทึกชุดนี้
+                        บันทึกชุดนี้
                     </button>
                     <button id="btnOpenCompareModal" type="button" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 transition flex items-center gap-1 shadow-sm cursor-pointer" title="เปรียบเทียบ 2-3 ชุดข้อมูลคู่ขนาน">
-                        ⚖️ เปรียบเทียบ
+                        เปรียบเทียบ
                     </button>
                     <button id="btnClearHistory" type="button" class="px-2 py-1.5 text-xs font-medium rounded-lg text-[#888] hover:text-red-600 hover:bg-red-50 active:scale-95 transition cursor-pointer">
-                        🗑️ ล้างประวัติ
+                        ล้างประวัติ
                     </button>
                 </div>
 
@@ -1303,7 +1303,7 @@
                 <div id="historySavedSection">
                     <div class="flex items-center justify-between px-1 mb-1.5">
                         <span class="text-xs font-bold text-[#444] dark:text-[#ccc] flex items-center gap-1">
-                            ⭐ ชุดที่บันทึกไว้เปรียบเทียบ
+                            ชุดที่บันทึกไว้เปรียบเทียบ
                         </span>
                         <span id="historySavedCount" class="text-[11px] font-semibold text-[#888]">0 ชุด</span>
                     </div>
@@ -1314,7 +1314,7 @@
                 <div id="historyRecentSection">
                     <div class="flex items-center justify-between px-1 mb-1.5">
                         <span class="text-xs font-bold text-[#444] dark:text-[#ccc] flex items-center gap-1">
-                            🕒 ประวัติคำนวณล่าสุด (20 รายการ)
+                            ประวัติคำนวณล่าสุด (20 รายการ)
                         </span>
                         <span id="historyRecentCount" class="text-[11px] font-semibold text-[#888]">0 รายการ</span>
                     </div>
@@ -1323,7 +1323,6 @@
 
                 <!-- Empty State -->
                 <div id="historyEmptyState" class="hidden py-10 px-4 text-center">
-                    <div class="text-3xl mb-2">📜</div>
                     <div class="text-xs font-semibold text-[#555] dark:text-[#aaa]">ยังไม่มีประวัติการคำนวณ</div>
                     <div class="text-[11px] text-[#888] mt-1 leading-relaxed">เมื่อคุณเริ่มป้อนค่าและคำนวณผลลัพธ์ ประวัติจะถูกบันทึกอัตโนมัติเพื่อให้คุณย้อนกลับมาดูหรือเปรียบเทียบได้ตลอดเวลา</div>
                 </div>
@@ -1561,7 +1560,7 @@
                     </button>
 
                     <div class="bg-[#f7f7f7] border border-[#dddddd] rounded-[14px] p-3.5 space-y-2 text-xs text-[#3f3f3f]">
-                        <p class="font-semibold text-[#222222] text-sm">📲 วิธีเพิ่มแอปไว้บนหน้าจอมือถือ</p>
+                        <p class="font-semibold text-[#222222] text-sm">วิธีเพิ่มแอปไว้บนหน้าจอมือถือ</p>
                         <p><b>• Android (Chrome):</b> กดปุ่มเมนู 3 จุดมุมขวาบนของเบราว์เซอร์ แล้วเลือก <b>"ติดตั้งแอป" (Install app)</b> หรือ <b>"เพิ่มลงในหน้าจอหลัก"</b></p>
                         <p><b>• iPhone / iPad (Safari):</b> กดปุ่ม <b>แชร์ (Share)</b> ด้านล่าง แล้วเลื่อนเลือก <b>"เพิ่มไปยังหน้าจอโฮม" (Add to Home Screen)</b></p>
                     </div>
@@ -1582,7 +1581,7 @@
                 <div class="flex items-center justify-between border-b border-[var(--app-hairline)] px-5 py-3.5 bg-neutral-50 dark:bg-white/5">
                     <div class="flex items-center gap-2.5">
                         <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
-                            ⚖️
+                            
                         </div>
                         <div>
                             <h2 class="font-bold text-base text-[var(--color-ink)] leading-tight">เปรียบเทียบชุดคำนวณ (Quick Compare)</h2>
@@ -1598,17 +1597,17 @@
                         <div class="flex items-center gap-2">
                             <label class="text-xs font-semibold text-[#666] dark:text-[#aaa]">เครื่องมือ:</label>
                             <select id="compareToolSelect" class="airbnb-input text-xs font-semibold py-1 px-2.5 rounded-lg border">
-                                <option value="loan">🏦 สินเชื่อ / ผ่อนบ้าน / รถ</option>
-                                <option value="savings">🐷 เงินออม & ดอกเบี้ยทบต้น</option>
-                                <option value="vat_wht">🧾 ภาษี VAT & หัก ณ ที่จ่าย</option>
-                                <option value="salary">💼 วางแผนเงินเดือน 50/30/20</option>
-                                <option value="discount">🏷️ ส่วนลดสินค้า</option>
-                                <option value="unit_price">⚖️ เปรียบเทียบราคาต่อหน่วย</option>
+                                <option value="loan">สินเชื่อ / ผ่อนบ้าน / รถ</option>
+                                <option value="savings">เงินออม & ดอกเบี้ยทบต้น</option>
+                                <option value="vat_wht">ภาษี VAT & หัก ณ ที่จ่าย</option>
+                                <option value="salary">วางแผนเงินเดือน 50/30/20</option>
+                                <option value="discount">ส่วนลดสินค้า</option>
+                                <option value="unit_price">เปรียบเทียบราคาต่อหน่วย</option>
                             </select>
                         </div>
                         <div class="flex items-center gap-2">
                             <button id="btnComparePreset" type="button" class="text-xs text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-1 cursor-pointer">
-                                💡 โหลดตัวอย่างเปรียบเทียบ
+                                โหลดตัวอย่างเปรียบเทียบ
                             </button>
                         </div>
                     </div>
@@ -1640,7 +1639,6 @@
                 <div class="flex-1 overflow-y-auto thin-scroll p-4 space-y-4">
                     <!-- Delta Highlight Banner -->
                     <div id="compareDeltaBanner" class="p-3 rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 dark:border-emerald-800 text-xs text-emerald-900 dark:text-emerald-200 flex items-start gap-2.5">
-                        <span class="text-base">🏆</span>
                         <div id="compareDeltaText" class="leading-relaxed font-medium">กำลังคำนวณและเปรียบเทียบผลลัพธ์...</div>
                     </div>
 
@@ -1656,7 +1654,7 @@
                 <!-- Modal Footer -->
                 <div class="border-t border-[var(--app-hairline)] px-4 py-3 bg-neutral-50 dark:bg-white/5 flex items-center justify-between gap-2 flex-wrap">
                     <button id="btnPrintCompareSummary" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition flex items-center gap-1.5 cursor-pointer">
-                        🖨️ พิมพ์ตารางเปรียบเทียบ / PDF
+                        พิมพ์ตารางเปรียบเทียบ / PDF
                     </button>
                     <button id="closeCompareModalOkBtn" type="button" class="px-5 py-1.5 text-xs font-semibold rounded-lg bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition cursor-pointer">
                         ตกลง / ปิด

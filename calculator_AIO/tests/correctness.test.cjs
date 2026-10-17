@@ -378,7 +378,7 @@ test('unit price: cross-unit normalization, cheapest selection, and incompatible
     const summaryWeight = ctx.getToolSummaryText('unit_price');
     assert.match(summaryWeight, /80\.00 บาท \/ 500\.00 g = 160\.00 บาท\/กก\./);
     assert.match(summaryWeight, /150\.00 บาท \/ 1\.00 kg = 150\.00 บาท\/กก\./);
-    assert.match(summaryWeight, /⭐ ตัวเลือกที่คุ้มที่สุด: ตัวเลือก B \(150\.00 บาท\/กก\.\)/);
+    assert.match(summaryWeight, /ตัวเลือกที่คุ้มที่สุด: ตัวเลือก B \(150\.00 บาท\/กก\.\)/);
     assert.match(summaryWeight, /ประหยัดกว่าตัวเลือก A 6\.3%/);
 
     // 2. Count comparison: 120 THB / 1 doz (= 10 THB/pcs) vs 11 THB / 1 pcs
@@ -389,7 +389,7 @@ test('unit price: cross-unit normalization, cheapest selection, and incompatible
     const summaryCount = ctx.getToolSummaryText('unit_price');
     assert.match(summaryCount, /120\.00 บาท \/ 1\.00 โหล = 10\.00 บาท\/ชิ้น/);
     assert.match(summaryCount, /11\.00 บาท \/ 1\.00 ชิ้น = 11\.00 บาท\/ชิ้น/);
-    assert.match(summaryCount, /⭐ ตัวเลือกที่คุ้มที่สุด: ตัวเลือก A \(10\.00 บาท\/ชิ้น\)/);
+    assert.match(summaryCount, /ตัวเลือกที่คุ้มที่สุด: ตัวเลือก A \(10\.00 บาท\/ชิ้น\)/);
     assert.match(summaryCount, /ประหยัดกว่าตัวเลือก B 9\.1%/);
 
     // 3. Volume comparison: 30 THB / 250 ml (= 120 THB/L) vs 100 THB / 1 L
@@ -400,7 +400,7 @@ test('unit price: cross-unit normalization, cheapest selection, and incompatible
     const summaryVolume = ctx.getToolSummaryText('unit_price');
     assert.match(summaryVolume, /30\.00 บาท \/ 250\.00 ml = 120\.00 บาท\/ลิตร/);
     assert.match(summaryVolume, /100\.00 บาท \/ 1\.00 L = 100\.00 บาท\/ลิตร/);
-    assert.match(summaryVolume, /⭐ ตัวเลือกที่คุ้มที่สุด: ตัวเลือก B \(100\.00 บาท\/ลิตร\)/);
+    assert.match(summaryVolume, /ตัวเลือกที่คุ้มที่สุด: ตัวเลือก B \(100\.00 บาท\/ลิตร\)/);
     assert.match(summaryVolume, /ประหยัดกว่าตัวเลือก A 16\.7%/);
 
     // 4. Incompatible families warning: weight vs volume
@@ -627,7 +627,7 @@ test('calculation history and saved sets: auto-recording, pinning, renaming, FIF
     // 5. Test FIFO 20-item cap on unpinned items
     for (let i = 0; i < 25; i++) {
         ctx.appState.loan.principal = `${i + 1},000,000`;
-        ctx.recordCalculationHistory(ctx.appState, 'loan', false, '', `💰 ค่างวด: ${i + 1}0,000 บาท/เดือน\n• วงเงินกู้: ${i + 1} ล้าน`);
+        ctx.recordCalculationHistory(ctx.appState, 'loan', false, '', `ค่างวด: ${i + 1}0,000 บาท/เดือน\n• วงเงินกู้: ${i + 1} ล้าน`);
     }
 
     allHist = ctx.getCalculationHistory();
@@ -1207,7 +1207,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('ตารางวิเคราะห์และเปรียบเทียบชุดคำนวณ'));
     assert.ok(printHTML.includes('ธนาคาร A (5.0%)'));
     assert.ok(printHTML.includes('ธนาคาร B (3.8%)'));
-    assert.ok(printHTML.includes('🏆 คุ้มค่าที่สุด'));
+    assert.ok(printHTML.includes('คุ้มค่าที่สุด'));
 });
 
 test('all 36 tool renderers are modularized and exported across the 5 tool groups', () => {

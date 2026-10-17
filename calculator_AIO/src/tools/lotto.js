@@ -58,25 +58,25 @@
 
                         <!-- Permutation Quick Action Pills -->
                         <div class="pt-1">
-                            <div class="text-[11px] lotto-muted mb-1.5 font-medium">⚡ ตัวช่วยขยายเลขยอดฮิต (กดแล้วแตกเลขทันที):</div>
+                            <div class="text-[11px] lotto-muted mb-1.5 font-medium">ตัวช่วยขยายเลขยอดฮิต (กดแล้วแตกเลขทันที):</div>
                             <div class="flex flex-wrap gap-1.5 text-xs">
                                 <button type="button" data-lotto-expand="6doors" class="lotto-button lotto-compact">
-                                    🔀 6 ประตู (3 ตัวกลับ)
+                                    6 ประตู (3 ตัวกลับ)
                                 </button>
                                 <button type="button" data-lotto-expand="2doors" class="lotto-button lotto-compact">
-                                    🔁 2 ตัวกลับ
+                                    2 ตัวกลับ
                                 </button>
                                 <button type="button" data-lotto-expand="19doors" class="lotto-button lotto-compact">
-                                    🚪 19 ประตู (รูด 1 ตัว)
+                                    19 ประตู (รูด 1 ตัว)
                                 </button>
                                 <button type="button" data-lotto-expand="frontRun" class="lotto-button lotto-compact">
-                                    ⏩ รูดหน้า (10 หาง)
+                                    รูดหน้า (10 หาง)
                                 </button>
                                 <button type="button" data-lotto-expand="backRun" class="lotto-button lotto-compact">
-                                    ⏪ รูดหลัง (10 หาง)
+                                    รูดหลัง (10 หาง)
                                 </button>
                                 <button type="button" data-lotto-expand="doubles" class="lotto-button lotto-compact">
-                                    👥 เลขเบิ้ล (00-99)
+                                    เลขเบิ้ล (00-99)
                                 </button>
                             </div>
                         </div>
@@ -142,7 +142,7 @@
                     <!-- Calculation Results Summary Card -->
                     <div class="lotto-card lotto-result space-y-3">
                         <div class="text-xs uppercase font-semibold tracking-wider lotto-accent">
-                            💰 สรุปต้นทุนและผลตอบแทนเมื่อถูกรางวัล (1 หาง)
+                            สรุปต้นทุนและผลตอบแทนเมื่อถูกรางวัล (1 หาง)
                         </div>
                         <div class="grid grid-cols-2 gap-3 text-sm">
                             <div class="lotto-inset p-3 space-y-2">
@@ -252,7 +252,7 @@
                     <!-- Prize Breakdown Card -->
                     <div class="lotto-card lotto-result space-y-3">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold uppercase lotto-accent">💵 สรุปเงินรางวัลสุทธิหลังหักภาษี</span>
+                            <span class="text-xs font-bold uppercase lotto-accent">สรุปเงินรางวัลสุทธิหลังหักภาษี</span>
                             <span class="text-xs px-2 py-0.5 rounded lotto-soft lotto-accent font-semibold">
                                 หัก ${claim.deductionRate}%
                             </span>
@@ -276,7 +276,7 @@
                         </div>
 
                         <div class="lotto-note text-xs">
-                            ℹ️ <strong>ข้อกฎหมาย & ข้อควรรู้:</strong> ${claim.feeNote}
+                            ℹ<strong>ข้อกฎหมาย & ข้อควรรู้:</strong> ${claim.feeNote}
                         </div>
                     </div>
                 </div>
@@ -295,7 +295,6 @@
                     <!-- Savings Simulator Card -->
                     <div class="lotto-card space-y-3">
                         <div class="flex items-center gap-2">
-                            <span class="text-xl">💰</span>
                             <div>
                                 <h3 class="font-bold text-sm lotto-accent">โปรแกรมจำลอง: "เปลี่ยนค่าหวยเป็นเงินล้าน"</h3>
                                 <p class="text-[11px] lotto-muted">ถ้าเปลี่ยนเงินซื้อหวยต่องวด มาลงทุน DCA แบบมีวินัย จะได้เงินเก็บเท่าไหร่?</p>
@@ -350,7 +349,7 @@
                     <!-- Reality Check Statistics Card -->
                     <div class="lotto-card space-y-3">
                         <div class="text-xs font-bold lotto-muted flex items-center gap-1.5">
-                            📊 สถิติ & สัจธรรมความจริงสลากกินแบ่งรัฐบาล (1 ชุด = 1,000,000 ใบ)
+                            สถิติ & สัจธรรมความจริงสลากกินแบ่งรัฐบาล (1 ชุด = 1,000,000 ใบ)
                         </div>
                         <div class="lotto-stats-grid grid gap-2 text-xs">
                             <div class="lotto-stat text-center">
@@ -389,7 +388,7 @@
                 <div class="space-y-3">
                     <div class="lotto-card lotto-result space-y-3 text-center">
                         <div class="text-xs uppercase tracking-wider font-bold lotto-accent">
-                            🔮 เครื่องเสี่ยงทาย & สุ่มเลขเด็ดนำโชค
+                            เครื่องเสี่ยงทาย & สุ่มเลขเด็ดนำโชค
                         </div>
 
                         <!-- Big Lucky Number Display -->
@@ -415,10 +414,10 @@
                         <!-- Action Buttons -->
                         <div class="flex flex-col sm:flex-row justify-center gap-2 pt-2">
                             <button type="button" id="btnSpinLucky" class="lotto-button lotto-primary">
-                                🎲 สุ่มเลขใหม่
+                                สุ่มเลขใหม่
                             </button>
                             <button type="button" id="btnSendToBet" class="lotto-button">
-                                🎯 ส่งเลขนี้ไปคำนวณต้นทุน
+                                ส่งเลขนี้ไปคำนวณต้นทุน
                             </button>
                         </div>
                     </div>

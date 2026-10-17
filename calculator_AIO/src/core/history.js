@@ -41,9 +41,8 @@ function formatHistoryTime(date) {
 function extractShortSummary(summaryText) {
     if (!summaryText) return '';
     const lines = summaryText.split('\n').map(l => l.trim()).filter(Boolean);
-    const highlight = lines.find(l => /^(?:💰|⭐|🐷|🍽️|💱|💼|🏷️|⛽|💳|🏦)\s*(?:ยอด|ค่า|ราคา|ผล|ตัวเลือก|เงิน)/.test(l))
-        || lines.find(l => l.startsWith('💰') || l.startsWith('⭐'))
-        || lines.find(l => !l.startsWith('---') && !l.startsWith('📋') && !l.startsWith('•') && !l.startsWith('('));
+    const highlight = lines.find(l => /^(?:ยอด|ค่า|ราคา|ผล|ตัวเลือก|เงิน)/.test(l))
+        || lines.find(l => !l.startsWith('---') && !l.startsWith('•') && !l.startsWith('(') && !l.includes('สรุป'));
     if (highlight) {
         return highlight.replace(/^[^\wก-๙]+/, '').trim();
     }
@@ -260,9 +259,9 @@ function createHistoryCardHTML(item) {
                 </div>
                 <div class="flex items-center gap-0.5 shrink-0 ml-1">
                     <button type="button" class="btn-pin-history p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm" title="${item.isSaved ? 'เลิกบันทึก' : 'บันทึกเป็นชุดเปรียบเทียบ'}" data-id="${item.id}">
-                        ${item.isSaved ? '⭐' : '☆'}
+                        ${item.isSaved ? '★' : '☆'}
                     </button>
-                    ${item.isSaved ? `<button type="button" class="btn-rename-history p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs" title="เปลี่ยนชื่อ" data-id="${item.id}">✏️</button>` : ''}
+                    ${item.isSaved ? `<button type="button" class="btn-rename-history p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs" title="เปลี่ยนชื่อ" data-id="${item.id}">เปลี่ยนชื่อ</button>` : ''}
                     <button type="button" class="btn-del-history p-1.5 rounded-full hover:bg-red-50 text-neutral-400 hover:text-red-500 text-xs" title="ลบรายการนี้" data-id="${item.id}">✕</button>
                 </div>
             </div>
@@ -383,7 +382,7 @@ function promptSaveCurrentSet() {
     const finalLabel = label.trim() || defaultName;
     const entry = recordCalculationHistory(appState, toolId, true, finalLabel);
     if (entry) {
-        showHistoryToast(`⭐ บันทึกชุดคำนวณ "${finalLabel}" แล้ว`);
+        showHistoryToast(`บันทึกชุดคำนวณ "${finalLabel}" แล้ว`);
         updateHistoryBadge();
         if (activeDrawerTab === 'history') {
             renderHistoryPanel();

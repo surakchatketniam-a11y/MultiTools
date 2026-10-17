@@ -390,7 +390,7 @@ function renderWorldTimeTool(container) {
     container.innerHTML = `
         <div class="flex flex-col gap-2 h-full">
             <div class="bg-[var(--app-accent)] text-white rounded-[var(--app-card-radius)] p-3.5 flex items-center justify-between">
-                <div><div class="text-xs">🇹🇭 เวลาประเทศไทยปัจจุบัน</div><div class="text-2xl font-bold font-mono" data-world-time="Asia/Bangkok"></div></div>
+                <div><div class="text-xs">เวลาประเทศไทยปัจจุบัน</div><div class="text-2xl font-bold font-mono" data-world-time="Asia/Bangkok"></div></div>
                 <div class="text-right text-xs" data-world-date="Asia/Bangkok"></div>
             </div>
             <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2">

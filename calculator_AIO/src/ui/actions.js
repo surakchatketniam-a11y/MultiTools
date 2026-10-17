@@ -635,7 +635,7 @@ function triggerPrintReceipt(toolId) {
     const targetId = toolId || appState.activeToolId;
     if (typeof hasInvalidNumericInput === 'function' && hasInvalidNumericInput(targetId)) {
         if (typeof showHistoryToast === 'function') {
-            showHistoryToast('⚠️ ข้อมูลตัวเลขไม่ถูกต้อง กรุณาแก้ไขก่อนพิมพ์', false);
+            showHistoryToast('ข้อมูลตัวเลขไม่ถูกต้อง กรุณาแก้ไขก่อนพิมพ์', false);
         }
         return;
     }

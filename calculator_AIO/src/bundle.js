@@ -848,7 +848,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
                 { label: 'จุดคุ้มทุน (Breakeven)', value: calc.breakevenMonth !== null ? (calc.breakevenMonth === 0 ? 'คุ้มทุนทันที' : `เดือนที่ ${calc.breakevenMonth} (ปีที่ ${(calc.breakevenMonth / 12).toFixed(1)})`) : 'ไม่คุ้มทุน' },
                 { label: 'ประหยัดสุทธิ 3 ปี (Refinance ย้ายค่าย)', value: `${formatMoney(calc.refinanceNetSavings)} บาท`, highlight: calc.isRefinanceBetter },
                 { label: 'ประหยัดสุทธิ 3 ปี (Retention ขอลดดอก)', value: `${formatMoney(calc.retentionNetSavings)} บาท`, highlight: !calc.isRefinanceBetter },
-                { label: 'ผ่อนต่อเดือนเดิม vs รีไฟแนนซ์', value: `${formatMoney(calc.currentPlan.monthlyPay)} ➔ ${formatMoney(calc.refinancePlan.monthlyPay)} บาท` }
+                { label: 'ผ่อนต่อเดือนเดิม vs รีไฟแนนซ์', value: `${formatMoney(calc.currentPlan.monthlyPay)} ${formatMoney(calc.refinancePlan.monthlyPay)} บาท` }
             ];
 
             breakdownHTML = `
@@ -877,7 +877,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
                                 <td style="padding: 6px 8px; text-align: right;">0 บาท (เกณฑ์ฐาน)</td>
                             </tr>
                             <tr style="border-bottom: 1px solid #e2e8f0; ${!calc.isRefinanceBetter ? 'background: #ecfdf5; font-weight: 600;' : ''}">
-                                <td style="padding: 6px 8px;">2. ขอลดดอกเบี้ยเดิม (Retention) ${!calc.isRefinanceBetter ? '⭐' : ''}</td>
+                                <td style="padding: 6px 8px;">2. ขอลดดอกเบี้ยเดิม (Retention) ${!calc.isRefinanceBetter ? '' : ''}</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.retentionRate, 2)}%</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.retentionPlan.monthlyPay)}</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.retentionPlan.totalInterest)}</td>
@@ -885,7 +885,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
                                 <td style="padding: 6px 8px; text-align: right; color: #15803d; font-weight: bold;">+${formatMoney(calc.retentionNetSavings)}</td>
                             </tr>
                             <tr style="border-bottom: 1px solid #e2e8f0; ${calc.isRefinanceBetter ? 'background: #eff6ff; font-weight: 600;' : ''}">
-                                <td style="padding: 6px 8px;">3. ย้ายธนาคารใหม่ (Refinance) ${calc.isRefinanceBetter ? '⭐' : ''}</td>
+                                <td style="padding: 6px 8px;">3. ย้ายธนาคารใหม่ (Refinance) ${calc.isRefinanceBetter ? '' : ''}</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.refinanceRate, 2)}%</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.refinancePlan.monthlyPay)}</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.refinancePlan.totalInterest)}</td>
@@ -1197,7 +1197,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
                                 <td style="padding: 10px; text-align: right; color: #e11d48;">-${formatMoney(calc.totalDeductions)}</td>
                             </tr>
                             <tr style="background: #ecfdf5; font-weight: 800; font-size: 13px; border-top: 1px solid #a7f3d0;">
-                                <td colspan="3" style="padding: 12px 10px; color: #065f46;">💰 เงินเดือนสุทธิที่โอนเข้าบัญชี (Net Take-Home Pay)</td>
+                                <td colspan="3" style="padding: 12px 10px; color: #065f46;">เงินเดือนสุทธิที่โอนเข้าบัญชี (Net Take-Home Pay)</td>
                                 <td style="padding: 12px 10px; text-align: right; color: #059669; font-size: 14px;">${formatMoney(calc.netMonthly)} บาท</td>
                             </tr>
                         </tbody>
@@ -1287,7 +1287,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
             { label: 'ฐานภาษีสูงสุด (Marginal Rate)', value: `${calc.marginalRate}%` },
             { label: 'ภาษีคำนวณทั้งปี', value: `${formatMoney(calc.totalTax)} บาท` },
             {
-                label: calc.isRefund ? '🎉 ได้รับเงินคืนภาษี (Tax Refund)' : (calc.payableAmount > 0 ? '⚠️ ต้องชำระภาษีเพิ่มเติม' : '✓ ภาษีครบถ้วนพอดี'),
+                label: calc.isRefund ? 'ได้รับเงินคืนภาษี (Tax Refund)' : (calc.payableAmount > 0 ? 'ต้องชำระภาษีเพิ่มเติม' : '✓ ภาษีครบถ้วนพอดี'),
                 value: `${formatMoney(calc.isRefund ? calc.refundAmount : calc.payableAmount)} บาท`,
                 highlight: true
             }
@@ -1349,8 +1349,8 @@ function generateFormalPrintHTML(toolId, stateObj) {
 
         resultCards = [
             { label: 'ยอดรวมค่าใช้จ่ายทั้งหมด ณ กรมที่ดิน', value: `${formatMoney(calc.totalLandCost)} บาท`, highlight: true },
-            { label: '👤 ฝั่งผู้ซื้อต้องเตรียมชำระ', value: `${formatMoney(calc.buyerCost)} บาท` },
-            { label: '🏠 ฝั่งผู้ขายต้องเตรียมชำระ', value: `${formatMoney(calc.sellerCost)} บาท` }
+            { label: 'ฝั่งผู้ซื้อต้องเตรียมชำระ', value: `${formatMoney(calc.buyerCost)} บาท` },
+            { label: 'ฝั่งผู้ขายต้องเตรียมชำระ', value: `${formatMoney(calc.sellerCost)} บาท` }
         ];
 
         const rowsHTML = (calc.breakdown || []).map(r => `
@@ -1417,19 +1417,19 @@ function generateFormalPrintHTML(toolId, stateObj) {
 
         if (calc.mode === 'buy') {
             resultCards = [
-                { label: '💰 ราคาซื้อสุทธิที่หน้าร้าน', value: `${formatMoney(calc.totalBuyPrice)} บาท`, highlight: true },
+                { label: 'ราคาซื้อสุทธิที่หน้าร้าน', value: `${formatMoney(calc.totalBuyPrice)} บาท`, highlight: true },
                 { label: 'มูลค่าเนื้อทองคำ', value: `${formatMoney(calc.rawGoldValue)} บาท` },
                 { label: 'ค่ากำเหน็จ', value: `${formatMoney(calc.craftFee)} บาท` }
             ];
         } else if (calc.mode === 'sell') {
             resultCards = [
-                { label: '💵 ราคารับซื้อคืนขั้นต่ำ (สคบ.)', value: `${formatMoney(calc.sellBackValue)} บาท`, highlight: true },
+                { label: 'ราคารับซื้อคืนขั้นต่ำ (สคบ.)', value: `${formatMoney(calc.sellBackValue)} บาท`, highlight: true },
                 { label: 'เรทรับซื้อคืนสมาคม', value: `${formatMoney(calc.officialSellBackRate)} บาท/บาท` },
                 { label: 'หักจากราคาซื้อประมาณ', value: `-${formatMoney(calc.deductionFromSellPrice)} บาท` }
             ];
         } else {
             resultCards = [
-                { label: calc.isProfit ? '🎉 ผลกำไรจากการออมทอง' : '⚠️ ผลขาดทุนจากการออมทอง', value: `${calc.isProfit ? '+' : ''}${formatMoney(calc.profitLoss)} บาท (${formatNum(calc.profitLossPercent, 2)}%)`, highlight: true },
+                { label: calc.isProfit ? 'ผลกำไรจากการออมทอง' : 'ผลขาดทุนจากการออมทอง', value: `${calc.isProfit ? '+' : ''}${formatMoney(calc.profitLoss)} บาท (${formatNum(calc.profitLossPercent, 2)}%)`, highlight: true },
                 { label: 'มูลค่าตลาดปัจจุบัน', value: `${formatMoney(calc.currentMarketValue)} บาท` },
                 { label: 'ต้นทุนที่ลงทุนสะสม', value: `${formatMoney(calc.totalInvested)} บาท` }
             ];
@@ -1484,7 +1484,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
         ];
 
         resultCards = [
-            { label: '⚡ ค่าไฟฟ้ารวมสุทธิ (Total Bill)', value: `${formatMoney(calc.totalBill)} บาท`, highlight: true },
+            { label: 'ค่าไฟฟ้ารวมสุทธิ (Total Bill)', value: `${formatMoney(calc.totalBill)} บาท`, highlight: true },
             { label: 'ค่าไฟฟ้าฐานตามขั้นบันได', value: `${formatMoney(calc.baseEnergyCharge)} บาท` },
             { label: 'ค่า Ft รวม', value: `${formatMoney(calc.ftCharge)} บาท` },
             { label: 'ภาษีมูลค่าเพิ่ม (VAT 7%)', value: `${formatMoney(calc.vat7)} บาท` }
@@ -1623,14 +1623,14 @@ function generateFormalPrintHTML(toolId, stateObj) {
 
         if (calc.isPension) {
             resultCards = [
-                { label: '💰 เงินบำนาญชราภาพรายเดือน (ตลอดชีพ)', value: `${formatMoney(calc.monthlyPension)} บาท/เดือน`, highlight: true },
+                { label: 'เงินบำนาญชราภาพรายเดือน (ตลอดชีพ)', value: `${formatMoney(calc.monthlyPension)} บาท/เดือน`, highlight: true },
                 { label: 'ประมาณการเงินบำนาญรวมต่อปี', value: `${formatMoney(calc.yearlyPension)} บาท/ปี` },
                 { label: 'อัตราบำนาญที่ได้รับ', value: `${formatNum(calc.pensionRatePercent, 2)}% ของค่าจ้างเฉลี่ย` },
                 { label: 'รวมเงินสมทบสะสมกองทุนชราภาพ', value: `${formatMoney(calc.totalFundAccumulated)} บาท` }
             ];
         } else {
             resultCards = [
-                { label: '💰 เงินบำเหน็จชราภาพ (รับก้อนเดียว)', value: `${formatMoney(calc.lumpSumTotal)} บาท`, highlight: true },
+                { label: 'เงินบำเหน็จชราภาพ (รับก้อนเดียว)', value: `${formatMoney(calc.lumpSumTotal)} บาท`, highlight: true },
                 { label: 'รวมเงินสมทบสะสมกองทุนชราภาพ', value: `${formatMoney(calc.totalFundAccumulated)} บาท` },
                 { label: 'รวมเงินสมทบที่ลูกจ้างจ่ายสะสม', value: `${formatMoney(calc.totalWorkerContributed)} บาท` },
                 { label: 'เงื่อนไขการรับสิทธิ์', value: 'ส่งเงินสมทบน้อยกว่า 180 เดือน' }
@@ -1693,7 +1693,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
         ];
 
         resultCards = [
-            { label: '💰 รวมเงินชดเชยสุทธิที่ได้รับ', value: `${formatMoney(calc.totalSeverancePackage)} บาท`, highlight: true },
+            { label: 'รวมเงินชดเชยสุทธิที่ได้รับ', value: `${formatMoney(calc.totalSeverancePackage)} บาท`, highlight: true },
             { label: 'เงินชดเชยเลิกจ้าง (ม.118)', value: `${formatMoney(calc.severancePay)} บาท (${calc.severanceDays} วัน)` },
             { label: 'ค่าบอกกล่าวล่วงหน้า (ค่าตกใจ)', value: `${formatMoney(calc.noticePay)} บาท` },
             { label: 'สิทธิยกเว้นภาษีเงินได้', value: `${formatMoney(calc.taxExemptAmount)} บาท (สูงสุด 3 แสน)` }
@@ -1767,7 +1767,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
         ];
 
         resultCards = [
-            { label: '💰 ยอดหนี้รวมทั้งสิ้นที่ต้องชำระ', value: `${formatMoney(calc.totalPayable)} บาท`, highlight: true },
+            { label: 'ยอดหนี้รวมทั้งสิ้นที่ต้องชำระ', value: `${formatMoney(calc.totalPayable)} บาท`, highlight: true },
             { label: 'เงินต้นค้างชำระ', value: `${formatMoney(calc.principal)} บาท` },
             { label: 'ดอกเบี้ยผิดนัดชำระหนี้สะสม', value: `+${formatMoney(calc.totalInterest)} บาท` },
             { label: 'ดอกเบี้ยผิดนัดเฉลี่ยต่อวัน', value: `+${formatMoney(calc.dailyInterest)} บาท/วัน` }
@@ -1838,7 +1838,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
         ];
 
         resultCards = [
-            { label: '💰 รวมค่าล่วงเวลา OT สุทธิ', value: `+${formatMoney(calc.totalOtPay)} บาท`, highlight: true },
+            { label: 'รวมค่าล่วงเวลา OT สุทธิ', value: `+${formatMoney(calc.totalOtPay)} บาท`, highlight: true },
             { label: 'ยอดเงินได้รวมประจำงวด (ฐาน + OT)', value: `${formatMoney(calc.totalEarnings)} บาท` },
             { label: 'OT วันทำงานปกติ (1.5 เท่า)', value: `${formatMoney(calc.otWeekdayPay)} บาท (${calc.otWeekdayHours} ชม.)` },
             { label: 'ทำงานในวันหยุด (ม.62/63)', value: `${formatMoney(calc.holidayWorkPay + calc.holidayOtPay)} บาท` }
@@ -1925,7 +1925,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
         ];
 
         resultCards = [
-            { label: calc.isProfit ? '💰 กำไรสุทธิต่อชิ้น (Net Profit)' : '⚠️ ขาดทุนสุทธิต่อชิ้น (Net Loss)', value: `${formatMoney(calc.netProfit)} บาท`, highlight: true },
+            { label: calc.isProfit ? 'กำไรสุทธิต่อชิ้น (Net Profit)' : 'ขาดทุนสุทธิต่อชิ้น (Net Loss)', value: `${formatMoney(calc.netProfit)} บาท`, highlight: true },
             { label: 'อัตรากำไรสุทธิ (Profit Margin)', value: `${formatNum(calc.profitMarginPct, 1)}%` },
             { label: 'ราคาขายขั้นต่ำที่ไม่ขาดทุน (Breakeven)', value: `${formatMoney(calc.breakevenPrice)} บาท` },
             { label: 'เงินโอนสุทธิเข้าบัญชี (Net Payout)', value: `${formatMoney(calc.netPayout)} บาท` }
@@ -2658,9 +2658,8 @@ function formatHistoryTime(date) {
 function extractShortSummary(summaryText) {
     if (!summaryText) return '';
     const lines = summaryText.split('\n').map(l => l.trim()).filter(Boolean);
-    const highlight = lines.find(l => /^(?:💰|⭐|🐷|🍽️|💱|💼|🏷️|⛽|💳|🏦)\s*(?:ยอด|ค่า|ราคา|ผล|ตัวเลือก|เงิน)/.test(l))
-        || lines.find(l => l.startsWith('💰') || l.startsWith('⭐'))
-        || lines.find(l => !l.startsWith('---') && !l.startsWith('📋') && !l.startsWith('•') && !l.startsWith('('));
+    const highlight = lines.find(l => /^(?:ยอด|ค่า|ราคา|ผล|ตัวเลือก|เงิน)/.test(l))
+        || lines.find(l => !l.startsWith('---') && !l.startsWith('•') && !l.startsWith('(') && !l.includes('สรุป'));
     if (highlight) {
         return highlight.replace(/^[^\wก-๙]+/, '').trim();
     }
@@ -2877,9 +2876,9 @@ function createHistoryCardHTML(item) {
                 </div>
                 <div class="flex items-center gap-0.5 shrink-0 ml-1">
                     <button type="button" class="btn-pin-history p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm" title="${item.isSaved ? 'เลิกบันทึก' : 'บันทึกเป็นชุดเปรียบเทียบ'}" data-id="${item.id}">
-                        ${item.isSaved ? '⭐' : '☆'}
+                        ${item.isSaved ? '★' : '☆'}
                     </button>
-                    ${item.isSaved ? `<button type="button" class="btn-rename-history p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs" title="เปลี่ยนชื่อ" data-id="${item.id}">✏️</button>` : ''}
+                    ${item.isSaved ? `<button type="button" class="btn-rename-history p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs" title="เปลี่ยนชื่อ" data-id="${item.id}">เปลี่ยนชื่อ</button>` : ''}
                     <button type="button" class="btn-del-history p-1.5 rounded-full hover:bg-red-50 text-neutral-400 hover:text-red-500 text-xs" title="ลบรายการนี้" data-id="${item.id}">✕</button>
                 </div>
             </div>
@@ -3000,7 +2999,7 @@ function promptSaveCurrentSet() {
     const finalLabel = label.trim() || defaultName;
     const entry = recordCalculationHistory(appState, toolId, true, finalLabel);
     if (entry) {
-        showHistoryToast(`⭐ บันทึกชุดคำนวณ "${finalLabel}" แล้ว`);
+        showHistoryToast(`บันทึกชุดคำนวณ "${finalLabel}" แล้ว`);
         updateHistoryBadge();
         if (activeDrawerTab === 'history') {
             renderHistoryPanel();
@@ -3497,7 +3496,7 @@ function compareCalculations(toolId, itemsList) {
         const worstInterest = Math.max(...results.map(r => r.totalInterest));
         const savedInterest = worstInterest - minInterestResult.totalInterest;
 
-        deltaSummary = `🏆 ทางเลือกที่คุ้มค่าที่สุดคือ "${winnerItem.label}" ประหยัดดอกเบี้ยได้สูงสุด ${formatMoney(savedInterest)} บาท เมื่อเทียบกับทางเลือกที่ดอกเบี้ยสูงสุด`;
+        deltaSummary = `ทางเลือกที่คุ้มค่าที่สุดคือ "${winnerItem.label}" ประหยัดดอกเบี้ยได้สูงสุด ${formatMoney(savedInterest)} บาท เมื่อเทียบกับทางเลือกที่ดอกเบี้ยสูงสุด`;
 
     } else if (toolId === 'savings') {
         const results = items.map(item => {
@@ -3562,7 +3561,7 @@ function compareCalculations(toolId, itemsList) {
         const minBal = Math.min(...results.map(r => r.totalBal));
         const diffBal = maxBalResult.totalBal - minBal;
 
-        deltaSummary = `🏆 ทางเลือกที่สร้างความมั่งคั่งได้สูงสุดคือ "${winnerItem.label}" ได้รับเงินออมรวมมากกว่าถึง ${formatMoney(diffBal)} บาท`;
+        deltaSummary = `ทางเลือกที่สร้างความมั่งคั่งได้สูงสุดคือ "${winnerItem.label}" ได้รับเงินออมรวมมากกว่าถึง ${formatMoney(diffBal)} บาท`;
 
     } else if (toolId === 'vat_wht') {
         const results = items.map(item => {
@@ -3640,7 +3639,7 @@ function compareCalculations(toolId, itemsList) {
         });
 
         winnerIndex = bestSavingsIdx;
-        deltaSummary = `🏆 แผนที่มีสัดส่วนเงินออมและลงทุนสูงสุดคือ "${items[winnerIndex].label}" ออมได้ ${formatMoney(bestSavingsResult.savings)} บาท/เดือน (${formatMoney(bestSavingsResult.savings * 12)} บาท/ปี)`;
+        deltaSummary = `แผนที่มีสัดส่วนเงินออมและลงทุนสูงสุดคือ "${items[winnerIndex].label}" ออมได้ ${formatMoney(bestSavingsResult.savings)} บาท/เดือน (${formatMoney(bestSavingsResult.savings * 12)} บาท/ปี)`;
 
     } else if (toolId === 'tax_personal') {
         const results = items.map(item => {
@@ -3684,7 +3683,7 @@ function compareCalculations(toolId, itemsList) {
         winnerIndex = minTaxIdx;
         const maxTax = Math.max(...results.map(r => r.totalTax));
         const diffTax = maxTax - minTaxRes.totalTax;
-        deltaSummary = `🏆 ทางเลือกที่ช่วยประหยัดภาษีได้สูงสุดคือ "${items[winnerIndex].label}" เสียภาษีเพียง ${formatMoney(minTaxRes.totalTax)} บาท${diffTax > 0 ? ` (ประหยัดกว่าทางเลือกอื่นสูงสุด ${formatMoney(diffTax)} บาท)` : ''}`;
+        deltaSummary = `ทางเลือกที่ช่วยประหยัดภาษีได้สูงสุดคือ "${items[winnerIndex].label}" เสียภาษีเพียง ${formatMoney(minTaxRes.totalTax)} บาท${diffTax > 0 ? ` (ประหยัดกว่าทางเลือกอื่นสูงสุด ${formatMoney(diffTax)} บาท)` : ''}`;
 
     } else if (toolId === 'property_transfer') {
         const results = items.map(item => {
@@ -3736,7 +3735,7 @@ function compareCalculations(toolId, itemsList) {
         winnerIndex = minCostIdx;
         const maxCost = Math.max(...results.map(r => r.totalLandCost));
         const diffCost = maxCost - minCostRes.totalLandCost;
-        deltaSummary = `🏆 ทางเลือกที่มีค่าใช้จ่ายวันโอนรวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดรวมเพียง ${formatMoney(minCostRes.totalLandCost)} บาท${diffCost > 0 ? ` (ประหยัดได้ถึง ${formatMoney(diffCost)} บาท)` : ''}`;
+        deltaSummary = `ทางเลือกที่มีค่าใช้จ่ายวันโอนรวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดรวมเพียง ${formatMoney(minCostRes.totalLandCost)} บาท${diffCost > 0 ? ` (ประหยัดได้ถึง ${formatMoney(diffCost)} บาท)` : ''}`;
 
     } else if (toolId === 'gold_thai') {
         const results = items.map(item => {
@@ -3783,7 +3782,7 @@ function compareCalculations(toolId, itemsList) {
         });
 
         winnerIndex = minBuyIdx;
-        deltaSummary = `🏆 ทางเลือกที่ใช้เงินซื้อน้อยที่สุดคือ "${items[winnerIndex].label}" ยอดสุทธิ ${formatMoney(minBuyRes.totalBuyPrice)} บาท (น้ำหนัก ${formatNum(minBuyRes.bahtWeight, 2)} บาททอง)`;
+        deltaSummary = `ทางเลือกที่ใช้เงินซื้อน้อยที่สุดคือ "${items[winnerIndex].label}" ยอดสุทธิ ${formatMoney(minBuyRes.totalBuyPrice)} บาท (น้ำหนัก ${formatNum(minBuyRes.bahtWeight, 2)} บาททอง)`;
 
     } else if (toolId === 'electricity_bill') {
         const results = items.map(item => {
@@ -3836,7 +3835,7 @@ function compareCalculations(toolId, itemsList) {
         winnerIndex = minBillIdx;
         const maxBill = Math.max(...results.map(r => r.totalBill));
         const diffBill = maxBill - minBillRes.totalBill;
-        deltaSummary = `🏆 ทางเลือกที่มียอดค่าไฟฟ้ารวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดสุทธิเพียง ${formatMoney(minBillRes.totalBill)} บาท${diffBill > 0 ? ` (ประหยัดได้ ${formatMoney(diffBill)} บาท/เดือน)` : ''}`;
+        deltaSummary = `ทางเลือกที่มียอดค่าไฟฟ้ารวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดสุทธิเพียง ${formatMoney(minBillRes.totalBill)} บาท${diffBill > 0 ? ` (ประหยัดได้ ${formatMoney(diffBill)} บาท/เดือน)` : ''}`;
 
     } else if (toolId === 'car_loan') {
         const results = items.map(item => {
@@ -3893,7 +3892,7 @@ function compareCalculations(toolId, itemsList) {
         winnerIndex = minRepaymentIdx;
         const maxRepayment = Math.max(...results.map(r => r.totalRepayment));
         const diffRepayment = maxRepayment - minRepaymentRes.totalRepayment;
-        deltaSummary = `🏆 ทางเลือกที่มียอดผ่อนชำระรวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดรวมเพียง ${formatMoney(minRepaymentRes.totalRepayment)} บาท${diffRepayment > 0 ? ` (ประหยัดกว่าทางเลือกอื่น ${formatMoney(diffRepayment)} บาท)` : ''}`;
+        deltaSummary = `ทางเลือกที่มียอดผ่อนชำระรวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดรวมเพียง ${formatMoney(minRepaymentRes.totalRepayment)} บาท${diffRepayment > 0 ? ` (ประหยัดกว่าทางเลือกอื่น ${formatMoney(diffRepayment)} บาท)` : ''}`;
 
     } else if (toolId === 'social_security') {
         const results = items.map(item => {
@@ -3948,7 +3947,7 @@ function compareCalculations(toolId, itemsList) {
             winnerIndex = maxPensionIdx;
             const minPension = Math.min(...pensionCandidates.map(r => r.monthlyPension));
             const diffPension = maxPensionRes.monthlyPension - minPension;
-            deltaSummary = `🏆 ทางเลือกที่ได้รับเงินบำนาญชราภาพรายเดือนสูงสุดคือ "${items[winnerIndex].label}" ได้รับ ${formatMoney(maxPensionRes.monthlyPension)} บาท/เดือนตลอดชีพ${diffPension > 0 ? ` (มากกว่าทางเลือกอื่น ${formatMoney(diffPension)} บาท/เดือน)` : ''}`;
+            deltaSummary = `ทางเลือกที่ได้รับเงินบำนาญชราภาพรายเดือนสูงสุดคือ "${items[winnerIndex].label}" ได้รับ ${formatMoney(maxPensionRes.monthlyPension)} บาท/เดือนตลอดชีพ${diffPension > 0 ? ` (มากกว่าทางเลือกอื่น ${formatMoney(diffPension)} บาท/เดือน)` : ''}`;
         } else {
             const maxLumpRes = results.reduce((max, cur) => cur.lumpSumTotal > max.lumpSumTotal ? cur : max, results[0]);
             const maxLumpIdx = results.indexOf(maxLumpRes);
@@ -3961,7 +3960,7 @@ function compareCalculations(toolId, itemsList) {
             });
 
             winnerIndex = maxLumpIdx;
-            deltaSummary = `🏆 ทางเลือกที่ได้รับเงินบำเหน็จชราภาพสูงสุดคือ "${items[winnerIndex].label}" ได้รับ ${formatMoney(maxLumpRes.lumpSumTotal)} บาท`;
+            deltaSummary = `ทางเลือกที่ได้รับเงินบำเหน็จชราภาพสูงสุดคือ "${items[winnerIndex].label}" ได้รับ ${formatMoney(maxLumpRes.lumpSumTotal)} บาท`;
         }
 
     } else if (toolId === 'labor_severance') {
@@ -4015,7 +4014,7 @@ function compareCalculations(toolId, itemsList) {
         winnerIndex = maxPackageIdx;
         const minPackage = Math.min(...results.map(r => r.totalSeverancePackage));
         const diffPackage = maxPackageRes.totalSeverancePackage - minPackage;
-        deltaSummary = `🏆 ทางเลือกที่ได้รับเงินชดเชยรวมสูงสุดคือ "${items[winnerIndex].label}" ยอดสุทธิ ${formatMoney(maxPackageRes.totalSeverancePackage)} บาท${diffPackage > 0 ? ` (มากกว่าทางเลือกต่ำสุด ${formatMoney(diffPackage)} บาท)` : ''}`;
+        deltaSummary = `ทางเลือกที่ได้รับเงินชดเชยรวมสูงสุดคือ "${items[winnerIndex].label}" ยอดสุทธิ ${formatMoney(maxPackageRes.totalSeverancePackage)} บาท${diffPackage > 0 ? ` (มากกว่าทางเลือกต่ำสุด ${formatMoney(diffPackage)} บาท)` : ''}`;
 
     } else if (toolId === 'legal_interest') {
         const results = items.map(item => {
@@ -4061,7 +4060,7 @@ function compareCalculations(toolId, itemsList) {
         winnerIndex = minPayableIdx;
         const maxPayable = Math.max(...results.map(r => r.totalPayable));
         const diffPayable = maxPayable - minPayableRes.totalPayable;
-        deltaSummary = `🏆 ทางเลือกที่มียอดหนี้รวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดชำระรวม ${formatMoney(minPayableRes.totalPayable)} บาท (ดอกเบี้ย ${formatMoney(minPayableRes.totalInterest)} บาท)${diffPayable > 0 ? ` ประหยัดภาระหนี้ได้ ${formatMoney(diffPayable)} บาท` : ''}`;
+        deltaSummary = `ทางเลือกที่มียอดหนี้รวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดชำระรวม ${formatMoney(minPayableRes.totalPayable)} บาท (ดอกเบี้ย ${formatMoney(minPayableRes.totalInterest)} บาท)${diffPayable > 0 ? ` ประหยัดภาระหนี้ได้ ${formatMoney(diffPayable)} บาท` : ''}`;
 
     } else if (toolId === 'ot_calc') {
         const results = items.map(item => {
@@ -4117,7 +4116,7 @@ function compareCalculations(toolId, itemsList) {
         winnerIndex = maxOtIdx;
         const minOt = Math.min(...results.map(r => r.totalOtPay));
         const diffOt = maxOtRes.totalOtPay - minOt;
-        deltaSummary = `🏆 ทางเลือกที่ได้ค่าล่วงเวลา (OT) สูงสุดคือ "${items[winnerIndex].label}" ได้รับค่า OT รวม ${formatMoney(maxOtRes.totalOtPay)} บาท${diffOt > 0 ? ` (มากกว่าทางเลือกต่ำสุด ${formatMoney(diffOt)} บาท)` : ''}`;
+        deltaSummary = `ทางเลือกที่ได้ค่าล่วงเวลา (OT) สูงสุดคือ "${items[winnerIndex].label}" ได้รับค่า OT รวม ${formatMoney(maxOtRes.totalOtPay)} บาท${diffOt > 0 ? ` (มากกว่าทางเลือกต่ำสุด ${formatMoney(diffOt)} บาท)` : ''}`;
 
     } else if (toolId === 'ecommerce_profit') {
         const results = items.map(item => {
@@ -4170,7 +4169,7 @@ function compareCalculations(toolId, itemsList) {
         winnerIndex = maxProfitIdx;
         const minProfit = Math.min(...results.map(r => r.netProfit));
         const diffProfit = maxProfitRes.netProfit - minProfit;
-        deltaSummary = `🏆 ทางเลือกที่สร้างกำไรสุทธิสูงสุดคือ "${items[winnerIndex].label}" กำไรต่อออเดอร์ ${formatMoney(maxProfitRes.netProfit)} บาท (Margin ${formatNum(maxProfitRes.profitMarginPct, 1)}%)${diffProfit > 0 ? ` มากกว่าทางเลือกต่ำสุด ${formatMoney(diffProfit)} บาท` : ''}`;
+        deltaSummary = `ทางเลือกที่สร้างกำไรสุทธิสูงสุดคือ "${items[winnerIndex].label}" กำไรต่อออเดอร์ ${formatMoney(maxProfitRes.netProfit)} บาท (Margin ${formatNum(maxProfitRes.profitMarginPct, 1)}%)${diffProfit > 0 ? ` มากกว่าทางเลือกต่ำสุด ${formatMoney(diffProfit)} บาท` : ''}`;
 
     } else if (toolId === 'debt_payoff') {
         const results = items.map(item => {
@@ -4214,7 +4213,7 @@ function compareCalculations(toolId, itemsList) {
         winnerIndex = fastestIdx;
         const maxMonths = Math.max(...results.map(r => r.summary.months));
         const diffMonths = maxMonths - fastestRes.summary.months;
-        deltaSummary = `🏆 ทางเลือกที่ปลดหนี้ได้เร็วที่สุดคือ "${items[winnerIndex].label}" ใช้เวลาเพียง ${fastestRes.summary.months} เดือน (${fastestRes.summary.years} ปี)${diffMonths > 0 ? ` (เร็วกว่าทางเลือกช้าสุด ${diffMonths} เดือน)` : ''}`;
+        deltaSummary = `ทางเลือกที่ปลดหนี้ได้เร็วที่สุดคือ "${items[winnerIndex].label}" ใช้เวลาเพียง ${fastestRes.summary.months} เดือน (${fastestRes.summary.years} ปี)${diffMonths > 0 ? ` (เร็วกว่าทางเลือกช้าสุด ${diffMonths} เดือน)` : ''}`;
 
     } else if (toolId === 'food_costing') {
         const results = items.map(item => {
@@ -4269,10 +4268,10 @@ function compareCalculations(toolId, itemsList) {
             winnerIndex = maxProfitIdx;
             const minProfit = Math.min(...validProfits.map(r => r.summary.grossProfit));
             const diffProfit = maxProfitRes.summary.grossProfit - minProfit;
-            deltaSummary = `🏆 ทางเลือกที่สร้างกำไรต่อเสิร์ฟสูงสุดคือ "${items[winnerIndex].label}" กำไร ${formatMoney(maxProfitRes.summary.grossProfit)} บาท (Margin ${formatNum(maxProfitRes.summary.grossMarginPct, 1)}%)${diffProfit > 0 ? ` มากกว่าทางเลือกต่ำสุด ${formatMoney(diffProfit)} บาท` : ''}`;
+            deltaSummary = `ทางเลือกที่สร้างกำไรต่อเสิร์ฟสูงสุดคือ "${items[winnerIndex].label}" กำไร ${formatMoney(maxProfitRes.summary.grossProfit)} บาท (Margin ${formatNum(maxProfitRes.summary.grossMarginPct, 1)}%)${diffProfit > 0 ? ` มากกว่าทางเลือกต่ำสุด ${formatMoney(diffProfit)} บาท` : ''}`;
         } else {
             winnerIndex = minCostIdx;
-            deltaSummary = `🏆 ทางเลือกที่ต้นทุนรวมต่อเสิร์ฟประหยัดที่สุดคือ "${items[winnerIndex].label}" ต้นทุนเพียง ${formatMoney(minCostRes.summary.totalCostPerPortion)} บาท`;
+            deltaSummary = `ทางเลือกที่ต้นทุนรวมต่อเสิร์ฟประหยัดที่สุดคือ "${items[winnerIndex].label}" ต้นทุนเพียง ${formatMoney(minCostRes.summary.totalCostPerPortion)} บาท`;
         }
 
     } else if (toolId === 'fuel_cost') {
@@ -4363,7 +4362,7 @@ function compareCalculations(toolId, itemsList) {
             });
 
             winnerIndex = minCostIdx;
-            deltaSummary = `🏆 ทางเลือกที่ประหยัดต้นทุนพลังงานที่สุดคือ "${items[winnerIndex].label}" ต้นทุนเพียง ${formatMoney(minCostRes.costPerKm)} บาท/กม. (ประมาณการ ${formatMoney(minCostRes.annualCost)} บาท/ปี)${diffAnnual > 0 ? ` ประหยัดกว่าทางเลือกสูงสุดถึง ${formatMoney(diffAnnual)} บาท/ปี (${formatMoney(diffKm)} บาท/กม.)` : ''}`;
+            deltaSummary = `ทางเลือกที่ประหยัดต้นทุนพลังงานที่สุดคือ "${items[winnerIndex].label}" ต้นทุนเพียง ${formatMoney(minCostRes.costPerKm)} บาท/กม. (ประมาณการ ${formatMoney(minCostRes.annualCost)} บาท/ปี)${diffAnnual > 0 ? ` ประหยัดกว่าทางเลือกสูงสุดถึง ${formatMoney(diffAnnual)} บาท/ปี (${formatMoney(diffKm)} บาท/กม.)` : ''}`;
         } else {
             rows.push({
                 label: 'ต้นทุนเฉลี่ยต่อกิโลเมตร',
@@ -4465,7 +4464,7 @@ function compareCalculations(toolId, itemsList) {
             });
 
             winnerIndex = minBudgetIdx;
-            deltaSummary = `🏆 ทางเลือกที่ประหยัดงบประมาณที่สุดคือ "${items[winnerIndex].label}" งบประมาณเพียง ${formatMoney(minBudgetRes.costs.totalEstimatedBudget)} บาท${diffBudget > 0 ? ` (ประหยัดกว่าทางเลือกสูงสุด ${formatMoney(diffBudget)} บาท)` : ''}`;
+            deltaSummary = `ทางเลือกที่ประหยัดงบประมาณที่สุดคือ "${items[winnerIndex].label}" งบประมาณเพียง ${formatMoney(minBudgetRes.costs.totalEstimatedBudget)} บาท${diffBudget > 0 ? ` (ประหยัดกว่าทางเลือกสูงสุด ${formatMoney(diffBudget)} บาท)` : ''}`;
         } else {
             rows.push({
                 label: 'จำนวนวัสดุหลักที่ต้องสั่ง',
@@ -4501,7 +4500,7 @@ function generateComparePrintHTML(compData) {
     const headersHTML = compData.items.map((item, idx) => `
         <th style="padding: 10px; text-align: right; background: ${idx === compData.winnerIndex ? '#ecfdf5' : '#f8fafc'}; color: ${idx === compData.winnerIndex ? '#065f46' : '#0f172a'}; border-left: 1px solid #cbd5e1;">
             <div style="font-size: 13px; font-weight: 700;">${escapeHTML(item.label || ('ทางเลือก ' + (idx + 1)))}</div>
-            ${idx === compData.winnerIndex ? '<span style="display:inline-block; font-size:10px; font-weight:700; color:#047857; background:#d1fae5; border-radius:4px; padding:1px 6px; margin-top:3px;">🏆 คุ้มค่าที่สุด</span>' : ''}
+            ${idx === compData.winnerIndex ? '<span style="display:inline-block; font-size:10px; font-weight:700; color:#047857; background:#d1fae5; border-radius:4px; padding:1px 6px; margin-top:3px;">คุ้มค่าที่สุด</span>' : ''}
         </th>
     `).join('');
 
@@ -4589,15 +4588,14 @@ function populateCompareSlots() {
     if (appState && appState[toolId]) {
         options.push({
             value: 'current',
-            label: '📌 ค่าปัจจุบันบนหน้าจอ',
+            label: 'ค่าปัจจุบันบนหน้าจอ',
             state: JSON.parse(JSON.stringify(appState[toolId]))
         });
     }
 
     const history = getCalculationHistory().filter(h => h.toolId === toolId);
     history.forEach(item => {
-        const prefix = item.isSaved ? '⭐ ' : '🕒 ';
-        const label = prefix + (item.label || item.shortSummary || item.timeDisplay);
+        const label = (item.label || item.shortSummary || item.timeDisplay);
         options.push({
             value: item.id,
             label: label,
@@ -4609,7 +4607,7 @@ function populateCompareSlots() {
     presets.forEach((p, idx) => {
         options.push({
             value: 'preset_' + idx,
-            label: '💡 ' + p.label,
+            label: '' + p.label,
             state: p.state
         });
     });
@@ -4638,7 +4636,7 @@ function getSelectedSlotItem(slotId) {
 
     if (val === 'current') {
         return {
-            label: '📌 ค่าปัจจุบันบนหน้าจอ',
+            label: 'ค่าปัจจุบันบนหน้าจอ',
             state: JSON.parse(JSON.stringify(appState[toolId] || {}))
         };
     }
@@ -4712,10 +4710,10 @@ function renderCompareMatrix() {
                 ${compData.items.map((item, idx) => `
                     <th class="p-2.5 text-right font-bold border-l border-[var(--app-hairline)] ${idx === compData.winnerIndex ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-200' : 'text-[var(--color-ink)]'}">
                         <div class="truncate max-w-[170px] inline-block font-bold">${escapeHTML(item.label)}</div>
-                        ${idx === compData.winnerIndex ? '<span class="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">🏆 คุ้มค่าที่สุด</span>' : ''}
+                        ${idx === compData.winnerIndex ? '<span class="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">คุ้มค่าที่สุด</span>' : ''}
                         <div class="mt-1">
                             <button type="button" class="btn-load-compare-set px-2 py-0.5 text-[10px] font-semibold rounded bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition shadow-sm cursor-pointer" data-idx="${idx}">
-                                📥 ใช้ชุดนี้
+                                ใช้ชุดนี้
                             </button>
                         </div>
                     </th>
@@ -5397,7 +5395,7 @@ function getToolSummaryText(toolId, stateObj) {
             const vatAmt = amt * (rate / 100);
             const whtAmt = amt * (wht / 100);
             const net = amt + vatAmt - whtAmt;
-            return `📄 สรุปยอด VAT + หัก ณ ที่จ่าย\n${divider}\n• ยอดค่าบริการ/สินค้า: ${formatMoney(amt)} บาท\n• ภาษีมูลค่าเพิ่ม (VAT ${rate}%): +${formatMoney(vatAmt)} บาท\n• หักภาษี ณ ที่จ่าย (${wht}%): -${formatMoney(whtAmt)} บาท\n${divider}\n💰 ยอดโอนสุทธิ: ${formatMoney(net)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปยอด VAT + หัก ณ ที่จ่าย\n${divider}\n• ยอดค่าบริการ/สินค้า: ${formatMoney(amt)} บาท\n• ภาษีมูลค่าเพิ่ม (VAT ${rate}%): +${formatMoney(vatAmt)} บาท\n• หักภาษี ณ ที่จ่าย (${wht}%): -${formatMoney(whtAmt)} บาท\n${divider}\nยอดโอนสุทธิ: ${formatMoney(net)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'vat': {
             const st = state.vat || {};
@@ -5407,7 +5405,7 @@ function getToolSummaryText(toolId, stateObj) {
             const baseAmt = isInclude ? amt / (1 + rate / 100) : amt;
             const vatAmt = isInclude ? amt - baseAmt : amt * (rate / 100);
             const totalAmt = isInclude ? amt : amt + vatAmt;
-            return `📄 สรุปภาษีมูลค่าเพิ่ม (VAT)\n${divider}\n• โหมด: ${isInclude ? 'ถอด VAT จากยอดรวม' : 'บวก VAT เพิ่ม'}\n• ยอดก่อน VAT: ${formatMoney(baseAmt)} บาท\n• ภาษี VAT (${rate}%): ${formatMoney(vatAmt)} บาท\n${divider}\n💰 ยอดรวมสุทธิ: ${formatMoney(totalAmt)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปภาษีมูลค่าเพิ่ม (VAT)\n${divider}\n• โหมด: ${isInclude ? 'ถอด VAT จากยอดรวม' : 'บวก VAT เพิ่ม'}\n• ยอดก่อน VAT: ${formatMoney(baseAmt)} บาท\n• ภาษี VAT (${rate}%): ${formatMoney(vatAmt)} บาท\n${divider}\nยอดรวมสุทธิ: ${formatMoney(totalAmt)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'discount': {
             const st = state.discount || {};
@@ -5420,7 +5418,7 @@ function getToolSummaryText(toolId, stateObj) {
             const finalPrice = afterFirst * (1 - safeD2 / 100);
             const saved = p - finalPrice;
             const extraStr = d2 > 0 ? ` + On-top ${d2}%` : '';
-            return `🏷️ สรุปส่วนลดสินค้า\n${divider}\n• ราคาปกติ: ${formatMoney(p)} บาท\n• ส่วนลด: ${d1}%${extraStr}\n• ประหยัดไป: ${formatMoney(saved)} บาท\n${divider}\n💰 ราคาสุทธิ: ${formatMoney(finalPrice)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปส่วนลดสินค้า\n${divider}\n• ราคาปกติ: ${formatMoney(p)} บาท\n• ส่วนลด: ${d1}%${extraStr}\n• ประหยัดไป: ${formatMoney(saved)} บาท\n${divider}\nราคาสุทธิ: ${formatMoney(finalPrice)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'unit_price': {
             const rows = (state.unit_price && state.unit_price.rows) ? state.unit_price.rows : [];
@@ -5444,12 +5442,12 @@ function getToolSummaryText(toolId, stateObj) {
                     return { id: r.id, p, q, unit: uKey, uDef, baseQty, unitPrice };
                 })
                 .filter(r => Number.isFinite(r.p) && Number.isFinite(r.q) && r.p > 0 && r.q > 0 && Number.isFinite(r.unitPrice));
-            if (!valid.length) return '🛒 สรุปราคาต่อหน่วย\n(กรุณากรอกราคาและจำนวนเพื่อเปรียบเทียบ)';
+            if (!valid.length) return 'สรุปราคาต่อหน่วย\n(กรุณากรอกราคาและจำนวนเพื่อเปรียบเทียบ)';
 
             const families = new Set(valid.map(v => v.uDef.family));
             if (families.size > 1) {
                 const rowTexts = valid.map(v => `• ตัวเลือก ${v.id}: ${formatMoney(v.p)} บาท / ${formatMoney(v.q)} ${v.uDef.label}`);
-                return `🛒 สรุปเปรียบเทียบราคาต่อหน่วย\n${divider}\n${rowTexts.join('\n')}\n${divider}\n⚠️ ไม่สามารถเปรียบเทียบข้ามชนิดหน่วยได้ (เช่น น้ำหนัก กับ ปริมาตร)\n(คำนวณโดย Multitools Calculator)`;
+                return `สรุปเปรียบเทียบราคาต่อหน่วย\n${divider}\n${rowTexts.join('\n')}\n${divider}\nไม่สามารถเปรียบเทียบข้ามชนิดหน่วยได้ (เช่น น้ำหนัก กับ ปริมาตร)\n(คำนวณโดย Multitools Calculator)`;
             }
 
             const minPrice = Math.min(...valid.map(v => v.unitPrice));
@@ -5460,13 +5458,13 @@ function getToolSummaryText(toolId, stateObj) {
                 const origStr = `${formatMoney(v.p)} บาท / ${formatMoney(v.q)} ${unitLabel}`;
                 return `• ตัวเลือก ${v.id}: ${origStr} = ${formatUnitPrice(v.unitPrice)} บาท/${baseUnit}`;
             });
-            let comparison = `⭐ ตัวเลือกที่คุ้มที่สุด: ตัวเลือก ${best.id} (${formatUnitPrice(best.unitPrice)} บาท/${baseUnit})`;
+            let comparison = `ตัวเลือกที่คุ้มที่สุด: ตัวเลือก ${best.id} (${formatUnitPrice(best.unitPrice)} บาท/${baseUnit})`;
             const second = [...valid].sort((a,b) => a.unitPrice - b.unitPrice).find(v => v.unitPrice > minPrice + 1e-7);
             if (second) {
                 const pct = (((second.unitPrice - best.unitPrice) / second.unitPrice) * 100).toFixed(1);
                 comparison += `\n(ประหยัดกว่าตัวเลือก ${second.id} ${pct}%)`;
             }
-            return `🛒 สรุปเปรียบเทียบราคาต่อหน่วย\n${divider}\n${rowTexts.join('\n')}\n${divider}\n${comparison}\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปเปรียบเทียบราคาต่อหน่วย\n${divider}\n${rowTexts.join('\n')}\n${divider}\n${comparison}\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'date_work': {
             const st = state.date_work || {};
@@ -5486,14 +5484,14 @@ function getToolSummaryText(toolId, stateObj) {
                 const target = offsetWorkingDays(start, integerOrDefault(st.offset, 0), isWorkday);
                 resultText = `• วันที่เป้าหมาย (${st.offset >= 0 ? '+' : ''}${st.offset} วันทำการ): ${formatThaiDate(formatLocalDate(target))}`;
             }
-            return `📅 สรุปวันทำการ (Workdays)\n${divider}\n• วันเริ่มต้น: ${st.startDate}\n${st.mode === 'between' ? `• วันสิ้นสุด: ${st.endDate}\n` : ''}${resultText}\n• กติกา: ตัดเสาร์-อาทิตย์และวันหยุดราชการไทย\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปวันทำการ (Workdays)\n${divider}\n• วันเริ่มต้น: ${st.startDate}\n${st.mode === 'between' ? `• วันสิ้นสุด: ${st.endDate}\n` : ''}${resultText}\n• กติกา: ตัดเสาร์-อาทิตย์และวันหยุดราชการไทย\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'date_calc': {
             const st = state.date_calc || {};
             const d1 = new Date(st.startDate + 'T00:00:00');
             const d2 = new Date(st.endDate + 'T00:00:00');
             const diffDays = Math.round(Math.abs(d2 - d1) / 86400000);
-            return `📅 สรุปคำนวณวันที่ & อายุ\n${divider}\n• วันที่เริ่มต้น: ${st.startDate}\n• วันที่สิ้นสุด: ${st.endDate}\n${divider}\n• ระยะห่าง: ${diffDays.toLocaleString('th-TH')} วัน\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปคำนวณวันที่ & อายุ\n${divider}\n• วันที่เริ่มต้น: ${st.startDate}\n• วันที่สิ้นสุด: ${st.endDate}\n${divider}\n• ระยะห่าง: ${diffDays.toLocaleString('th-TH')} วัน\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'loan': {
             const st = state.loan || {};
@@ -5514,7 +5512,7 @@ function getToolSummaryText(toolId, stateObj) {
                     });
                     const bestChoice = calc.isRefinanceBetter ? 'รีไฟแนนซ์ (ย้ายธนาคาร)' : 'ขอลดดอกเบี้ยเดิม (Retention)';
                     const netSavings = calc.isRefinanceBetter ? calc.refinanceNetSavings : calc.retentionNetSavings;
-                    return `🏠 สรุปวิเคราะห์รีไฟแนนซ์บ้าน (เกณฑ์ ธปท.)\n${divider}\n• ยอดหนี้คงเหลือ: ${formatMoney(calc.principal)} บาท (${calc.months} เดือน)\n• ดอกเบี้ยเดิม: ${formatNum(calc.currentRate, 2)}% | Retention: ${formatNum(calc.retentionRate, 2)}% | Refinance: ${formatNum(calc.refinanceRate, 2)}%\n• รวมค่าใช้จ่ายย้ายธนาคาร: ${formatMoney(calc.totalRefinanceFees)} บาท\n${divider}\n💡 ทางเลือกที่แนะนำ: ${bestChoice}\n💰 ประหยัดสุทธิ 3 ปี: +${formatMoney(netSavings)} บาท\n⏱️ จุดคุ้มทุน: ${calc.breakevenMonth !== null ? (calc.breakevenMonth === 0 ? 'คุ้มทุนทันที' : 'เดือนที่ ' + calc.breakevenMonth) : 'ไม่คุ้มทุน'}\n(คำนวณโดย Multitools Calculator)`;
+                    return `สรุปวิเคราะห์รีไฟแนนซ์บ้าน (เกณฑ์ ธปท.)\n${divider}\n• ยอดหนี้คงเหลือ: ${formatMoney(calc.principal)} บาท (${calc.months} เดือน)\n• ดอกเบี้ยเดิม: ${formatNum(calc.currentRate, 2)}% | Retention: ${formatNum(calc.retentionRate, 2)}% | Refinance: ${formatNum(calc.refinanceRate, 2)}%\n• รวมค่าใช้จ่ายย้ายธนาคาร: ${formatMoney(calc.totalRefinanceFees)} บาท\n${divider}\nทางเลือกที่แนะนำ: ${bestChoice}\nประหยัดสุทธิ 3 ปี: +${formatMoney(netSavings)} บาท\nจุดคุ้มทุน: ${calc.breakevenMonth !== null ? (calc.breakevenMonth === 0 ? 'คุ้มทุนทันที' : 'เดือนที่ ' + calc.breakevenMonth) : 'ไม่คุ้มทุน'}\n(คำนวณโดย Multitools Calculator)`;
                 }
             }
             const P = numberOrDefault(st.principal, 0);
@@ -5546,7 +5544,7 @@ function getToolSummaryText(toolId, stateObj) {
                 }
             }
             const methodLabel = st.calcMethod === 'flat' ? 'เงินงวดคงที่' : 'ลดต้นลดดอก';
-            return `🏦 สรุปยอดผ่อนเงินกู้ & ผ่อนชำระ\n${divider}\n• วงเงินกู้: ${formatMoney(P)} บาท\n• ดอกเบี้ย: ${annualRate}% ต่อปี (${methodLabel})\n• ระยะเวลา: ${n} เดือน\n${divider}\n💰 ค่างวด: ${formatMoney(monthlyPay)} บาท/เดือน\n• ดอกเบี้ยรวม: +${formatMoney(totalInterest)} บาท\n• ยอดชำระรวม: ${formatMoney(totalPay)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปยอดผ่อนเงินกู้ & ผ่อนชำระ\n${divider}\n• วงเงินกู้: ${formatMoney(P)} บาท\n• ดอกเบี้ย: ${annualRate}% ต่อปี (${methodLabel})\n• ระยะเวลา: ${n} เดือน\n${divider}\nค่างวด: ${formatMoney(monthlyPay)} บาท/เดือน\n• ดอกเบี้ยรวม: +${formatMoney(totalInterest)} บาท\n• ยอดชำระรวม: ${formatMoney(totalPay)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'savings': {
             const st = state.savings || {};
@@ -5565,7 +5563,7 @@ function getToolSummaryText(toolId, stateObj) {
                 totalPrincipal += currentMonthly;
             }
             const interestEarned = Math.max(0, totalBalance - totalPrincipal);
-            return `💰 สรุปการวางแผนเงินออม\n${divider}\n• เงินก้อนเริ่มต้น: ${formatMoney(init)} บาท\n• ฝากเพิ่มรายเดือน: ${formatMoney(monthly)} บาท/เดือน\n• ระยะเวลา: ${years} ปี (${rate}% ต่อปี)\n${divider}\n• เงินต้นสะสม: ${formatMoney(totalPrincipal)} บาท\n• ดอกเบี้ยสะสม: +${formatMoney(interestEarned)} บาท\n💰 ยอดเงินออมสุทธิ: ${formatMoney(totalBalance)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปการวางแผนเงินออม\n${divider}\n• เงินก้อนเริ่มต้น: ${formatMoney(init)} บาท\n• ฝากเพิ่มรายเดือน: ${formatMoney(monthly)} บาท/เดือน\n• ระยะเวลา: ${years} ปี (${rate}% ต่อปี)\n${divider}\n• เงินต้นสะสม: ${formatMoney(totalPrincipal)} บาท\n• ดอกเบี้ยสะสม: +${formatMoney(interestEarned)} บาท\nยอดเงินออมสุทธิ: ${formatMoney(totalBalance)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'currency': {
             const st = state.currency || { ratesInTHB: {} };
@@ -5575,7 +5573,7 @@ function getToolSummaryText(toolId, stateObj) {
             const customRate = parseNumericInput(st.customRateToTHB);
             const effectiveRate = (!isNaN(customRate) && customRate > 0) ? customRate : (fromRate / toRate);
             const converted = amt * effectiveRate;
-            return `💱 สรุปอัตราแลกเปลี่ยนสกุลเงิน\n${divider}\n• ${formatNum(amt, 2)} ${st.from} = ${formatMoney(converted)} ${st.to}\n• เรทที่ใช้: 1 ${st.from} = ${formatNum(effectiveRate, 4)} ${st.to}\n• แหล่งข้อมูล: ${st.rateSource || 'Frankfurter'}\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปอัตราแลกเปลี่ยนสกุลเงิน\n${divider}\n• ${formatNum(amt, 2)} ${st.from} = ${formatMoney(converted)} ${st.to}\n• เรทที่ใช้: 1 ${st.from} = ${formatNum(effectiveRate, 4)} ${st.to}\n• แหล่งข้อมูล: ${st.rateSource || 'Frankfurter'}\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'tip': {
             const st = state.tip || {};
@@ -5585,7 +5583,7 @@ function getToolSummaryText(toolId, stateObj) {
             const tipAmt = bill * (tipPct / 100);
             const total = bill + tipAmt;
             const perPerson = total / people;
-            return `🍽️ สรุปหารค่าอาหาร / ทิป\n${divider}\n• ยอดบิล: ${formatMoney(bill)} บาท\n• ทิป (${tipPct}%): ${formatMoney(tipAmt)} บาท\n• ยอดรวมทั้งสิ้น: ${formatMoney(total)} บาท\n• จำนวนคน: ${people} คน\n${divider}\n💰 จ่ายคนละ: ${formatMoney(perPerson)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปหารค่าอาหาร / ทิป\n${divider}\n• ยอดบิล: ${formatMoney(bill)} บาท\n• ทิป (${tipPct}%): ${formatMoney(tipAmt)} บาท\n• ยอดรวมทั้งสิ้น: ${formatMoney(total)} บาท\n• จำนวนคน: ${people} คน\n${divider}\nจ่ายคนละ: ${formatMoney(perPerson)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'salary': {
             const st = state.salary || {};
@@ -5593,13 +5591,13 @@ function getToolSummaryText(toolId, stateObj) {
                 const calc = (typeof calculateNetSalary === 'function')
                     ? calculateNetSalary(st)
                     : { baseSalary: 0, grossMonthly: 0, totalDeductions: 0, netMonthly: 0, ssoMonthly: 0, pvdMonthly: 0, taxMonthly: 0, customDeduction: 0, effectiveDeductionPct: 0 };
-                return `💵 สรุปเงินเดือนสุทธิรับจริง (Take-Home Pay)\n${divider}\n• เงินเดือนฐาน: ${formatMoney(calc.baseSalary)} บาท\n• รายได้รวมก่อนหัก: ${formatMoney(calc.grossMonthly)} บาท\n• ประกันสังคม (ม.33): -${formatMoney(calc.ssoMonthly)} บาท\n• กองทุนสำรองฯ (PVD): -${formatMoney(calc.pvdMonthly)} บาท\n• ภาษีหัก ณ ที่จ่าย (ภ.ง.ด.1): -${formatMoney(calc.taxMonthly)} บาท\n• รายการหักอื่นๆ: -${formatMoney(calc.customDeduction)} บาท\n${divider}\n💰 เงินเดือนสุทธิรับจริง: ${formatMoney(calc.netMonthly)} บาท/เดือน\n📉 รวมรายการหัก: -${formatMoney(calc.totalDeductions)} บาท (${formatNum(calc.effectiveDeductionPct, 1)}%)\n(คำนวณโดย Multitools Calculator)`;
+                return `สรุปเงินเดือนสุทธิรับจริง (Take-Home Pay)\n${divider}\n• เงินเดือนฐาน: ${formatMoney(calc.baseSalary)} บาท\n• รายได้รวมก่อนหัก: ${formatMoney(calc.grossMonthly)} บาท\n• ประกันสังคม (ม.33): -${formatMoney(calc.ssoMonthly)} บาท\n• กองทุนสำรองฯ (PVD): -${formatMoney(calc.pvdMonthly)} บาท\n• ภาษีหัก ณ ที่จ่าย (ภ.ง.ด.1): -${formatMoney(calc.taxMonthly)} บาท\n• รายการหักอื่นๆ: -${formatMoney(calc.customDeduction)} บาท\n${divider}\nเงินเดือนสุทธิรับจริง: ${formatMoney(calc.netMonthly)} บาท/เดือน\nรวมรายการหัก: -${formatMoney(calc.totalDeductions)} บาท (${formatNum(calc.effectiveDeductionPct, 1)}%)\n(คำนวณโดย Multitools Calculator)`;
             }
             const income = parseNumericInput(st.income) || 0;
             const needs = income * (numberOrDefault(st.needsPct, 50) / 100);
             const wants = income * (numberOrDefault(st.wantsPct, 30) / 100);
             const savings = income * (numberOrDefault(st.savingsPct, 20) / 100);
-            return `💼 สรุปจัดสรรเงินเดือน (50/30/20)\n${divider}\n• เงินเดือนสุทธิ: ${formatMoney(income)} บาท\n• รายจ่ายจำเป็น (50%): ${formatMoney(needs)} บาท\n• เพื่อความสุข/ไลฟ์สไตล์ (30%): ${formatMoney(wants)} บาท\n• เงินออม/ลงทุน (20%): ${formatMoney(savings)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปจัดสรรเงินเดือน (50/30/20)\n${divider}\n• เงินเดือนสุทธิ: ${formatMoney(income)} บาท\n• รายจ่ายจำเป็น (50%): ${formatMoney(needs)} บาท\n• เพื่อความสุข/ไลฟ์สไตล์ (30%): ${formatMoney(wants)} บาท\n• เงินออม/ลงทุน (20%): ${formatMoney(savings)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'fuel_cost': {
             const st = state.fuel_cost || {};
@@ -5608,7 +5606,7 @@ function getToolSummaryText(toolId, stateObj) {
                 const calc = (typeof calculateEvCost === 'function')
                     ? calculateEvCost(st)
                     : { distance: 100, evEfficiency: 6.5, electricityRate: 2.9, compareIceEfficiency: 15, compareFuelPrice: 36.5, yearlyKm: 20000, ev: { billedKwh: 16.9, totalCost: 49.08, costPerKm: 0.49 }, ice: { totalCost: 243.33, costPerKm: 2.43 }, savings: { tripSavings: 194.25, savingsPct: 79.8, isSavings: true }, annual: { yearlySavings: 38850 } };
-                return `⚡ สรุปค่าชาร์จรถไฟฟ้า EV & เทียบรถน้ำมัน\n${divider}\n• ระยะทาง: ${formatMoney(calc.distance)} กม.\n• อัตรากินไฟ EV: ${calc.evEfficiency} กม./kWh (ไฟรวม ${formatNum(calc.ev.billedKwh, 1)} หน่วย)\n• อัตราค่าไฟ: ${formatMoney(calc.electricityRate)} บาท/หน่วย\n• ค่าชาร์จรถ EV: ${formatMoney(calc.ev.totalCost)} บาท (เฉลี่ย ${formatMoney(calc.ev.costPerKm)} ฿/กม.)\n${divider}\n🚗 เทียบรถน้ำมัน (${calc.compareIceEfficiency} กม./ลิตร @ ${formatMoney(calc.compareFuelPrice)} ฿):\n• ค่าน้ำมันปกติ: ${formatMoney(calc.ice.totalCost)} บาท (${formatMoney(calc.ice.costPerKm)} ฿/กม.)\n${calc.savings.isSavings ? `💰 ประหยัดได้: ${formatMoney(calc.savings.tripSavings)} บาท (${calc.savings.savingsPct}%)\n🎉 ประหยัดต่อปี (~${formatMoney(calc.yearlyKm)} กม.): +${formatMoney(calc.annual.yearlySavings)} บาท/ปี` : `⚠️ แพงกว่ารถน้ำมัน: ${formatMoney(Math.abs(calc.savings.tripSavings))} บาท`}\n(คำนวณโดย Multitools Calculator)`;
+                return `สรุปค่าชาร์จรถไฟฟ้า EV & เทียบรถน้ำมัน\n${divider}\n• ระยะทาง: ${formatMoney(calc.distance)} กม.\n• อัตรากินไฟ EV: ${calc.evEfficiency} กม./kWh (ไฟรวม ${formatNum(calc.ev.billedKwh, 1)} หน่วย)\n• อัตราค่าไฟ: ${formatMoney(calc.electricityRate)} บาท/หน่วย\n• ค่าชาร์จรถ EV: ${formatMoney(calc.ev.totalCost)} บาท (เฉลี่ย ${formatMoney(calc.ev.costPerKm)} ฿/กม.)\n${divider}\nเทียบรถน้ำมัน (${calc.compareIceEfficiency} กม./ลิตร @ ${formatMoney(calc.compareFuelPrice)} ฿):\n• ค่าน้ำมันปกติ: ${formatMoney(calc.ice.totalCost)} บาท (${formatMoney(calc.ice.costPerKm)} ฿/กม.)\n${calc.savings.isSavings ? `ประหยัดได้: ${formatMoney(calc.savings.tripSavings)} บาท (${calc.savings.savingsPct}%)\nประหยัดต่อปี (~${formatMoney(calc.yearlyKm)} กม.): +${formatMoney(calc.annual.yearlySavings)} บาท/ปี` : `แพงกว่ารถน้ำมัน: ${formatMoney(Math.abs(calc.savings.tripSavings))} บาท`}\n(คำนวณโดย Multitools Calculator)`;
             }
             const dist = parseNumericInput(st.distance) || 0;
             const eff = parseNumericInput(st.efficiency) || 15;
@@ -5616,7 +5614,7 @@ function getToolSummaryText(toolId, stateObj) {
             const liters = eff > 0 ? dist / eff : 0;
             const totalCost = liters * price;
             const costPerKm = dist > 0 ? totalCost / dist : 0;
-            return `⛽ สรุปค่าน้ำมันเดินทาง\n${divider}\n• ระยะทาง: ${formatNum(dist, 1)} กม.\n• อัตราสิ้นเปลือง: ${formatNum(eff, 1)} กม./ลิตร\n• ราคาน้ำมัน: ${formatMoney(price)} บาท/ลิตร\n• ปริมาณน้ำมัน: ${formatNum(liters, 2)} ลิตร (เฉลี่ย ${formatMoney(costPerKm)} ฿/กม.)\n${divider}\n💰 ค่าน้ำมันรวม: ${formatMoney(totalCost)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปค่าน้ำมันเดินทาง\n${divider}\n• ระยะทาง: ${formatNum(dist, 1)} กม.\n• อัตราสิ้นเปลือง: ${formatNum(eff, 1)} กม./ลิตร\n• ราคาน้ำมัน: ${formatMoney(price)} บาท/ลิตร\n• ปริมาณน้ำมัน: ${formatNum(liters, 2)} ลิตร (เฉลี่ย ${formatMoney(costPerKm)} ฿/กม.)\n${divider}\nค่าน้ำมันรวม: ${formatMoney(totalCost)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'lotto_calc': {
             const st = state.lotto_calc || {};
@@ -5625,18 +5623,18 @@ function getToolSummaryText(toolId, stateObj) {
                 const claim = (typeof calculatePrizeClaim === 'function')
                     ? calculatePrizeClaim(st.claimPrize, st.claimTicketCount, st.claimChannel, st.claimCustomRate)
                     : { prizeLabel: 'สลากกินแบ่ง', ticketCount: 1, totalGrossPrize: 2000, deductionRate: 1.5, deductionAmount: 30, netPrize: 1970, channelLabel: 'ธนาคาร' };
-                return `🏆 สรุปขึ้นเงินรางวัลสลากกินแบ่ง\n${divider}\n• รางวัล: ${claim.prizeLabel}\n• จำนวน: ${claim.ticketCount} ใบ\n• ยอดรางวัลรวม: ${formatMoney(claim.totalGrossPrize)} บาท\n• หักภาษี/ค่าธรรมเนียม (${claim.deductionRate}%): -${formatMoney(claim.deductionAmount)} บาท\n${divider}\n💰 เงินสดสุทธิที่ได้รับจริง: ${formatMoney(claim.netPrize)} บาท\n• ช่องทาง: ${claim.channelLabel}\n(คำนวณโดย Multitools Calculator)`;
+                return `สรุปขึ้นเงินรางวัลสลากกินแบ่ง\n${divider}\n• รางวัล: ${claim.prizeLabel}\n• จำนวน: ${claim.ticketCount} ใบ\n• ยอดรางวัลรวม: ${formatMoney(claim.totalGrossPrize)} บาท\n• หักภาษี/ค่าธรรมเนียม (${claim.deductionRate}%): -${formatMoney(claim.deductionAmount)} บาท\n${divider}\nเงินสดสุทธิที่ได้รับจริง: ${formatMoney(claim.netPrize)} บาท\n• ช่องทาง: ${claim.channelLabel}\n(คำนวณโดย Multitools Calculator)`;
             } else if (activeTab === 'reality') {
                 const sim = (typeof calculateLottoSavingsSimulation === 'function')
                     ? calculateLottoSavingsSimulation(st.lottoSpendPerDraw, st.savingsYears, st.savingsRate)
                     : { spendPerDraw: 500, monthlyDeposit: 1000, years: 10, annualReturnPct: 7, totalPrincipal: 120000, totalInterest: 53094, futureValue: 173094 };
-                return `💡 สรุปจำลองเปลี่ยนค่าหวยเป็นเงินล้าน\n${divider}\n• ซื้อหวยงวดละ: ${formatMoney(sim.spendPerDraw)} บาท (เดือนละ ${formatMoney(sim.monthlyDeposit)} บาท)\n• ระยะเวลา: ${sim.years} ปี (ผลตอบแทน ${sim.annualReturnPct}%)\n${divider}\n• เงินต้นสะสม: ${formatMoney(sim.totalPrincipal)} บาท\n• ดอกเบี้ยทบต้น: +${formatMoney(sim.totalInterest)} บาท\n💰 ยอดเงินออมรวม: ${formatMoney(sim.futureValue)} บาท\n(คำนวณโดย Multitools Calculator)`;
+                return `สรุปจำลองเปลี่ยนค่าหวยเป็นเงินล้าน\n${divider}\n• ซื้อหวยงวดละ: ${formatMoney(sim.spendPerDraw)} บาท (เดือนละ ${formatMoney(sim.monthlyDeposit)} บาท)\n• ระยะเวลา: ${sim.years} ปี (ผลตอบแทน ${sim.annualReturnPct}%)\n${divider}\n• เงินต้นสะสม: ${formatMoney(sim.totalPrincipal)} บาท\n• ดอกเบี้ยทบต้น: +${formatMoney(sim.totalInterest)} บาท\nยอดเงินออมรวม: ${formatMoney(sim.futureValue)} บาท\n(คำนวณโดย Multitools Calculator)`;
             } else {
                 const count = Array.isArray(st.numbersList) ? st.numbersList.length : 0;
                 const bet = (typeof calculateLottoBet === 'function')
                     ? calculateLottoBet(count, st.pricePerNumber, st.payoutRate)
                     : { count: 6, pricePerNumber: 20, payoutRate: 900, totalCost: 120, winningPayout: 18000, netProfit: 17880, roiPercent: 14900 };
-                return `🎯 สรุปคำนวณต้นทุน & หวยชุด\n${divider}\n• จำนวนเลขในชุด: ${bet.count} หาง\n• ราคาซื้อต่อหาง: ${formatMoney(bet.pricePerNumber)} บาท\n• อัตราจ่าย: บาทละ ${formatMoney(bet.payoutRate)}\n${divider}\n• ต้นทุนรวม: ${formatMoney(bet.totalCost)} บาท\n• เงินรางวัล (ถ้าถูก 1 หาง): ${formatMoney(bet.winningPayout)} บาท\n💰 กำไรสุทธิ: ${bet.netProfit >= 0 ? '+' : ''}${formatMoney(bet.netProfit)} บาท (ROI ${bet.roiPercent.toFixed(1)}%)\n(คำนวณโดย Multitools Calculator)`;
+                return `สรุปคำนวณต้นทุน & หวยชุด\n${divider}\n• จำนวนเลขในชุด: ${bet.count} หาง\n• ราคาซื้อต่อหาง: ${formatMoney(bet.pricePerNumber)} บาท\n• อัตราจ่าย: บาทละ ${formatMoney(bet.payoutRate)}\n${divider}\n• ต้นทุนรวม: ${formatMoney(bet.totalCost)} บาท\n• เงินรางวัล (ถ้าถูก 1 หาง): ${formatMoney(bet.winningPayout)} บาท\nกำไรสุทธิ: ${bet.netProfit >= 0 ? '+' : ''}${formatMoney(bet.netProfit)} บาท (ROI ${bet.roiPercent.toFixed(1)}%)\n(คำนวณโดย Multitools Calculator)`;
             }
         }
         case 'tax_personal': {
@@ -5645,18 +5643,18 @@ function getToolSummaryText(toolId, stateObj) {
                 ? calculatePersonalTax(st)
                 : { grossIncome: 650000, expenses: 100000, totalDeductions: 160000, netTaxableIncome: 390000, totalTax: 16500, withholdingTax: 12000, taxBalance: 4500, marginalRate: 10, isRefund: false, refundAmount: 0, payableAmount: 4500 };
             const statusLine = calc.isRefund
-                ? `🎉 ได้เงินคืนภาษี (Refund): ${formatMoney(calc.refundAmount)} บาท`
+                ? `ได้เงินคืนภาษี (Refund): ${formatMoney(calc.refundAmount)} บาท`
                 : (calc.payableAmount > 0
-                    ? `⚠️ ต้องชำระภาษีเพิ่มเติม: ${formatMoney(calc.payableAmount)} บาท`
+                    ? `ต้องชำระภาษีเพิ่มเติม: ${formatMoney(calc.payableAmount)} บาท`
                     : `✓ ภาษีพอดี ไม่มียอดค้างชำระ`);
-            return `📄 สรุปภาษีเงินได้บุคคลธรรมดา (ภ.ง.ด. 90/91)\n${divider}\n• รายได้รวมทั้งปี: ${formatMoney(calc.grossIncome)} บาท\n• หักค่าใช้จ่าย: -${formatMoney(calc.expenses || 0)} บาท\n• หักค่าลดหย่อนรวม: -${formatMoney(calc.totalDeductions)} บาท\n• เงินได้สุทธิ (Taxable): ${formatMoney(calc.netTaxableIncome)} บาท (ฐานสูงสุด ${calc.marginalRate}%)\n• ภาษีคำนวณทั้งปี: ${formatMoney(calc.totalTax)} บาท\n• หัก ณ ที่จ่ายไว้แล้ว: ${formatMoney(calc.withholdingTax)} บาท\n${divider}\n💰 ${statusLine}\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปภาษีเงินได้บุคคลธรรมดา (ภ.ง.ด. 90/91)\n${divider}\n• รายได้รวมทั้งปี: ${formatMoney(calc.grossIncome)} บาท\n• หักค่าใช้จ่าย: -${formatMoney(calc.expenses || 0)} บาท\n• หักค่าลดหย่อนรวม: -${formatMoney(calc.totalDeductions)} บาท\n• เงินได้สุทธิ (Taxable): ${formatMoney(calc.netTaxableIncome)} บาท (ฐานสูงสุด ${calc.marginalRate}%)\n• ภาษีคำนวณทั้งปี: ${formatMoney(calc.totalTax)} บาท\n• หัก ณ ที่จ่ายไว้แล้ว: ${formatMoney(calc.withholdingTax)} บาท\n${divider}\n${statusLine}\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'property_transfer': {
             const st = state.property_transfer || {};
             const calc = (typeof calculatePropertyTransfer === 'function')
                 ? calculatePropertyTransfer(st)
                 : { appraisedValue: 3000000, totalLandCost: 150000, buyerCost: 55000, sellerCost: 95000, transferFee: 60000, mortgageFee: 25000, isSBT: true, sbtTax: 105600, stampDuty: 0, withholdingTax: 72000 };
-            return `🏠 สรุปค่าธรรมเนียมโอนที่ดิน & ภาษีอสังหาฯ\n${divider}\n• ราคาประเมินกรมที่ดิน: ${formatMoney(calc.appraisedValue)} บาท\n• ค่าธรรมเนียมโอน: ${formatMoney(calc.transferFee)} บาท\n• ค่าจดจำนอง: ${formatMoney(calc.mortgageFee)} บาท\n• ${calc.isSBT ? 'ภาษีธุรกิจเฉพาะ (3.3%)' : 'ค่าอากรแสตมป์ (0.5%)'}: ${formatMoney(calc.isSBT ? calc.sbtTax : calc.stampDuty)} บาท\n• ภาษีหัก ณ ที่จ่าย: ${formatMoney(calc.withholdingTax)} บาท\n${divider}\n💰 ยอดรวมค่าใช้จ่าย ณ กรมที่ดิน: ${formatMoney(calc.totalLandCost)} บาท\n👤 ยอดที่ผู้ซื้อจ่าย: ${formatMoney(calc.buyerCost)} บาท\n🏠 ยอดที่ผู้ขายจ่าย: ${formatMoney(calc.sellerCost)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปค่าธรรมเนียมโอนที่ดิน & ภาษีอสังหาฯ\n${divider}\n• ราคาประเมินกรมที่ดิน: ${formatMoney(calc.appraisedValue)} บาท\n• ค่าธรรมเนียมโอน: ${formatMoney(calc.transferFee)} บาท\n• ค่าจดจำนอง: ${formatMoney(calc.mortgageFee)} บาท\n• ${calc.isSBT ? 'ภาษีธุรกิจเฉพาะ (3.3%)' : 'ค่าอากรแสตมป์ (0.5%)'}: ${formatMoney(calc.isSBT ? calc.sbtTax : calc.stampDuty)} บาท\n• ภาษีหัก ณ ที่จ่าย: ${formatMoney(calc.withholdingTax)} บาท\n${divider}\nยอดรวมค่าใช้จ่าย ณ กรมที่ดิน: ${formatMoney(calc.totalLandCost)} บาท\nยอดที่ผู้ซื้อจ่าย: ${formatMoney(calc.buyerCost)} บาท\nยอดที่ผู้ขายจ่าย: ${formatMoney(calc.sellerCost)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'gold_thai': {
             const st = state.gold_thai || {};
@@ -5664,11 +5662,11 @@ function getToolSummaryText(toolId, stateObj) {
                 ? calculateGoldThai(st)
                 : { bahtWeight: 1, totalGrams: 15.16, totalBuyPrice: 45300, craftFee: 800, sellBackValue: 43115, profitLoss: 3115, isProfit: true, profitLossPercent: 7.79, goldType: 'ornament', mode: 'buy' };
             if (st.mode === 'sell') {
-                return `💰 สรุปราคารับซื้อคืนทองคำ\n${divider}\n• ประเภท: ${st.goldType === 'bar' ? 'ทองคำแท่ง 96.5%' : 'ทองรูปพรรณ 96.5%'}\n• น้ำหนัก: ${formatNum(calc.bahtWeight, 4)} บาท (${formatNum(calc.totalGrams, 3)} กรัม)\n• ราคารับซื้อสมาคม: ${formatMoney(calc.officialSellBackRate)} บาท/บาททอง\n${divider}\n💵 ยอดรับซื้อคืนสุทธิ (สคบ.): ${formatMoney(calc.sellBackValue)} บาท\n(คำนวณโดย Multitools Calculator)`;
+                return `สรุปราคารับซื้อคืนทองคำ\n${divider}\n• ประเภท: ${st.goldType === 'bar' ? 'ทองคำแท่ง 96.5%' : 'ทองรูปพรรณ 96.5%'}\n• น้ำหนัก: ${formatNum(calc.bahtWeight, 4)} บาท (${formatNum(calc.totalGrams, 3)} กรัม)\n• ราคารับซื้อสมาคม: ${formatMoney(calc.officialSellBackRate)} บาท/บาททอง\n${divider}\nยอดรับซื้อคืนสุทธิ (สคบ.): ${formatMoney(calc.sellBackValue)} บาท\n(คำนวณโดย Multitools Calculator)`;
             } else if (st.mode === 'savings') {
-                return `📈 สรุปผลการออมทองคำ\n${divider}\n• น้ำหนักสะสม: ${formatNum(calc.bahtWeight, 4)} บาท (${formatNum(calc.totalGrams, 3)} กรัม)\n• ต้นทุนเฉลี่ย: ${formatMoney(calc.costPerBaht)} บาท/บาททอง (รวม ${formatMoney(calc.totalInvested)} บาท)\n• มูลค่าตลาดปัจจุบัน: ${formatMoney(calc.currentMarketValue)} บาท\n${divider}\n💰 ผลตอบแทนสุทธิ: ${calc.isProfit ? '+' : ''}${formatMoney(calc.profitLoss)} บาท (${formatNum(calc.profitLossPercent, 2)}%)\n(คำนวณโดย Multitools Calculator)`;
+                return `สรุปผลการออมทองคำ\n${divider}\n• น้ำหนักสะสม: ${formatNum(calc.bahtWeight, 4)} บาท (${formatNum(calc.totalGrams, 3)} กรัม)\n• ต้นทุนเฉลี่ย: ${formatMoney(calc.costPerBaht)} บาท/บาททอง (รวม ${formatMoney(calc.totalInvested)} บาท)\n• มูลค่าตลาดปัจจุบัน: ${formatMoney(calc.currentMarketValue)} บาท\n${divider}\nผลตอบแทนสุทธิ: ${calc.isProfit ? '+' : ''}${formatMoney(calc.profitLoss)} บาท (${formatNum(calc.profitLossPercent, 2)}%)\n(คำนวณโดย Multitools Calculator)`;
             } else {
-                return `🛒 สรุปราคาซื้อทองคำหน้าร้าน\n${divider}\n• ประเภท: ${st.goldType === 'bar' ? 'ทองคำแท่ง 96.5%' : 'ทองรูปพรรณ 96.5%'}\n• น้ำหนัก: ${formatNum(calc.bahtWeight, 4)} บาท (${formatNum(calc.totalGrams, 3)} กรัม)\n• ราคาทองคำ: ${formatMoney(calc.rawGoldValue)} บาท\n• ค่ากำเหน็จ: +${formatMoney(calc.craftFee)} บาท\n${divider}\n💰 ราคาซื้อสุทธิ: ${formatMoney(calc.totalBuyPrice)} บาท\n(คำนวณโดย Multitools Calculator)`;
+                return `สรุปราคาซื้อทองคำหน้าร้าน\n${divider}\n• ประเภท: ${st.goldType === 'bar' ? 'ทองคำแท่ง 96.5%' : 'ทองรูปพรรณ 96.5%'}\n• น้ำหนัก: ${formatNum(calc.bahtWeight, 4)} บาท (${formatNum(calc.totalGrams, 3)} กรัม)\n• ราคาทองคำ: ${formatMoney(calc.rawGoldValue)} บาท\n• ค่ากำเหน็จ: +${formatMoney(calc.craftFee)} บาท\n${divider}\nราคาซื้อสุทธิ: ${formatMoney(calc.totalBuyPrice)} บาท\n(คำนวณโดย Multitools Calculator)`;
             }
         }
         case 'electricity_bill': {
@@ -5676,7 +5674,7 @@ function getToolSummaryText(toolId, stateObj) {
             const calc = (typeof calculateElectricityBill === 'function')
                 ? calculateElectricityBill(st)
                 : { units: 350, baseEnergyCharge: 1250, serviceFee: 24.62, ftCharge: 139, vat7: 98.95, totalBill: 1512.57, avgRatePerUnit: 4.32, ftRate: 0.3972 };
-            return `⚡ สรุปค่าไฟฟ้าบ้าน (กฟน./กฟภ.)\n${divider}\n• จำนวนหน่วยไฟฟ้า: ${formatNum(calc.units, 1)} หน่วย (kWh)\n• ค่าไฟฟ้าฐาน (ขั้นบันได): ${formatMoney(calc.baseEnergyCharge)} บาท\n• ค่าบริการรายเดือน: ${formatMoney(calc.serviceFee)} บาท\n• ค่าไฟฟ้าผันแปร Ft (${formatNum(calc.ftRate, 4)} ฿): ${formatMoney(calc.ftCharge)} บาท\n• ภาษีมูลค่าเพิ่ม (VAT 7%): +${formatMoney(calc.vat7)} บาท\n${divider}\n💰 ยอดชำระสุทธิ: ${formatMoney(calc.totalBill)} บาท (เฉลี่ย ${formatNum(calc.avgRatePerUnit, 2)} ฿/หน่วย)\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปค่าไฟฟ้าบ้าน (กฟน./กฟภ.)\n${divider}\n• จำนวนหน่วยไฟฟ้า: ${formatNum(calc.units, 1)} หน่วย (kWh)\n• ค่าไฟฟ้าฐาน (ขั้นบันได): ${formatMoney(calc.baseEnergyCharge)} บาท\n• ค่าบริการรายเดือน: ${formatMoney(calc.serviceFee)} บาท\n• ค่าไฟฟ้าผันแปร Ft (${formatNum(calc.ftRate, 4)} ฿): ${formatMoney(calc.ftCharge)} บาท\n• ภาษีมูลค่าเพิ่ม (VAT 7%): +${formatMoney(calc.vat7)} บาท\n${divider}\nยอดชำระสุทธิ: ${formatMoney(calc.totalBill)} บาท (เฉลี่ย ${formatNum(calc.avgRatePerUnit, 2)} ฿/หน่วย)\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'car_loan': {
             const st = state.car_loan || {};
@@ -5685,7 +5683,7 @@ function getToolSummaryText(toolId, stateObj) {
                 : { vehicleType: 'car', condition: 'new', price: 850000, downPaymentAmount: 170000, downPaymentPercent: 20, principal: 680000, interestRate: 2.59, periodMonths: 60, years: 5, monthlyPayment: 12801, totalRepayment: 768060, effectiveRateApprox: 4.95 };
             const typeLabel = calc.vehicleType === 'motorcycle' ? 'มอเตอร์ไซค์' : 'รถยนต์';
             const condLabel = calc.condition === 'used' ? 'รถมือสอง (มี VAT 7%)' : 'รถใหม่ป้ายแดง';
-            return `🚗 สรุปสินเชื่อเช่าซื้อยานพาหนะ\n${divider}\n• ประเภท: ${typeLabel} (${condLabel})\n• ราคารถ: ${formatMoney(calc.price)} บาท\n• เงินดาวน์: ${formatMoney(calc.downPaymentAmount)} บาท (${formatNum(calc.downPaymentPercent, 1)}%)\n• ยอดจัดเช่าซื้อ: ${formatMoney(calc.principal)} บาท\n• อัตราดอกเบี้ย: ${formatNum(calc.interestRate, 2)}% คงที่/ปี (EIR ≈ ${formatNum(calc.effectiveRateApprox, 2)}%)\n• ระยะเวลาผ่อน: ${calc.periodMonths} งวด (${calc.years} ปี)\n${divider}\n💰 ค่างวดรายเดือน: ${formatMoney(calc.monthlyPayment)} บาท/งวด\n• ยอดผ่อนรวมทั้งสัญญา: ${formatMoney(calc.totalRepayment)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปสินเชื่อเช่าซื้อยานพาหนะ\n${divider}\n• ประเภท: ${typeLabel} (${condLabel})\n• ราคารถ: ${formatMoney(calc.price)} บาท\n• เงินดาวน์: ${formatMoney(calc.downPaymentAmount)} บาท (${formatNum(calc.downPaymentPercent, 1)}%)\n• ยอดจัดเช่าซื้อ: ${formatMoney(calc.principal)} บาท\n• อัตราดอกเบี้ย: ${formatNum(calc.interestRate, 2)}% คงที่/ปี (EIR ≈ ${formatNum(calc.effectiveRateApprox, 2)}%)\n• ระยะเวลาผ่อน: ${calc.periodMonths} งวด (${calc.years} ปี)\n${divider}\nค่างวดรายเดือน: ${formatMoney(calc.monthlyPayment)} บาท/งวด\n• ยอดผ่อนรวมทั้งสัญญา: ${formatMoney(calc.totalRepayment)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'social_security': {
             const st = state.social_security || {};
@@ -5694,23 +5692,23 @@ function getToolSummaryText(toolId, stateObj) {
                 : { section: 'm33', wageMonthly: 35000, contributionMonths: 240, isPension: true, monthlyPension: 4125, yearlyPension: 49500, lumpSumTotal: 0, monthlyContribution: 750, totalWorkerContributed: 180000 };
             const secName = calc.section === 'm39' ? 'มาตรา 39 (ผู้ประกันตนภาคสมัครใจ)' : (calc.section === 'm40' ? 'มาตรา 40 (อาชีพอิสระ/ฟรีแลนซ์)' : 'มาตรา 33 (พนักงานเอกชน)');
             const benefitLine = calc.isPension
-                ? `💰 เงินบำนาญชราภาพตลอดชีพ: ${formatMoney(calc.monthlyPension)} บาท/เดือน (ปีละ ${formatMoney(calc.yearlyPension)} บ.)`
-                : `💰 เงินบำเหน็จชราภาพ (ก้อนเดียว): ${formatMoney(calc.lumpSumTotal)} บาท`;
-            return `🛡️ สรุปสิทธิประโยชน์ประกันสังคม\n${divider}\n• สิทธิ์: ${secName}\n• ส่งเงินสมทบ: ${calc.contributionMonths} งวด (${(calc.contributionMonths / 12).toFixed(1)} ปี)\n• เงินสมทบรายเดือน: ${formatMoney(calc.monthlyContribution)} บาท/เดือน\n• รวมเงินสมทบที่จ่ายสะสม: ${formatMoney(calc.totalWorkerContributed)} บาท\n${divider}\n${benefitLine}\n(คำนวณโดย Multitools Calculator)`;
+                ? `เงินบำนาญชราภาพตลอดชีพ: ${formatMoney(calc.monthlyPension)} บาท/เดือน (ปีละ ${formatMoney(calc.yearlyPension)} บ.)`
+                : `เงินบำเหน็จชราภาพ (ก้อนเดียว): ${formatMoney(calc.lumpSumTotal)} บาท`;
+            return `สรุปสิทธิประโยชน์ประกันสังคม\n${divider}\n• สิทธิ์: ${secName}\n• ส่งเงินสมทบ: ${calc.contributionMonths} งวด (${(calc.contributionMonths / 12).toFixed(1)} ปี)\n• เงินสมทบรายเดือน: ${formatMoney(calc.monthlyContribution)} บาท/เดือน\n• รวมเงินสมทบที่จ่ายสะสม: ${formatMoney(calc.totalWorkerContributed)} บาท\n${divider}\n${benefitLine}\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'labor_severance': {
             const st = state.labor_severance || {};
             const calc = (typeof calculateLaborSeverance === 'function')
                 ? calculateLaborSeverance(st)
                 : { salaryMonthly: 35000, dailyWage: 1166.67, serviceYears: 3, serviceMonths: 6, severanceDays: 180, severancePay: 210000, noticePay: 35000, leavePay: 5833, totalSeverancePackage: 250833, taxExemptAmount: 210000, tierLabel: 'อายุงาน 3 ปี แต่ไม่ถึง 6 ปี' };
-            return `⚖️ สรุปเงินชดเชยเลิกจ้างตามกฎหมายแรงงาน\n${divider}\n• เงินเดือนฐาน: ${formatMoney(calc.salaryMonthly)} บาท (${formatMoney(calc.dailyWage)} บาท/วัน)\n• อายุงาน: ${calc.serviceYears} ปี ${calc.serviceMonths} เดือน\n• เกณฑ์ ม.118: ชดเชย ${calc.severanceDays} วัน (${formatMoney(calc.severancePay)} บาท)\n• ค่าตกใจ ม.17: ${calc.noticePay > 0 ? `+${formatMoney(calc.noticePay)} บาท` : '0.00 บาท'}\n• วันลาพักร้อนคงเหลือ: ${calc.leavePay > 0 ? `+${formatMoney(calc.leavePay)} บาท` : '0.00 บาท'}\n${divider}\n💰 รวมยอดชดเชยสุทธิ: ${formatMoney(calc.totalSeverancePackage)} บาท\n🛡️ สิทธิยกเว้นภาษี: ${formatMoney(calc.taxExemptAmount)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปเงินชดเชยเลิกจ้างตามกฎหมายแรงงาน\n${divider}\n• เงินเดือนฐาน: ${formatMoney(calc.salaryMonthly)} บาท (${formatMoney(calc.dailyWage)} บาท/วัน)\n• อายุงาน: ${calc.serviceYears} ปี ${calc.serviceMonths} เดือน\n• เกณฑ์ ม.118: ชดเชย ${calc.severanceDays} วัน (${formatMoney(calc.severancePay)} บาท)\n• ค่าตกใจ ม.17: ${calc.noticePay > 0 ? `+${formatMoney(calc.noticePay)} บาท` : '0.00 บาท'}\n• วันลาพักร้อนคงเหลือ: ${calc.leavePay > 0 ? `+${formatMoney(calc.leavePay)} บาท` : '0.00 บาท'}\n${divider}\nรวมยอดชดเชยสุทธิ: ${formatMoney(calc.totalSeverancePackage)} บาท\nสิทธิยกเว้นภาษี: ${formatMoney(calc.taxExemptAmount)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'legal_interest': {
             const st = state.legal_interest || {};
             const calc = (typeof calculateLegalInterest === 'function')
                 ? calculateLegalInterest(st)
                 : { principal: 100000, interestRate: 5.0, overdueDays: 60, totalInterest: 821.92, totalPayable: 100821.92 };
-            return `⚖️ สรุปดอกเบี้ยผิดนัดชำระหนี้ (ป.พ.พ.)\n${divider}\n• เงินต้นค้างชำระ: ${formatMoney(calc.principal)} บาท\n• อัตราดอกเบี้ย: ${formatNum(calc.interestRate, 2)}% ต่อปี (ป.พ.พ. ม.224)\n• ระยะเวลาผิดนัด: ${calc.overdueDays} วัน\n• ดอกเบี้ยผิดนัดชำระ: +${formatMoney(calc.totalInterest)} บาท\n${divider}\n💰 ยอดหนี้รวมที่ต้องชำระ: ${formatMoney(calc.totalPayable)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปดอกเบี้ยผิดนัดชำระหนี้ (ป.พ.พ.)\n${divider}\n• เงินต้นค้างชำระ: ${formatMoney(calc.principal)} บาท\n• อัตราดอกเบี้ย: ${formatNum(calc.interestRate, 2)}% ต่อปี (ป.พ.พ. ม.224)\n• ระยะเวลาผิดนัด: ${calc.overdueDays} วัน\n• ดอกเบี้ยผิดนัดชำระ: +${formatMoney(calc.totalInterest)} บาท\n${divider}\nยอดหนี้รวมที่ต้องชำระ: ${formatMoney(calc.totalPayable)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'ot_calc': {
             const st = state.ot_calc || {};
@@ -5718,7 +5716,7 @@ function getToolSummaryText(toolId, stateObj) {
                 ? calculateOvertimePay(st)
                 : { wageType: 'monthly', wageBase: 25000, hourlyRate: 104.17, otWeekdayHours: 10, holidayWorkHours: 8, holidayOtHours: 4, holidayMultiplier: 1.0, otWeekdayPay: 1562.5, holidayWorkPay: 833.33, holidayOtPay: 1250, shiftAllowance: 0, totalOtPay: 3645.83, totalEarnings: 28645.83, totalHours: 22 };
             const typeLabel = calc.wageType === 'daily' ? 'พนักงานรายวัน' : (calc.wageType === 'hourly' ? 'รายชั่วโมง' : 'พนักงานรายเดือน');
-            return `⏱️ สรุปค่าล่วงเวลา (OT) & ทำงานวันหยุด\n${divider}\n• การจ้าง: ${typeLabel} (ฐาน ${formatMoney(calc.wageBase)} บ. / คิดชั่วโมงละ ${formatMoney(calc.hourlyRate)} บ.)\n• OT วันทำงานปกติ (1.5 เท่า): ${calc.otWeekdayHours} ชม. (+${formatMoney(calc.otWeekdayPay)} บ.)\n• ทำงานในวันหยุด (${calc.holidayMultiplier} เท่า): ${calc.holidayWorkHours} ชม. (+${formatMoney(calc.holidayWorkPay)} บ.)\n• OT ในวันหยุด (3.0 เท่า): ${calc.holidayOtHours} ชม. (+${formatMoney(calc.holidayOtPay)} บ.)\n${calc.shiftAllowance > 0 ? `• เงินค่ากะ/เบี้ยเลี้ยง: +${formatMoney(calc.shiftAllowance)} บาท\n` : ''}${divider}\n💰 รวมค่าล่วงเวลา OT พิเศษ: +${formatMoney(calc.totalOtPay)} บาท (${formatNum(calc.totalHours, 1)} ชม.)\n💵 ยอดเงินได้รวมประจำงวด: ${formatMoney(calc.totalEarnings)} บาท\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปค่าล่วงเวลา (OT) & ทำงานวันหยุด\n${divider}\n• การจ้าง: ${typeLabel} (ฐาน ${formatMoney(calc.wageBase)} บ. / คิดชั่วโมงละ ${formatMoney(calc.hourlyRate)} บ.)\n• OT วันทำงานปกติ (1.5 เท่า): ${calc.otWeekdayHours} ชม. (+${formatMoney(calc.otWeekdayPay)} บ.)\n• ทำงานในวันหยุด (${calc.holidayMultiplier} เท่า): ${calc.holidayWorkHours} ชม. (+${formatMoney(calc.holidayWorkPay)} บ.)\n• OT ในวันหยุด (3.0 เท่า): ${calc.holidayOtHours} ชม. (+${formatMoney(calc.holidayOtPay)} บ.)\n${calc.shiftAllowance > 0 ? `• เงินค่ากะ/เบี้ยเลี้ยง: +${formatMoney(calc.shiftAllowance)} บาท\n` : ''}${divider}\nรวมค่าล่วงเวลา OT พิเศษ: +${formatMoney(calc.totalOtPay)} บาท (${formatNum(calc.totalHours, 1)} ชม.)\nยอดเงินได้รวมประจำงวด: ${formatMoney(calc.totalEarnings)} บาท\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'ecommerce_profit': {
             const st = state.ecommerce_profit || {};
@@ -5726,7 +5724,7 @@ function getToolSummaryText(toolId, stateObj) {
                 ? calculateEcommerceProfit(st)
                 : { platform: 'shopee', sellingPrice: 350, productCost: 150, packagingCost: 10, totalPlatformFees: 43.87, netPayout: 341.13, netProfit: 116.13, profitMarginPct: 33.2, breakevenPrice: 211.23, isProfit: true, adSpendPerOrder: 30 };
             const platLabel = calc.platform === 'shopee' ? 'Shopee' : (calc.platform === 'lazada' ? 'Lazada' : (calc.platform === 'tiktok' ? 'TikTok Shop' : (calc.platform === 'direct' ? 'ขายตรง/LINE' : 'กำหนดเอง')));
-            return `🛍️ สรุปกำไรขายของออนไลน์ (${platLabel})\n${divider}\n• ราคาขายตั้งต้น: ${formatMoney(calc.sellingPrice)} บาท\n• ต้นทุนสินค้า + แพ็คเกจ: ${formatMoney(calc.productCost + calc.packagingCost)} บาท\n• ค่าธรรมเนียมแพลตฟอร์ม: -${formatMoney(calc.totalPlatformFees)} บาท\n${calc.adSpendPerOrder > 0 ? `• ค่ายิงแอด/โฆษณา: -${formatMoney(calc.adSpendPerOrder)} บาท\n` : ''}• เงินโอนเข้าบัญชีจริง: ${formatMoney(calc.netPayout)} บาท\n• จุดคุ้มทุน (Breakeven): ${formatMoney(calc.breakevenPrice)} บาท\n${divider}\n${calc.isProfit ? '💰 กำไรสุทธิต่อชิ้น' : '⚠️ ขาดทุนต่อชิ้น'}: ${formatMoney(calc.netProfit)} บาท (Margin ${formatNum(calc.profitMarginPct, 1)}%)\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปกำไรขายของออนไลน์ (${platLabel})\n${divider}\n• ราคาขายตั้งต้น: ${formatMoney(calc.sellingPrice)} บาท\n• ต้นทุนสินค้า + แพ็คเกจ: ${formatMoney(calc.productCost + calc.packagingCost)} บาท\n• ค่าธรรมเนียมแพลตฟอร์ม: -${formatMoney(calc.totalPlatformFees)} บาท\n${calc.adSpendPerOrder > 0 ? `• ค่ายิงแอด/โฆษณา: -${formatMoney(calc.adSpendPerOrder)} บาท\n` : ''}• เงินโอนเข้าบัญชีจริง: ${formatMoney(calc.netPayout)} บาท\n• จุดคุ้มทุน (Breakeven): ${formatMoney(calc.breakevenPrice)} บาท\n${divider}\n${calc.isProfit ? 'กำไรสุทธิต่อชิ้น' : 'ขาดทุนต่อชิ้น'}: ${formatMoney(calc.netProfit)} บาท (Margin ${formatNum(calc.profitMarginPct, 1)}%)\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'debt_payoff': {
             const st = state.debt_payoff || {};
@@ -5735,9 +5733,9 @@ function getToolSummaryText(toolId, stateObj) {
                 : { summary: { months: 18, years: 1.5, totalInterest: 18500, totalPaid: 168500, interestSavedVsOther: 0, completed: true }, initialTotalDebt: 150000, strategy: 'avalanche', extraMonthly: 3000, isPayable: true };
             const stratName = calc.strategy === 'snowball' ? 'Debt Snowball (ยอดน้อยก่อน)' : 'Debt Avalanche (ดอกเบี้ยสูงก่อน)';
             if (!calc.isPayable || !calc[calc.strategy]?.completed) {
-                return `💳 สรุปแผนปลดหนี้หลายบัญชี (${stratName})\n${divider}\n• ยอดหนี้รวมเริ่มต้น: ${formatMoney(calc.initialTotalDebt)} บาท\n• เงินโปะเพิ่มต่อเดือน: +${formatMoney(calc.extraMonthly || 0)} บาท\n${divider}\n⚠️ สถานะ: แผนนี้ยังชำระไม่สำเร็จ (ยอดชำระรายเดือนไม่เพียงพอ หรือเกิน 50 ปี)\n(คำนวณโดย Multitools Calculator)`;
+                return `สรุปแผนปลดหนี้หลายบัญชี (${stratName})\n${divider}\n• ยอดหนี้รวมเริ่มต้น: ${formatMoney(calc.initialTotalDebt)} บาท\n• เงินโปะเพิ่มต่อเดือน: +${formatMoney(calc.extraMonthly || 0)} บาท\n${divider}\nสถานะ: แผนนี้ยังชำระไม่สำเร็จ (ยอดชำระรายเดือนไม่เพียงพอ หรือเกิน 50 ปี)\n(คำนวณโดย Multitools Calculator)`;
             }
-            return `💳 สรุปแผนปลดหนี้หลายบัญชี (${stratName})\n${divider}\n• ยอดหนี้รวมเริ่มต้น: ${formatMoney(calc.initialTotalDebt)} บาท\n• เงินโปะเพิ่มต่อเดือน: +${formatMoney(calc.extraMonthly || 0)} บาท\n• ระยะเวลาปลดหนี้: ${calc.summary.months} เดือน (${calc.summary.years} ปี)\n• ดอกเบี้ยรวมที่ต้องจ่าย: ${formatMoney(calc.summary.totalInterest)} บาท\n• ยอดชำระรวมทั้งสิ้น: ${formatMoney(calc.summary.totalPaid)} บาท\n${calc.summary.interestSavedVsOther > 0 ? `• ประหยัดดอกเบี้ยได้มากกว่าอีกวิธี: ${formatMoney(calc.summary.interestSavedVsOther)} บาท\n` : ''}${divider}\n🎯 ปลดหนี้หมดสำเร็จใน ${calc.summary.months} เดือน\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปแผนปลดหนี้หลายบัญชี (${stratName})\n${divider}\n• ยอดหนี้รวมเริ่มต้น: ${formatMoney(calc.initialTotalDebt)} บาท\n• เงินโปะเพิ่มต่อเดือน: +${formatMoney(calc.extraMonthly || 0)} บาท\n• ระยะเวลาปลดหนี้: ${calc.summary.months} เดือน (${calc.summary.years} ปี)\n• ดอกเบี้ยรวมที่ต้องจ่าย: ${formatMoney(calc.summary.totalInterest)} บาท\n• ยอดชำระรวมทั้งสิ้น: ${formatMoney(calc.summary.totalPaid)} บาท\n${calc.summary.interestSavedVsOther > 0 ? `• ประหยัดดอกเบี้ยได้มากกว่าอีกวิธี: ${formatMoney(calc.summary.interestSavedVsOther)} บาท\n` : ''}${divider}\nปลดหนี้หมดสำเร็จใน ${calc.summary.months} เดือน\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'food_costing': {
             const st = state.food_costing || {};
@@ -5748,9 +5746,9 @@ function getToolSummaryText(toolId, stateObj) {
             const portionText = calc.batchYield > 1 ? `สูตรผลิต ${calc.batchYield} เสิร์ฟ` : 'จานเดี่ยว (1 เสิร์ฟ)';
             let profitSummary = '';
             if (calc.summary.hasActualPrice) {
-                profitSummary = `\n• ราคาขายจริง: ${formatMoney(calc.sellingPrice)} บาท\n• ${calc.summary.isProfit ? '💰 กำไรขั้นต้น' : '⚠️ ขาดทุน'}: ${formatMoney(calc.summary.grossProfit)} บาท/เสิร์ฟ (Food Cost ${calc.summary.actualFoodCostPct}%, Margin ${calc.summary.grossMarginPct}%)`;
+                profitSummary = `\n• ราคาขายจริง: ${formatMoney(calc.sellingPrice)} บาท\n• ${calc.summary.isProfit ? 'กำไรขั้นต้น' : 'ขาดทุน'}: ${formatMoney(calc.summary.grossProfit)} บาท/เสิร์ฟ (Food Cost ${calc.summary.actualFoodCostPct}%, Margin ${calc.summary.grossMarginPct}%)`;
             }
-            return `🍳 สรุปต้นทุนสูตรอาหาร & เครื่องดื่ม: ${rName}\n${divider}\n• ขนาดสูตร: ${portionText}\n• ต้นทุนวัตถุดิบ/เสิร์ฟ: ${formatMoney(calc.summary.rawCostPerPortion)} บาท\n• เผื่อสูญเสีย/เครื่องปรุง (${calc.hiddenCostBufferPct}%): +${formatMoney(calc.summary.hiddenCostBuffer)} บาท\n• บรรจุภัณฑ์/กล่อง: +${formatMoney(calc.summary.packagingCost)} บาท\n${divider}\n💰 ต้นทุนรวมต่อเสิร์ฟ: ${formatMoney(calc.summary.totalCostPerPortion)} บาท\n🎯 ราคาแนะนำ (Food Cost ${calc.targetFoodCostPct}%): ${formatMoney(calc.summary.suggestedSellingPrice)} บาท (ปัดเศษการค้า: ${formatMoney(calc.summary.suggestedPriceRounded)} บ.)${profitSummary}\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปต้นทุนสูตรอาหาร & เครื่องดื่ม: ${rName}\n${divider}\n• ขนาดสูตร: ${portionText}\n• ต้นทุนวัตถุดิบ/เสิร์ฟ: ${formatMoney(calc.summary.rawCostPerPortion)} บาท\n• เผื่อสูญเสีย/เครื่องปรุง (${calc.hiddenCostBufferPct}%): +${formatMoney(calc.summary.hiddenCostBuffer)} บาท\n• บรรจุภัณฑ์/กล่อง: +${formatMoney(calc.summary.packagingCost)} บาท\n${divider}\nต้นทุนรวมต่อเสิร์ฟ: ${formatMoney(calc.summary.totalCostPerPortion)} บาท\nราคาแนะนำ (Food Cost ${calc.targetFoodCostPct}%): ${formatMoney(calc.summary.suggestedSellingPrice)} บาท (ปัดเศษการค้า: ${formatMoney(calc.summary.suggestedPriceRounded)} บ.)${profitSummary}\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'construction_calc': {
             const st = state.construction_calc || {};
@@ -5760,16 +5758,16 @@ function getToolSummaryText(toolId, stateObj) {
                 : { tab: 'tiles', boxesNeeded: 0, grossPieces: 0, totalPurchasedPieces: 0, areaSqm: 0, grossAreaSqm: 0, adhesiveBags: 0, groutBags: 0, costs: { totalEstimatedBudget: 0 } };
 
             if (tab === 'tiles') {
-                return `🧱 สรุปคำนวณกระเบื้องปูพื้น & ผนัง\n${divider}\n• พื้นที่ปูสุทธิ: ${formatNum(calc.areaSqm, 2)} ตร.ม. (รวมเผื่อ ${calc.wastagePct}%: ${formatNum(calc.grossAreaSqm, 2)} ตร.ม.)\n• ขนาดกระเบื้อง: ${calc.tileWidthCm}x${calc.tileLengthCm} ซม. (${calc.piecesPerBox} แผ่น/กล่อง)\n• จำนวนที่ต้องใช้: ${calc.grossPieces} แผ่น\n----------------------------------\n📦 จำนวนกระเบื้องที่ต้องสั่งซื้อ: ${calc.boxesNeeded} กล่อง (${calc.totalPurchasedPieces} แผ่น)\n• ปูนกาวซีเมนต์ (ถุง 20 กก.): ${calc.adhesiveBags} ถุง\n• กาวยาแนวร่อง (ถุง 1 กก.): ${calc.groutBags} ถุง\n${calc.costs.totalEstimatedBudget > 0 ? `💰 ประมาณการงบประมาณรวม: ${formatMoney(calc.costs.totalEstimatedBudget)} บาท\n` : ''}(คำนวณโดย Multitools Calculator)`;
+                return `สรุปคำนวณกระเบื้องปูพื้น & ผนัง\n${divider}\n• พื้นที่ปูสุทธิ: ${formatNum(calc.areaSqm, 2)} ตร.ม. (รวมเผื่อ ${calc.wastagePct}%: ${formatNum(calc.grossAreaSqm, 2)} ตร.ม.)\n• ขนาดกระเบื้อง: ${calc.tileWidthCm}x${calc.tileLengthCm} ซม. (${calc.piecesPerBox} แผ่น/กล่อง)\n• จำนวนที่ต้องใช้: ${calc.grossPieces} แผ่น\n----------------------------------\nจำนวนกระเบื้องที่ต้องสั่งซื้อ: ${calc.boxesNeeded} กล่อง (${calc.totalPurchasedPieces} แผ่น)\n• ปูนกาวซีเมนต์ (ถุง 20 กก.): ${calc.adhesiveBags} ถุง\n• กาวยาแนวร่อง (ถุง 1 กก.): ${calc.groutBags} ถุง\n${calc.costs.totalEstimatedBudget > 0 ? `ประมาณการงบประมาณรวม: ${formatMoney(calc.costs.totalEstimatedBudget)} บาท\n` : ''}(คำนวณโดย Multitools Calculator)`;
             } else if (tab === 'paint') {
-                return `🎨 สรุปคำนวณสีทาอาคาร & ผนัง\n${divider}\n• พื้นที่ผนังสุทธิ: ${formatNum(calc.wallAreaSqm, 2)} ตร.ม. (รวมเผื่อ ${calc.wastagePct}%: ${formatNum(calc.effectiveAreaSqm, 2)} ตร.ม.)\n• สีรองพื้น (Primer 1 เที่ยว): ${calc.primer.pail5Gal > 0 ? `${calc.primer.pail5Gal} ถังใหญ่ 5GL` : ''}${calc.primer.can1Gal > 0 ? ` ${calc.primer.can1Gal} แกลลอน` : ''} (${formatNum(calc.primer.litersNeeded, 1)} ลิตร)\n----------------------------------\n🖌️ สีทับหน้า (${calc.topcoat.coats} เที่ยว): ${calc.topcoat.pail5Gal > 0 ? `${calc.topcoat.pail5Gal} ถังใหญ่ 5GL` : ''}${calc.topcoat.can1Gal > 0 ? ` ${calc.topcoat.can1Gal} แกลลอน` : ''} (${formatNum(calc.topcoat.litersNeeded, 1)} ลิตร)\n${calc.costs.totalEstimatedBudget > 0 ? `💰 ประมาณการงบประมาณรวม: ${formatMoney(calc.costs.totalEstimatedBudget)} บาท\n` : ''}(คำนวณโดย Multitools Calculator)`;
+                return `สรุปคำนวณสีทาอาคาร & ผนัง\n${divider}\n• พื้นที่ผนังสุทธิ: ${formatNum(calc.wallAreaSqm, 2)} ตร.ม. (รวมเผื่อ ${calc.wastagePct}%: ${formatNum(calc.effectiveAreaSqm, 2)} ตร.ม.)\n• สีรองพื้น (Primer 1 เที่ยว): ${calc.primer.pail5Gal > 0 ? `${calc.primer.pail5Gal} ถังใหญ่ 5GL` : ''}${calc.primer.can1Gal > 0 ? ` ${calc.primer.can1Gal} แกลลอน` : ''} (${formatNum(calc.primer.litersNeeded, 1)} ลิตร)\n----------------------------------\nสีทับหน้า (${calc.topcoat.coats} เที่ยว): ${calc.topcoat.pail5Gal > 0 ? `${calc.topcoat.pail5Gal} ถังใหญ่ 5GL` : ''}${calc.topcoat.can1Gal > 0 ? ` ${calc.topcoat.can1Gal} แกลลอน` : ''} (${formatNum(calc.topcoat.litersNeeded, 1)} ลิตร)\n${calc.costs.totalEstimatedBudget > 0 ? `ประมาณการงบประมาณรวม: ${formatMoney(calc.costs.totalEstimatedBudget)} บาท\n` : ''}(คำนวณโดย Multitools Calculator)`;
             } else {
-                return `🏗️ สรุปคำนวณคอนกรีตเทพื้น & ปูน\n${divider}\n• พื้นที่เทพื้น: ${formatNum(calc.slabAreaSqm, 2)} ตร.ม. (หนา ${calc.slabThicknessCm} ซม.)\n• ปริมาตรคอนกรีตสุทธิ: ${formatNum(calc.netVolumeCubicM, 2)} คิว (m³)\n• ปริมาตรรวมเผื่อ ${calc.wastagePct}%: ${formatNum(calc.grossVolumeCubicM, 2)} คิว (m³)\n----------------------------------\n🚛 สั่งคอนกรีตผสมเสร็จ (รถโม่): ${calc.readyMixOrderCubicM} คิว\n• ตะแกรงเหล็กไวร์เมช: ${formatNum(calc.wireMeshSqm, 2)} ตร.ม.\n${calc.concreteType === 'site_mix' ? `• สัดส่วนผสมเอง: ปูน ${calc.siteMix.cementBags50kg} ถุง / ทราย ${formatNum(calc.siteMix.sandCubicM, 2)} คิว / หิน ${formatNum(calc.siteMix.gravelCubicM, 2)} คิว\n` : ''}${calc.costs.totalEstimatedBudget > 0 ? `💰 ประมาณการงบประมาณรวม: ${formatMoney(calc.costs.totalEstimatedBudget)} บาท\n` : ''}(คำนวณโดย Multitools Calculator)`;
+                return `สรุปคำนวณคอนกรีตเทพื้น & ปูน\n${divider}\n• พื้นที่เทพื้น: ${formatNum(calc.slabAreaSqm, 2)} ตร.ม. (หนา ${calc.slabThicknessCm} ซม.)\n• ปริมาตรคอนกรีตสุทธิ: ${formatNum(calc.netVolumeCubicM, 2)} คิว (m³)\n• ปริมาตรรวมเผื่อ ${calc.wastagePct}%: ${formatNum(calc.grossVolumeCubicM, 2)} คิว (m³)\n----------------------------------\nสั่งคอนกรีตผสมเสร็จ (รถโม่): ${calc.readyMixOrderCubicM} คิว\n• ตะแกรงเหล็กไวร์เมช: ${formatNum(calc.wireMeshSqm, 2)} ตร.ม.\n${calc.concreteType === 'site_mix' ? `• สัดส่วนผสมเอง: ปูน ${calc.siteMix.cementBags50kg} ถุง / ทราย ${formatNum(calc.siteMix.sandCubicM, 2)} คิว / หิน ${formatNum(calc.siteMix.gravelCubicM, 2)} คิว\n` : ''}${calc.costs.totalEstimatedBudget > 0 ? `ประมาณการงบประมาณรวม: ${formatMoney(calc.costs.totalEstimatedBudget)} บาท\n` : ''}(คำนวณโดย Multitools Calculator)`;
             }
         }
         default: {
             const statusText = document.getElementById('sharedStatusText')?.innerText?.trim();
-            return `📋 สรุปผล: ${title}\n${divider}\n${statusText || 'คำนวณเรียบร้อยแล้ว'}\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปผล: ${title}\n${divider}\n${statusText || 'คำนวณเรียบร้อยแล้ว'}\n(คำนวณโดย Multitools Calculator)`;
         }
     }
 }
@@ -6301,7 +6299,7 @@ function renderUnitPriceTool(container) {
                 L:    { key: 'L',    label: 'L',    family: 'volume',  factor: 1,     baseUnit: 'ลิตร' }
             };
 
-            container.innerHTML = `<div class="text-xs text-[var(--app-muted)] px-1 pb-1">💡 เคล็ดลับ: พิมพ์ <b>ราคา เว้นวรรค จำนวน</b> ในช่องราคา เช่น <b>864 50</b> ระบบจะแยกช่องให้อัตโนมัติ</div>`;
+            container.innerHTML = `<div class="text-xs text-[var(--app-muted)] px-1 pb-1">เคล็ดลับ: พิมพ์ <b>ราคา เว้นวรรค จำนวน</b> ในช่องราคา เช่น <b>864 50</b> ระบบจะแยกช่องให้อัตโนมัติ</div>`;
 
             function refreshUnitPriceResults() {
                 persistAppState();
@@ -6374,7 +6372,7 @@ function renderUnitPriceTool(container) {
                 } else if (!liveItems.length) {
                     setStatusBanner('empty', 'กรุณาป้อนข้อมูลของคุณ');
                 } else if (hasMismatchedFamilies) {
-                    setStatusBanner('error', '⚠️ ชนิดหน่วยไม่ตรงกัน (กรุณาเลือกหน่วยกลุ่มเดียวกัน เช่น กรัม กับ กิโลกรัม)');
+                    setStatusBanner('error', 'ชนิดหน่วยไม่ตรงกัน (กรุณาเลือกหน่วยกลุ่มเดียวกัน เช่น กรัม กับ กิโลกรัม)');
                 } else if (liveItems.length === 1) {
                     setStatusBanner('info', `ตัวเลือก <b>${liveItems[0].id}</b>: ${formatUnitPrice(liveItems[0].normalizedPrice)} บาท/${liveItems[0].baseUnit} <span class="text-xs font-normal text-[#6a6a6a] block">ป้อนแถวอื่นเพิ่มเพื่อเปรียบเทียบความคุ้มค่า</span>`);
                 } else {
@@ -6386,7 +6384,7 @@ function renderUnitPriceTool(container) {
                         const diff = next.normalizedPrice - best.normalizedPrice;
                         setStatusBanner('success', `<span class="text-[var(--app-accent)]">★ ตัวเลือก ${bestLabels} คุ้มที่สุด</span> (${formatUnitPrice(best.normalizedPrice)} บาท/${best.baseUnit})<span class="text-xs font-medium block text-[#3f3f3f]">ถูกกว่าตัวเลือก ${next.id} ${pct}% หรือประหยัด ${formatUnitPrice(diff)} บาท/${best.baseUnit}</span>`);
                     } else {
-                        setStatusBanner('success', `⚖️ ตัวเลือก <b>${bestLabels}</b> ราคาต่อหน่วยเท่ากัน (${formatUnitPrice(liveMin)} บาท/${best.baseUnit})`);
+                        setStatusBanner('success', `ตัวเลือก <b>${bestLabels}</b> ราคาต่อหน่วยเท่ากัน (${formatUnitPrice(liveMin)} บาท/${best.baseUnit})`);
                     }
                 }
             }
@@ -6569,9 +6567,9 @@ function renderDiscountTool(container) {
     if (p <= 0) {
         setStatusBanner('empty', 'กรุณาป้อนราคาสินค้าและเปอร์เซ็นต์ส่วนลด');
     } else if (isOver100) {
-        setStatusBanner('error', `⚠️ ส่วนลดไม่ควรเกิน 100% (คำนวณสูงสุดที่ 100%) | ราคาสุทธิ: ${formatMoney(finalPrice)} บาท`);
+        setStatusBanner('error', `ส่วนลดไม่ควรเกิน 100% (คำนวณสูงสุดที่ 100%) | ราคาสุทธิ: ${formatMoney(finalPrice)} บาท`);
     } else {
-        setStatusBanner('success', `🏷️ ราคาสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(finalPrice)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">ประหยัดไป ${formatMoney(saved)} บาท</span>`);
+        setStatusBanner('success', `ราคาสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(finalPrice)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">ประหยัดไป ${formatMoney(saved)} บาท</span>`);
     }
 }
 
@@ -6601,7 +6599,7 @@ function renderTipTool(container) {
     if (bill <= 0) {
         setStatusBanner('empty', 'กรุณาป้อนยอดค่าอาหารเพื่อคำนวณทิปและหารจำนวนคน');
     } else {
-        setStatusBanner('success', `🍽️ ยอดรวมสุทธิ: <b>${formatMoney(totalBill)} ฿</b> (ทิป ${formatMoney(tipAmt)} ฿)<span class="text-sm font-bold block underline text-[var(--app-accent)]">หารเฉลี่ยคนละ: ${formatMoney(perPerson)} บาท (${people} คน)</span>`);
+        setStatusBanner('success', `ยอดรวมสุทธิ: <b>${formatMoney(totalBill)} ฿</b> (ทิป ${formatMoney(tipAmt)} ฿)<span class="text-sm font-bold block underline text-[var(--app-accent)]">หารเฉลี่ยคนละ: ${formatMoney(perPerson)} บาท (${people} คน)</span>`);
     }
 }
 
@@ -6717,7 +6715,7 @@ function renderUnitConverterTool(container) {
         const remAfterRai = totalSqm % 1600;
         const ngan = Math.floor(remAfterRai / 400);
         const sqWa = (remAfterRai % 400) / 4;
-        setStatusBanner('success', `📐 เท่ากับ <b>${rai} ไร่ ${ngan} งาน ${formatNum(sqWa, 2)} ตารางวา</b> (${formatNum(totalSqm, 2)} ตร.ม.)`);
+        setStatusBanner('success', `เท่ากับ <b>${rai} ไร่ ${ngan} งาน ${formatNum(sqWa, 2)} ตารางวา</b> (${formatNum(totalSqm, 2)} ตร.ม.)`);
     } else {
         setStatusBanner('info', `แปลงค่าจาก <b>${formatNum(inputVal, 4)} ${fromUnit.name}</b>`);
     }
@@ -7545,7 +7543,7 @@ function renderVatWhtTool(container) {
             <div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">ยอดที่กรอกคือ</label><select id="whtMode" class="airbnb-input w-full"><option value="before" ${st.mode === 'before' ? 'selected' : ''}>ยอดก่อน VAT</option><option value="after" ${st.mode === 'after' ? 'selected' : ''}>ยอดรวม VAT แล้ว</option></select></div><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">VAT (%)</label><input id="whtVat" type="number" value="${st.vatRate}" class="airbnb-input w-full"></div></div>
             <div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">หัก ณ ที่จ่าย (%)</label><select id="whtRate" class="airbnb-input w-full"><option value="0" ${wht === 0 ? 'selected' : ''}>ไม่หัก</option><option value="1" ${wht === 1 ? 'selected' : ''}>1%</option><option value="3" ${wht === 3 ? 'selected' : ''}>3%</option><option value="5" ${wht === 5 ? 'selected' : ''}>5%</option></select></div>
         </div>
-        <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2" style="box-shadow:var(--app-elevation)"><div class="flex justify-between"><span>ยอดก่อน VAT</span><b>${Number.isFinite(amount) ? formatMoney(base) : '-'} บาท</b></div><div class="flex justify-between"><span>VAT ${vat}%</span><b>${Number.isFinite(amount) ? formatMoney(vatAmount) : '-'} บาท</b></div><div class="flex justify-between"><span>ยอดรวม VAT</span><b>${Number.isFinite(amount) ? formatMoney(gross) : '-'} บาท</b></div><div class="flex justify-between"><span>หัก ณ ที่จ่าย ${wht}%</span><b>${Number.isFinite(amount) ? `- ${formatMoney(whtAmount)}` : '-'} บาท</b></div><div class="mt-2 p-3 rounded-xl border border-[#16a34a] bg-[#f0fdf4] text-[#15803d] theme-result-highlight flex justify-between"><span class="font-semibold">ยอดโอนสุทธิ</span><b>${Number.isFinite(amount) ? formatMoney(net) : '-'} บาท</b></div>${Number.isFinite(amount) ? `<div class="flex justify-end pt-1"><button id="btnPrintVatWhtSummary" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">🖨️ พิมพ์ใบสรุปภาษี / PDF</button></div>` : ''}</div></div>`;
+        <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2" style="box-shadow:var(--app-elevation)"><div class="flex justify-between"><span>ยอดก่อน VAT</span><b>${Number.isFinite(amount) ? formatMoney(base) : '-'} บาท</b></div><div class="flex justify-between"><span>VAT ${vat}%</span><b>${Number.isFinite(amount) ? formatMoney(vatAmount) : '-'} บาท</b></div><div class="flex justify-between"><span>ยอดรวม VAT</span><b>${Number.isFinite(amount) ? formatMoney(gross) : '-'} บาท</b></div><div class="flex justify-between"><span>หัก ณ ที่จ่าย ${wht}%</span><b>${Number.isFinite(amount) ? `- ${formatMoney(whtAmount)}` : '-'} บาท</b></div><div class="mt-2 p-3 rounded-xl border border-[#16a34a] bg-[#f0fdf4] text-[#15803d] theme-result-highlight flex justify-between"><span class="font-semibold">ยอดโอนสุทธิ</span><b>${Number.isFinite(amount) ? formatMoney(net) : '-'} บาท</b></div>${Number.isFinite(amount) ? `<div class="flex justify-end pt-1"><button id="btnPrintVatWhtSummary" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">พิมพ์ใบสรุปภาษี / PDF</button></div>` : ''}</div></div>`;
     const whtInput = document.getElementById('whtAmount');
     whtInput.addEventListener('blur', () => {
         const formatted = formatInputDisplay(whtInput.value);
@@ -8491,7 +8489,7 @@ function renderEcommerceProfitTool(container) {
     } else if (calc.isProfit) {
         setStatusBanner('success', `กำไรสุทธิ <b>${formatMoney(calc.netProfit)} บาท/ออเดอร์</b> (Margin ${formatNum(calc.profitMarginPct, 1)}%) · เงินโอนเข้าบัญชี ${formatMoney(calc.netPayout)} บาท`);
     } else {
-        setStatusBanner('empty', `⚠️ ขาดทุน <b>${formatMoney(Math.abs(calc.netProfit))} บาท</b> · ราคาขายขั้นต่ำที่ไม่ขาดทุนคือ ${formatMoney(calc.breakevenPrice)} บาท`);
+        setStatusBanner('empty', `ขาดทุน <b>${formatMoney(Math.abs(calc.netProfit))} บาท</b> · ราคาขายขั้นต่ำที่ไม่ขาดทุนคือ ${formatMoney(calc.breakevenPrice)} บาท`);
     }
 }
 
@@ -9305,14 +9303,14 @@ async function loadFrankfurterRates(force = false) {
 function renderCurrencyTool(container) {
     const st = appState.currency;
     const currencies = [
-        { code: 'THB', name: '🇹🇭 THB - บาทไทย' },
-        { code: 'USD', name: '🇺🇸 USD - ดอลลาร์สหรัฐ' },
-        { code: 'EUR', name: '🇪🇺 EUR - ยูโร' },
-        { code: 'JPY', name: '🇯🇵 JPY - เยนญี่ปุ่น' },
-        { code: 'CNY', name: '🇨🇳 CNY - หยวนจีน' },
-        { code: 'GBP', name: '🇬🇧 GBP - ปอนด์อังกฤษ' },
-        { code: 'KRW', name: '🇰🇷 KRW - วอนเกาหลี' },
-        { code: 'SGD', name: '🇸🇬 SGD - ดอลลาร์สิงคโปร์' }
+        { code: 'THB', name: 'THB - บาทไทย' },
+        { code: 'USD', name: 'USD - ดอลลาร์สหรัฐ' },
+        { code: 'EUR', name: 'EUR - ยูโร' },
+        { code: 'JPY', name: 'JPY - เยนญี่ปุ่น' },
+        { code: 'CNY', name: 'CNY - หยวนจีน' },
+        { code: 'GBP', name: 'GBP - ปอนด์อังกฤษ' },
+        { code: 'KRW', name: 'KRW - วอนเกาหลี' },
+        { code: 'SGD', name: 'SGD - ดอลลาร์สิงคโปร์' }
     ];
 
     const amt = numberOrDefault(st.amount, 0);
@@ -9377,7 +9375,7 @@ function renderCurrencyTool(container) {
     if (amt <= 0) {
         setStatusBanner('empty', 'กรุณาป้อนจำนวนเงินที่ต้องการแปลง');
     } else {
-        setStatusBanner('success', `💱 ${formatNum(amt, 2)} ${st.from} = <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(converted)} ${st.to}</span>`);
+        setStatusBanner('success', `${formatNum(amt, 2)} ${st.from} = <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(converted)} ${st.to}</span>`);
     }
 }
 
@@ -9469,13 +9467,13 @@ function renderLoanTool(container) {
                 <div class="text-xs font-semibold text-[#6a6a6a]">ตารางผ่อนชำระ (${schedule.length} งวด)</div>
                 <div class="flex items-center gap-1.5 flex-wrap justify-end">
                     <button id="btnPrintLoanSummary" type="button" title="พิมพ์สรุปสินเชื่อหรือบันทึกเป็นไฟล์ PDF" class="px-2 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
-                        🖨️ พิมพ์/PDF
+                        พิมพ์/PDF
                     </button>
                     <button id="btnExportLoanMonthly" type="button" title="ดาวน์โหลดตารางผ่อนรายเดือนทุกงวดเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition-all shadow-sm flex items-center gap-1 cursor-pointer">
-                        📥 รายงวด (.CSV)
+                        รายงวด (.CSV)
                     </button>
                     <button id="btnExportLoanYearly" type="button" title="ดาวน์โหลดสรุปยอดผ่อนรายปีเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2 py-1 text-xs font-medium rounded-lg border border-[var(--app-hairline)] text-[#4a4a4a] bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
-                        📥 สรุปรายปี (.CSV)
+                        สรุปรายปี (.CSV)
                     </button>
                 </div>
             </div>
@@ -9515,7 +9513,7 @@ function renderLoanTool(container) {
     if (P <= 0 || n <= 0) {
         setStatusBanner('empty', 'ป้อนวงเงินกู้ ดอกเบี้ย และจำนวนเดือนเพื่อคำนวณยอดผ่อน');
     } else {
-        setStatusBanner('success', `🏦 ผ่อนเดือนละ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(monthlyPay)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">ดอกเบี้ยรวม: ${formatMoney(totalInterest)} ฿ | โปะเพิ่ม: ${formatMoney(extra)} ฿/เดือน | เหลือ ${extraMonths} เดือน</span><span class="text-xs font-bold block text-[var(--app-accent)]">ประหยัดดอกเบี้ย ${formatMoney(interestSaved)} ฿ และลดระยะเวลา ${monthsSaved} เดือน</span>`);
+        setStatusBanner('success', `ผ่อนเดือนละ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(monthlyPay)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">ดอกเบี้ยรวม: ${formatMoney(totalInterest)} ฿ | โปะเพิ่ม: ${formatMoney(extra)} ฿/เดือน | เหลือ ${extraMonths} เดือน</span><span class="text-xs font-bold block text-[var(--app-accent)]">ประหยัดดอกเบี้ย ${formatMoney(interestSaved)} ฿ และลดระยะเวลา ${monthsSaved} เดือน</span>`);
     }
 }
 
@@ -9605,9 +9603,9 @@ function calculateHomeRefinance(params) {
 
     let recommendation = '';
     if (isRefinanceBetter) {
-        recommendation = `🏆 แนะนำ "รีไฟแนนซ์ (ย้ายธนาคารใหม่)" คุ้มทุนในเดือนที่ ${breakevenMonth} และประหยัดสุทธิ 3 ปีได้มากกว่า Retention ถึง ${formatMoney(netSavingsAdvantage)} บาท`;
+        recommendation = `แนะนำ "รีไฟแนนซ์ (ย้ายธนาคารใหม่)" คุ้มทุนในเดือนที่ ${breakevenMonth} และประหยัดสุทธิ 3 ปีได้มากกว่า Retention ถึง ${formatMoney(netSavingsAdvantage)} บาท`;
     } else if (retentionNetSavings > 0) {
-        recommendation = `🏆 แนะนำ "Retention (ขอลดดอกเบี้ยแบงก์เดิม)" คุ้มค่ากว่า ได้ผลประหยัดสุทธิ 3 ปี ${formatMoney(retentionNetSavings)} บาท โดยไม่ต้องเสียเวลายื่นกู้และจ่ายค่าธรรมเนียมย้ายค่าย`;
+        recommendation = `แนะนำ "Retention (ขอลดดอกเบี้ยแบงก์เดิม)" คุ้มค่ากว่า ได้ผลประหยัดสุทธิ 3 ปี ${formatMoney(retentionNetSavings)} บาท โดยไม่ต้องเสียเวลายื่นกู้และจ่ายค่าธรรมเนียมย้ายค่าย`;
     } else {
         recommendation = `ควรรอเจรจาอัตราดอกเบี้ยโปรโมชันที่ดีกว่านี้ เนื่องจากดอกเบี้ยที่ประหยัดได้ยังไม่คุ้มค่าธรรมเนียม`;
     }
@@ -10041,13 +10039,13 @@ function renderSavingsTool(container) {
                 <div class="text-xs font-semibold text-[#6a6a6a]">ตารางเงินออมสะสม (${years} ปี)</div>
                 <div class="flex items-center gap-1.5 flex-wrap justify-end">
                     <button id="btnPrintSavingsSummary" type="button" title="พิมพ์แผนการออมเงินหรือบันทึกเป็นไฟล์ PDF" class="px-2 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
-                        🖨️ พิมพ์/PDF
+                        พิมพ์/PDF
                     </button>
                     <button id="btnExportSavingsMonthly" type="button" title="ดาวน์โหลดตารางเงินออมรายเดือนทุกงวดเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2 py-1 text-xs font-medium rounded-lg border border-[var(--app-hairline)] text-[#4a4a4a] bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
-                        📥 รายงวด (.CSV)
+                        รายงวด (.CSV)
                     </button>
                     <button id="btnExportSavingsYearly" type="button" title="ดาวน์โหลดสรุปเงินออมรายปีเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition-all shadow-sm flex items-center gap-1 cursor-pointer">
-                        📥 รายปี (.CSV)
+                        รายปี (.CSV)
                     </button>
                 </div>
             </div>
@@ -10085,7 +10083,7 @@ function renderSavingsTool(container) {
         setStatusBanner('empty', 'ป้อนเงินออมเริ่มต้นหรือเงินฝากรายเดือนเพื่อคำนวณผลตอบแทน');
     } else {
         const targetText = modeTarget > 0 ? ` | เป้าหมาย: ${formatMoney(modeTarget)} ฿ | ${totalBalance >= modeTarget ? 'ถึงเป้าหมายแล้ว' : 'ยังขาด ' + formatMoney(modeTarget - totalBalance) + ' ฿' + (requiredMonthly ? ' · ควรออมประมาณ ' + formatMoney(requiredMonthly) + ' ฿/เดือน' : '')}` : '';
-        setStatusBanner('success', `🐷 เงินออมรวมสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(totalBalance)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">เงินต้น: ${formatMoney(totalPrincipal)} ฿ | ดอกเบี้ย: +${formatMoney(interestEarned)} ฿ | มูลค่าหลังเงินเฟ้อ: ${formatMoney(realValue)} ฿${targetText}</span>`);
+        setStatusBanner('success', `เงินออมรวมสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(totalBalance)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">เงินต้น: ${formatMoney(totalPrincipal)} ฿ | ดอกเบี้ย: +${formatMoney(interestEarned)} ฿ | มูลค่าหลังเงินเฟ้อ: ${formatMoney(realValue)} ฿${targetText}</span>`);
     }
 }
 
@@ -11180,7 +11178,7 @@ function renderWorldTimeTool(container) {
     container.innerHTML = `
         <div class="flex flex-col gap-2 h-full">
             <div class="bg-[var(--app-accent)] text-white rounded-[var(--app-card-radius)] p-3.5 flex items-center justify-between">
-                <div><div class="text-xs">🇹🇭 เวลาประเทศไทยปัจจุบัน</div><div class="text-2xl font-bold font-mono" data-world-time="Asia/Bangkok"></div></div>
+                <div><div class="text-xs">เวลาประเทศไทยปัจจุบัน</div><div class="text-2xl font-bold font-mono" data-world-time="Asia/Bangkok"></div></div>
                 <div class="text-right text-xs" data-world-date="Asia/Bangkok"></div>
             </div>
             <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2">
@@ -11320,7 +11318,7 @@ function renderHealthTool(container) {
     if (bmi <= 0) {
         setStatusBanner('empty', 'ป้อนน้ำหนักและส่วนสูงเพื่อคำนวณค่า BMI และ BMR');
     } else {
-        setStatusBanner('success', `🏃 BMI: <b class="text-[var(--app-accent)] underline">${formatNum(bmi, 1)}</b> (${bmiCategory})<span class="text-xs font-medium block text-[#3f3f3f]">พลังงานพื้นฐาน (BMR): ${Math.round(bmr).toLocaleString()} kcal/วัน · พลังงานที่ใช้ต่อวัน (TDEE): <b>${Math.round(tdee).toLocaleString()} kcal/วัน</b></span>`);
+        setStatusBanner('success', `BMI: <b class="text-[var(--app-accent)] underline">${formatNum(bmi, 1)}</b> (${bmiCategory})<span class="text-xs font-medium block text-[#3f3f3f]">พลังงานพื้นฐาน (BMR): ${Math.round(bmr).toLocaleString()} kcal/วัน · พลังงานที่ใช้ต่อวัน (TDEE): <b>${Math.round(tdee).toLocaleString()} kcal/วัน</b></span>`);
     }
 }
 
@@ -11355,15 +11353,15 @@ function renderOvulationTool(container) {
 
             <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow: var(--app-elevation);">
                 <div class="flex justify-between items-center border-b border-[#ebebeb] pb-2.5">
-                    <span class="text-xs font-semibold text-[#222222]">🌸 วันตกไข่โดยประมาณ</span>
+                    <span class="text-xs font-semibold text-[#222222]">วันตกไข่โดยประมาณ</span>
                     <span class="text-sm font-bold text-[var(--app-accent)]">${formatThaiDate(toISO(ovulationDate))}</span>
                 </div>
                 <div class="flex justify-between items-center border-b border-[#ebebeb] pb-2.5">
-                    <span class="text-xs font-semibold text-[#222222]">💕 ช่วงเวลาเจริญพันธุ์</span>
+                    <span class="text-xs font-semibold text-[#222222]">ช่วงเวลาเจริญพันธุ์</span>
                     <span class="text-xs font-bold text-[var(--app-accent)]">${formatThaiDate(toISO(fertileStart))} - ${formatThaiDate(toISO(fertileEnd))}</span>
                 </div>
                 <div class="flex justify-between items-center">
-                    <span class="text-xs font-semibold text-[#6a6a6a]">📅 ประจำเดือนรอบถัดไป</span>
+                    <span class="text-xs font-semibold text-[#6a6a6a]">ประจำเดือนรอบถัดไป</span>
                     <span class="text-xs font-bold text-[#222222]">${formatThaiDate(toISO(nextPeriod))}</span>
                 </div>
             </div>
@@ -11974,7 +11972,7 @@ function renderFuelEffTool(container) {
     if (kmPerLiter <= 0) {
         setStatusBanner('empty', 'ป้อนระยะทางที่วิ่งและปริมาณน้ำมันที่ใช้');
     } else {
-        setStatusBanner('success', `🚗 อัตราสิ้นเปลือง: <span class="text-lg text-[var(--app-accent)] underline">${formatNum(kmPerLiter, 2)} กม./ลิตร</span><span class="text-xs font-medium block text-[#3f3f3f]">หรือคิดเป็น ${formatNum(literPer100Km, 2)} ลิตร ต่อ 100 กม.</span>`);
+        setStatusBanner('success', `อัตราสิ้นเปลือง: <span class="text-lg text-[var(--app-accent)] underline">${formatNum(kmPerLiter, 2)} กม./ลิตร</span><span class="text-xs font-medium block text-[#3f3f3f]">หรือคิดเป็น ${formatNum(literPer100Km, 2)} ลิตร ต่อ 100 กม.</span>`);
     }
 }
 
@@ -12262,25 +12260,25 @@ function renderStandardCalcTool(container) {
 
                         <!-- Permutation Quick Action Pills -->
                         <div class="pt-1">
-                            <div class="text-[11px] lotto-muted mb-1.5 font-medium">⚡ ตัวช่วยขยายเลขยอดฮิต (กดแล้วแตกเลขทันที):</div>
+                            <div class="text-[11px] lotto-muted mb-1.5 font-medium">ตัวช่วยขยายเลขยอดฮิต (กดแล้วแตกเลขทันที):</div>
                             <div class="flex flex-wrap gap-1.5 text-xs">
                                 <button type="button" data-lotto-expand="6doors" class="lotto-button lotto-compact">
-                                    🔀 6 ประตู (3 ตัวกลับ)
+                                    6 ประตู (3 ตัวกลับ)
                                 </button>
                                 <button type="button" data-lotto-expand="2doors" class="lotto-button lotto-compact">
-                                    🔁 2 ตัวกลับ
+                                    2 ตัวกลับ
                                 </button>
                                 <button type="button" data-lotto-expand="19doors" class="lotto-button lotto-compact">
-                                    🚪 19 ประตู (รูด 1 ตัว)
+                                    19 ประตู (รูด 1 ตัว)
                                 </button>
                                 <button type="button" data-lotto-expand="frontRun" class="lotto-button lotto-compact">
-                                    ⏩ รูดหน้า (10 หาง)
+                                    รูดหน้า (10 หาง)
                                 </button>
                                 <button type="button" data-lotto-expand="backRun" class="lotto-button lotto-compact">
-                                    ⏪ รูดหลัง (10 หาง)
+                                    รูดหลัง (10 หาง)
                                 </button>
                                 <button type="button" data-lotto-expand="doubles" class="lotto-button lotto-compact">
-                                    👥 เลขเบิ้ล (00-99)
+                                    เลขเบิ้ล (00-99)
                                 </button>
                             </div>
                         </div>
@@ -12346,7 +12344,7 @@ function renderStandardCalcTool(container) {
                     <!-- Calculation Results Summary Card -->
                     <div class="lotto-card lotto-result space-y-3">
                         <div class="text-xs uppercase font-semibold tracking-wider lotto-accent">
-                            💰 สรุปต้นทุนและผลตอบแทนเมื่อถูกรางวัล (1 หาง)
+                            สรุปต้นทุนและผลตอบแทนเมื่อถูกรางวัล (1 หาง)
                         </div>
                         <div class="grid grid-cols-2 gap-3 text-sm">
                             <div class="lotto-inset p-3 space-y-2">
@@ -12456,7 +12454,7 @@ function renderStandardCalcTool(container) {
                     <!-- Prize Breakdown Card -->
                     <div class="lotto-card lotto-result space-y-3">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold uppercase lotto-accent">💵 สรุปเงินรางวัลสุทธิหลังหักภาษี</span>
+                            <span class="text-xs font-bold uppercase lotto-accent">สรุปเงินรางวัลสุทธิหลังหักภาษี</span>
                             <span class="text-xs px-2 py-0.5 rounded lotto-soft lotto-accent font-semibold">
                                 หัก ${claim.deductionRate}%
                             </span>
@@ -12480,7 +12478,7 @@ function renderStandardCalcTool(container) {
                         </div>
 
                         <div class="lotto-note text-xs">
-                            ℹ️ <strong>ข้อกฎหมาย & ข้อควรรู้:</strong> ${claim.feeNote}
+                            ℹ<strong>ข้อกฎหมาย & ข้อควรรู้:</strong> ${claim.feeNote}
                         </div>
                     </div>
                 </div>
@@ -12499,7 +12497,6 @@ function renderStandardCalcTool(container) {
                     <!-- Savings Simulator Card -->
                     <div class="lotto-card space-y-3">
                         <div class="flex items-center gap-2">
-                            <span class="text-xl">💰</span>
                             <div>
                                 <h3 class="font-bold text-sm lotto-accent">โปรแกรมจำลอง: "เปลี่ยนค่าหวยเป็นเงินล้าน"</h3>
                                 <p class="text-[11px] lotto-muted">ถ้าเปลี่ยนเงินซื้อหวยต่องวด มาลงทุน DCA แบบมีวินัย จะได้เงินเก็บเท่าไหร่?</p>
@@ -12554,7 +12551,7 @@ function renderStandardCalcTool(container) {
                     <!-- Reality Check Statistics Card -->
                     <div class="lotto-card space-y-3">
                         <div class="text-xs font-bold lotto-muted flex items-center gap-1.5">
-                            📊 สถิติ & สัจธรรมความจริงสลากกินแบ่งรัฐบาล (1 ชุด = 1,000,000 ใบ)
+                            สถิติ & สัจธรรมความจริงสลากกินแบ่งรัฐบาล (1 ชุด = 1,000,000 ใบ)
                         </div>
                         <div class="lotto-stats-grid grid gap-2 text-xs">
                             <div class="lotto-stat text-center">
@@ -12593,7 +12590,7 @@ function renderStandardCalcTool(container) {
                 <div class="space-y-3">
                     <div class="lotto-card lotto-result space-y-3 text-center">
                         <div class="text-xs uppercase tracking-wider font-bold lotto-accent">
-                            🔮 เครื่องเสี่ยงทาย & สุ่มเลขเด็ดนำโชค
+                            เครื่องเสี่ยงทาย & สุ่มเลขเด็ดนำโชค
                         </div>
 
                         <!-- Big Lucky Number Display -->
@@ -12619,10 +12616,10 @@ function renderStandardCalcTool(container) {
                         <!-- Action Buttons -->
                         <div class="flex flex-col sm:flex-row justify-center gap-2 pt-2">
                             <button type="button" id="btnSpinLucky" class="lotto-button lotto-primary">
-                                🎲 สุ่มเลขใหม่
+                                สุ่มเลขใหม่
                             </button>
                             <button type="button" id="btnSendToBet" class="lotto-button">
-                                🎯 ส่งเลขนี้ไปคำนวณต้นทุน
+                                ส่งเลขนี้ไปคำนวณต้นทุน
                             </button>
                         </div>
                     </div>
@@ -16937,7 +16934,7 @@ function triggerPrintReceipt(toolId) {
     const targetId = toolId || appState.activeToolId;
     if (typeof hasInvalidNumericInput === 'function' && hasInvalidNumericInput(targetId)) {
         if (typeof showHistoryToast === 'function') {
-            showHistoryToast('⚠️ ข้อมูลตัวเลขไม่ถูกต้อง กรุณาแก้ไขก่อนพิมพ์', false);
+            showHistoryToast('ข้อมูลตัวเลขไม่ถูกต้อง กรุณาแก้ไขก่อนพิมพ์', false);
         }
         return;
     }
@@ -17294,7 +17291,7 @@ function initCompareModalListeners() {
         if (slotB) slotB.value = 'preset_1';
         if (slotC && presets.length >= 3) slotC.value = 'preset_2';
         if (typeof renderCompareMatrix === 'function') renderCompareMatrix();
-        if (typeof showHistoryToast === 'function') showHistoryToast('💡 โหลดตัวอย่างเปรียบเทียบเรียบร้อย');
+        if (typeof showHistoryToast === 'function') showHistoryToast('โหลดตัวอย่างเปรียบเทียบเรียบร้อย');
     });
     document.getElementById('btnPrintCompareSummary')?.addEventListener('click', () => {
         if (typeof currentCompareData === 'undefined' || !currentCompareData) return;

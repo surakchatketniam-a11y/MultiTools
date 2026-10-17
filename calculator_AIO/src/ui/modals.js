@@ -266,7 +266,7 @@ function initCompareModalListeners() {
         if (slotB) slotB.value = 'preset_1';
         if (slotC && presets.length >= 3) slotC.value = 'preset_2';
         if (typeof renderCompareMatrix === 'function') renderCompareMatrix();
-        if (typeof showHistoryToast === 'function') showHistoryToast('💡 โหลดตัวอย่างเปรียบเทียบเรียบร้อย');
+        if (typeof showHistoryToast === 'function') showHistoryToast('โหลดตัวอย่างเปรียบเทียบเรียบร้อย');
     });
     document.getElementById('btnPrintCompareSummary')?.addEventListener('click', () => {
         if (typeof currentCompareData === 'undefined' || !currentCompareData) return;

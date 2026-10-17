@@ -452,7 +452,7 @@ function compareCalculations(toolId, itemsList) {
         const worstInterest = Math.max(...results.map(r => r.totalInterest));
         const savedInterest = worstInterest - minInterestResult.totalInterest;
 
-        deltaSummary = `🏆 ทางเลือกที่คุ้มค่าที่สุดคือ "${winnerItem.label}" ประหยัดดอกเบี้ยได้สูงสุด ${formatMoney(savedInterest)} บาท เมื่อเทียบกับทางเลือกที่ดอกเบี้ยสูงสุด`;
+        deltaSummary = `ทางเลือกที่คุ้มค่าที่สุดคือ "${winnerItem.label}" ประหยัดดอกเบี้ยได้สูงสุด ${formatMoney(savedInterest)} บาท เมื่อเทียบกับทางเลือกที่ดอกเบี้ยสูงสุด`;
 
     } else if (toolId === 'savings') {
         const results = items.map(item => {
@@ -517,7 +517,7 @@ function compareCalculations(toolId, itemsList) {
         const minBal = Math.min(...results.map(r => r.totalBal));
         const diffBal = maxBalResult.totalBal - minBal;
 
-        deltaSummary = `🏆 ทางเลือกที่สร้างความมั่งคั่งได้สูงสุดคือ "${winnerItem.label}" ได้รับเงินออมรวมมากกว่าถึง ${formatMoney(diffBal)} บาท`;
+        deltaSummary = `ทางเลือกที่สร้างความมั่งคั่งได้สูงสุดคือ "${winnerItem.label}" ได้รับเงินออมรวมมากกว่าถึง ${formatMoney(diffBal)} บาท`;
 
     } else if (toolId === 'vat_wht') {
         const results = items.map(item => {
@@ -595,7 +595,7 @@ function compareCalculations(toolId, itemsList) {
         });
 
         winnerIndex = bestSavingsIdx;
-        deltaSummary = `🏆 แผนที่มีสัดส่วนเงินออมและลงทุนสูงสุดคือ "${items[winnerIndex].label}" ออมได้ ${formatMoney(bestSavingsResult.savings)} บาท/เดือน (${formatMoney(bestSavingsResult.savings * 12)} บาท/ปี)`;
+        deltaSummary = `แผนที่มีสัดส่วนเงินออมและลงทุนสูงสุดคือ "${items[winnerIndex].label}" ออมได้ ${formatMoney(bestSavingsResult.savings)} บาท/เดือน (${formatMoney(bestSavingsResult.savings * 12)} บาท/ปี)`;
 
     } else if (toolId === 'tax_personal') {
         const results = items.map(item => {
@@ -639,7 +639,7 @@ function compareCalculations(toolId, itemsList) {
         winnerIndex = minTaxIdx;
         const maxTax = Math.max(...results.map(r => r.totalTax));
         const diffTax = maxTax - minTaxRes.totalTax;
-        deltaSummary = `🏆 ทางเลือกที่ช่วยประหยัดภาษีได้สูงสุดคือ "${items[winnerIndex].label}" เสียภาษีเพียง ${formatMoney(minTaxRes.totalTax)} บาท${diffTax > 0 ? ` (ประหยัดกว่าทางเลือกอื่นสูงสุด ${formatMoney(diffTax)} บาท)` : ''}`;
+        deltaSummary = `ทางเลือกที่ช่วยประหยัดภาษีได้สูงสุดคือ "${items[winnerIndex].label}" เสียภาษีเพียง ${formatMoney(minTaxRes.totalTax)} บาท${diffTax > 0 ? ` (ประหยัดกว่าทางเลือกอื่นสูงสุด ${formatMoney(diffTax)} บาท)` : ''}`;
 
     } else if (toolId === 'property_transfer') {
         const results = items.map(item => {
@@ -691,7 +691,7 @@ function compareCalculations(toolId, itemsList) {
         winnerIndex = minCostIdx;
         const maxCost = Math.max(...results.map(r => r.totalLandCost));
         const diffCost = maxCost - minCostRes.totalLandCost;
-        deltaSummary = `🏆 ทางเลือกที่มีค่าใช้จ่ายวันโอนรวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดรวมเพียง ${formatMoney(minCostRes.totalLandCost)} บาท${diffCost > 0 ? ` (ประหยัดได้ถึง ${formatMoney(diffCost)} บาท)` : ''}`;
+        deltaSummary = `ทางเลือกที่มีค่าใช้จ่ายวันโอนรวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดรวมเพียง ${formatMoney(minCostRes.totalLandCost)} บาท${diffCost > 0 ? ` (ประหยัดได้ถึง ${formatMoney(diffCost)} บาท)` : ''}`;
 
     } else if (toolId === 'gold_thai') {
         const results = items.map(item => {
@@ -738,7 +738,7 @@ function compareCalculations(toolId, itemsList) {
         });
 
         winnerIndex = minBuyIdx;
-        deltaSummary = `🏆 ทางเลือกที่ใช้เงินซื้อน้อยที่สุดคือ "${items[winnerIndex].label}" ยอดสุทธิ ${formatMoney(minBuyRes.totalBuyPrice)} บาท (น้ำหนัก ${formatNum(minBuyRes.bahtWeight, 2)} บาททอง)`;
+        deltaSummary = `ทางเลือกที่ใช้เงินซื้อน้อยที่สุดคือ "${items[winnerIndex].label}" ยอดสุทธิ ${formatMoney(minBuyRes.totalBuyPrice)} บาท (น้ำหนัก ${formatNum(minBuyRes.bahtWeight, 2)} บาททอง)`;
 
     } else if (toolId === 'electricity_bill') {
         const results = items.map(item => {
@@ -791,7 +791,7 @@ function compareCalculations(toolId, itemsList) {
         winnerIndex = minBillIdx;
         const maxBill = Math.max(...results.map(r => r.totalBill));
         const diffBill = maxBill - minBillRes.totalBill;
-        deltaSummary = `🏆 ทางเลือกที่มียอดค่าไฟฟ้ารวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดสุทธิเพียง ${formatMoney(minBillRes.totalBill)} บาท${diffBill > 0 ? ` (ประหยัดได้ ${formatMoney(diffBill)} บาท/เดือน)` : ''}`;
+        deltaSummary = `ทางเลือกที่มียอดค่าไฟฟ้ารวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดสุทธิเพียง ${formatMoney(minBillRes.totalBill)} บาท${diffBill > 0 ? ` (ประหยัดได้ ${formatMoney(diffBill)} บาท/เดือน)` : ''}`;
 
     } else if (toolId === 'car_loan') {
         const results = items.map(item => {
@@ -848,7 +848,7 @@ function compareCalculations(toolId, itemsList) {
         winnerIndex = minRepaymentIdx;
         const maxRepayment = Math.max(...results.map(r => r.totalRepayment));
         const diffRepayment = maxRepayment - minRepaymentRes.totalRepayment;
-        deltaSummary = `🏆 ทางเลือกที่มียอดผ่อนชำระรวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดรวมเพียง ${formatMoney(minRepaymentRes.totalRepayment)} บาท${diffRepayment > 0 ? ` (ประหยัดกว่าทางเลือกอื่น ${formatMoney(diffRepayment)} บาท)` : ''}`;
+        deltaSummary = `ทางเลือกที่มียอดผ่อนชำระรวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดรวมเพียง ${formatMoney(minRepaymentRes.totalRepayment)} บาท${diffRepayment > 0 ? ` (ประหยัดกว่าทางเลือกอื่น ${formatMoney(diffRepayment)} บาท)` : ''}`;
 
     } else if (toolId === 'social_security') {
         const results = items.map(item => {
@@ -903,7 +903,7 @@ function compareCalculations(toolId, itemsList) {
             winnerIndex = maxPensionIdx;
             const minPension = Math.min(...pensionCandidates.map(r => r.monthlyPension));
             const diffPension = maxPensionRes.monthlyPension - minPension;
-            deltaSummary = `🏆 ทางเลือกที่ได้รับเงินบำนาญชราภาพรายเดือนสูงสุดคือ "${items[winnerIndex].label}" ได้รับ ${formatMoney(maxPensionRes.monthlyPension)} บาท/เดือนตลอดชีพ${diffPension > 0 ? ` (มากกว่าทางเลือกอื่น ${formatMoney(diffPension)} บาท/เดือน)` : ''}`;
+            deltaSummary = `ทางเลือกที่ได้รับเงินบำนาญชราภาพรายเดือนสูงสุดคือ "${items[winnerIndex].label}" ได้รับ ${formatMoney(maxPensionRes.monthlyPension)} บาท/เดือนตลอดชีพ${diffPension > 0 ? ` (มากกว่าทางเลือกอื่น ${formatMoney(diffPension)} บาท/เดือน)` : ''}`;
         } else {
             const maxLumpRes = results.reduce((max, cur) => cur.lumpSumTotal > max.lumpSumTotal ? cur : max, results[0]);
             const maxLumpIdx = results.indexOf(maxLumpRes);
@@ -916,7 +916,7 @@ function compareCalculations(toolId, itemsList) {
             });
 
             winnerIndex = maxLumpIdx;
-            deltaSummary = `🏆 ทางเลือกที่ได้รับเงินบำเหน็จชราภาพสูงสุดคือ "${items[winnerIndex].label}" ได้รับ ${formatMoney(maxLumpRes.lumpSumTotal)} บาท`;
+            deltaSummary = `ทางเลือกที่ได้รับเงินบำเหน็จชราภาพสูงสุดคือ "${items[winnerIndex].label}" ได้รับ ${formatMoney(maxLumpRes.lumpSumTotal)} บาท`;
         }
 
     } else if (toolId === 'labor_severance') {
@@ -970,7 +970,7 @@ function compareCalculations(toolId, itemsList) {
         winnerIndex = maxPackageIdx;
         const minPackage = Math.min(...results.map(r => r.totalSeverancePackage));
         const diffPackage = maxPackageRes.totalSeverancePackage - minPackage;
-        deltaSummary = `🏆 ทางเลือกที่ได้รับเงินชดเชยรวมสูงสุดคือ "${items[winnerIndex].label}" ยอดสุทธิ ${formatMoney(maxPackageRes.totalSeverancePackage)} บาท${diffPackage > 0 ? ` (มากกว่าทางเลือกต่ำสุด ${formatMoney(diffPackage)} บาท)` : ''}`;
+        deltaSummary = `ทางเลือกที่ได้รับเงินชดเชยรวมสูงสุดคือ "${items[winnerIndex].label}" ยอดสุทธิ ${formatMoney(maxPackageRes.totalSeverancePackage)} บาท${diffPackage > 0 ? ` (มากกว่าทางเลือกต่ำสุด ${formatMoney(diffPackage)} บาท)` : ''}`;
 
     } else if (toolId === 'legal_interest') {
         const results = items.map(item => {
@@ -1016,7 +1016,7 @@ function compareCalculations(toolId, itemsList) {
         winnerIndex = minPayableIdx;
         const maxPayable = Math.max(...results.map(r => r.totalPayable));
         const diffPayable = maxPayable - minPayableRes.totalPayable;
-        deltaSummary = `🏆 ทางเลือกที่มียอดหนี้รวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดชำระรวม ${formatMoney(minPayableRes.totalPayable)} บาท (ดอกเบี้ย ${formatMoney(minPayableRes.totalInterest)} บาท)${diffPayable > 0 ? ` ประหยัดภาระหนี้ได้ ${formatMoney(diffPayable)} บาท` : ''}`;
+        deltaSummary = `ทางเลือกที่มียอดหนี้รวมต่ำที่สุดคือ "${items[winnerIndex].label}" ยอดชำระรวม ${formatMoney(minPayableRes.totalPayable)} บาท (ดอกเบี้ย ${formatMoney(minPayableRes.totalInterest)} บาท)${diffPayable > 0 ? ` ประหยัดภาระหนี้ได้ ${formatMoney(diffPayable)} บาท` : ''}`;
 
     } else if (toolId === 'ot_calc') {
         const results = items.map(item => {
@@ -1072,7 +1072,7 @@ function compareCalculations(toolId, itemsList) {
         winnerIndex = maxOtIdx;
         const minOt = Math.min(...results.map(r => r.totalOtPay));
         const diffOt = maxOtRes.totalOtPay - minOt;
-        deltaSummary = `🏆 ทางเลือกที่ได้ค่าล่วงเวลา (OT) สูงสุดคือ "${items[winnerIndex].label}" ได้รับค่า OT รวม ${formatMoney(maxOtRes.totalOtPay)} บาท${diffOt > 0 ? ` (มากกว่าทางเลือกต่ำสุด ${formatMoney(diffOt)} บาท)` : ''}`;
+        deltaSummary = `ทางเลือกที่ได้ค่าล่วงเวลา (OT) สูงสุดคือ "${items[winnerIndex].label}" ได้รับค่า OT รวม ${formatMoney(maxOtRes.totalOtPay)} บาท${diffOt > 0 ? ` (มากกว่าทางเลือกต่ำสุด ${formatMoney(diffOt)} บาท)` : ''}`;
 
     } else if (toolId === 'ecommerce_profit') {
         const results = items.map(item => {
@@ -1125,7 +1125,7 @@ function compareCalculations(toolId, itemsList) {
         winnerIndex = maxProfitIdx;
         const minProfit = Math.min(...results.map(r => r.netProfit));
         const diffProfit = maxProfitRes.netProfit - minProfit;
-        deltaSummary = `🏆 ทางเลือกที่สร้างกำไรสุทธิสูงสุดคือ "${items[winnerIndex].label}" กำไรต่อออเดอร์ ${formatMoney(maxProfitRes.netProfit)} บาท (Margin ${formatNum(maxProfitRes.profitMarginPct, 1)}%)${diffProfit > 0 ? ` มากกว่าทางเลือกต่ำสุด ${formatMoney(diffProfit)} บาท` : ''}`;
+        deltaSummary = `ทางเลือกที่สร้างกำไรสุทธิสูงสุดคือ "${items[winnerIndex].label}" กำไรต่อออเดอร์ ${formatMoney(maxProfitRes.netProfit)} บาท (Margin ${formatNum(maxProfitRes.profitMarginPct, 1)}%)${diffProfit > 0 ? ` มากกว่าทางเลือกต่ำสุด ${formatMoney(diffProfit)} บาท` : ''}`;
 
     } else if (toolId === 'debt_payoff') {
         const results = items.map(item => {
@@ -1169,7 +1169,7 @@ function compareCalculations(toolId, itemsList) {
         winnerIndex = fastestIdx;
         const maxMonths = Math.max(...results.map(r => r.summary.months));
         const diffMonths = maxMonths - fastestRes.summary.months;
-        deltaSummary = `🏆 ทางเลือกที่ปลดหนี้ได้เร็วที่สุดคือ "${items[winnerIndex].label}" ใช้เวลาเพียง ${fastestRes.summary.months} เดือน (${fastestRes.summary.years} ปี)${diffMonths > 0 ? ` (เร็วกว่าทางเลือกช้าสุด ${diffMonths} เดือน)` : ''}`;
+        deltaSummary = `ทางเลือกที่ปลดหนี้ได้เร็วที่สุดคือ "${items[winnerIndex].label}" ใช้เวลาเพียง ${fastestRes.summary.months} เดือน (${fastestRes.summary.years} ปี)${diffMonths > 0 ? ` (เร็วกว่าทางเลือกช้าสุด ${diffMonths} เดือน)` : ''}`;
 
     } else if (toolId === 'food_costing') {
         const results = items.map(item => {
@@ -1224,10 +1224,10 @@ function compareCalculations(toolId, itemsList) {
             winnerIndex = maxProfitIdx;
             const minProfit = Math.min(...validProfits.map(r => r.summary.grossProfit));
             const diffProfit = maxProfitRes.summary.grossProfit - minProfit;
-            deltaSummary = `🏆 ทางเลือกที่สร้างกำไรต่อเสิร์ฟสูงสุดคือ "${items[winnerIndex].label}" กำไร ${formatMoney(maxProfitRes.summary.grossProfit)} บาท (Margin ${formatNum(maxProfitRes.summary.grossMarginPct, 1)}%)${diffProfit > 0 ? ` มากกว่าทางเลือกต่ำสุด ${formatMoney(diffProfit)} บาท` : ''}`;
+            deltaSummary = `ทางเลือกที่สร้างกำไรต่อเสิร์ฟสูงสุดคือ "${items[winnerIndex].label}" กำไร ${formatMoney(maxProfitRes.summary.grossProfit)} บาท (Margin ${formatNum(maxProfitRes.summary.grossMarginPct, 1)}%)${diffProfit > 0 ? ` มากกว่าทางเลือกต่ำสุด ${formatMoney(diffProfit)} บาท` : ''}`;
         } else {
             winnerIndex = minCostIdx;
-            deltaSummary = `🏆 ทางเลือกที่ต้นทุนรวมต่อเสิร์ฟประหยัดที่สุดคือ "${items[winnerIndex].label}" ต้นทุนเพียง ${formatMoney(minCostRes.summary.totalCostPerPortion)} บาท`;
+            deltaSummary = `ทางเลือกที่ต้นทุนรวมต่อเสิร์ฟประหยัดที่สุดคือ "${items[winnerIndex].label}" ต้นทุนเพียง ${formatMoney(minCostRes.summary.totalCostPerPortion)} บาท`;
         }
 
     } else if (toolId === 'fuel_cost') {
@@ -1318,7 +1318,7 @@ function compareCalculations(toolId, itemsList) {
             });
 
             winnerIndex = minCostIdx;
-            deltaSummary = `🏆 ทางเลือกที่ประหยัดต้นทุนพลังงานที่สุดคือ "${items[winnerIndex].label}" ต้นทุนเพียง ${formatMoney(minCostRes.costPerKm)} บาท/กม. (ประมาณการ ${formatMoney(minCostRes.annualCost)} บาท/ปี)${diffAnnual > 0 ? ` ประหยัดกว่าทางเลือกสูงสุดถึง ${formatMoney(diffAnnual)} บาท/ปี (${formatMoney(diffKm)} บาท/กม.)` : ''}`;
+            deltaSummary = `ทางเลือกที่ประหยัดต้นทุนพลังงานที่สุดคือ "${items[winnerIndex].label}" ต้นทุนเพียง ${formatMoney(minCostRes.costPerKm)} บาท/กม. (ประมาณการ ${formatMoney(minCostRes.annualCost)} บาท/ปี)${diffAnnual > 0 ? ` ประหยัดกว่าทางเลือกสูงสุดถึง ${formatMoney(diffAnnual)} บาท/ปี (${formatMoney(diffKm)} บาท/กม.)` : ''}`;
         } else {
             rows.push({
                 label: 'ต้นทุนเฉลี่ยต่อกิโลเมตร',
@@ -1420,7 +1420,7 @@ function compareCalculations(toolId, itemsList) {
             });
 
             winnerIndex = minBudgetIdx;
-            deltaSummary = `🏆 ทางเลือกที่ประหยัดงบประมาณที่สุดคือ "${items[winnerIndex].label}" งบประมาณเพียง ${formatMoney(minBudgetRes.costs.totalEstimatedBudget)} บาท${diffBudget > 0 ? ` (ประหยัดกว่าทางเลือกสูงสุด ${formatMoney(diffBudget)} บาท)` : ''}`;
+            deltaSummary = `ทางเลือกที่ประหยัดงบประมาณที่สุดคือ "${items[winnerIndex].label}" งบประมาณเพียง ${formatMoney(minBudgetRes.costs.totalEstimatedBudget)} บาท${diffBudget > 0 ? ` (ประหยัดกว่าทางเลือกสูงสุด ${formatMoney(diffBudget)} บาท)` : ''}`;
         } else {
             rows.push({
                 label: 'จำนวนวัสดุหลักที่ต้องสั่ง',
@@ -1456,7 +1456,7 @@ function generateComparePrintHTML(compData) {
     const headersHTML = compData.items.map((item, idx) => `
         <th style="padding: 10px; text-align: right; background: ${idx === compData.winnerIndex ? '#ecfdf5' : '#f8fafc'}; color: ${idx === compData.winnerIndex ? '#065f46' : '#0f172a'}; border-left: 1px solid #cbd5e1;">
             <div style="font-size: 13px; font-weight: 700;">${escapeHTML(item.label || ('ทางเลือก ' + (idx + 1)))}</div>
-            ${idx === compData.winnerIndex ? '<span style="display:inline-block; font-size:10px; font-weight:700; color:#047857; background:#d1fae5; border-radius:4px; padding:1px 6px; margin-top:3px;">🏆 คุ้มค่าที่สุด</span>' : ''}
+            ${idx === compData.winnerIndex ? '<span style="display:inline-block; font-size:10px; font-weight:700; color:#047857; background:#d1fae5; border-radius:4px; padding:1px 6px; margin-top:3px;">คุ้มค่าที่สุด</span>' : ''}
         </th>
     `).join('');
 
@@ -1544,15 +1544,14 @@ function populateCompareSlots() {
     if (appState && appState[toolId]) {
         options.push({
             value: 'current',
-            label: '📌 ค่าปัจจุบันบนหน้าจอ',
+            label: 'ค่าปัจจุบันบนหน้าจอ',
             state: JSON.parse(JSON.stringify(appState[toolId]))
         });
     }
 
     const history = getCalculationHistory().filter(h => h.toolId === toolId);
     history.forEach(item => {
-        const prefix = item.isSaved ? '⭐ ' : '🕒 ';
-        const label = prefix + (item.label || item.shortSummary || item.timeDisplay);
+        const label = (item.label || item.shortSummary || item.timeDisplay);
         options.push({
             value: item.id,
             label: label,
@@ -1564,7 +1563,7 @@ function populateCompareSlots() {
     presets.forEach((p, idx) => {
         options.push({
             value: 'preset_' + idx,
-            label: '💡 ' + p.label,
+            label: '' + p.label,
             state: p.state
         });
     });
@@ -1593,7 +1592,7 @@ function getSelectedSlotItem(slotId) {
 
     if (val === 'current') {
         return {
-            label: '📌 ค่าปัจจุบันบนหน้าจอ',
+            label: 'ค่าปัจจุบันบนหน้าจอ',
             state: JSON.parse(JSON.stringify(appState[toolId] || {}))
         };
     }
@@ -1667,10 +1666,10 @@ function renderCompareMatrix() {
                 ${compData.items.map((item, idx) => `
                     <th class="p-2.5 text-right font-bold border-l border-[var(--app-hairline)] ${idx === compData.winnerIndex ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-200' : 'text-[var(--color-ink)]'}">
                         <div class="truncate max-w-[170px] inline-block font-bold">${escapeHTML(item.label)}</div>
-                        ${idx === compData.winnerIndex ? '<span class="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">🏆 คุ้มค่าที่สุด</span>' : ''}
+                        ${idx === compData.winnerIndex ? '<span class="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">คุ้มค่าที่สุด</span>' : ''}
                         <div class="mt-1">
                             <button type="button" class="btn-load-compare-set px-2 py-0.5 text-[10px] font-semibold rounded bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition shadow-sm cursor-pointer" data-idx="${idx}">
-                                📥 ใช้ชุดนี้
+                                ใช้ชุดนี้
                             </button>
                         </div>
                     </th>
