@@ -13,11 +13,11 @@ var UNIT_DEFINITIONS = {
 };
 
 var TOOL_GROUPS = [
-    { id: 'shop', name: '🛒 ซื้อของ & ทั่วไป' },
-    { id: 'biz', name: '💼 ธุรกิจ & ค้าขาย' },
-    { id: 'finance', name: '🏦 การเงิน & วางแผน' },
-    { id: 'work', name: '📅 เวลา & สำนักงาน' },
-    { id: 'special', name: '🩺 สุขภาพ & พิเศษ' }
+    { id: 'shop', name: 'ซื้อของ & ทั่วไป' },
+    { id: 'biz', name: 'ธุรกิจ & ค้าขาย' },
+    { id: 'finance', name: 'การเงิน & วางแผน' },
+    { id: 'work', name: 'เวลา & สำนักงาน' },
+    { id: 'special', name: 'สุขภาพ & พิเศษ' }
 ];
 
 var TOOLS_CATALOG = [

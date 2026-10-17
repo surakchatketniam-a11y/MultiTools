@@ -37,6 +37,8 @@ function renderSidebarMenu() {
     // Update Dynamic Count in Drawer & Footer
     const brandCountEl = document.getElementById('sidebarBrandCount');
     if (brandCountEl) brandCountEl.textContent = TOOLS_CATALOG.length;
+    const toolsBadgeEl = document.getElementById('sidebarToolsCountBadge');
+    if (toolsBadgeEl) toolsBadgeEl.textContent = TOOLS_CATALOG.length;
     const footerCountEl = document.getElementById('footerCatalogCount');
     if (footerCountEl) footerCountEl.textContent = `${TOOLS_CATALOG.length} in 1`;
 

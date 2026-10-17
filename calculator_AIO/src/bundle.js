@@ -19,11 +19,11 @@ var UNIT_DEFINITIONS = {
 };
 
 var TOOL_GROUPS = [
-    { id: 'shop', name: '🛒 ซื้อของ & ทั่วไป' },
-    { id: 'biz', name: '💼 ธุรกิจ & ค้าขาย' },
-    { id: 'finance', name: '🏦 การเงิน & วางแผน' },
-    { id: 'work', name: '📅 เวลา & สำนักงาน' },
-    { id: 'special', name: '🩺 สุขภาพ & พิเศษ' }
+    { id: 'shop', name: 'ซื้อของ & ทั่วไป' },
+    { id: 'biz', name: 'ธุรกิจ & ค้าขาย' },
+    { id: 'finance', name: 'การเงิน & วางแผน' },
+    { id: 'work', name: 'เวลา & สำนักงาน' },
+    { id: 'special', name: 'สุขภาพ & พิเศษ' }
 ];
 
 var TOOLS_CATALOG = [
@@ -5287,6 +5287,8 @@ function renderSidebarMenu() {
     // Update Dynamic Count in Drawer & Footer
     const brandCountEl = document.getElementById('sidebarBrandCount');
     if (brandCountEl) brandCountEl.textContent = TOOLS_CATALOG.length;
+    const toolsBadgeEl = document.getElementById('sidebarToolsCountBadge');
+    if (toolsBadgeEl) toolsBadgeEl.textContent = TOOLS_CATALOG.length;
     const footerCountEl = document.getElementById('footerCatalogCount');
     if (footerCountEl) footerCountEl.textContent = `${TOOLS_CATALOG.length} in 1`;
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'multitools-calculator-v22';
+const CACHE_NAME = 'multitools-calculator-v23';
 const STATIC_ASSETS = [
     './',
     './index.html',
