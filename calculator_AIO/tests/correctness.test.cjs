@@ -551,6 +551,33 @@ test('savings schedule generates accurate monthly/yearly growth breakdown and va
     assert.match(fnYearly, /^savings_schedule_yearly_\d{8}\.csv$/);
 });
 
+test('standard calculator restores the latest expression for editing', () => {
+    const calc = { expr: '9', result: '9', history: [{ expr: '12+3', res: '15' }] };
+    let restoreClick;
+    let renders = 0;
+    const ctx = context({
+        appState: { calc },
+        document: { getElementById: () => null },
+        renderActiveTool: () => { renders++; }
+    });
+    const container = {
+        innerHTML: '',
+        querySelectorAll: () => [],
+        querySelector: selector => selector === '#restoreLatestCalcBtn'
+            ? { addEventListener: (event, handler) => { if (event === 'click') restoreClick = handler; } }
+            : null
+    };
+
+    ctx.renderStandardCalcTool(container);
+    assert.match(container.innerHTML, /id="restoreLatestCalcBtn"/);
+    assert.equal(typeof restoreClick, 'function');
+    restoreClick();
+    assert.equal(calc.expr, '12+3');
+    assert.equal(calc.result, '15');
+    assert.equal(calc.history.length, 1);
+    assert.equal(renders, 1);
+});
+
 test('calculation history and saved sets: auto-recording, pinning, renaming, FIFO cap and restoration', () => {
     const rawAppStateMatch = html.match(/const appState = \{[\s\S]*?\n        \};/);
     assert.ok(rawAppStateMatch);

@@ -831,7 +831,9 @@ function renderStandardCalcTool(container) {
         <div class="standard-calc flex flex-col h-full gap-2">
             <div class="standard-calc-display themed-result-card p-3.5 flex flex-col justify-between">
                 <div class="text-xs text-[var(--app-muted)] flex justify-between items-center gap-2 border-b border-[var(--app-hairline)] pb-1.5">
-                    <span class="min-w-0 break-all">ล่าสุด: ${st.history[0] ? `${formatCalcExpr(st.history[0].expr)} = ${st.history[0].res}` : '-'}</span>
+                    ${st.history[0]
+                        ? `<button id="restoreLatestCalcBtn" type="button" class="min-w-0 min-h-[44px] text-left break-all hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--app-accent)]" aria-label="นำการคำนวณล่าสุดกลับมาแก้ไข" title="แตะเพื่อนำกลับมาคำนวณใหม่">ล่าสุด: ${formatCalcExpr(st.history[0].expr)} = ${st.history[0].res}</button>`
+                        : '<span class="min-w-0">ล่าสุด: -</span>'}
                     <button id="clearCalcHistBtn" class="shrink-0 min-h-[44px] text-[var(--app-accent)] font-semibold hover:underline">ล้างประวัติ</button>
                 </div>
                 <div class="standard-calc-expression text-right text-[var(--app-muted)] font-mono break-all min-h-[28px] mt-1">${formatCalcExpr(st.expr) || '0'}</div>
@@ -914,6 +916,14 @@ function renderStandardCalcTool(container) {
 
     document.getElementById('clearCalcHistBtn')?.addEventListener('click', () => {
         st.history = [];
+        renderActiveTool();
+    });
+
+    container.querySelector('#restoreLatestCalcBtn')?.addEventListener('click', () => {
+        const latest = st.history[0];
+        if (!latest) return;
+        st.expr = latest.expr;
+        st.result = latest.res;
         renderActiveTool();
     });
 }
