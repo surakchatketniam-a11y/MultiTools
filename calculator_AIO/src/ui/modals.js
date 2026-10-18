@@ -76,7 +76,7 @@ function setupPWA() {
 
         const catalogLen = (typeof TOOLS_CATALOG !== 'undefined') ? TOOLS_CATALOG.length : 22;
         const manifest = {
-            name: 'เครื่องคำนวณครบวงจร (All-in-One Calculator)',
+            name: 'เครื่องสารพัดคำนวณ (All-in-One Calculator)',
             short_name: 'เครื่องคำนวณ',
             description: `รวม ${catalogLen} เครื่องคำนวณในแอปเดียว พร้อมดีไซน์ Airbnb Rausch และ Classic`,
             start_url: window.location.href,
