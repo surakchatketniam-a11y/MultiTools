@@ -2761,6 +2761,27 @@ function clearCalculationHistory(onlyUnsaved = true) {
     return next;
 }
 
+// Copies a saved set into a new saved set placed right after it. The copy keeps the original values,
+// so the user can load it, change values, and leave the original untouched.
+function duplicateCalculationHistory(id) {
+    const history = getCalculationHistory();
+    const index = history.findIndex(h => h.id === id);
+    if (index < 0 || !history[index].isSaved) return null;
+    const original = history[index];
+    const copy = {
+        ...original,
+        id: 'hist_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        timestamp: Date.now(),
+        timeDisplay: formatHistoryTime(new Date()),
+        state: JSON.parse(JSON.stringify(original.state)),
+        isSaved: true,
+        label: `${original.label || original.toolTitle} (สำเนา)`
+    };
+    history.splice(index + 1, 0, copy);
+    saveCalculationHistory(history);
+    return copy;
+}
+
 function restoreCalculationHistory(id, stateObj) {
     const history = getCalculationHistory();
     const target = history.find(h => h.id === id);
@@ -2878,6 +2899,7 @@ function createHistoryCardHTML(item) {
                     <button type="button" class="btn-pin-history p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm" title="${item.isSaved ? 'เลิกบันทึก' : 'บันทึกเป็นชุดเปรียบเทียบ'}" data-id="${item.id}">
                         ${item.isSaved ? '★' : '☆'}
                     </button>
+                    ${item.isSaved ? `<button type="button" class="btn-dup-history p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs" title="ทำสำเนาชุดนี้" data-id="${item.id}">ทำสำเนา</button>` : ''}
                     ${item.isSaved ? `<button type="button" class="btn-rename-history p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs" title="เปลี่ยนชื่อ" data-id="${item.id}">เปลี่ยนชื่อ</button>` : ''}
                     <button type="button" class="btn-del-history p-1.5 rounded-full hover:bg-red-50 text-neutral-400 hover:text-red-500 text-xs" title="ลบรายการนี้" data-id="${item.id}">✕</button>
                 </div>
@@ -2962,6 +2984,20 @@ function renderHistoryPanel() {
         });
     });
 
+    document.querySelectorAll('.btn-dup-history').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const copy = duplicateCalculationHistory(btn.dataset.id);
+            if (!copy) return;
+            const restored = restoreCalculationHistory(copy.id, appState);
+            if (restored) {
+                closeSidebar();
+                selectTool(restored.toolId);
+                showHistoryToast(`✓ สร้างสำเนา "${copy.label}" แล้ว แก้ค่าได้เลย`);
+            }
+        });
+    });
+
     document.querySelectorAll('.btn-rename-history').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -3023,6 +3059,7 @@ function promptSaveCurrentSet() {
         deleteCalculationHistory,
         clearCalculationHistory,
         restoreCalculationHistory,
+        duplicateCalculationHistory,
         scheduleRecordHistory,
         showHistoryToast,
         switchDrawerTab,
@@ -5433,6 +5470,7 @@ function renderEntryHome() {
         results.innerHTML = '';
         results.classList.remove('hidden');
         favSection.classList.add('hidden');
+        document.getElementById('entrySavedSection')?.classList.add('hidden');
         if (matches.length === 0) {
             results.innerHTML = `<p class="px-2 py-4 text-center text-sm text-[var(--color-muted)]">ไม่พบเครื่องคำนวณที่ตรงกับ "${escapeHTML(query)}"</p>`;
         } else {
@@ -5441,6 +5479,26 @@ function renderEntryHome() {
         return;
     }
 
+    const savedSection = document.getElementById('entrySavedSection');
+    const savedList = document.getElementById('entrySavedList');
+    if (savedSection && savedList) {
+        const saved = (typeof getCalculationHistory === 'function' ? getCalculationHistory() : []).filter(item => item.isSaved).slice(0, 4);
+        savedList.innerHTML = '';
+        savedSection.classList.toggle('hidden', saved.length === 0);
+        saved.forEach(item => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'text-left p-3 min-h-[44px] rounded-xl border border-[var(--color-hairline-soft)] bg-[var(--color-surface-soft)] hover:border-[var(--app-accent)]';
+            btn.innerHTML = `<div class="text-sm font-semibold text-[var(--color-ink)] truncate">${escapeHTML(item.label || item.toolTitle)}</div><div class="text-[11px] text-[var(--color-muted)] truncate">${escapeHTML(item.toolTitle)}${item.shortSummary ? ' · ' + escapeHTML(item.shortSummary) : ''}</div>`;
+            btn.addEventListener('click', () => {
+                const restored = restoreCalculationHistory(item.id, appState);
+                if (!restored) return;
+                closeEntryOverlay();
+                selectTool(restored.toolId);
+            });
+            savedList.appendChild(btn);
+        });
+    }
     results.classList.add('hidden');
     results.innerHTML = '';
     const pinned = getPinnedToolsForEntry();

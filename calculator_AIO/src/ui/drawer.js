@@ -185,6 +185,7 @@ function renderEntryHome() {
         results.innerHTML = '';
         results.classList.remove('hidden');
         favSection.classList.add('hidden');
+        document.getElementById('entrySavedSection')?.classList.add('hidden');
         if (matches.length === 0) {
             results.innerHTML = `<p class="px-2 py-4 text-center text-sm text-[var(--color-muted)]">ไม่พบเครื่องคำนวณที่ตรงกับ "${escapeHTML(query)}"</p>`;
         } else {
@@ -193,6 +194,26 @@ function renderEntryHome() {
         return;
     }
 
+    const savedSection = document.getElementById('entrySavedSection');
+    const savedList = document.getElementById('entrySavedList');
+    if (savedSection && savedList) {
+        const saved = (typeof getCalculationHistory === 'function' ? getCalculationHistory() : []).filter(item => item.isSaved).slice(0, 4);
+        savedList.innerHTML = '';
+        savedSection.classList.toggle('hidden', saved.length === 0);
+        saved.forEach(item => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'text-left p-3 min-h-[44px] rounded-xl border border-[var(--color-hairline-soft)] bg-[var(--color-surface-soft)] hover:border-[var(--app-accent)]';
+            btn.innerHTML = `<div class="text-sm font-semibold text-[var(--color-ink)] truncate">${escapeHTML(item.label || item.toolTitle)}</div><div class="text-[11px] text-[var(--color-muted)] truncate">${escapeHTML(item.toolTitle)}${item.shortSummary ? ' · ' + escapeHTML(item.shortSummary) : ''}</div>`;
+            btn.addEventListener('click', () => {
+                const restored = restoreCalculationHistory(item.id, appState);
+                if (!restored) return;
+                closeEntryOverlay();
+                selectTool(restored.toolId);
+            });
+            savedList.appendChild(btn);
+        });
+    }
     results.classList.add('hidden');
     results.innerHTML = '';
     const pinned = getPinnedToolsForEntry();
