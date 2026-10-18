@@ -187,9 +187,9 @@ function renderUnitPriceTool(container) {
                 const priceCell = document.createElement('div');
                 priceCell.dataset.fieldIndex = priceFieldIdx;
                 priceCell.className = `cell cell-input flex-col ${isPriceActive ? 'active-cell' : ''}`;
-                // Touch devices get the number pad (no space key needed; qty is a separate field); PC keeps free text so "864 50" can be typed.
-                const priceInputMode = window.matchMedia('(pointer: coarse)').matches ? 'decimal' : 'text';
-                priceCell.innerHTML = `<input id="numeric-field-${priceFieldIdx}" data-shared-field="${priceFieldIdx}" ${priceInputMode === 'decimal' ? 'data-native-keypad' : ''} class="unit-quick-input unit-price-input" type="text" inputmode="${priceInputMode}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="ราคา ${row.id}" placeholder="ราคา" value="${escapeHTML(formatInputDisplay(row.price))}" aria-describedby="numeric-error-${priceFieldIdx}"><span id="numeric-error-${priceFieldIdx}" class="field-error text-[10px]" role="alert" hidden></span>`;
+                // Touch devices use the in-app keypad only; PC keeps free text so "864 50" can be typed.
+                const priceInputMode = window.matchMedia('(pointer: coarse)').matches ? 'none' : 'text';
+                priceCell.innerHTML = `<input id="numeric-field-${priceFieldIdx}" data-shared-field="${priceFieldIdx}" class="unit-quick-input unit-price-input" type="text" inputmode="${priceInputMode}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="ราคา ${row.id}" placeholder="ราคา" value="${escapeHTML(formatInputDisplay(row.price))}" aria-describedby="numeric-error-${priceFieldIdx}"><span id="numeric-error-${priceFieldIdx}" class="field-error text-[10px]" role="alert" hidden></span>`;
                 const quickInput = priceCell.querySelector('.unit-quick-input');
                 let quickPairActive = false;
                 quickInput.addEventListener('click', (event) => event.stopPropagation());

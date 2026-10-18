@@ -204,7 +204,7 @@ function initKeypadListeners() {
     // Only fields wired to the shared keypad may open it. Native numeric
     // controls keep their own editor, so keys cannot change another field.
     const panel = document.getElementById('toolTopPanel');
-    const sharedField = '#toolTopPanel input[data-shared-field]:not(:disabled):not([readonly]):not([data-native-keypad])';
+    const sharedField = '#toolTopPanel input[data-shared-field]:not(:disabled):not([readonly])';
     const keypadControls = '#sharedKeypadSection, #keypadToolbar';
     panel?.addEventListener('focusin', event => {
         updateKeypadCollapseUI(!event.target.matches(sharedField));
@@ -220,7 +220,9 @@ function initKeypadListeners() {
         const target = event.target;
         if (!target?.closest) return;
         if (target.closest(keypadControls)) return;
-        const field = target.matches(sharedField) ? target : target.closest('#toolTopPanel [data-field-index]')?.querySelector('input[data-shared-field]:not(:disabled):not([readonly]):not([data-native-keypad])');
+        // Unit selects are native pickers; the in-app keypad must not open for them.
+        if (target.closest('select')) { updateKeypadCollapseUI(true); return; }
+        const field = target.matches(sharedField) ? target : target.closest('#toolTopPanel [data-field-index]')?.querySelector('input[data-shared-field]:not(:disabled):not([readonly])');
         if (field) {
             updateKeypadCollapseUI(false);
             return;

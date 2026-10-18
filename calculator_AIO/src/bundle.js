@@ -6063,7 +6063,7 @@ function initKeypadListeners() {
     // Only fields wired to the shared keypad may open it. Native numeric
     // controls keep their own editor, so keys cannot change another field.
     const panel = document.getElementById('toolTopPanel');
-    const sharedField = '#toolTopPanel input[data-shared-field]:not(:disabled):not([readonly]):not([data-native-keypad])';
+    const sharedField = '#toolTopPanel input[data-shared-field]:not(:disabled):not([readonly])';
     const keypadControls = '#sharedKeypadSection, #keypadToolbar';
     panel?.addEventListener('focusin', event => {
         updateKeypadCollapseUI(!event.target.matches(sharedField));
@@ -6079,7 +6079,9 @@ function initKeypadListeners() {
         const target = event.target;
         if (!target?.closest) return;
         if (target.closest(keypadControls)) return;
-        const field = target.matches(sharedField) ? target : target.closest('#toolTopPanel [data-field-index]')?.querySelector('input[data-shared-field]:not(:disabled):not([readonly]):not([data-native-keypad])');
+        // Unit selects are native pickers; the in-app keypad must not open for them.
+        if (target.closest('select')) { updateKeypadCollapseUI(true); return; }
+        const field = target.matches(sharedField) ? target : target.closest('#toolTopPanel [data-field-index]')?.querySelector('input[data-shared-field]:not(:disabled):not([readonly])');
         if (field) {
             updateKeypadCollapseUI(false);
             return;
@@ -6410,9 +6412,9 @@ function renderUnitPriceTool(container) {
                 const priceCell = document.createElement('div');
                 priceCell.dataset.fieldIndex = priceFieldIdx;
                 priceCell.className = `cell cell-input flex-col ${isPriceActive ? 'active-cell' : ''}`;
-                // Touch devices get the number pad (no space key needed; qty is a separate field); PC keeps free text so "864 50" can be typed.
-                const priceInputMode = window.matchMedia('(pointer: coarse)').matches ? 'decimal' : 'text';
-                priceCell.innerHTML = `<input id="numeric-field-${priceFieldIdx}" data-shared-field="${priceFieldIdx}" ${priceInputMode === 'decimal' ? 'data-native-keypad' : ''} class="unit-quick-input unit-price-input" type="text" inputmode="${priceInputMode}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="ราคา ${row.id}" placeholder="ราคา" value="${escapeHTML(formatInputDisplay(row.price))}" aria-describedby="numeric-error-${priceFieldIdx}"><span id="numeric-error-${priceFieldIdx}" class="field-error text-[10px]" role="alert" hidden></span>`;
+                // Touch devices use the in-app keypad only; PC keeps free text so "864 50" can be typed.
+                const priceInputMode = window.matchMedia('(pointer: coarse)').matches ? 'none' : 'text';
+                priceCell.innerHTML = `<input id="numeric-field-${priceFieldIdx}" data-shared-field="${priceFieldIdx}" class="unit-quick-input unit-price-input" type="text" inputmode="${priceInputMode}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="ราคา ${row.id}" placeholder="ราคา" value="${escapeHTML(formatInputDisplay(row.price))}" aria-describedby="numeric-error-${priceFieldIdx}"><span id="numeric-error-${priceFieldIdx}" class="field-error text-[10px]" role="alert" hidden></span>`;
                 const quickInput = priceCell.querySelector('.unit-quick-input');
                 let quickPairActive = false;
                 quickInput.addEventListener('click', (event) => event.stopPropagation());
