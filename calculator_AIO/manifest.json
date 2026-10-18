@@ -1,11 +1,18 @@
 {
-  "name": "เครื่องคิดเลขครบวงจร",
-  "short_name": "เครื่องคิดเลข",
+  "name": "เครื่องสารพัดคำนวณ",
+  "short_name": "สารพัดคำนวณ",
   "lang": "th",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f7f7f7",
   "theme_color": "#ff385c",
   "description": "เครื่องมือคำนวณสำหรับชีวิตประจำวัน ภาษี เงินกู้ และต้นทุนต่อพื้นที่",
-  "icons": []
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
 }
