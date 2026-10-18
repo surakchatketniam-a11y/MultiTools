@@ -204,7 +204,7 @@ function initKeypadListeners() {
     // Only fields wired to the shared keypad may open it. Native numeric
     // controls keep their own editor, so keys cannot change another field.
     const panel = document.getElementById('toolTopPanel');
-    const sharedField = '#toolTopPanel input[data-shared-field]:not(:disabled):not([readonly])';
+    const sharedField = '#toolTopPanel input[data-shared-field]:not(:disabled):not([readonly]):not([data-native-keypad])';
     const keypadControls = '#sharedKeypadSection, #keypadToolbar';
     panel?.addEventListener('focusin', event => {
         updateKeypadCollapseUI(!event.target.matches(sharedField));
@@ -220,7 +220,7 @@ function initKeypadListeners() {
         const target = event.target;
         if (!target?.closest) return;
         if (target.closest(keypadControls)) return;
-        const field = target.matches(sharedField) ? target : target.closest('#toolTopPanel [data-field-index]')?.querySelector('input[data-shared-field]:not(:disabled):not([readonly])');
+        const field = target.matches(sharedField) ? target : target.closest('#toolTopPanel [data-field-index]')?.querySelector('input[data-shared-field]:not(:disabled):not([readonly]):not([data-native-keypad])');
         if (field) {
             updateKeypadCollapseUI(false);
             return;
@@ -281,10 +281,12 @@ function createKeypadFieldHTML(fieldIndex, label, value, unitSuffix = '', placeh
     const isIntermediate = clean === '' || clean === '.' || clean === '-' || clean === '-.';
     const invalid = !isIntermediate && !Number.isFinite(parseNumericInput(clean));
     const displayVal = formatInputDisplay(value);
+    // Touch devices use the in-app keypad only; PC keeps the native keyboard.
+    const sharedInputMode = window.matchMedia('(pointer: coarse)').matches ? 'none' : 'decimal';
     return `<div><div class="clev-field-box ${isActive ? 'active-field' : ''}" data-field-index="${fieldIndex}">
         <label for="numeric-field-${fieldIndex}" class="text-sm font-medium text-[#222222]">${label}</label>
         <div class="flex items-center gap-1.5 min-w-0" style="max-width:55%">
-            <input id="numeric-field-${fieldIndex}" data-shared-field="${fieldIndex}" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" class="shared-number-input" aria-invalid="${invalid}" ${invalid ? `aria-describedby="numeric-error-${fieldIndex}"` : ''} value="${escapeHTML(displayVal)}" placeholder="${escapeHTML(placeholder)}">
+            <input id="numeric-field-${fieldIndex}" data-shared-field="${fieldIndex}" type="text" inputmode="${sharedInputMode}" autocomplete="off" spellcheck="false" class="shared-number-input" aria-invalid="${invalid}" ${invalid ? `aria-describedby="numeric-error-${fieldIndex}"` : ''} value="${escapeHTML(displayVal)}" placeholder="${escapeHTML(placeholder)}">
             ${unitSuffix ? `<span class="text-xs font-medium text-[#6a6a6a]">${unitSuffix}</span>` : ''}
         </div>
     </div>${invalid ? `<p id="numeric-error-${fieldIndex}" role="alert" class="text-xs px-3 py-1">กรุณากรอกตัวเลข เช่น 1,000 หรือ ๑๐๐๐</p>` : ''}</div>`;

@@ -6063,7 +6063,7 @@ function initKeypadListeners() {
     // Only fields wired to the shared keypad may open it. Native numeric
     // controls keep their own editor, so keys cannot change another field.
     const panel = document.getElementById('toolTopPanel');
-    const sharedField = '#toolTopPanel input[data-shared-field]:not(:disabled):not([readonly])';
+    const sharedField = '#toolTopPanel input[data-shared-field]:not(:disabled):not([readonly]):not([data-native-keypad])';
     const keypadControls = '#sharedKeypadSection, #keypadToolbar';
     panel?.addEventListener('focusin', event => {
         updateKeypadCollapseUI(!event.target.matches(sharedField));
@@ -6079,7 +6079,7 @@ function initKeypadListeners() {
         const target = event.target;
         if (!target?.closest) return;
         if (target.closest(keypadControls)) return;
-        const field = target.matches(sharedField) ? target : target.closest('#toolTopPanel [data-field-index]')?.querySelector('input[data-shared-field]:not(:disabled):not([readonly])');
+        const field = target.matches(sharedField) ? target : target.closest('#toolTopPanel [data-field-index]')?.querySelector('input[data-shared-field]:not(:disabled):not([readonly]):not([data-native-keypad])');
         if (field) {
             updateKeypadCollapseUI(false);
             return;
@@ -6140,10 +6140,12 @@ function createKeypadFieldHTML(fieldIndex, label, value, unitSuffix = '', placeh
     const isIntermediate = clean === '' || clean === '.' || clean === '-' || clean === '-.';
     const invalid = !isIntermediate && !Number.isFinite(parseNumericInput(clean));
     const displayVal = formatInputDisplay(value);
+    // Touch devices use the in-app keypad only; PC keeps the native keyboard.
+    const sharedInputMode = window.matchMedia('(pointer: coarse)').matches ? 'none' : 'decimal';
     return `<div><div class="clev-field-box ${isActive ? 'active-field' : ''}" data-field-index="${fieldIndex}">
         <label for="numeric-field-${fieldIndex}" class="text-sm font-medium text-[#222222]">${label}</label>
         <div class="flex items-center gap-1.5 min-w-0" style="max-width:55%">
-            <input id="numeric-field-${fieldIndex}" data-shared-field="${fieldIndex}" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" class="shared-number-input" aria-invalid="${invalid}" ${invalid ? `aria-describedby="numeric-error-${fieldIndex}"` : ''} value="${escapeHTML(displayVal)}" placeholder="${escapeHTML(placeholder)}">
+            <input id="numeric-field-${fieldIndex}" data-shared-field="${fieldIndex}" type="text" inputmode="${sharedInputMode}" autocomplete="off" spellcheck="false" class="shared-number-input" aria-invalid="${invalid}" ${invalid ? `aria-describedby="numeric-error-${fieldIndex}"` : ''} value="${escapeHTML(displayVal)}" placeholder="${escapeHTML(placeholder)}">
             ${unitSuffix ? `<span class="text-xs font-medium text-[#6a6a6a]">${unitSuffix}</span>` : ''}
         </div>
     </div>${invalid ? `<p id="numeric-error-${fieldIndex}" role="alert" class="text-xs px-3 py-1">กรุณากรอกตัวเลข เช่น 1,000 หรือ ๑๐๐๐</p>` : ''}</div>`;
@@ -6408,7 +6410,9 @@ function renderUnitPriceTool(container) {
                 const priceCell = document.createElement('div');
                 priceCell.dataset.fieldIndex = priceFieldIdx;
                 priceCell.className = `cell cell-input flex-col ${isPriceActive ? 'active-cell' : ''}`;
-                priceCell.innerHTML = `<input id="numeric-field-${priceFieldIdx}" data-shared-field="${priceFieldIdx}" class="unit-quick-input unit-price-input" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="ราคา ${row.id}" placeholder="ราคา" value="${escapeHTML(formatInputDisplay(row.price))}" aria-describedby="numeric-error-${priceFieldIdx}"><span id="numeric-error-${priceFieldIdx}" class="field-error text-[10px]" role="alert" hidden></span>`;
+                // Touch devices get the number pad (no space key needed; qty is a separate field); PC keeps free text so "864 50" can be typed.
+                const priceInputMode = window.matchMedia('(pointer: coarse)').matches ? 'decimal' : 'text';
+                priceCell.innerHTML = `<input id="numeric-field-${priceFieldIdx}" data-shared-field="${priceFieldIdx}" ${priceInputMode === 'decimal' ? 'data-native-keypad' : ''} class="unit-quick-input unit-price-input" type="text" inputmode="${priceInputMode}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="ราคา ${row.id}" placeholder="ราคา" value="${escapeHTML(formatInputDisplay(row.price))}" aria-describedby="numeric-error-${priceFieldIdx}"><span id="numeric-error-${priceFieldIdx}" class="field-error text-[10px]" role="alert" hidden></span>`;
                 const quickInput = priceCell.querySelector('.unit-quick-input');
                 let quickPairActive = false;
                 quickInput.addEventListener('click', (event) => event.stopPropagation());
@@ -6466,9 +6470,11 @@ function renderUnitPriceTool(container) {
                 const qtyCell = document.createElement('div');
                 qtyCell.dataset.fieldIndex = qtyFieldIdx;
                 qtyCell.className = `cell cell-input !p-0 flex-col ${isQtyActive ? 'active-cell' : ''}`;
+                // Touch devices use the in-app keypad only; PC keeps the native keyboard.
+                const qtyInputMode = window.matchMedia('(pointer: coarse)').matches ? 'none' : 'decimal';
                 qtyCell.innerHTML = `
                     <div class="flex items-center w-full h-full relative">
-                        <input id="numeric-field-${qtyFieldIdx}" data-shared-field="${qtyFieldIdx}" class="unit-quick-input unit-qty-input min-w-0 flex-1 h-full px-1.5 text-center bg-transparent focus:outline-none" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="จำนวน ${row.id}" placeholder="จำนวน" value="${escapeHTML(formatInputDisplay(row.qty))}" aria-describedby="numeric-error-${qtyFieldIdx}">
+                        <input id="numeric-field-${qtyFieldIdx}" data-shared-field="${qtyFieldIdx}" class="unit-quick-input unit-qty-input min-w-0 flex-1 h-full px-1.5 text-center bg-transparent focus:outline-none" type="text" inputmode="${qtyInputMode}" autocomplete="off" spellcheck="false" aria-label="จำนวน ${row.id}" placeholder="จำนวน" value="${escapeHTML(formatInputDisplay(row.qty))}" aria-describedby="numeric-error-${qtyFieldIdx}">
                         <select class="unit-select" aria-label="หน่วย ${row.id}">
                             <option value="unit"${rowUnit === 'unit' ? ' selected' : ''}>หน่วย</option>
                             <optgroup label="นับชิ้น">
