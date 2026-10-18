@@ -1218,6 +1218,26 @@
 </head>
 <body>
 
+    <!-- Entry screen: search-first home with pinned tools below -->
+    <div id="entryOverlay" class="hidden fixed inset-0 z-[70] overflow-y-auto bg-[var(--color-canvas)]" role="dialog" aria-modal="true" aria-labelledby="entryTitle">
+        <div class="mx-auto max-w-xl px-4 pt-[14vh] pb-10 space-y-8">
+            <div class="text-center space-y-1">
+                <h1 id="entryTitle" class="text-2xl font-bold text-[var(--color-ink)]">เครื่องคำนวณครบวงจร</h1>
+                <p class="text-sm text-[var(--color-muted)]">พิมพ์สิ่งที่อยากคำนวณ เช่น ส่วนลด ค่าไฟ ภาษี</p>
+            </div>
+            <div class="relative">
+                <input type="search" id="entrySearchInput" placeholder="ค้นหาเครื่องคำนวณ..." autocomplete="off" spellcheck="false" aria-label="ค้นหาเครื่องคำนวณ" class="airbnb-input w-full text-base px-5 py-3 rounded-full">
+            </div>
+            <div id="entrySearchResults" class="hidden space-y-2"></div>
+            <div id="entryFavSection" class="space-y-3">
+                <p class="text-sm font-semibold text-[var(--color-ink)]">รายการโปรดของคุณ</p>
+                <div id="entryFavList" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+            </div>
+            <div class="text-center">
+                <button type="button" id="entrySkipBtn" class="min-h-[44px] text-sm font-semibold text-[var(--app-accent)] underline">ดูเครื่องคำนวณทั้งหมด</button>
+            </div>
+        </div>
+    </div>
     <div class="app-shell">
         
         <!-- =========================================================
@@ -1669,7 +1689,7 @@
     <div id="printFormalReceipt" class="hidden"></div>
 
     <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
-    <script src="src/bundle.js?v=30"></script>
+    <script src="src/bundle.js?v=34"></script>
 
     <script>
         function getSafeDateStr(offsetDays = 0) {
@@ -2261,6 +2281,7 @@
             renderActiveTool();
             updateHistoryBadge();
             setupPWA();
+            openEntryOverlay();
         });
     </script>
 </body>

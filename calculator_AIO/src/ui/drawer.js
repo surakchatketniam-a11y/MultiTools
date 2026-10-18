@@ -132,6 +132,79 @@ function selectTool(toolId) {
     renderActiveTool();
 }
 
+// Entry screen: search-first home. Shows matches while typing, otherwise the user's pinned tools.
+function getPinnedToolsForEntry() {
+    let pinned = [];
+    try {
+        const stored = JSON.parse(localStorage.getItem('calc_pwa_favorites') || '[]');
+        pinned = Array.isArray(stored) ? stored : [];
+    } catch (e) {
+        pinned = [];
+    }
+    return pinned.map(id => TOOLS_CATALOG.find(t => t.id === id)).filter(Boolean).slice(0, 6);
+}
+
+function openEntryOverlay() {
+    const overlay = document.getElementById('entryOverlay');
+    if (!overlay) return;
+    const input = document.getElementById('entrySearchInput');
+    if (input) input.value = '';
+    renderEntryHome();
+    overlay.classList.remove('hidden');
+    document.getElementById('entrySkipBtn')?.addEventListener('click', closeEntryOverlay, { once: true });
+    if (input && !input.dataset.bound) {
+        input.dataset.bound = 'true';
+        input.addEventListener('input', () => renderEntryHome());
+    }
+}
+
+function renderEntryHome() {
+    const query = (document.getElementById('entrySearchInput')?.value || '').trim().toLowerCase();
+    const results = document.getElementById('entrySearchResults');
+    const favSection = document.getElementById('entryFavSection');
+    const favList = document.getElementById('entryFavList');
+    if (!results || !favSection || !favList) return;
+
+    const makeButton = (tool, cls) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = cls;
+        btn.textContent = tool.menuTitle;
+        btn.addEventListener('click', () => {
+            closeEntryOverlay();
+            selectTool(tool.id);
+        });
+        return btn;
+    };
+
+    if (query) {
+        const matches = TOOLS_CATALOG.filter(tool => {
+            const text = `${tool.menuTitle} ${tool.headerTitle} ${tool.id} ${tool.keywords || ''}`.toLowerCase();
+            return text.includes(query);
+        });
+        results.innerHTML = '';
+        results.classList.remove('hidden');
+        favSection.classList.add('hidden');
+        if (matches.length === 0) {
+            results.innerHTML = `<p class="px-2 py-4 text-center text-sm text-[var(--color-muted)]">ไม่พบเครื่องคำนวณที่ตรงกับ "${escapeHTML(query)}"</p>`;
+        } else {
+            matches.forEach(tool => results.appendChild(makeButton(tool, 'w-full text-left p-3 min-h-[44px] rounded-xl border border-[var(--color-hairline-soft)] bg-[var(--color-surface-soft)] font-semibold text-[var(--color-ink)] hover:border-[var(--app-accent)]')));
+        }
+        return;
+    }
+
+    results.classList.add('hidden');
+    results.innerHTML = '';
+    const pinned = getPinnedToolsForEntry();
+    favList.innerHTML = '';
+    favSection.classList.toggle('hidden', pinned.length === 0);
+    pinned.forEach(tool => favList.appendChild(makeButton(tool, 'text-left p-3 min-h-[44px] rounded-xl border border-[var(--color-hairline-soft)] bg-[var(--color-surface-soft)] text-sm font-semibold text-[var(--color-ink)] hover:border-[var(--app-accent)]')));
+}
+
+function closeEntryOverlay() {
+    document.getElementById('entryOverlay')?.classList.add('hidden');
+}
+
 function getToolSummaryText(toolId, stateObj) {
     const state = stateObj || (typeof appState !== 'undefined' ? appState : {});
     const tool = TOOLS_CATALOG.find(t => t.id === toolId) || { menuTitle: toolId };
