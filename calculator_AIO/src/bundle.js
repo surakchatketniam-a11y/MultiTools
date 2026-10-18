@@ -9349,7 +9349,7 @@ function renderCurrencyTool(container) {
 
             <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-2.5 space-y-2 text-xs text-[#3f3f3f]">
                 <div class="flex items-center justify-between gap-2"><span>เรทที่ใช้: <b>1 ${st.from} = ${formatNum(effectiveRate, 4)} ${st.to}</b></span><button id="swapCurrBtn" class="px-3 py-1 bg-[#f7f7f7] border border-[#dddddd] rounded-full font-semibold text-[var(--app-accent)]">⇄ สลับ</button></div>
-                <div class="flex items-center justify-between gap-2 text-[11px] text-[#6a6a6a]"><span>${escapeHTML(st.rateSource)}${rateDateText ? ` · วันที่เรท ${escapeHTML(rateDateText)}` : ''}${st.lastUpdated ? ` · ดึงข้อมูล ${new Date(st.lastUpdated).toLocaleString('th-TH')}` : ''}</span><button id="refreshRatesBtn" class="px-2.5 py-1 border border-[var(--app-hairline)] rounded-full font-semibold text-[var(--app-accent)]">↻ อัปเดตเรท</button></div>
+                <div class="flex items-center justify-between gap-2 text-[11px] text-[#6a6a6a]"><span>${escapeHTML(st.rateSource)}${rateDateText ? ` · วันที่เรท ${escapeHTML(rateDateText)}` : ([st.from, st.to].some(c => c !== 'THB') ? ' · ยังไม่มีวันที่เรท' : '')}${st.lastUpdated ? ` · ดึงข้อมูล ${new Date(st.lastUpdated).toLocaleString('th-TH')}` : ''}</span><button id="refreshRatesBtn" class="px-2.5 py-1 border border-[var(--app-hairline)] rounded-full font-semibold text-[var(--app-accent)]">↻ อัปเดตเรท</button></div>
             </div>
         </div>
     `;
@@ -14072,7 +14072,7 @@ function renderGoldThaiTool(container) {
         priceOrnamentBuy: '43115',
         priceOrnamentSell: '44500',
         savingsCostPerBaht: '40000',
-        rateSource: 'สมาคมค้าทองคำ',
+        rateSource: 'ค่าเริ่มต้นในเครื่อง (ยังไม่ได้ดึงจาก API)',
         lastUpdated: null,
         apiUpdateDate: '',
         apiUpdateTime: ''
@@ -14097,7 +14097,7 @@ function renderGoldThaiTool(container) {
             <div class="themed-tool-card gold-reference-card p-3 text-xs space-y-3">
                 <div class="flex flex-col gap-1">
                     <div class="font-bold text-[var(--app-ink)]">ราคาทองอ้างอิง 96.5%</div>
-                    <div class="text-[11px] text-[var(--app-muted)]">ข้อมูลจาก ${escapeHTML(st.rateSource || 'สมาคมค้าทองคำ')} ${st.apiUpdateTime ? `เวลา ${escapeHTML(st.apiUpdateTime)} น.` : ''}</div>
+                    <div class="text-[11px] text-[var(--app-muted)]">ข้อมูลจาก ${escapeHTML(st.rateSource || 'ค่าเริ่มต้นในเครื่อง')} ${st.apiUpdateDate ? `วันที่ ${escapeHTML(st.apiUpdateDate)} ` : ''}${st.apiUpdateTime ? `เวลา ${escapeHTML(st.apiUpdateTime)} น.` : ''}</div>
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-[11px]">
                     <div class="themed-subcard p-2.5 space-y-1">
@@ -14379,7 +14379,7 @@ function renderElectricityBillTool(container) {
                             </select>
                         </div>
                         <div>
-                            <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ค่าไฟฟ้าผันแปร Ft (บาท/หน่วย)</label>
+                            <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ค่าไฟฟ้าผันแปร Ft (บาท/หน่วย) · ค่าตั้งต้น ตรวจกับบิลล่าสุด</label>
                             <input id="elecFtRate" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.ftRate))}" class="airbnb-input w-full" placeholder="0.3972">
                         </div>
                     </div>

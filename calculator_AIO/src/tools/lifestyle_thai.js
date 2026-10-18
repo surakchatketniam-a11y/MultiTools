@@ -301,7 +301,7 @@ function renderGoldThaiTool(container) {
         priceOrnamentBuy: '43115',
         priceOrnamentSell: '44500',
         savingsCostPerBaht: '40000',
-        rateSource: 'สมาคมค้าทองคำ',
+        rateSource: 'ค่าเริ่มต้นในเครื่อง (ยังไม่ได้ดึงจาก API)',
         lastUpdated: null,
         apiUpdateDate: '',
         apiUpdateTime: ''
@@ -326,7 +326,7 @@ function renderGoldThaiTool(container) {
             <div class="themed-tool-card gold-reference-card p-3 text-xs space-y-3">
                 <div class="flex flex-col gap-1">
                     <div class="font-bold text-[var(--app-ink)]">ราคาทองอ้างอิง 96.5%</div>
-                    <div class="text-[11px] text-[var(--app-muted)]">ข้อมูลจาก ${escapeHTML(st.rateSource || 'สมาคมค้าทองคำ')} ${st.apiUpdateTime ? `เวลา ${escapeHTML(st.apiUpdateTime)} น.` : ''}</div>
+                    <div class="text-[11px] text-[var(--app-muted)]">ข้อมูลจาก ${escapeHTML(st.rateSource || 'ค่าเริ่มต้นในเครื่อง')} ${st.apiUpdateDate ? `วันที่ ${escapeHTML(st.apiUpdateDate)} ` : ''}${st.apiUpdateTime ? `เวลา ${escapeHTML(st.apiUpdateTime)} น.` : ''}</div>
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-[11px]">
                     <div class="themed-subcard p-2.5 space-y-1">
@@ -608,7 +608,7 @@ function renderElectricityBillTool(container) {
                             </select>
                         </div>
                         <div>
-                            <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ค่าไฟฟ้าผันแปร Ft (บาท/หน่วย)</label>
+                            <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ค่าไฟฟ้าผันแปร Ft (บาท/หน่วย) · ค่าตั้งต้น ตรวจกับบิลล่าสุด</label>
                             <input id="elecFtRate" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.ftRate))}" class="airbnb-input w-full" placeholder="0.3972">
                         </div>
                     </div>
