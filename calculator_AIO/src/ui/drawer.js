@@ -137,9 +137,11 @@ function getPinnedToolsForEntry() {
     let pinned = [];
     try {
         const stored = JSON.parse(localStorage.getItem('calc_pwa_favorites') || '[]');
-        pinned = Array.isArray(stored) ? stored : [];
+        pinned = Array.isArray(stored) && stored.length > 0
+            ? stored
+            : TOOLS_CATALOG.filter(item => item.category === 'fav').map(item => item.id);
     } catch (e) {
-        pinned = [];
+        pinned = TOOLS_CATALOG.filter(item => item.category === 'fav').map(item => item.id);
     }
     return pinned.map(id => TOOLS_CATALOG.find(t => t.id === id)).filter(Boolean).slice(0, 6);
 }
