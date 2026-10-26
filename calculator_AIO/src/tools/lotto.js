@@ -276,7 +276,7 @@
                         </div>
 
                         <div class="lotto-note text-xs">
-                            ℹ<strong>ข้อกฎหมาย & ข้อควรรู้:</strong> ${claim.feeNote}
+                            <strong>ข้อกฎหมาย & ข้อควรรู้:</strong> ${claim.feeNote}
                         </div>
                     </div>
                 </div>

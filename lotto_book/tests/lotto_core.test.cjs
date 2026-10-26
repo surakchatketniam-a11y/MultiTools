@@ -14,7 +14,7 @@ global.localStorage = {
     clear: () => { Object.keys(mockStorage).forEach(k => delete mockStorage[k]); }
 };
 
-console.log('🧪 Running Lotto Book Core Unit Tests...');
+console.log('Running Lotto Book Core Unit Tests...');
 
 // ----------------------------------------------------
 // TEST 1: Number string preservation & leading zeros
@@ -225,4 +225,12 @@ Storage.clearAllData();
 assert.deepStrictEqual(Storage.getSettings(), {}, 'Clear all data must remove sync state');
 console.log('✓ Test 7 Passed: Automatic sync state persists and clears correctly.');
 
-console.log('\n🎉 ALL 7 CORE ENGINE TESTS PASSED PERFECTLY!\n');
+console.log('\nALL 7 CORE ENGINE TESTS PASSED PERFECTLY!\n');
+assert.strictEqual(resUpcoming.statusBadge, 'ยังไม่ออกรางวัล');
+assert.strictEqual(resNoData.statusBadge, 'ยังไม่มีข้อมูลผลรางวัล');
+assert.strictEqual(resWon1st.statusBadge, 'ถูกรางวัล');
+assert.strictEqual(resLost.statusBadge, 'ไม่ถูกรางวัล');
+assert.strictEqual(Storage.escapeHTML('<img src=x onerror="alert(1)">'), '&lt;img src=x onerror=&quot;alert(1)&quot;&gt;');
+assert.throws(() => Storage.saveTicket({ drawDate: '2026-10-16', number: '12345' }), /2, 3 หรือ 6 หลัก/);
+const dup3Result = Checker.checkTicket({ id: 'd3', drawDate: '2025-03-16', number: '595', type: 'digit3', count: 1, costPerUnit: 80, totalCost: 80 }, { drawDate: '2025-03-16', prizes: { ...testDrawResult.prizes, front3: ['595', '595'] } }, '2026-10-15');
+assert.strictEqual(dup3Result.totalPrize, 8000, 'Duplicate 3-digit spins must award both matches');

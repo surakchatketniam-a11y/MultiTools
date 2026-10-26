@@ -104,7 +104,7 @@
                                 <div class="mt-3 p-3 rounded-lg border ${this.manualCheckResult.status === 'won' ? 'bg-success-soft  border-line ' : (this.manualCheckResult.status === 'lost' ? 'bg-raised  border-line ' : 'bg-warning-soft  border-line ')}">
                                     <div class="flex items-center justify-between">
                                         <div class="flex items-center gap-2">
-                                            <span class="font-lotto font-bold text-base text-ink ">${this.manualCheckResult.ticketNumber}</span>
+                                            <span class="font-lotto font-bold text-base text-ink ">${root.LottoStorage.escapeHTML(this.manualCheckResult.ticketNumber)}</span>
                                             <span class="text-base font-bold ${this.manualCheckResult.status === 'won' ? 'text-success ' : 'text-muted '}">
                                                 ${this.manualCheckResult.statusBadge}
                                             </span>
@@ -236,7 +236,7 @@
                         </div>
                     ` : `
                         <div class="p-6 rounded-lg bg-warning-soft  border border-line  text-center">
-                            <div class="text-3xl mb-1">⚠️</div>
+                            <div class="text-xl font-bold text-warning mb-1">รอข้อมูลผลรางวัล</div>
                             <h3 class="text-base font-bold text-warning ">ยังไม่มีข้อมูลผลรางวัลในระบบสำหรับงวดนี้</h3>
                             <p class="text-base text-warning  mt-1 max-w-md mx-auto">
                                 งวดนี้อาจยังไม่ถึงกำหนดออกรางวัล หรือยังไม่มีการนำเข้าผลรางวัลในฐานข้อมูล ระบบจะไม่ตัดสินว่าสลากของคุณไม่ถูกรางวัลจนกว่าจะมีข้อมูลผลที่ถูกต้อง
@@ -295,12 +295,12 @@
                                         <div class="p-4 hover:bg-surface  transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                                             <div class="flex items-center gap-3">
                                                 <div class="w-12 h-12 rounded-lg flex items-center justify-center font-bold text-lg ${isWon ? 'bg-success-soft text-success ' : 'bg-raised text-muted '}">
-                                                    ${isWon ? '🎉' : (isUpcoming ? '⏳' : (isNoData ? '⚠️' : '❌'))}
+                                                    ${isWon ? 'ถูก' : (isUpcoming ? 'รอ' : (isNoData ? '-' : 'ไม่ถูก'))}
                                                 </div>
                                                 <div>
                                                     <div class="flex items-center gap-2">
                                                         <span class="font-lotto text-xl font-bold tracking-wider text-ink ">
-                                                            ${evalItem.ticketNumber}
+                                                            ${root.LottoStorage.escapeHTML(evalItem.ticketNumber)}
                                                         </span>
                                                         <span class="text-base px-2.5 py-0.5 rounded-full font-bold ${badgeClass}">
                                                             ${evalItem.statusBadge}

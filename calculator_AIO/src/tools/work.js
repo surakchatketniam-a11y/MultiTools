@@ -279,7 +279,7 @@ function renderGpaTool(container) {
             <!-- Airbnb Rating Display Card Style (64px/700 in Airbnb theme) -->
             <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 flex items-center justify-between" style="box-shadow: var(--app-elevation);">
                 <div>
-                    <div class="text-xs font-semibold text-[#6a6a6a]">★ เกรดเฉลี่ยสะสม (GPA)</div>
+                    <div class="text-xs font-semibold text-[#6a6a6a]">เกรดเฉลี่ยสะสม (GPA)</div>
                     <div class="text-4xl font-bold text-[#222222] leading-tight mt-0.5">${gpa.toFixed(2)}</div>
                 </div>
                 <div class="text-right">

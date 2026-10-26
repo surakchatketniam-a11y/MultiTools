@@ -585,13 +585,13 @@ test('calculation history and saved sets: auto-recording, pinning, renaming, FIF
     vm.runInContext(rawAppStateMatch[0].replace(/const /g, 'var '), ctx);
 
     // 1. Summary Extraction Helpers
-    const loanSummary = `🏦 สรุปยอดผ่อนเงินกู้ & ผ่อนชำระ
+    const loanSummary = `สรุปยอดผ่อนเงินกู้ & ผ่อนชำระ
 ----------------------------------
 • วงเงินกู้: 2,500,000 บาท
 • ดอกเบี้ย: 3.5% ต่อปี (ลดต้นลดดอก)
 • ระยะเวลา: 360 เดือน
 ----------------------------------
-💰 ค่างวด: 11,226.12 บาท/เดือน
+ค่างวด: 11,226.12 บาท/เดือน
 • ดอกเบี้ยรวม: +1,541,402.89 บาท
 • ยอดชำระรวม: 4,041,402.89 บาท
 (คำนวณโดย Multitools Calculator)`;

@@ -11,6 +11,7 @@
     <title>เครื่องสารพัดคำนวณ (All-in-One Calculator PWA)</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="alternate icon" type="image/x-icon" href="favicon.ico">
+    <link rel="manifest" href="manifest.json">
     
     <!-- URL Trailing Slash & Base Canonicalizer -->
     <script>
@@ -445,6 +446,77 @@
         }
         .sidebar-drawer.open {
             transform: translateX(0);
+        }
+
+        /* Desktop (≥1024px): persistent sidebar column beside the calculator.
+           Mobile and tablet keep the slide-out drawer unchanged. */
+        @media (min-width: 1024px) {
+            .app-shell {
+                max-width: none;
+                display: grid;
+                grid-template-columns: 280px minmax(0, 1fr);
+                grid-template-rows: auto minmax(0, 1fr) auto;
+                box-shadow: none;
+            }
+            .app-shell > .app-header {
+                grid-column: 2;
+                grid-row: 1;
+                max-width: 960px;
+                width: 100%;
+                justify-self: center;
+            }
+            .app-shell > main {
+                grid-column: 2;
+                grid-row: 2;
+                width: 100%;
+                max-width: 960px;
+                justify-self: center;
+                min-height: 0;
+            }
+            .app-shell > #pwaFooterBanner {
+                grid-column: 2;
+                grid-row: 3;
+                width: 100%;
+                max-width: 960px;
+                justify-self: center;
+            }
+            .sidebar-drawer,
+            .sidebar-drawer.open {
+                position: relative;
+                grid-column: 1;
+                grid-row: 1 / span 3;
+                width: auto;
+                max-width: none;
+                height: 100%;
+                transform: none;
+                box-shadow: none;
+                border-right: 1px solid var(--color-hairline-soft);
+            }
+            .sidebar-backdrop {
+                display: none;
+            }
+            #hamburgerBtn {
+                display: none;
+            }
+            /* Results column (pilot: salary tool). Inputs stay in column 1,
+               result cards move to column 2 beside them. */
+            .app-shell .salary-tool {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                align-items: start;
+                gap: 0.75rem;
+            }
+            .app-shell .salary-tool > .salary-intro,
+            .app-shell .salary-tool > .segment-group {
+                grid-column: 1 / -1;
+            }
+            .app-shell .salary-tool > .salary-result {
+                grid-column: 2;
+                grid-row: 2;
+            }
+            .app-shell .salary-tool > .themed-tool-card {
+                grid-column: 1;
+            }
         }
 
         .sidebar-category-header {
@@ -1564,8 +1636,8 @@
             <div class="bg-white rounded-[20px] max-w-sm w-full p-6 space-y-4 border border-[#dddddd]" style="box-shadow: var(--airbnb-shadow);">
                 <div class="flex items-center justify-between border-b border-[#ebebeb] pb-3">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-[var(--app-accent)] text-white flex items-center justify-center font-bold text-sm">
-                            18
+                        <div id="infoModalBrandCount" class="w-10 h-10 rounded-full bg-[var(--app-accent)] text-white flex items-center justify-center font-bold text-sm">
+                            36
                         </div>
                         <div>
                             <h2 class="font-bold text-base text-[#222222]">ติดตั้งแอปเครื่องคำนวณ (PWA)</h2>
@@ -1621,12 +1693,26 @@
                         <div class="flex items-center gap-2">
                             <label class="text-xs font-semibold text-[#666] dark:text-[#aaa]">เครื่องมือ:</label>
                             <select id="compareToolSelect" class="airbnb-input text-xs font-semibold py-1 px-2.5 rounded-lg border">
-                                <option value="loan">สินเชื่อ / ผ่อนบ้าน / รถ</option>
-                                <option value="savings">เงินออม & ดอกเบี้ยทบต้น</option>
-                                <option value="vat_wht">ภาษี VAT & หัก ณ ที่จ่าย</option>
-                                <option value="salary">วางแผนเงินเดือน 50/30/20</option>
-                                <option value="discount">ส่วนลดสินค้า</option>
+                                <option value="loan">เงินกู้ & ผ่อนชำระ</option>
+                                <option value="car_loan">สินเชื่อเช่าซื้อรถ (Car Loan)</option>
+                                <option value="debt_payoff">แผนปลดหนี้ (Snowball/Avalanche)</option>
+                                <option value="savings">เงินออม & เกษียณ</option>
+                                <option value="tax_personal">ภาษีบุคคล (ภ.ง.ด.90/91)</option>
+                                <option value="property_transfer">ค่าโอนที่ดิน & อสังหาฯ</option>
+                                <option value="legal_interest">ดอกเบี้ยผิดนัด ป.พ.พ. 5%</option>
+                                <option value="salary">เงินเดือนสุทธิ & 50/30/20</option>
+                                <option value="vat_wht">VAT + หัก ณ ที่จ่าย</option>
+                                <option value="ecommerce_profit">กำไรขายของออนไลน์</option>
+                                <option value="food_costing">ต้นทุนอาหาร & สูตร (F&B)</option>
+                                <option value="social_security">ประกันสังคม & บำนาญ</option>
+                                <option value="labor_severance">เงินชดเชยเลิกจ้าง & ค่าตกใจ</option>
+                                <option value="ot_calc">ค่าล่วงเวลา OT & วันหยุด</option>
                                 <option value="unit_price">เปรียบเทียบราคาต่อหน่วย</option>
+                                <option value="discount">ส่วนลดสินค้า</option>
+                                <option value="gold_thai">ราคาทองคำไทย</option>
+                                <option value="construction_calc">คำนวณวัสดุก่อสร้าง</option>
+                                <option value="electricity_bill">ค่าไฟฟ้า & อุปกรณ์</option>
+                                <option value="fuel_cost">ค่าน้ำมัน & ค่าชาร์จรถ EV</option>
                             </select>
                         </div>
                         <div class="flex items-center gap-2">

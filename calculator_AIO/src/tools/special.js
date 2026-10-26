@@ -38,8 +38,8 @@ function renderHealthTool(container) {
     container.innerHTML = `
         <div class="flex flex-col gap-1.5">
             <div class="segment-group grid-cols-2">
-                <button class="segment-btn gender-btn ${st.gender === 'male' ? 'active' : ''}" data-g="male">♂ ชาย (Male)</button>
-                <button class="segment-btn gender-btn ${st.gender === 'female' ? 'active' : ''}" data-g="female">♀ หญิง (Female)</button>
+                <button class="segment-btn gender-btn ${st.gender === 'male' ? 'active' : ''}" data-g="male" aria-pressed="${st.gender === 'male'}">ชาย (Male)</button>
+                <button class="segment-btn gender-btn ${st.gender === 'female' ? 'active' : ''}" data-g="female" aria-pressed="${st.gender === 'female'}">หญิง (Female)</button>
             </div>
 
             ${createKeypadFieldHTML(0, 'น้ำหนัก (Weight)', st.weight, 'กก.', '65')}

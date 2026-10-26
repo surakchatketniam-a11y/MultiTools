@@ -84,7 +84,7 @@
                         <div class="flex items-center gap-2">
                             ${meta.missingCount > 0 ? `
                                 <span class="px-2.5 py-1 bg-warning-soft text-warning   rounded-lg font-medium">
-                                    ⚠️ พบช่วงว่าง ${meta.missingCount} จุด (อาจเป็นงวดเลื่อนหรือสัญจร)
+                                    พบช่วงว่าง ${meta.missingCount} จุด (อาจเป็นงวดเลื่อนหรือสัญจร)
                                 </span>
                             ` : `
                                 <span class="px-2.5 py-1 bg-success-soft text-success   rounded-lg font-medium">
@@ -159,7 +159,7 @@
                 <div class="space-y-4">
                     <!-- Clarifying Distinction Badge -->
                     <div class="bg-warning-soft  p-3 rounded-lg border border-line  text-base text-warning  flex items-center gap-2">
-                        <span>ℹ️</span>
+                        <span aria-hidden="true" class="font-bold">i</span>
                         <span>
                             <strong>ชี้แจงสำคัญ:</strong> สถิตินี้คือ <strong>รางวัลเลขท้าย 2 ตัว (รางวัลเฉพาะ)</strong> ที่หมุนวงล้อแยก ไม่ใช่เลขท้าย 2 ตัวที่ตัดมาจากรางวัลที่ 1
                         </span>
@@ -220,7 +220,7 @@
                                             ออก ${item.count} ครั้ง
                                         </div>
                                         <div class="text-base text-muted  mt-1">
-                                            ${item.count === 0 ? '❌ ไม่เคยออกในช่วงนี้' : `เว้นมาแล้ว ${item.drawsSinceLastSeen} งวด`}
+                                            ${item.count === 0 ? 'ไม่เคยออกในช่วงนี้' : `เว้นมาแล้ว ${item.drawsSinceLastSeen} งวด`}
                                         </div>
                                     </div>
                                 `;

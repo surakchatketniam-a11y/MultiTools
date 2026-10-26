@@ -48,14 +48,16 @@
                 };
             }
 
-            const today = referenceDate || new Date().toISOString().slice(0, 10);
+            const bkkParts = !referenceDate ? Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).filter(p => p.type !== 'literal').map(p => [p.type, p.value])) : null;
+            const today = referenceDate || `${bkkParts.year}-${bkkParts.month}-${bkkParts.day}`;
+            const isDrawDayBeforeAnnouncement = Boolean(bkkParts && (ticket.drawDate || '') === today && Number(bkkParts.hour) < 16 && (!drawResult || !drawResult.prizes || !drawResult.prizes.first));
             const drawDate = ticket.drawDate || '';
             const ticketNumber = String(ticket.number).trim();
             const count = Number(ticket.count) || 1;
             const totalCost = Number(ticket.totalCost) || (count * (Number(ticket.costPerUnit) || 80));
 
             // Status 1: UPCOMING (งวดในอนาคต ยังไม่ออกรางวัล)
-            if (drawDate > today) {
+            if (drawDate > today || isDrawDayBeforeAnnouncement) {
                 return {
                     ticketId: ticket.id,
                     ticketNumber,
@@ -63,7 +65,7 @@
                     count,
                     totalCost,
                     status: 'upcoming',
-                    statusBadge: '⏳ ยังไม่ออกรางวัล',
+                    statusBadge: 'ยังไม่ออกรางวัล',
                     statusText: 'งวดนี้ยังไม่ออกรางวัล (รอการออกรางวัลตามกำหนด)',
                     prizesWon: [],
                     totalPrize: 0,
@@ -81,7 +83,7 @@
                     count,
                     totalCost,
                     status: 'no_data',
-                    statusBadge: '⚠️ ยังไม่มีข้อมูลผลรางวัล',
+                    statusBadge: 'ยังไม่มีข้อมูลผลรางวัล',
                     statusText: 'ยังไม่มีผลรางวัลของงวดนี้ในฐานข้อมูล (ห้ามตัดสินว่าไม่ถูกรางวัล)',
                     prizesWon: [],
                     totalPrize: 0,
@@ -210,7 +212,7 @@
             // 2. Check 3-digit Ticket
             else if (type === 'digit3' || ticketNumber.length === 3) {
                 const padded3 = ticketNumber.padStart(3, '0');
-                if (Array.isArray(prizes.back3) && prizes.back3.includes(padded3)) {
+                if (Array.isArray(prizes.back3)) for (let i = 0; i < prizes.back3.filter(x => x === padded3).length; i++) {
                     prizesWon.push({
                         code: 'back3',
                         name: 'เลขท้าย 3 ตัว',
@@ -219,7 +221,7 @@
                         matchedNumber: padded3
                     });
                 }
-                if (Array.isArray(prizes.front3) && prizes.front3.includes(padded3)) {
+                if (Array.isArray(prizes.front3)) for (let i = 0; i < prizes.front3.filter(x => x === padded3).length; i++) {
                     prizesWon.push({
                         code: 'front3',
                         name: 'เลขหน้า 3 ตัว',
@@ -265,7 +267,7 @@
                 count,
                 totalCost,
                 status: isWon ? 'won' : 'lost',
-                statusBadge: isWon ? '🎉 ถูกรางวัล' : '❌ ไม่ถูกรางวัล',
+                statusBadge: isWon ? 'ถูกรางวัล' : 'ไม่ถูกรางวัล',
                 statusText: isWon 
                     ? `ถูก ${prizesWon.map(p => p.name).join(', ')} รวม ${totalPrize.toLocaleString()} บาท`
                     : 'ไม่ตรงกับรางวัลใดๆ ในงวดนี้',

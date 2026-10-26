@@ -11206,7 +11206,7 @@ function renderGpaTool(container) {
             <!-- Airbnb Rating Display Card Style (64px/700 in Airbnb theme) -->
             <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 flex items-center justify-between" style="box-shadow: var(--app-elevation);">
                 <div>
-                    <div class="text-xs font-semibold text-[#6a6a6a]">★ เกรดเฉลี่ยสะสม (GPA)</div>
+                    <div class="text-xs font-semibold text-[#6a6a6a]">เกรดเฉลี่ยสะสม (GPA)</div>
                     <div class="text-4xl font-bold text-[#222222] leading-tight mt-0.5">${gpa.toFixed(2)}</div>
                 </div>
                 <div class="text-right">
@@ -11426,8 +11426,8 @@ function renderHealthTool(container) {
     container.innerHTML = `
         <div class="flex flex-col gap-1.5">
             <div class="segment-group grid-cols-2">
-                <button class="segment-btn gender-btn ${st.gender === 'male' ? 'active' : ''}" data-g="male">♂ ชาย (Male)</button>
-                <button class="segment-btn gender-btn ${st.gender === 'female' ? 'active' : ''}" data-g="female">♀ หญิง (Female)</button>
+                <button class="segment-btn gender-btn ${st.gender === 'male' ? 'active' : ''}" data-g="male" aria-pressed="${st.gender === 'male'}">ชาย (Male)</button>
+                <button class="segment-btn gender-btn ${st.gender === 'female' ? 'active' : ''}" data-g="female" aria-pressed="${st.gender === 'female'}">หญิง (Female)</button>
             </div>
 
             ${createKeypadFieldHTML(0, 'น้ำหนัก (Weight)', st.weight, 'กก.', '65')}
@@ -12617,7 +12617,7 @@ function renderStandardCalcTool(container) {
                         </div>
 
                         <div class="lotto-note text-xs">
-                            ℹ<strong>ข้อกฎหมาย & ข้อควรรู้:</strong> ${claim.feeNote}
+                            <strong>ข้อกฎหมาย & ข้อควรรู้:</strong> ${claim.feeNote}
                         </div>
                     </div>
                 </div>
@@ -17210,7 +17210,7 @@ function createAppIconDataURL(size = 192) {
     ctx.font = `bold ${Math.floor(size * 0.22)}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const catalogLen = (typeof TOOLS_CATALOG !== 'undefined') ? TOOLS_CATALOG.length : 22;
+    const catalogLen = (typeof TOOLS_CATALOG !== 'undefined') ? TOOLS_CATALOG.length : 36;
     ctx.fillText(`${catalogLen} in 1`, size / 2, size * 0.36);
 
     const cols = [0.3, 0.5, 0.7];
@@ -17238,7 +17238,7 @@ function setupPWA() {
         appleIcon.href = icon192;
         document.head.appendChild(appleIcon);
 
-        const catalogLen = (typeof TOOLS_CATALOG !== 'undefined') ? TOOLS_CATALOG.length : 22;
+        const catalogLen = (typeof TOOLS_CATALOG !== 'undefined') ? TOOLS_CATALOG.length : 36;
         const manifest = {
             name: 'เครื่องสารพัดคำนวณ (All-in-One Calculator)',
             short_name: 'เครื่องคำนวณ',
@@ -17259,7 +17259,9 @@ function setupPWA() {
         const manifestLink = document.createElement('link');
         manifestLink.rel = 'manifest';
         manifestLink.href = manifestURL;
-        document.head.appendChild(manifestLink);
+        if (!document.querySelector('link[rel="manifest"]')) document.head.appendChild(manifestLink);
+        const infoModalBadge = document.getElementById('infoModalBrandCount');
+        if (infoModalBadge) infoModalBadge.textContent = String(catalogLen);
 
         if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
             navigator.serviceWorker.register('./sw.js').then(reg => {

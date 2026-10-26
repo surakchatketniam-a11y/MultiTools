@@ -196,8 +196,8 @@
             toast.className = `${bgClass} px-4 py-2.5 rounded-lg text-base font-semibold flex items-center gap-2 transform toast-motion translate-y-2 opacity-0`;
             toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
             toast.innerHTML = `
-                <span>${type === 'success' ? '✓' : (type === 'error' ? '⚠️' : 'ℹ️')}</span>
-                <span>${message}</span>
+                <span aria-hidden="true">${type === 'success' ? '✓' : (type === 'error' ? '!' : 'i')}</span>
+                <span>${root.LottoStorage ? root.LottoStorage.escapeHTML(message) : String(message ?? '')}</span>
             `;
 
             toastContainer.appendChild(toast);

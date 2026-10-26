@@ -15,6 +15,31 @@
     };
 
     const Storage = {
+        escapeHTML(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+        },
+        sanitizeTicketRecord(t) {
+            if (!t || typeof t !== 'object') return null;
+            const num = String(t.number ?? '').trim();
+            if (!/^(?:\d{2}|\d{3}|\d{6})$/.test(num)) return null;
+            const drawDate = String(t.drawDate ?? '').trim();
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(drawDate)) return null;
+            const count = Math.max(1, Math.min(999, Math.floor(Number(t.count) || 1)));
+            const costPerUnit = Math.max(0, Number(t.costPerUnit) || 80);
+            const now = new Date().toISOString();
+            return {
+                id: String(t.id || `tkt_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`),
+                drawDate,
+                number: num,
+                type: t.type || (num.length === 6 ? 'standard' : num.length === 3 ? 'digit3' : 'digit2'),
+                count,
+                costPerUnit,
+                totalCost: count * costPerUnit,
+                note: t.note ? String(t.note).trim().slice(0, 200) : '',
+                createdAt: t.createdAt ? String(t.createdAt) : now,
+                updatedAt: now
+            };
+        },
         // ----------------------------------------------------
         // TICKETS MANAGEMENT
         // ----------------------------------------------------
@@ -38,6 +63,12 @@
         saveTicket(ticket) {
             if (!ticket || !ticket.number) {
                 throw new Error('กรุณาระบุหมายเลขสลาก');
+            }
+            if (!/^(?:\d{2}|\d{3}|\d{6})$/.test(String(ticket.number).trim())) {
+                throw new Error('หมายเลขสลากต้องเป็นตัวเลข 2, 3 หรือ 6 หลักเท่านั้น');
+            }
+            if (ticket.drawDate && !/^\d{4}-\d{2}-\d{2}$/.test(String(ticket.drawDate).trim())) {
+                throw new Error('รูปแบบวันที่งวดไม่ถูกต้อง');
             }
             const tickets = this.getTickets();
             const now = new Date().toISOString();
@@ -255,7 +286,7 @@
 
                 if (mode === 'replace') {
                     if (Array.isArray(parsed.tickets)) {
-                        localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(parsed.tickets));
+                        localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(parsed.tickets.map(t => this.sanitizeTicketRecord(t)).filter(Boolean)));
                     }
                     if (parsed.budgets && typeof parsed.budgets === 'object') {
                         localStorage.setItem(STORAGE_KEYS.BUDGETS, JSON.stringify(parsed.budgets));
@@ -276,7 +307,7 @@
                                 });
                             }
                         });
-                        localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(Array.from(currentMap.values())));
+                        localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(Array.from(currentMap.values()).map(t => this.sanitizeTicketRecord(t)).filter(Boolean)));
                     }
 
                     if (parsed.budgets && typeof parsed.budgets === 'object') {

@@ -83,9 +83,9 @@ for (const fnName of toolFns) {
         const oNorm = origFn.replace(/\s+/g, ' ').trim();
         const cNorm = currFn.replace(/\s+/g, ' ').trim();
         if (oNorm === cNorm) {
-            console.log('✅ PERFECT MATCH:', fnName, '(' + foundFile + ')');
+            console.log('[OK] PERFECT MATCH:', fnName, '(' + foundFile + ')');
         } else {
-            console.log('❌ DIFF in:', fnName, '(' + foundFile + ') OrigLen=' + oNorm.length + ' CurrLen=' + cNorm.length);
+            console.log('[DIFF] DIFF in:', fnName, '(' + foundFile + ') OrigLen=' + oNorm.length + ' CurrLen=' + cNorm.length);
             diffs.push({ fnName, file: foundFile, origFn, currFn });
         }
     }

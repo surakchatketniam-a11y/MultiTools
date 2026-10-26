@@ -46,7 +46,7 @@ function createAppIconDataURL(size = 192) {
     ctx.font = `bold ${Math.floor(size * 0.22)}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const catalogLen = (typeof TOOLS_CATALOG !== 'undefined') ? TOOLS_CATALOG.length : 22;
+    const catalogLen = (typeof TOOLS_CATALOG !== 'undefined') ? TOOLS_CATALOG.length : 36;
     ctx.fillText(`${catalogLen} in 1`, size / 2, size * 0.36);
 
     const cols = [0.3, 0.5, 0.7];
@@ -74,7 +74,7 @@ function setupPWA() {
         appleIcon.href = icon192;
         document.head.appendChild(appleIcon);
 
-        const catalogLen = (typeof TOOLS_CATALOG !== 'undefined') ? TOOLS_CATALOG.length : 22;
+        const catalogLen = (typeof TOOLS_CATALOG !== 'undefined') ? TOOLS_CATALOG.length : 36;
         const manifest = {
             name: 'เครื่องสารพัดคำนวณ (All-in-One Calculator)',
             short_name: 'เครื่องคำนวณ',
@@ -95,7 +95,9 @@ function setupPWA() {
         const manifestLink = document.createElement('link');
         manifestLink.rel = 'manifest';
         manifestLink.href = manifestURL;
-        document.head.appendChild(manifestLink);
+        if (!document.querySelector('link[rel="manifest"]')) document.head.appendChild(manifestLink);
+        const infoModalBadge = document.getElementById('infoModalBrandCount');
+        if (infoModalBadge) infoModalBadge.textContent = String(catalogLen);
 
         if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
             navigator.serviceWorker.register('./sw.js').then(reg => {

@@ -283,7 +283,7 @@
                                                 <div>
                                                     <div class="flex items-center gap-2">
                                                         <span class="font-lotto text-xl font-bold tracking-wider text-ink ">
-                                                            ${t.number}
+                                                            ${root.LottoStorage.escapeHTML(t.number)}
                                                         </span>
                                                         <span class="text-base px-2 py-0.5 rounded-full font-medium ${t.number.length === 6 ? 'bg-accent-soft text-accent  ' : 'bg-accent-soft text-accent  '}">
                                                             ${t.number.length === 6 ? '6 หลัก' : (t.number.length === 3 ? '3 ตัว' : '2 ตัว')}
@@ -293,7 +293,7 @@
                                                         <span>งวด ${formatShortThaiDate(t.drawDate)}</span>
                                                         <span>•</span>
                                                         <span>ใบละ ฿${t.costPerUnit}</span>
-                                                        ${t.note ? `<span>•</span> <span class="text-muted  ">"${t.note}"</span>` : ''}
+                                                        ${t.note ? `<span>•</span> <span class="text-muted  ">"${root.LottoStorage.escapeHTML(t.note)}"</span>` : ''}
                                                     </div>
                                                 </div>
                                             </div>
@@ -308,7 +308,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="flex items-center gap-1">
-                                                    <button type="button" data-delete-id="${t.id}" class="btn-delete-ticket p-2 text-muted hover:text-error hover:bg-error-soft  rounded-lg transition" title="ลบรายการ">
+                                                    <button type="button" data-delete-id="${root.LottoStorage.escapeHTML(t.id)}" class="btn-delete-ticket p-2 text-muted hover:text-error hover:bg-error-soft  rounded-lg transition" title="ลบรายการ">
                                                         ×
                                                     </button>
                                                 </div>
