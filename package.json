@@ -1,0 +1,12 @@
+{
+  "name": "multitools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multitools Thailand - All-in-One Calculator & Lottery Book PWA",
+  "scripts": {
+    "build": "node calculator_AIO/scripts/build.cjs",
+    "test": "node --test calculator_AIO/tests/correctness.test.cjs lotto_book/tests/glo_api.test.cjs lotto_book/tests/lotto_core.test.cjs lotto_book/tests/phase1.test.cjs",
+    "test:calc": "node --test calculator_AIO/tests/correctness.test.cjs",
+    "test:lotto": "node --test lotto_book/tests/glo_api.test.cjs lotto_book/tests/lotto_core.test.cjs lotto_book/tests/phase1.test.cjs"
+  }
+}

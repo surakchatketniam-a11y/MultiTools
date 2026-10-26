@@ -16,10 +16,17 @@
             console.log('[LottoBook] Initializing application...');
 
             root.LottoTheme.init();
-            await this.loadHistoricalData();
+            this.mergeResults();
+            this.consumeSharedParams();
             this.initNavigation();
             this.handleHashChange();
             this.registerServiceWorker();
+
+            await this.loadHistoricalData();
+            if (this.currentTab !== 'tickets') {
+                this.renderCurrentView();
+            }
+
             if (navigator.onLine) this.syncLatestResult(false);
             window.setInterval(() => this.maybeSyncResults(), 15 * 60 * 1000);
             window.addEventListener('online', () => this.syncLatestResult(false));
@@ -38,6 +45,37 @@
             });
         },
 
+        consumeSharedParams() {
+            try {
+                if (!root.location || !root.location.search) return;
+                const params = new URLSearchParams(root.location.search);
+                const rawNumbers = params.get('importNumbers') || params.get('number') || '';
+                if (!rawNumbers) return;
+
+                const validNumbers = rawNumbers
+                    .split(',')
+                    .map(s => s.trim())
+                    .filter(s => /^(?:\d{2}|\d{3}|\d{6})$/.test(s));
+
+                if (validNumbers.length > 0 && root.LottoMyTicketsView) {
+                    const price = Math.max(1, parseFloat(params.get('price')) || 80);
+                    const note = (params.get('note') || 'ส่งมาจากเครื่องคำนวณหวย').trim().slice(0, 120);
+                    root.LottoMyTicketsView.pendingSharedImport = {
+                        numbers: validNumbers,
+                        price,
+                        note
+                    };
+                }
+
+                if (root.history && typeof root.history.replaceState === 'function') {
+                    const cleanUrl = root.location.pathname + (root.location.hash || '#tickets');
+                    root.history.replaceState(null, '', cleanUrl);
+                }
+            } catch (err) {
+                console.error('[LottoBook] Failed to parse shared parameters:', err);
+            }
+        },
+
         async loadHistoricalData() {
             try {
                 // Fetch curated historical results JSON
@@ -54,19 +92,18 @@
         },
 
         mergeResults() {
-                const customResults = root.LottoStorage ? root.LottoStorage.getCustomResults() : [];
+            const customResults = root.LottoStorage ? root.LottoStorage.getCustomResults() : [];
 
-                const mergedMap = new Map();
-                this.builtInResults.forEach(r => mergedMap.set(r.drawDate, r));
-                customResults.forEach(r => mergedMap.set(r.drawDate, r));
+            const mergedMap = new Map();
+            this.builtInResults.forEach(r => mergedMap.set(r.drawDate, r));
+            customResults.forEach(r => mergedMap.set(r.drawDate, r));
 
-                this.historicalResults = Array.from(mergedMap.values()).sort((a, b) => b.drawDate.localeCompare(a.drawDate));
+            this.historicalResults = Array.from(mergedMap.values()).sort((a, b) => b.drawDate.localeCompare(a.drawDate));
 
-                this.resultsMap = {};
-                this.historicalResults.forEach(r => {
-                    this.resultsMap[r.drawDate] = r;
-                });
-
+            this.resultsMap = {};
+            this.historicalResults.forEach(r => {
+                this.resultsMap[r.drawDate] = r;
+            });
         },
 
         async syncLatestResult(manual = false) {

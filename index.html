@@ -8,6 +8,25 @@
     <meta name="theme-color" content="#000000">
     <link rel="icon" type="image/svg+xml" href="./favicon.svg">
     <link rel="alternate icon" href="./favicon.ico">
+    <script>
+        (function() {
+            try {
+                var lottoTheme = localStorage.getItem('lotto_book_theme_v1');
+                if (lottoTheme === 'dark' || lottoTheme === 'light') {
+                    document.documentElement.setAttribute('data-theme', lottoTheme);
+                    return;
+                }
+                var calcRaw = localStorage.getItem('aio_calc_v3_0_airbnb_pwa');
+                if (calcRaw) {
+                    var parsed = JSON.parse(calcRaw);
+                    var darkThemes = ['dark', 'together', 'ferrari'];
+                    if (parsed && parsed.theme) {
+                        document.documentElement.setAttribute('data-theme', darkThemes.indexOf(parsed.theme) >= 0 ? 'dark' : 'light');
+                    }
+                }
+            } catch (_) {}
+        })();
+    </script>
     <style>
         :root {
             --page-bg: #f7f7f7;
@@ -74,11 +93,11 @@
         <p class="lead">เครื่องมือคำนวณและบันทึกสำหรับชีวิตประจำวัน เลือกเริ่มจากด้านล่าง</p>
         <div class="grid">
             <a class="card" href="./calculator_AIO/">
-                <h2>เครื่องคำนวณ ↗</h2>
+                <h2>เครื่องคำนวณ</h2>
                 <p>ราคาต่อหน่วย ส่วนลด ภาษี วันทำการ การเงิน และเครื่องมือธุรกิจอีกหลายอย่าง</p>
             </a>
             <a class="card" href="./lotto_book/">
-                <h2>สมุดสลาก ↗</h2>
+                <h2>สมุดสลาก</h2>
                 <p>บันทึกสลาก ตั้งงบรายงวด ตรวจผลรางวัล และดูสถิติย้อนหลัง</p>
             </a>
         </div>

@@ -355,15 +355,23 @@ function renderHistoryPanel() {
             if (item.isSaved) {
                 unpinCalculationHistory(id);
                 showHistoryToast('ยกเลิกการบันทึกชุดคำนวณแล้ว');
+                renderHistoryPanel();
+                updateHistoryBadge();
             } else {
-                const label = prompt('ตั้งชื่อชุดคำนวณนี้ (เช่น บ้านโครงการ A):', item.label || item.toolTitle);
-                if (label !== null) {
-                    pinCalculationHistory(id, label);
-                    showHistoryToast(`✓ บันทึก "${label || item.toolTitle}" เรียบร้อย`);
-                }
+                showAppDialogModal({
+                    title: 'บันทึกชุดคำนวณไว้เปรียบเทียบ',
+                    message: 'ตั้งชื่อชุดคำนวณนี้ (เช่น บ้านโครงการ A):',
+                    defaultValue: item.label || item.toolTitle,
+                    showInput: true,
+                    confirmText: 'บันทึก',
+                    onConfirm: (label) => {
+                        pinCalculationHistory(id, label);
+                        showHistoryToast(`✓ บันทึก "${label || item.toolTitle}" เรียบร้อย`);
+                        renderHistoryPanel();
+                        updateHistoryBadge();
+                    }
+                });
             }
-            renderHistoryPanel();
-            updateHistoryBadge();
         });
     });
 
@@ -388,11 +396,19 @@ function renderHistoryPanel() {
             const history = getCalculationHistory();
             const item = history.find(h => h.id === id);
             if (!item) return;
-            const newLabel = prompt('เปลี่ยนชื่อชุดคำนวณ:', item.label || item.toolTitle);
-            if (newLabel !== null && newLabel.trim()) {
-                renameCalculationHistory(id, newLabel.trim());
-                renderHistoryPanel();
-            }
+            showAppDialogModal({
+                title: 'เปลี่ยนชื่อชุดคำนวณ',
+                message: 'ระบุชื่อใหม่สำหรับชุดคำนวณนี้:',
+                defaultValue: item.label || item.toolTitle,
+                showInput: true,
+                confirmText: 'บันทึกชื่อใหม่',
+                onConfirm: (newLabel) => {
+                    if (newLabel && newLabel.trim()) {
+                        renameCalculationHistory(id, newLabel.trim());
+                        renderHistoryPanel();
+                    }
+                }
+            });
         });
     });
 
@@ -407,23 +423,109 @@ function renderHistoryPanel() {
     });
 }
 
+function showAppDialogModal(options = {}) {
+    const {
+        title = 'ยืนยันรายการ',
+        message = '',
+        defaultValue = '',
+        showInput = false,
+        confirmText = 'ตกลง',
+        cancelText = 'ยกเลิก',
+        danger = false,
+        onConfirm = () => {}
+    } = options;
+
+    if (typeof document === 'undefined' || !document.body) {
+        if (showInput && typeof prompt === 'function') {
+            const val = prompt(message || title, defaultValue);
+            if (val !== null) onConfirm(val);
+        } else if (!showInput && typeof confirm === 'function') {
+            if (confirm(message || title)) onConfirm(true);
+        }
+        return;
+    }
+
+    const existing = document.getElementById('appGenericDialogModal');
+    if (existing) existing.remove();
+
+    const wrapper = document.createElement('div');
+    wrapper.id = 'appGenericDialogModal';
+    wrapper.className = 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-[1px]';
+    wrapper.setAttribute('role', 'dialog');
+    wrapper.setAttribute('aria-modal', 'true');
+    wrapper.innerHTML = `
+        <div class="themed-tool-card w-full max-w-sm rounded-[20px] p-5 text-[var(--app-ink)] space-y-3" style="box-shadow: var(--airbnb-shadow);">
+            <div class="flex justify-between items-center border-b border-[var(--app-hairline)] pb-2.5">
+                <h3 class="font-bold text-sm text-[var(--app-ink)]">${escapeHTML(title)}</h3>
+                <button type="button" id="appDialogCloseBtn" class="text-[var(--app-muted)] hover:text-[var(--app-ink)] p-1 rounded-full" aria-label="ปิดหน้าต่าง">✕</button>
+            </div>
+            ${message ? `<p class="text-xs text-[var(--app-body)] leading-relaxed whitespace-pre-line">${escapeHTML(message)}</p>` : ''}
+            ${showInput ? `
+                <div>
+                    <input type="text" id="appDialogInput" value="${escapeHTML(defaultValue)}" class="airbnb-input w-full text-xs font-semibold" autocomplete="off">
+                </div>
+            ` : ''}
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" id="appDialogCancelBtn" class="px-3.5 py-2 rounded-lg text-xs font-semibold border border-[var(--app-hairline)] text-[var(--app-body)] bg-[var(--app-surface-soft)] hover:opacity-90 transition">${escapeHTML(cancelText)}</button>
+                <button type="button" id="appDialogConfirmBtn" class="px-4 py-2 rounded-lg text-xs font-semibold text-white ${danger ? 'bg-red-600 hover:bg-red-700' : 'bg-[var(--app-accent)] hover:opacity-90'} transition">${escapeHTML(confirmText)}</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(wrapper);
+
+    const inputEl = wrapper.querySelector('#appDialogInput');
+    const closeDialog = () => wrapper.remove();
+    const submitDialog = () => {
+        const val = showInput ? (inputEl ? inputEl.value : '') : true;
+        closeDialog();
+        onConfirm(val);
+    };
+
+    wrapper.querySelector('#appDialogCloseBtn')?.addEventListener('click', closeDialog);
+    wrapper.querySelector('#appDialogCancelBtn')?.addEventListener('click', closeDialog);
+    wrapper.querySelector('#appDialogConfirmBtn')?.addEventListener('click', submitDialog);
+    wrapper.addEventListener('click', (e) => {
+        if (e.target === wrapper) closeDialog();
+    });
+    if (inputEl) {
+        inputEl.focus();
+        if (typeof inputEl.select === 'function') inputEl.select();
+        inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                submitDialog();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                closeDialog();
+            }
+        });
+    }
+}
+
 function promptSaveCurrentSet() {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
     const toolId = appState.activeToolId;
     const toolMeta = (typeof TOOLS_CATALOG !== 'undefined' ? TOOLS_CATALOG.find(t => t.id === toolId) : null) || { menuTitle: toolId };
     const timeStr = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
     const defaultName = `${toolMeta.menuTitle || toolId} (${timeStr})`;
-    const label = prompt('ตั้งชื่อชุดคำนวณนี้สำหรับเปรียบเทียบ (เช่น บ้านโครงการ A):', defaultName);
-    if (label === null) return;
-    const finalLabel = label.trim() || defaultName;
-    const entry = recordCalculationHistory(appState, toolId, true, finalLabel);
-    if (entry) {
-        showHistoryToast(`บันทึกชุดคำนวณ "${finalLabel}" แล้ว`);
-        updateHistoryBadge();
-        if (activeDrawerTab === 'history') {
-            renderHistoryPanel();
+    showAppDialogModal({
+        title: 'บันทึกชุดคำนวณนี้ (Save Set)',
+        message: 'ตั้งชื่อชุดคำนวณนี้สำหรับเปรียบเทียบ (เช่น บ้านโครงการ A):',
+        defaultValue: defaultName,
+        showInput: true,
+        confirmText: 'บันทึกชุดนี้',
+        onConfirm: (label) => {
+            const finalLabel = (label && label.trim()) ? label.trim() : defaultName;
+            const entry = recordCalculationHistory(appState, toolId, true, finalLabel);
+            if (entry) {
+                showHistoryToast(`บันทึกชุดคำนวณ "${finalLabel}" แล้ว`);
+                updateHistoryBadge();
+                if (activeDrawerTab === 'history') {
+                    renderHistoryPanel();
+                }
+            }
         }
-    }
+    });
 }
 
 (function(root) {
@@ -449,6 +551,7 @@ function promptSaveCurrentSet() {
         updateHistoryBadge,
         renderHistoryPanel,
         createHistoryCardHTML,
+        showAppDialogModal,
         promptSaveCurrentSet
     };
     if (typeof module !== 'undefined' && module.exports) {

@@ -31,6 +31,7 @@
     const MyTicketsView = {
         selectedDrawFilter: 'all',
         editingTicketId: null,
+        pendingSharedImport: null,
 
         render(container) {
             if (!container) return;
@@ -39,6 +40,13 @@
             const spendingSummary = root.LottoStorage.getSpendingSummary();
             const upcomingDates = getUpcomingDrawDates(4);
             const defaultDrawDate = root.LottoDraws.next().date;
+
+            const editingTicket = this.editingTicketId
+                ? (tickets.find(t => t.id === this.editingTicketId) || null)
+                : null;
+            if (this.editingTicketId && !editingTicket) {
+                this.editingTicketId = null;
+            }
 
             // Distinct draw dates from recorded tickets + upcoming dates
             const drawDateSet = new Set(upcomingDates);
@@ -74,8 +82,28 @@
                     </div>`
                 : '';
 
+            const sharedBanner = (this.pendingSharedImport && Array.isArray(this.pendingSharedImport.numbers) && this.pendingSharedImport.numbers.length > 0)
+                ? `<div id="sharedImportBanner" role="status" class="bg-accent-soft text-ink p-4 rounded-lg border border-line flex flex-wrap items-center justify-between gap-3">
+                        <div class="space-y-1">
+                            <div class="text-base font-bold text-ink">ได้รับชุดตัวเลขจากเครื่องคำนวณหวย (${this.pendingSharedImport.numbers.length} รายการ)</div>
+                            <div class="text-sm text-muted font-lotto">${this.pendingSharedImport.numbers.map(n => root.LottoStorage.escapeHTML(n)).join(', ')} (ใบละ ฿${root.LottoStorage.escapeHTML(this.pendingSharedImport.price)})</div>
+                        </div>
+                        <div class="flex gap-2 text-base">
+                            <button type="button" id="btnConfirmSharedImport" class="px-3.5 py-1.5 bg-action text-white rounded-lg font-semibold">บันทึกเข้าสมุดสลากงวดนี้</button>
+                            <button type="button" id="btnDismissSharedImport" class="px-3 py-1.5 bg-raised text-ink rounded-lg font-medium">ปิด</button>
+                        </div>
+                    </div>`
+                : '';
+
+            const formDrawDate = editingTicket ? editingTicket.drawDate : currentSelectedDraw;
+            const formNumber = editingTicket ? root.LottoStorage.escapeHTML(editingTicket.number) : '';
+            const formCount = editingTicket ? editingTicket.count : 1;
+            const formCost = editingTicket ? editingTicket.costPerUnit : 80;
+            const formNote = editingTicket ? root.LottoStorage.escapeHTML(editingTicket.note || '') : '';
+
             container.innerHTML = `
                 <div class="space-y-6">
+                    ${sharedBanner}
                     ${backupReminder}
                     <section class="color-panel tone-yellow bg-surface p-4 rounded-lg border border-line" aria-label="งวดถัดไป" data-next-draw="${nextDraw.date}">
                         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -112,14 +140,13 @@
                         <div class="color-panel tone-yellow bg-surface p-4 rounded-lg border border-line md:col-span-2 flex flex-col justify-between">
                             <div class="flex items-center justify-between flex-wrap gap-2">
                                 <div class="flex items-center gap-2">
-                                    <span class="p-1.5 bg-warning-soft  text-warning rounded-lg text-base">◎</span>
                                     <span class="text-base font-medium text-ink ">
                                         งบประมาณงวด ${formatShortThaiDate(currentSelectedDraw)}
                                     </span>
                                 </div>
                                 <div class="flex items-center gap-1.5">
                                     <button type="button" id="btnEditBudget" class="text-base text-accent hover:text-accent font-medium flex items-center gap-1">
-                                        <span>✎ ตั้งงบงวดนี้</span>
+                                        <span>ตั้งงบงวดนี้</span>
                                     </button>
                                 </div>
                             </div>
@@ -150,19 +177,19 @@
                         </div>
                     </div>
 
-                    <!-- Add Ticket Form -->
+                    <!-- Add / Edit Ticket Form -->
                     <div class="form-panel bg-surface p-5 rounded-lg border border-line  ">
                         <div class="flex flex-wrap gap-3 items-center justify-between pb-3 border-b border-line  mb-4">
                             <h2 class="text-base font-bold text-ink  flex items-center gap-2">
-                                <span>▤</span> บันทึกสลากใหม่
+                                ${editingTicket ? `แก้ไขรายการสลาก (${formNumber})` : 'บันทึกสลากใหม่'}
                             </h2>
                             <div class="flex gap-1.5 text-base">
-                                <button type="button" id="btnScanTicket" class="px-2.5 py-1 bg-raised text-ink rounded-lg font-medium transition">⌗ สแกนสลาก</button>
+                                <button type="button" id="btnScanTicket" class="px-2.5 py-1 bg-raised text-ink rounded-lg font-medium transition">สแกนสลาก</button>
                                 <button type="button" id="btnExportData" class="px-2.5 py-1 bg-raised hover:bg-raised   text-ink  rounded-lg font-medium transition">
-                                    ↑ สำรองข้อมูล
+                                    สำรองข้อมูล
                                 </button>
                                 <button type="button" id="btnImportData" class="px-2.5 py-1 bg-raised hover:bg-raised   text-ink  rounded-lg font-medium transition">
-                                    ↓ นำเข้า
+                                    นำเข้า
                                 </button>
                             </div>
                         </div>
@@ -175,7 +202,7 @@
                                         งวดวันที่
                                     </label>
                                     <div class="relative">
-                                        <input type="date" id="ticketDrawDate" value="${currentSelectedDraw}" required
+                                        <input type="date" id="ticketDrawDate" value="${formDrawDate}" required
                                             class="w-full bg-surface  border border-line  rounded-lg px-3 py-2 text-base text-ink  focus:ring-2 focus:ring-accent focus:outline-none">
                                     </div>
                                 </div>
@@ -185,7 +212,7 @@
                                     <label for="ticketNumber" class="block text-base font-semibold text-ink  mb-1">
                                         หมายเลขสลาก (คงเลข 0 นำหน้า)
                                     </label>
-                                    <input type="text" id="ticketNumber" placeholder="เช่น 007579 หรือ 09" maxlength="6" required
+                                    <input type="text" id="ticketNumber" value="${formNumber}" placeholder="เช่น 007579 หรือ 09" maxlength="6" required
                                         class="w-full font-lotto text-base font-bold text-center bg-surface  border border-line  rounded-lg px-3 py-2 text-ink  focus:ring-2 focus:ring-accent focus:outline-none">
                                 </div>
 
@@ -195,7 +222,7 @@
                                         จำนวนใบ
                                     </label>
                                     <div class="flex items-center gap-1">
-                                        <input type="number" id="ticketCount" value="1" min="1" max="999" required
+                                        <input type="number" id="ticketCount" value="${formCount}" min="1" max="999" required
                                             class="w-full text-center font-bold bg-surface  border border-line  rounded-lg px-3 py-2 text-base text-ink  focus:ring-2 focus:ring-accent focus:outline-none">
                                         <div class="flex gap-1">
                                             <button type="button" class="btn-qty-quick px-2 py-2 bg-raised hover:bg-raised   text-base rounded-lg text-ink " data-val="1">+1</button>
@@ -210,7 +237,7 @@
                                         ราคาต่อใบ (บาท)
                                     </label>
                                     <div class="flex items-center gap-1">
-                                        <input type="number" id="ticketCostPerUnit" value="80" min="1" required
+                                        <input type="number" id="ticketCostPerUnit" value="${formCost}" min="1" required
                                             class="w-full text-center font-bold bg-surface  border border-line  rounded-lg px-3 py-2 text-base text-ink  focus:ring-2 focus:ring-accent focus:outline-none">
                                         <div class="flex gap-1">
                                             <button type="button" class="btn-cost-quick px-2 py-2 bg-raised hover:bg-raised   text-base rounded-lg text-ink " data-val="80">80</button>
@@ -223,15 +250,23 @@
                             <div class="flex flex-col sm:flex-row gap-3 items-center justify-between pt-1">
                                 <!-- Note Input -->
                                 <div class="w-full sm:flex-1">
-                                    <input type="text" aria-label="บันทึกช่วยจำ" id="ticketNote" placeholder="บันทึกช่วยจำ (เช่น เป๋าตัง, สแกนจากแผง, เลขอ่างน้ำมนต์)"
+                                    <input type="text" aria-label="บันทึกช่วยจำ" id="ticketNote" value="${formNote}" placeholder="บันทึกช่วยจำ (เช่น เป๋าตัง, สแกนจากแผง, เลขอ่างน้ำมนต์)"
                                         class="w-full bg-surface  border border-line  rounded-lg px-3 py-2 text-base text-ink  focus:ring-2 focus:ring-accent focus:outline-none">
                                 </div>
 
-                                <!-- Submit Button -->
-                                <button type="submit" id="btnSubmitTicket"
-                                    class="w-full sm:w-auto px-6 py-2.5 bg-action hover:bg-action-hover text-white rounded-lg text-base font-semibold  transition flex items-center justify-center gap-2 whitespace-nowrap">
-                                    <span>+</span> บันทึกสลาก
-                                </button>
+                                <!-- Submit & Cancel Buttons -->
+                                <div class="flex items-center gap-2 w-full sm:w-auto">
+                                    ${editingTicket ? `
+                                        <button type="button" id="btnCancelEditTicket"
+                                            class="px-4 py-2.5 bg-raised hover:bg-surface text-ink border border-line rounded-lg text-base font-medium transition whitespace-nowrap">
+                                            ยกเลิกแก้ไข
+                                        </button>
+                                    ` : ''}
+                                    <button type="submit" id="btnSubmitTicket"
+                                        class="flex-1 sm:flex-initial px-6 py-2.5 bg-action hover:bg-action-hover text-white rounded-lg text-base font-semibold  transition flex items-center justify-center gap-2 whitespace-nowrap">
+                                        ${editingTicket ? 'บันทึกการแก้ไข' : '+ บันทึกสลาก'}
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -242,7 +277,7 @@
                         <div class="p-4 border-b border-line  flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                             <div class="flex items-center gap-2">
                                 <h2 class="text-base font-bold text-ink ">
-                                    ▤ รายการสลากที่บันทึกไว้
+                                    รายการสลากที่บันทึกไว้
                                 </h2>
                                 <span class="px-2 py-0.5 bg-raised  text-muted  text-base font-semibold rounded-full">
                                     ${filteredTickets.length} รายการ
@@ -266,7 +301,6 @@
                         <!-- Ticket Table / Cards -->
                         ${filteredTickets.length === 0 ? `
                             <div class="p-12 text-center text-muted ">
-                                <div class="text-4xl mb-2">▤</div>
                                 <div class="text-base font-medium">ยังไม่มีรายการสลากในงวดนี้</div>
                                 <div class="text-base mt-1">บันทึกสลากใบแรกของคุณด้วยฟอร์มด้านบน</div>
                             </div>
@@ -285,7 +319,7 @@
                                                         <span class="font-lotto text-xl font-bold tracking-wider text-ink ">
                                                             ${root.LottoStorage.escapeHTML(t.number)}
                                                         </span>
-                                                        <span class="text-base px-2 py-0.5 rounded-full font-medium ${t.number.length === 6 ? 'bg-accent-soft text-accent  ' : 'bg-accent-soft text-accent  '}">
+                                                        <span class="text-base px-2 py-0.5 rounded-full font-medium bg-accent-soft text-accent">
                                                             ${t.number.length === 6 ? '6 หลัก' : (t.number.length === 3 ? '3 ตัว' : '2 ตัว')}
                                                         </span>
                                                     </div>
@@ -308,6 +342,9 @@
                                                     </div>
                                                 </div>
                                                 <div class="flex items-center gap-1">
+                                                    <button type="button" data-edit-id="${root.LottoStorage.escapeHTML(t.id)}" class="btn-edit-ticket px-2.5 py-1.5 text-sm font-medium text-accent hover:bg-accent-soft rounded-lg transition" title="แก้ไขรายการ">
+                                                        แก้ไข
+                                                    </button>
                                                     <button type="button" data-delete-id="${root.LottoStorage.escapeHTML(t.id)}" class="btn-delete-ticket p-2 text-muted hover:text-error hover:bg-error-soft  rounded-lg transition" title="ลบรายการ">
                                                         ×
                                                     </button>
@@ -328,6 +365,35 @@
         bindEvents(container) {
             container.querySelector('#btnScanTicket')?.addEventListener('click', () =>
                 root.LottoScanUI.open(container.querySelector('#addTicketForm')));
+
+            container.querySelector('#btnConfirmSharedImport')?.addEventListener('click', () => {
+                if (!this.pendingSharedImport || !Array.isArray(this.pendingSharedImport.numbers)) return;
+                const drawDate = container.querySelector('#ticketDrawDate')?.value || root.LottoDraws.next().date;
+                const costPerUnit = Number(this.pendingSharedImport.price) || 80;
+                const note = this.pendingSharedImport.note || 'ส่งมาจากเครื่องคำนวณหวย';
+                let savedCount = 0;
+                this.pendingSharedImport.numbers.forEach(num => {
+                    try {
+                        root.LottoStorage.saveTicket({
+                            drawDate,
+                            number: num,
+                            count: 1,
+                            costPerUnit,
+                            note
+                        });
+                        savedCount++;
+                    } catch (_) {}
+                });
+                this.pendingSharedImport = null;
+                root.LottoApp.showToast(`บันทึกชุดตัวเลข ${savedCount} รายการเข้าสมุดสลากเรียบร้อยแล้ว`, 'success');
+                this.render(container);
+            });
+
+            container.querySelector('#btnDismissSharedImport')?.addEventListener('click', () => {
+                this.pendingSharedImport = null;
+                this.render(container);
+            });
+
             // Quick quantity buttons
             container.querySelectorAll('.btn-qty-quick').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -344,7 +410,13 @@
                 });
             });
 
-            // Add Ticket Form submit
+            // Cancel edit button
+            container.querySelector('#btnCancelEditTicket')?.addEventListener('click', () => {
+                this.editingTicketId = null;
+                this.render(container);
+            });
+
+            // Add / Edit Ticket Form submit
             const form = container.querySelector('#addTicketForm');
             if (form) {
                 form.addEventListener('submit', (e) => {
@@ -361,14 +433,24 @@
                     }
 
                     try {
+                        const isEditing = Boolean(this.editingTicketId);
+                        const existingTicket = isEditing
+                            ? root.LottoStorage.getTickets().find(t => t.id === this.editingTicketId)
+                            : null;
                         root.LottoStorage.saveTicket({
+                            id: isEditing ? this.editingTicketId : undefined,
+                            createdAt: existingTicket?.createdAt,
                             drawDate,
                             number, // string preserved
                             count,
                             costPerUnit,
                             note
                         });
-                        root.LottoApp.showToast(`บันทึกสลากเลข ${number} เรียบร้อยแล้ว`, 'success');
+                        this.editingTicketId = null;
+                        root.LottoApp.showToast(
+                            isEditing ? `แก้ไขสลากเลข ${number} เรียบร้อยแล้ว` : `บันทึกสลากเลข ${number} เรียบร้อยแล้ว`,
+                            'success'
+                        );
                         form.reset();
                         container.querySelector('#ticketDrawDate').value = drawDate;
                         container.querySelector('#ticketCount').value = '1';
@@ -389,15 +471,23 @@
                 });
             }
 
+            // Edit ticket buttons
+            container.querySelectorAll('.btn-edit-ticket').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    this.editingTicketId = btn.dataset.editId;
+                    this.render(container);
+                    const numInput = container.querySelector('#ticketNumber');
+                    if (numInput && typeof numInput.focus === 'function') {
+                        numInput.focus();
+                    }
+                });
+            });
+
             // Delete ticket buttons
             container.querySelectorAll('.btn-delete-ticket').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.dataset.deleteId;
-                    if (confirm('คุณต้องการลบรายการสลากนี้ใช่หรือไม่?')) {
-                        root.LottoStorage.deleteTicket(id);
-                        root.LottoApp.showToast('ลบรายการสลากแล้ว', 'info');
-                        this.render(container);
-                    }
+                    this.showDeleteConfirmModal(id, container);
                 });
             });
 
@@ -406,16 +496,10 @@
             if (btnEditBudget) {
                 btnEditBudget.addEventListener('click', () => {
                     const currentSelectedDraw = this.selectedDrawFilter === 'all' 
-                        ? (container.querySelector('#ticketDrawDate')?.value || new Date().toISOString().slice(0, 10))
+                        ? (container.querySelector('#ticketDrawDate')?.value || root.LottoDraws.next().date)
                         : this.selectedDrawFilter;
                     const currentBudget = root.LottoStorage.getBudgetForDraw(currentSelectedDraw);
-                    const promptVal = prompt(`ใส่งบประมาณสำหรับงวด ${formatShortThaiDate(currentSelectedDraw)} (บาท):`, currentBudget || 500);
-                    if (promptVal !== null) {
-                        const amount = Math.max(0, parseFloat(promptVal) || 0);
-                        root.LottoStorage.setBudgetForDraw(currentSelectedDraw, amount);
-                        root.LottoApp.showToast(`ตั้งงบประมาณงวด ${formatShortThaiDate(currentSelectedDraw)} เป็น ฿${amount.toLocaleString()} แล้ว`, 'success');
-                        this.render(container);
-                    }
+                    this.showBudgetModal(currentSelectedDraw, currentBudget, container);
                 });
             }
 
@@ -449,6 +533,109 @@
             }
         },
 
+        showDeleteConfirmModal(ticketId, parentContainer) {
+            const ticket = root.LottoStorage.getTickets().find(t => t.id === ticketId);
+            if (!ticket) return;
+
+            if (typeof document === 'undefined' || !document.body) {
+                root.LottoStorage.deleteTicket(ticketId);
+                this.render(parentContainer);
+                return;
+            }
+
+            const modal = document.createElement('dialog');
+            modal.className = 'book-dialog';
+            modal.innerHTML = `
+                <div class="bg-surface w-full max-w-md rounded-lg p-6 border border-line space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-base font-bold text-ink">ยืนยันการลบรายการสลาก</h2>
+                        <button type="button" aria-label="ปิดหน้าต่าง" class="btn-close-modal text-muted hover:text-ink text-lg">✕</button>
+                    </div>
+                    <p class="text-base text-muted">
+                        คุณต้องการลบสลากหมายเลข <strong class="font-lotto text-ink">${root.LottoStorage.escapeHTML(ticket.number)}</strong> (${ticket.count} ใบ) งวด ${formatShortThaiDate(ticket.drawDate)} ใช่หรือไม่?
+                    </p>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" class="btn-close-modal px-4 py-2 text-base text-muted hover:bg-raised rounded-lg transition">ยกเลิก</button>
+                        <button type="button" id="btnConfirmDeleteTicket" class="px-4 py-2 text-base font-semibold bg-error text-white rounded-lg transition">ยืนยันการลบ</button>
+                    </div>
+                </div>
+            `;
+            modal.setAttribute('aria-label', 'ยืนยันการลบรายการสลาก');
+            document.body.appendChild(modal);
+            modal.addEventListener('close', () => modal.remove(), { once: true });
+            if (typeof modal.showModal === 'function') modal.showModal();
+
+            const closeModal = () => {
+                if (typeof modal.close === 'function') modal.close();
+                else modal.remove();
+            };
+            modal.querySelectorAll('.btn-close-modal').forEach(b => b.addEventListener('click', closeModal));
+            modal.querySelector('#btnConfirmDeleteTicket')?.addEventListener('click', () => {
+                if (this.editingTicketId === ticketId) this.editingTicketId = null;
+                root.LottoStorage.deleteTicket(ticketId);
+                closeModal();
+                root.LottoApp.showToast('ลบรายการสลากแล้ว', 'info');
+                this.render(parentContainer);
+            });
+        },
+
+        showBudgetModal(drawDate, currentBudget, parentContainer) {
+            if (typeof document === 'undefined' || !document.body) return;
+
+            const modal = document.createElement('dialog');
+            modal.className = 'book-dialog';
+            modal.innerHTML = `
+                <div class="bg-surface w-full max-w-md rounded-lg p-6 border border-line space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-base font-bold text-ink">ตั้งงบประมาณงวด ${formatShortThaiDate(drawDate)}</h2>
+                        <button type="button" aria-label="ปิดหน้าต่าง" class="btn-close-modal text-muted hover:text-ink text-lg">✕</button>
+                    </div>
+                    <form id="budgetModalForm" class="space-y-4">
+                        <div>
+                            <label for="budgetModalInput" class="block text-base font-semibold text-ink mb-1">วงเงินงบประมาณ (บาท)</label>
+                            <input type="number" id="budgetModalInput" min="0" step="10" value="${currentBudget || 500}"
+                                class="w-full bg-surface border border-line rounded-lg px-3 py-2 text-base font-bold text-ink focus:ring-2 focus:ring-accent focus:outline-none">
+                            <div class="flex flex-wrap gap-1.5 mt-2">
+                                ${[200, 500, 1000, 2000, 0].map(val => `
+                                    <button type="button" data-budget-preset="${val}" class="px-2.5 py-1 text-sm bg-raised hover:bg-surface border border-line rounded-lg text-ink">
+                                        ${val === 0 ? 'ไม่จำกัด (0)' : `฿${val.toLocaleString()}`}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-2 pt-2">
+                            <button type="button" class="btn-close-modal px-4 py-2 text-base text-muted hover:bg-raised rounded-lg transition">ยกเลิก</button>
+                            <button type="submit" class="px-4 py-2 text-base font-semibold bg-action text-white rounded-lg transition">บันทึกงบประมาณ</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            modal.setAttribute('aria-label', `ตั้งงบประมาณงวด ${formatShortThaiDate(drawDate)}`);
+            document.body.appendChild(modal);
+            modal.addEventListener('close', () => modal.remove(), { once: true });
+            if (typeof modal.showModal === 'function') modal.showModal();
+
+            const closeModal = () => {
+                if (typeof modal.close === 'function') modal.close();
+                else modal.remove();
+            };
+            modal.querySelectorAll('.btn-close-modal').forEach(b => b.addEventListener('click', closeModal));
+            const input = modal.querySelector('#budgetModalInput');
+            modal.querySelectorAll('[data-budget-preset]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (input) input.value = btn.dataset.budgetPreset;
+                });
+            });
+            modal.querySelector('#budgetModalForm')?.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const amount = Math.max(0, parseFloat(input?.value) || 0);
+                root.LottoStorage.setBudgetForDraw(drawDate, amount);
+                closeModal();
+                root.LottoApp.showToast(`ตั้งงบประมาณงวด ${formatShortThaiDate(drawDate)} เป็น ฿${amount.toLocaleString()} แล้ว`, 'success');
+                this.render(parentContainer);
+            });
+        },
+
         showExportModal() {
             const jsonStr = root.LottoStorage.exportDataJSON();
             const csvStr = root.LottoStorage.exportTicketsCSV();
@@ -458,7 +645,7 @@
             modal.innerHTML = `
                 <div class="bg-surface  w-full max-w-md rounded-lg p-6  border border-line  space-y-4">
                     <div class="flex justify-between items-center">
-                        <h2 class="text-base font-bold text-ink ">↑ สำรองข้อมูลสลาก & งบ</h2>
+                        <h2 class="text-base font-bold text-ink ">สำรองข้อมูลสลาก & งบ</h2>
                         <button type="button" aria-label="ปิดหน้าต่าง" class="btn-close-modal text-muted hover:text-muted  text-lg">✕</button>
                     </div>
                     <p class="text-base text-muted ">
@@ -466,12 +653,10 @@
                     </p>
                     <div class="grid grid-cols-2 gap-3 pt-2">
                         <button type="button" id="btnDownloadJSON" class="p-3 border border-line  hover:border-accent rounded-lg text-center group transition">
-                            <div class="text-2xl mb-1">▤</div>
                             <div class="text-base font-bold text-ink  group-hover:text-accent">ดาวน์โหลด JSON</div>
                             <div class="text-base text-muted">สลาก, งบ, และผลย้อนหลัง</div>
                         </button>
                         <button type="button" id="btnDownloadCSV" class="p-3 border border-line  hover:border-accent rounded-lg text-center group transition">
-                            <div class="text-2xl mb-1">▥</div>
                             <div class="text-base font-bold text-ink  group-hover:text-accent">ดาวน์โหลด CSV</div>
                             <div class="text-base text-muted">เปิดใน Excel / Sheets</div>
                         </button>
@@ -518,7 +703,7 @@
             modal.innerHTML = `
                 <div class="bg-surface  w-full max-w-md rounded-lg p-6  border border-line  space-y-4">
                     <div class="flex justify-between items-center">
-                        <h2 class="text-base font-bold text-ink ">↓ นำเข้าข้อมูลสำรอง</h2>
+                        <h2 class="text-base font-bold text-ink ">นำเข้าข้อมูลสำรอง</h2>
                         <button type="button" aria-label="ปิดหน้าต่าง" class="btn-close-modal text-muted hover:text-muted  text-lg">✕</button>
                     </div>
                     <p class="text-base text-muted ">

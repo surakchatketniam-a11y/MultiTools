@@ -189,7 +189,21 @@ function initDropdownListeners() {
             if (typeof showHistoryToast === 'function') showHistoryToast('ไม่มีประวัติล่าสุดให้ล้าง');
             return;
         }
-        if (typeof confirm === 'function' && confirm(`ล้างประวัติการคำนวณล่าสุดทั้งหมด ${unpinned.length} รายการหรือไม่?\n(ชุดที่คุณบันทึกไว้จะไม่ถูกลบ)`)) {
+        if (typeof showAppDialogModal === 'function') {
+            showAppDialogModal({
+                title: 'ยืนยันการล้างประวัติ',
+                message: `ล้างประวัติการคำนวณล่าสุดทั้งหมด ${unpinned.length} รายการหรือไม่?\n(ชุดที่คุณบันทึกไว้จะไม่ถูกลบ)`,
+                showInput: false,
+                confirmText: 'ล้างประวัติ',
+                danger: true,
+                onConfirm: () => {
+                    if (typeof clearCalculationHistory === 'function') clearCalculationHistory(true);
+                    if (typeof renderHistoryPanel === 'function') renderHistoryPanel();
+                    if (typeof updateHistoryBadge === 'function') updateHistoryBadge();
+                    if (typeof showHistoryToast === 'function') showHistoryToast('✓ ล้างประวัติการคำนวณล่าสุดแล้ว');
+                }
+            });
+        } else if (typeof confirm === 'function' && confirm(`ล้างประวัติการคำนวณล่าสุดทั้งหมด ${unpinned.length} รายการหรือไม่?\n(ชุดที่คุณบันทึกไว้จะไม่ถูกลบ)`)) {
             if (typeof clearCalculationHistory === 'function') clearCalculationHistory(true);
             if (typeof renderHistoryPanel === 'function') renderHistoryPanel();
             if (typeof updateHistoryBadge === 'function') updateHistoryBadge();

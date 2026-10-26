@@ -234,3 +234,8 @@ assert.strictEqual(Storage.escapeHTML('<img src=x onerror="alert(1)">'), '&lt;im
 assert.throws(() => Storage.saveTicket({ drawDate: '2026-10-16', number: '12345' }), /2, 3 หรือ 6 หลัก/);
 const dup3Result = Checker.checkTicket({ id: 'd3', drawDate: '2025-03-16', number: '595', type: 'digit3', count: 1, costPerUnit: 80, totalCost: 80 }, { drawDate: '2025-03-16', prizes: { ...testDrawResult.prizes, front3: ['595', '595'] } }, '2026-10-15');
 assert.strictEqual(dup3Result.totalPrize, 8000, 'Duplicate 3-digit spins must award both matches');
+const createdTicket = Storage.saveTicket({ drawDate: '2026-10-16', number: '007579', count: 1, costPerUnit: 80, note: 'ใบแรก' });
+const updatedTicket = Storage.saveTicket({ id: createdTicket.id, createdAt: createdTicket.createdAt, drawDate: '2026-10-16', number: '007579', count: 3, costPerUnit: 100, note: 'แก้ไขจำนวน' });
+assert.strictEqual(updatedTicket.id, createdTicket.id);
+assert.strictEqual(updatedTicket.totalCost, 300);
+assert.strictEqual(Storage.getTickets().length, 1);

@@ -89,9 +89,14 @@
                                 รายการตัวเลขในชุด (${numbers.length} หาง):
                             </span>
                             ${numbers.length > 0 ? `
-                                <button type="button" id="btnClearLottoNumbers" class="lotto-link-button">
-                                    ล้างทั้งหมด
-                                </button>
+                                <div class="flex items-center gap-3">
+                                    <button type="button" id="btnSendToLottoBook" class="lotto-link-button">
+                                        ส่งไปสมุดสลาก
+                                    </button>
+                                    <button type="button" id="btnClearLottoNumbers" class="lotto-link-button">
+                                        ล้างทั้งหมด
+                                    </button>
+                                </div>
                             ` : ''}
                         </div>
                         <div class="lotto-number-list flex flex-wrap gap-2">
@@ -419,6 +424,9 @@
                             <button type="button" id="btnSendToBet" class="lotto-button">
                                 ส่งเลขนี้ไปคำนวณต้นทุน
                             </button>
+                            <button type="button" id="btnSendLuckyToLottoBook" class="lotto-button">
+                                ส่งเลขนี้ไปสมุดสลาก
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -535,6 +543,20 @@
             btnClear.addEventListener('click', () => {
                 state.numbersList = [];
                 renderActiveTool();
+            });
+        }
+
+        // Send numbers list to LottoBook
+        const btnSendBook = container.querySelector('#btnSendToLottoBook');
+        if (btnSendBook) {
+            btnSendBook.addEventListener('click', () => {
+                const nums = (Array.isArray(state.numbersList) ? state.numbersList : [])
+                    .map(n => String(n).trim())
+                    .filter(n => /^(?:\d{2}|\d{3}|\d{6})$/.test(n));
+                if (!nums.length) return;
+                const price = encodeURIComponent(state.pricePerNumber || '80');
+                const query = encodeURIComponent(nums.join(','));
+                window.location.href = `../lotto_book/?importNumbers=${query}&price=${price}#tickets`;
             });
         }
 
@@ -673,6 +695,16 @@
                 }
                 state.activeTab = 'bet';
                 renderActiveTool();
+            });
+        }
+
+        const btnSendLuckyBook = container.querySelector('#btnSendLuckyToLottoBook');
+        if (btnSendLuckyBook) {
+            btnSendLuckyBook.addEventListener('click', () => {
+                const num = String(state.luckyResult || '579').trim();
+                if (!/^(?:\d{2}|\d{3}|\d{6})$/.test(num)) return;
+                const price = encodeURIComponent(state.pricePerNumber || '80');
+                window.location.href = `../lotto_book/?importNumbers=${encodeURIComponent(num)}&price=${price}#tickets`;
             });
         }
     }
