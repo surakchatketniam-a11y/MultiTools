@@ -372,23 +372,23 @@ function renderTaxPersonalTool(container) {
             <div class="themed-tool-card p-4 space-y-3">
                 <div class="text-xs font-bold text-[var(--app-ink)]">ข้อมูลรายได้พึงประเมินทั้งปี</div>
                 <div>
-                    <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">เงินเดือนประจำ (บาท/เดือน)</label>
+                    <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">เงินเดือนประจำ (บาท/เดือน)</label>
                     <input id="taxSalaryMonthly" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.salaryMonthly))}" placeholder="เช่น 50,000" class="airbnb-input w-full">
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">โบนัสทั้งปี (บาท)</label>
+                        <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">โบนัสทั้งปี (บาท)</label>
                         <input id="taxBonusYearly" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.bonusYearly))}" placeholder="เช่น 50,000" class="airbnb-input w-full">
                     </div>
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">รายได้อื่น/ฟรีแลนซ์ทั้งปี</label>
+                        <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">รายได้อื่น/ฟรีแลนซ์ทั้งปี</label>
                         <input id="taxOtherIncome" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.otherIncomeYearly))}" placeholder="0" class="airbnb-input w-full">
                     </div>
                 </div>
                 <div>
-                    <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ภาษีหัก ณ ที่จ่ายสะสมทั้งปี (ถูกหักไว้แล้ว)</label>
+                    <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">ภาษีหัก ณ ที่จ่ายสะสมทั้งปี (ถูกหักไว้แล้ว)</label>
                     <input id="taxWithholding" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.withholdingTax))}" placeholder="เช่น 12,000" class="airbnb-input w-full">
-                    <span class="text-[11px] text-[#888888] dark:text-neutral-400 mt-0.5 block">ดูได้จากหนังสือรับรอง 50 ทวิ ที่บริษัทออกให้</span>
+                    <span class="text-[11px] text-[var(--app-muted)] mt-0.5 block">ดูได้จากหนังสือรับรอง 50 ทวิ ที่บริษัทออกให้</span>
                 </div>
             </div>
 
@@ -677,14 +677,14 @@ function renderPropertyTransferTool(container) {
                 <div class="text-xs font-bold text-[var(--app-ink)]">เงื่อนไขและมาตรการรัฐ</div>
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <div>
-                        <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">มาตรการค่าโอน-จำนอง</label>
+                        <label class="font-semibold text-[var(--app-body)] block mb-1">มาตรการค่าโอน-จำนอง</label>
                         <select id="propGovMeasure" class="airbnb-input w-full">
                             <option value="standard" ${st.isGovMeasure !== 'reduced' ? 'selected' : ''}>อัตราปกติ (โอน 2% / จำนอง 1%)</option>
                             <option value="reduced" ${st.isGovMeasure === 'reduced' ? 'selected' : ''}>ลดหย่อนรัฐ (โอน 0.01% / จำนอง 0.01%)</option>
                         </select>
                     </div>
                     <div>
-                        <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">สิทธิภาษีธุรกิจเฉพาะ</label>
+                        <label class="font-semibold text-[var(--app-body)] block mb-1">สิทธิภาษีธุรกิจเฉพาะ</label>
                         <select id="propExemptSBT" class="airbnb-input w-full">
                             <option value="no" ${st.exemptSBT === 'no' ? 'selected' : ''}>เสียธุรกิจเฉพาะ 3.3%</option>
                             <option value="yes" ${st.exemptSBT === 'yes' ? 'selected' : ''}>ยกเว้น/เสียอากร 0.5% (ชื่อเกิน 1 ปี/มรดก)</option>
@@ -694,13 +694,13 @@ function renderPropertyTransferTool(container) {
 
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <div>
-                        <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">จำนวนปีที่ถือครองของผู้ขาย</label>
+                        <label class="font-semibold text-[var(--app-body)] block mb-1">จำนวนปีที่ถือครองของผู้ขาย</label>
                         <select id="propHoldingYears" class="airbnb-input w-full">
                             ${[1,2,3,4,5,6,7,8,9,10].map(y => `<option value="${y}" ${String(st.holdingYears) === String(y) ? 'selected' : ''}>${y} ปี (หัก คชจ. ${y === 1 ? '92%' : (y === 2 ? '84%' : (y === 3 ? '77%' : (y === 4 ? '71%' : (y === 5 ? '65%' : (y === 6 ? '60%' : (y === 7 ? '55%' : '50%'))))))})</option>`).join('')}
                         </select>
                     </div>
                     <div>
-                        <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ข้อตกลงการแบ่งจ่าย</label>
+                        <label class="font-semibold text-[var(--app-body)] block mb-1">ข้อตกลงการแบ่งจ่าย</label>
                         <select id="propSplitMode" class="airbnb-input w-full">
                             <option value="custom" ${st.splitMode === 'custom' ? 'selected' : ''}>ธรรมเนียมทั่วไป (โอนคนละครึ่ง)</option>
                             <option value="half" ${st.splitMode === 'half' ? 'selected' : ''}>คนละครึ่งทุกรายการ</option>
@@ -715,17 +715,17 @@ function renderPropertyTransferTool(container) {
             <div class="themed-tool-card p-4 space-y-3">
                 <div class="text-xs font-bold text-[var(--app-ink)]">ข้อมูลราคาทรัพย์และวงเงินจำนอง</div>
                 <div>
-                    <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ราคาประเมินทุนทรัพย์ของกรมที่ดิน (บาท)</label>
+                    <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">ราคาประเมินทุนทรัพย์ของกรมที่ดิน (บาท)</label>
                     <input id="propAppraisedValue" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.appraisedValue))}" placeholder="เช่น 3,000,000" class="airbnb-input w-full">
-                    <span class="text-[11px] text-[#888888] dark:text-neutral-400 mt-0.5 block">ใช้เป็นฐานคิดค่าธรรมเนียมโอน และภาษีเงินได้หัก ณ ที่จ่าย</span>
+                    <span class="text-[11px] text-[var(--app-muted)] mt-0.5 block">ใช้เป็นฐานคิดค่าธรรมเนียมโอน และภาษีเงินได้หัก ณ ที่จ่าย</span>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ราคาซื้อขายจริงตามสัญญา (บาท)</label>
+                        <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">ราคาซื้อขายจริงตามสัญญา (บาท)</label>
                         <input id="propSalePrice" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.salePrice))}" placeholder="เช่น 3,200,000" class="airbnb-input w-full">
                     </div>
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">วงเงินกู้จดจำนอง (ป้อน 0 หากซื้อสด)</label>
+                        <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">วงเงินกู้จดจำนอง (ป้อน 0 หากซื้อสด)</label>
                         <input id="propMortgageAmount" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.mortgageAmount))}" placeholder="เช่น 2,500,000" class="airbnb-input w-full">
                     </div>
                 </div>

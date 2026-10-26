@@ -286,10 +286,10 @@ function createKeypadFieldHTML(fieldIndex, label, value, unitSuffix = '', placeh
     // Touch devices use the in-app keypad only; PC keeps the native keyboard.
     const sharedInputMode = window.matchMedia('(pointer: coarse)').matches ? 'none' : 'decimal';
     return `<div><div class="clev-field-box ${isActive ? 'active-field' : ''}" data-field-index="${fieldIndex}">
-        <label for="numeric-field-${fieldIndex}" class="text-sm font-medium text-[#222222]">${label}</label>
+        <label for="numeric-field-${fieldIndex}" class="text-sm font-medium text-[var(--app-ink)]">${label}</label>
         <div class="flex items-center gap-1.5 min-w-0" style="max-width:55%">
             <input id="numeric-field-${fieldIndex}" data-shared-field="${fieldIndex}" type="text" inputmode="${sharedInputMode}" autocomplete="off" spellcheck="false" class="shared-number-input" aria-invalid="${invalid}" ${invalid ? `aria-describedby="numeric-error-${fieldIndex}"` : ''} value="${escapeHTML(displayVal)}" placeholder="${escapeHTML(placeholder)}">
-            ${unitSuffix ? `<span class="text-xs font-medium text-[#6a6a6a]">${unitSuffix}</span>` : ''}
+            ${unitSuffix ? `<span class="text-xs font-medium text-[var(--app-muted)]">${unitSuffix}</span>` : ''}
         </div>
     </div>${invalid ? `<p id="numeric-error-${fieldIndex}" role="alert" class="text-xs px-3 py-1">กรุณากรอกตัวเลข เช่น 1,000 หรือ ๑๐๐๐</p>` : ''}</div>`;
 }

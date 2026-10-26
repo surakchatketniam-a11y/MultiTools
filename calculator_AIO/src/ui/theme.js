@@ -45,11 +45,11 @@ function applyTheme(themeName) {
     const btnTogether = document.getElementById('menuThemeTogether');
     const btnFerrari = document.getElementById('menuThemeFerrari');
     if (btnAirbnb && btnClassic && btnDark && btnTogether && btnFerrari) {
-        btnAirbnb.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isAirbnb ? 'border-[#222222] bg-[#f7f7f7] text-[#222222]' : 'border-[#dddddd] text-[#6a6a6a]'}`;
-        btnClassic.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${selected === 'classic' ? 'border-[#2b3990] bg-[#eef1ff] text-[#2b3990]' : 'border-[#dddddd] text-[#6a6a6a]'}`;
-        btnDark.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isDark ? 'border-[#d98cff] bg-[#3a2348] text-[#d98cff]' : 'border-[#dddddd] text-[#6a6a6a]'}`;
-        btnTogether.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isTogether ? 'border-[#fc4c02] bg-[#313641] text-white' : 'border-[#dddddd] text-[#6a6a6a]'}`;
-        btnFerrari.className = `col-span-2 py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isFerrari ? 'border-[#da291c] bg-[#303030] text-white' : 'border-[#dddddd] text-[#6a6a6a]'}`;
+        btnAirbnb.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isAirbnb ? 'border-[#222222] bg-[#f7f7f7] text-[#222222]' : 'border-[var(--app-hairline)] text-[var(--app-muted)]'}`;
+        btnClassic.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${selected === 'classic' ? 'border-[#2b3990] bg-[#eef1ff] text-[#2b3990]' : 'border-[var(--app-hairline)] text-[var(--app-muted)]'}`;
+        btnDark.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isDark ? 'border-[#d98cff] bg-[#3a2348] text-[#d98cff]' : 'border-[var(--app-hairline)] text-[var(--app-muted)]'}`;
+        btnTogether.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isTogether ? 'border-[#fc4c02] bg-[#313641] text-white' : 'border-[var(--app-hairline)] text-[var(--app-muted)]'}`;
+        btnFerrari.className = `col-span-2 py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isFerrari ? 'border-[#da291c] bg-[#303030] text-white' : 'border-[var(--app-hairline)] text-[var(--app-muted)]'}`;
     }
 
     if (typeof renderActiveTool === 'function') {

@@ -1,8 +1,9 @@
 // Service Worker for Multitools - LottoBook
-const CACHE_NAME = 'lotto-book-cache-v8';
+const CACHE_NAME = 'lotto-book-cache-v9';
 const ASSETS = [
     './',
     './index.html',
+    './manifest.json',
     './css/style.css',
     './tokens.css',
     './data/glo_results.json',
@@ -49,14 +50,20 @@ self.addEventListener('fetch', (event) => {
 
     // Result sync must reach the server; HTTP cache headers on the API control freshness.
     if (new URL(event.request.url).pathname.startsWith('/api/')) {
-        event.respondWith(fetch(event.request));
+        event.respondWith(
+            fetch(event.request).catch(() => caches.match(event.request))
+        );
         return;
     }
-    
+
     event.respondWith(
         caches.match(event.request).then((cached) => {
             const fetchPromise = fetch(event.request).then((response) => {
-                if (response && response.status === 200 && response.type === 'basic') {
+                if (
+                    response &&
+                    (response.status === 200 || response.type === 'opaque') &&
+                    (response.type === 'basic' || response.type === 'cors' || response.type === 'opaque')
+                ) {
                     const clone = response.clone();
                     caches.open(CACHE_NAME).then((cache) => {
                         cache.put(event.request, clone);

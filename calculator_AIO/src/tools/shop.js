@@ -135,11 +135,11 @@ function renderUnitPriceTool(container) {
                     calcRow.querySelector('.cell-label span').textContent = `${rows[index].id}${isBest ? ' ★' : ''}`;
                     if (item) {
                         const highlightClass = isBest
-                            ? (isAirbnb ? 'text-[#ff385c] font-bold' : appState.theme === 'together' ? 'text-[var(--app-accent)] font-bold' : 'text-green-700 font-bold')
-                            : 'text-[#222222] font-semibold';
+                            ? (isAirbnb ? 'text-[var(--app-accent)] font-bold' : appState.theme === 'together' ? 'text-[var(--app-accent)] font-bold' : 'text-green-700 font-bold')
+                            : 'text-[var(--app-ink)] font-semibold';
                         const unitLabelClass = isBest
-                            ? (isAirbnb ? 'text-[#ff385c]' : appState.theme === 'together' ? 'text-[var(--app-accent)]' : 'text-green-700')
-                            : 'text-[#717171]';
+                            ? (isAirbnb ? 'text-[var(--app-accent)]' : appState.theme === 'together' ? 'text-[var(--app-accent)]' : 'text-green-700')
+                            : 'text-[var(--app-muted)]';
                         cell.innerHTML = `<div class="flex flex-col items-center justify-center leading-tight py-0.5"><span class="text-[1.02rem] ${highlightClass}">${formatUnitPrice(item.normalizedPrice)}</span><span class="text-[10px] ${unitLabelClass} font-medium">บาท/${item.baseUnit}</span></div>`;
                     } else {
                         cell.innerHTML = `<span class="placeholder-text text-xs">ราคาต่อหน่วย</span>`;
@@ -153,7 +153,7 @@ function renderUnitPriceTool(container) {
                 } else if (hasMismatchedFamilies) {
                     setStatusBanner('error', 'ชนิดหน่วยไม่ตรงกัน (กรุณาเลือกหน่วยกลุ่มเดียวกัน เช่น กรัม กับ กิโลกรัม)');
                 } else if (liveItems.length === 1) {
-                    setStatusBanner('info', `ตัวเลือก <b>${liveItems[0].id}</b>: ${formatUnitPrice(liveItems[0].normalizedPrice)} บาท/${liveItems[0].baseUnit} <span class="text-xs font-normal text-[#6a6a6a] block">ป้อนแถวอื่นเพิ่มเพื่อเปรียบเทียบความคุ้มค่า</span>`);
+                    setStatusBanner('info', `ตัวเลือก <b>${liveItems[0].id}</b>: ${formatUnitPrice(liveItems[0].normalizedPrice)} บาท/${liveItems[0].baseUnit} <span class="text-xs font-normal text-[var(--app-muted)] block">ป้อนแถวอื่นเพิ่มเพื่อเปรียบเทียบความคุ้มค่า</span>`);
                 } else {
                     const best = liveItems.find(item => Math.abs(item.normalizedPrice - liveMin) < 1e-7);
                     const bestLabels = liveItems.filter(item => Math.abs(item.normalizedPrice - liveMin) < 1e-7).map(item => item.id).join(', ');
@@ -161,7 +161,7 @@ function renderUnitPriceTool(container) {
                     if (next) {
                         const pct = (((next.normalizedPrice - best.normalizedPrice) / next.normalizedPrice) * 100).toFixed(1);
                         const diff = next.normalizedPrice - best.normalizedPrice;
-                        setStatusBanner('success', `<span class="text-[var(--app-accent)]">★ ตัวเลือก ${bestLabels} คุ้มที่สุด</span> (${formatUnitPrice(best.normalizedPrice)} บาท/${best.baseUnit})<span class="text-xs font-medium block text-[#3f3f3f]">ถูกกว่าตัวเลือก ${next.id} ${pct}% หรือประหยัด ${formatUnitPrice(diff)} บาท/${best.baseUnit}</span>`);
+                        setStatusBanner('success', `<span class="text-[var(--app-accent)]">★ ตัวเลือก ${bestLabels} คุ้มที่สุด</span> (${formatUnitPrice(best.normalizedPrice)} บาท/${best.baseUnit})<span class="text-xs font-medium block text-[var(--app-body)]">ถูกกว่าตัวเลือก ${next.id} ${pct}% หรือประหยัด ${formatUnitPrice(diff)} บาท/${best.baseUnit}</span>`);
                     } else {
                         setStatusBanner('success', `ตัวเลือก <b>${bestLabels}</b> ราคาต่อหน่วยเท่ากัน (${formatUnitPrice(liveMin)} บาท/${best.baseUnit})`);
                     }
@@ -333,7 +333,7 @@ function renderDiscountTool(container) {
 
             <div class="flex gap-1.5 pt-0.5">
                 ${[10, 15, 20, 25, 30, 50, 70].map(pct => `
-                    <button class="quick-disc flex-1 bg-white border border-[var(--app-hairline)] rounded-full py-1 text-xs font-semibold text-[var(--app-accent)] hover:bg-[var(--app-accent-soft)] transition" data-pct="${pct}">-${pct}%</button>
+                    <button class="quick-disc flex-1 bg-[var(--color-canvas)] border border-[var(--app-hairline)] rounded-full py-1 text-xs font-semibold text-[var(--app-accent)] hover:bg-[var(--app-accent-soft)] transition" data-pct="${pct}">-${pct}%</button>
                 `).join('')}
             </div>
         </div>
@@ -352,7 +352,7 @@ function renderDiscountTool(container) {
     } else if (isOver100) {
         setStatusBanner('error', `ส่วนลดไม่ควรเกิน 100% (คำนวณสูงสุดที่ 100%) | ราคาสุทธิ: ${formatMoney(finalPrice)} บาท`);
     } else {
-        setStatusBanner('success', `ราคาสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(finalPrice)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">ประหยัดไป ${formatMoney(saved)} บาท</span>`);
+        setStatusBanner('success', `ราคาสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(finalPrice)} บาท</span><span class="text-xs font-medium block text-[var(--app-body)]">ประหยัดไป ${formatMoney(saved)} บาท</span>`);
     }
 }
 
@@ -431,8 +431,8 @@ function renderUnitConverterTool(container) {
         const isSelected = idx === st.fromIdx;
         const isTarget = idx === st.targetIdx;
         return `
-            <div class="flex justify-between items-center py-1.5 px-3 border-b border-[#ebebeb] last:border-none ${isSelected ? 'bg-[var(--app-accent-soft)] font-bold text-[var(--app-accent)]' : ''} ${isTarget ? 'ring-1 ring-inset ring-[var(--app-accent)]' : ''}">
-                <span class="text-xs text-[#222222]">${u.name}</span>
+            <div class="flex justify-between items-center py-1.5 px-3 border-b border-[var(--app-hairline)] last:border-none ${isSelected ? 'bg-[var(--app-accent-soft)] font-bold text-[var(--app-accent)]' : ''} ${isTarget ? 'ring-1 ring-inset ring-[var(--app-accent)]' : ''}">
+                <span class="text-xs text-[var(--app-ink)]">${u.name}</span>
                 <span class="text-sm font-mono">${formatNum(res, 4)}</span>
             </div>
         `;
@@ -441,21 +441,21 @@ function renderUnitConverterTool(container) {
     container.innerHTML = `
         <div class="flex flex-col gap-1.5">
             <div class="grid grid-cols-3 gap-1.5">
-                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-1.5">
-                    <label class="text-[10px] text-[#6a6a6a] block">หมวดหมู่หน่วย</label>
-                    <select id="unitCatSel" class="w-full font-semibold text-xs bg-transparent outline-none text-[#222222]">
+                <div class="themed-subcard p-1.5">
+                    <label class="text-[10px] text-[var(--app-muted)] block">หมวดหมู่หน่วย</label>
+                    <select id="unitCatSel" class="w-full font-semibold text-xs bg-transparent outline-none text-[var(--app-ink)]">
                         ${Object.entries(UNIT_CATEGORIES).map(([k, v]) => `<option value="${k}" ${st.cat === k ? 'selected' : ''}>${v.label}</option>`).join('')}
                     </select>
                 </div>
-                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-1.5">
-                    <label class="text-[10px] text-[#6a6a6a] block">หน่วยตั้งต้น</label>
-                    <select id="unitFromSel" class="w-full font-semibold text-xs bg-transparent outline-none text-[#222222]">
+                <div class="themed-subcard p-1.5">
+                    <label class="text-[10px] text-[var(--app-muted)] block">หน่วยตั้งต้น</label>
+                    <select id="unitFromSel" class="w-full font-semibold text-xs bg-transparent outline-none text-[var(--app-ink)]">
                         ${catObj.units.map((u, i) => `<option value="${i}" ${st.fromIdx === i ? 'selected' : ''}>${u.name}</option>`).join('')}
                     </select>
                 </div>
-                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-1.5">
-                    <label class="text-[10px] text-[#6a6a6a] block">หน่วยปลายทาง</label>
-                    <select id="unitToSel" class="w-full font-semibold text-xs bg-transparent outline-none text-[#222222]">
+                <div class="themed-subcard p-1.5">
+                    <label class="text-[10px] text-[var(--app-muted)] block">หน่วยปลายทาง</label>
+                    <select id="unitToSel" class="w-full font-semibold text-xs bg-transparent outline-none text-[var(--app-ink)]">
                         ${catObj.units.map((u, i) => `<option value="${i}" ${st.targetIdx === i ? 'selected' : ''}>${u.name}</option>`).join('')}
                     </select>
                 </div>
@@ -463,12 +463,12 @@ function renderUnitConverterTool(container) {
 
             ${createKeypadFieldHTML(0, `ค่าที่ต้องการแปลง`, st.val, fromUnit.name.split(' ')[0], 'ป้อนตัวเลข')}
 
-            <div class="bg-white border-2 border-[var(--app-accent)] rounded-[var(--app-btn-radius)] p-3 flex justify-between items-center">
-                <span class="text-xs font-semibold">ผลลัพธ์ปลายทาง<br><span class="font-normal text-[#6a6a6a]">${targetUnit.name}</span></span>
+            <div class="bg-[var(--color-canvas)] border-2 border-[var(--app-accent)] rounded-[var(--app-btn-radius)] p-3 flex justify-between items-center">
+                <span class="text-xs font-semibold">ผลลัพธ์ปลายทาง<br><span class="font-normal text-[var(--app-muted)]">${targetUnit.name}</span></span>
                 <span class="text-xl font-bold text-[var(--app-accent)]">${formatNum(convertValue(inputVal, fromUnit, targetUnit), 6)}</span>
             </div>
 
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] overflow-y-auto max-h-[180px] thin-scroll">
+            <div class="themed-subcard overflow-y-auto max-h-[180px] thin-scroll">
                 ${resultsHTML}
             </div>
         </div>

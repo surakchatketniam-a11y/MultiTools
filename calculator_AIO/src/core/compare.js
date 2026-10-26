@@ -1661,12 +1661,12 @@ function renderCompareMatrix() {
 
     let tableHTML = `
         <thead>
-            <tr class="bg-neutral-100 dark:bg-white/10 border-b border-[var(--app-hairline)]">
-                <th class="p-2.5 font-bold text-neutral-600 dark:text-neutral-300 w-1/3">คุณสมบัติ / ค่าตัวเลข</th>
+            <tr class="bg-[var(--app-surface-soft)] border-b border-[var(--app-hairline)]">
+                <th class="p-2.5 font-bold text-[var(--app-body)] w-1/3">คุณสมบัติ / ค่าตัวเลข</th>
                 ${compData.items.map((item, idx) => `
-                    <th class="p-2.5 text-right font-bold border-l border-[var(--app-hairline)] ${idx === compData.winnerIndex ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-200' : 'text-[var(--color-ink)]'}">
+                    <th class="p-2.5 text-right font-bold border-l border-[var(--app-hairline)] ${idx === compData.winnerIndex ? 'bg-[var(--app-accent-soft)] text-[var(--app-ink)]' : 'text-[var(--app-ink)]'}">
                         <div class="truncate max-w-[170px] inline-block font-bold">${escapeHTML(item.label)}</div>
-                        ${idx === compData.winnerIndex ? '<span class="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">คุ้มค่าที่สุด</span>' : ''}
+                        ${idx === compData.winnerIndex ? '<span class="block text-[10px] font-bold text-[var(--app-accent)] mt-0.5">คุ้มค่าที่สุด</span>' : ''}
                         <div class="mt-1">
                             <button type="button" class="btn-load-compare-set px-2 py-0.5 text-[10px] font-semibold rounded bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition shadow-sm cursor-pointer" data-idx="${idx}">
                                 ใช้ชุดนี้
@@ -1678,12 +1678,12 @@ function renderCompareMatrix() {
         </thead>
         <tbody>
             ${compData.rows.map((row, rIdx) => `
-                <tr class="border-b border-[var(--app-hairline)] ${row.highlight ? 'bg-emerald-50/50 dark:bg-emerald-950/20 font-bold' : (rIdx % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-neutral-50/70 dark:bg-white/5')}">
-                    <td class="p-2.5 text-neutral-600 dark:text-neutral-400 font-medium">
+                <tr class="border-b border-[var(--app-hairline)] ${row.highlight ? 'bg-[var(--app-accent-soft)] font-bold' : (rIdx % 2 === 0 ? 'bg-[var(--color-canvas)]' : 'bg-[var(--app-surface-soft)]')}">
+                    <td class="p-2.5 text-[var(--app-body)] font-medium">
                         ${escapeHTML(row.label)}
                     </td>
                     ${row.values.map((val, vIdx) => `
-                        <td class="p-2.5 text-right border-l border-[var(--app-hairline)] ${vIdx === row.bestIndex ? 'text-emerald-700 dark:text-emerald-300 font-bold' : 'text-[var(--color-ink)] font-semibold'}">
+                        <td class="p-2.5 text-right border-l border-[var(--app-hairline)] ${vIdx === row.bestIndex ? 'text-[var(--app-accent)] font-bold' : 'text-[var(--app-ink)] font-semibold'}">
                             ${escapeHTML(val)} ${vIdx === row.bestIndex ? '✓' : ''}
                         </td>
                     `).join('')}

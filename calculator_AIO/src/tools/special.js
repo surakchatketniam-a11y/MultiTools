@@ -45,9 +45,9 @@ function renderHealthTool(container) {
             ${createKeypadFieldHTML(0, 'น้ำหนัก (Weight)', st.weight, 'กก.', '65')}
             ${createKeypadFieldHTML(1, 'ส่วนสูง (Height)', st.height, 'ซม.', '170')}
             ${createKeypadFieldHTML(2, 'อายุ (Age)', st.age, 'ปี', '28')}
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-2">
-                <label class="text-xs text-[#6a6a6a] block mb-1">ระดับกิจกรรมสำหรับคำนวณ TDEE</label>
-                <select id="healthActivity" class="w-full font-semibold text-sm bg-transparent outline-none text-[#222222]">
+            <div class="themed-subcard p-2">
+                <label class="text-xs text-[var(--app-muted)] block mb-1">ระดับกิจกรรมสำหรับคำนวณ TDEE</label>
+                <select id="healthActivity" class="w-full font-semibold text-sm bg-transparent outline-none text-[var(--app-ink)]">
                     ${activityOptions.map(option => `<option value="${option.value}" ${st.activity === option.value ? 'selected' : ''}>${option.label}</option>`).join('')}
                 </select>
             </div>
@@ -69,7 +69,7 @@ function renderHealthTool(container) {
     if (bmi <= 0) {
         setStatusBanner('empty', 'ป้อนน้ำหนักและส่วนสูงเพื่อคำนวณค่า BMI และ BMR');
     } else {
-        setStatusBanner('success', `BMI: <b class="text-[var(--app-accent)] underline">${formatNum(bmi, 1)}</b> (${bmiCategory})<span class="text-xs font-medium block text-[#3f3f3f]">พลังงานพื้นฐาน (BMR): ${Math.round(bmr).toLocaleString()} kcal/วัน · พลังงานที่ใช้ต่อวัน (TDEE): <b>${Math.round(tdee).toLocaleString()} kcal/วัน</b></span>`);
+        setStatusBanner('success', `BMI: <b class="text-[var(--app-accent)] underline">${formatNum(bmi, 1)}</b> (${bmiCategory})<span class="text-xs font-medium block text-[var(--app-body)]">พลังงานพื้นฐาน (BMR): ${Math.round(bmr).toLocaleString()} kcal/วัน · พลังงานที่ใช้ต่อวัน (TDEE): <b>${Math.round(tdee).toLocaleString()} kcal/วัน</b></span>`);
     }
 }
 
@@ -90,30 +90,30 @@ function renderOvulationTool(container) {
 
     container.innerHTML = `
         <div class="flex flex-col gap-3 p-1">
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow: var(--app-elevation);">
+            <div class="themed-tool-card p-4 space-y-3" style="box-shadow: var(--app-elevation);">
                 <div>
-                    <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันแรกของประจำเดือนครั้งล่าสุด</label>
+                    <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">วันแรกของประจำเดือนครั้งล่าสุด</label>
                     <input type="date" id="ovuDateInput" value="${st.lastPeriodDate}" class="airbnb-input w-full">
                 </div>
                 <div>
-                    <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">ความยาวรอบเดือนเฉลี่ย: <b class="text-[var(--app-accent)]">${cycle} วัน</b></label>
+                    <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">ความยาวรอบเดือนเฉลี่ย: <b class="text-[var(--app-accent)]">${cycle} วัน</b></label>
                     <input type="range" id="ovuCycleInput" min="21" max="35" value="${cycle}" class="w-full accent-[var(--app-accent)]">
-                    <div class="flex justify-between text-[11px] text-[#6a6a6a]"><span>21 วัน</span><span>28 วัน (ปกติ)</span><span>35 วัน</span></div>
+                    <div class="flex justify-between text-[11px] text-[var(--app-muted)]"><span>21 วัน</span><span>28 วัน (ปกติ)</span><span>35 วัน</span></div>
                 </div>
             </div>
 
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow: var(--app-elevation);">
-                <div class="flex justify-between items-center border-b border-[#ebebeb] pb-2.5">
-                    <span class="text-xs font-semibold text-[#222222]">วันตกไข่โดยประมาณ</span>
+            <div class="themed-tool-card p-4 space-y-3" style="box-shadow: var(--app-elevation);">
+                <div class="flex justify-between items-center border-b border-[var(--app-hairline)] pb-2.5">
+                    <span class="text-xs font-semibold text-[var(--app-ink)]">วันตกไข่โดยประมาณ</span>
                     <span class="text-sm font-bold text-[var(--app-accent)]">${formatThaiDate(toISO(ovulationDate))}</span>
                 </div>
-                <div class="flex justify-between items-center border-b border-[#ebebeb] pb-2.5">
-                    <span class="text-xs font-semibold text-[#222222]">ช่วงเวลาเจริญพันธุ์</span>
+                <div class="flex justify-between items-center border-b border-[var(--app-hairline)] pb-2.5">
+                    <span class="text-xs font-semibold text-[var(--app-ink)]">ช่วงเวลาเจริญพันธุ์</span>
                     <span class="text-xs font-bold text-[var(--app-accent)]">${formatThaiDate(toISO(fertileStart))} - ${formatThaiDate(toISO(fertileEnd))}</span>
                 </div>
                 <div class="flex justify-between items-center">
-                    <span class="text-xs font-semibold text-[#6a6a6a]">ประจำเดือนรอบถัดไป</span>
-                    <span class="text-xs font-bold text-[#222222]">${formatThaiDate(toISO(nextPeriod))}</span>
+                    <span class="text-xs font-semibold text-[var(--app-muted)]">ประจำเดือนรอบถัดไป</span>
+                    <span class="text-xs font-bold text-[var(--app-ink)]">${formatThaiDate(toISO(nextPeriod))}</span>
                 </div>
             </div>
         </div>
@@ -723,7 +723,7 @@ function renderFuelEffTool(container) {
     if (kmPerLiter <= 0) {
         setStatusBanner('empty', 'ป้อนระยะทางที่วิ่งและปริมาณน้ำมันที่ใช้');
     } else {
-        setStatusBanner('success', `อัตราสิ้นเปลือง: <span class="text-lg text-[var(--app-accent)] underline">${formatNum(kmPerLiter, 2)} กม./ลิตร</span><span class="text-xs font-medium block text-[#3f3f3f]">หรือคิดเป็น ${formatNum(literPer100Km, 2)} ลิตร ต่อ 100 กม.</span>`);
+        setStatusBanner('success', `อัตราสิ้นเปลือง: <span class="text-lg text-[var(--app-accent)] underline">${formatNum(kmPerLiter, 2)} กม./ลิตร</span><span class="text-xs font-medium block text-[var(--app-body)]">หรือคิดเป็น ${formatNum(literPer100Km, 2)} ลิตร ต่อ 100 กม.</span>`);
     }
 }
 
@@ -736,7 +736,7 @@ function renderAreaCostTool(container) {
     const rate = parseNumericInput(st.rate), price = evaluateArithmeticExpression(st.price), rounds = numberOrDefault(st.rounds, 1);
     const totalRai = rai + ngan / 4 + wa / 400;
     const qty = totalRai * rate * rounds, total = qty * price;
-    container.innerHTML = `<div class="flex flex-col gap-3 p-1"><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)"><div class="text-xs text-[#6a6a6a]">พื้นที่แบบผสม: 1 ไร่ = 4 งาน = 400 ตารางวา</div><div class="grid grid-cols-3 gap-2">${[['areaRai','ไร่',st.rai],['areaNgan','งาน',st.ngan],['areaWa','ตารางวา',st.wa]].map(([id,l,v])=>`<div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">${l}</label><input id="${id}" type="number" min="0" value="${v}" class="airbnb-input w-full"></div>`).join('')}</div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">อัตราใช้ (กก./ไร่)</label><input id="areaRate" type="number" value="${st.rate}" placeholder="เช่น 25" class="airbnb-input w-full"></div><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">ราคา (บาท/กก.)</label><input id="areaPrice" type="text" inputmode="decimal" value="${st.price}" placeholder="เช่น 980/50" class="airbnb-input w-full"><div class="text-[10px] text-[#6a6a6a] mt-1">รองรับ + - * / เช่น 980/50 = ราคาต่อกก.</div></div></div><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">จำนวนรอบ</label><input id="areaRounds" type="number" min="1" value="${st.rounds}" class="airbnb-input w-full"></div></div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2" style="box-shadow:var(--app-elevation)"><div class="flex justify-between"><span>พื้นที่รวม</span><b>${formatNum(totalRai, 4)} ไร่</b></div><div class="flex justify-between"><span>ปริมาณรวม</span><b>${formatNum(qty, 2)} กก.</b></div><div class="flex justify-between"><span>ต้นทุนต่อไร่</span><b>${formatMoney((rate || 0) * (price || 0) * rounds)} บาท</b></div></div></div>`;
+    container.innerHTML = `<div class="flex flex-col gap-3 p-1"><div class="themed-tool-card p-4 space-y-3" style="box-shadow:var(--app-elevation)"><div class="text-xs text-[var(--app-muted)]">พื้นที่แบบผสม: 1 ไร่ = 4 งาน = 400 ตารางวา</div><div class="grid grid-cols-3 gap-2">${[['areaRai','ไร่',st.rai],['areaNgan','งาน',st.ngan],['areaWa','ตารางวา',st.wa]].map(([id,l,v])=>`<div><label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">${l}</label><input id="${id}" type="number" min="0" value="${v}" class="airbnb-input w-full"></div>`).join('')}</div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">อัตราใช้ (กก./ไร่)</label><input id="areaRate" type="number" value="${st.rate}" placeholder="เช่น 25" class="airbnb-input w-full"></div><div><label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">ราคา (บาท/กก.)</label><input id="areaPrice" type="text" inputmode="decimal" value="${st.price}" placeholder="เช่น 980/50" class="airbnb-input w-full"><div class="text-[10px] text-[var(--app-muted)] mt-1">รองรับ + - * / เช่น 980/50 = ราคาต่อกก.</div></div></div><div><label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">จำนวนรอบ</label><input id="areaRounds" type="number" min="1" value="${st.rounds}" class="airbnb-input w-full"></div></div><div class="themed-tool-card p-4 space-y-2" style="box-shadow:var(--app-elevation)"><div class="flex justify-between"><span>พื้นที่รวม</span><b>${formatNum(totalRai, 4)} ไร่</b></div><div class="flex justify-between"><span>ปริมาณรวม</span><b>${formatNum(qty, 2)} กก.</b></div><div class="flex justify-between"><span>ต้นทุนต่อไร่</span><b>${formatMoney((rate || 0) * (price || 0) * rounds)} บาท</b></div></div></div>`;
     const areaPriceInput = document.getElementById('areaPrice');
     const pricePreview = document.createElement('div');
     pricePreview.className = 'text-xs font-semibold text-[var(--app-accent)] mt-1';
@@ -777,7 +777,7 @@ function renderHexTool(container) {
                 ].map(item => `
                     <div class="clev-field-box ${st.activeBase === item.base ? 'active-field' : ''}" data-base="${item.base}">
                         <span class="text-xs font-bold text-[var(--app-accent)]">${item.label}</span>
-                        <span class="font-mono font-semibold text-sm break-all text-[#222222]">${item.val}</span>
+                        <span class="font-mono font-semibold text-sm break-all text-[var(--app-ink)]">${item.val}</span>
                     </div>
                 `).join('')}
             </div>

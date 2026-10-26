@@ -1,29 +1,25 @@
-const CACHE_NAME = 'multitools-calculator-v43';
+const CACHE_NAME = 'multitools-calculator-v44';
 const STATIC_ASSETS = [
     './',
     './index.html',
     './manifest.json',
-    './src/bundle.js?v=40',
-    './src/catalog.js',
-    './src/core/formatters.js',
-    './src/core/dates.js',
-    './src/core/rates.js',
-    './src/core/export.js',
-    './src/core/history.js',
-    './src/core/compare.js',
-    './src/core/lotto.js',
-    './src/ui/theme.js',
-    './src/ui/drawer.js',
-    './src/ui/keypad.js',
-    './src/tools/shop.js',
-    './src/tools/biz.js',
-    './src/tools/finance.js',
-    './src/tools/work.js',
-    './src/tools/special.js',
-    './src/tools/lotto.js',
-    './src/ui/actions.js',
-    './src/ui/modals.js'
+    './favicon.svg',
+    './favicon.ico',
+    './src/bundle.js?v=40'
 ];
+
+function isLiveApiRequest(urlString) {
+    try {
+        const url = new URL(urlString);
+        return (
+            url.pathname.startsWith('/api/') ||
+            url.hostname === 'api.frankfurter.dev' ||
+            url.hostname === 'api.chnwt.dev'
+        );
+    } catch (_) {
+        return false;
+    }
+}
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
@@ -48,6 +44,22 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET') return;
+
+    // Live rate/data endpoints: Network-first with offline cache fallback
+    if (isLiveApiRequest(event.request.url)) {
+        event.respondWith(
+            fetch(event.request)
+                .then((response) => {
+                    if (response && response.status === 200) {
+                        const copy = response.clone();
+                        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+                    }
+                    return response;
+                })
+                .catch(() => caches.match(event.request))
+        );
+        return;
+    }
 
     // Navigation requests (HTML page): Network-first with cache fallback
     if (event.request.mode === 'navigate') {

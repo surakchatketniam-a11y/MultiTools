@@ -671,8 +671,8 @@ function setStatusBanner(stateType, htmlContent) {
             scheduleRecordHistory(appState.activeToolId);
         }
         if (isAirbnb) {
-            banner.className = 'status-banner !border-[#ff385c] !bg-[#fff8f9]';
-            textEl.className = `text-[#222222] text-[0.98rem] font-semibold leading-snug w-full ${baseTextPad}`;
+            banner.className = 'status-banner theme-success';
+            textEl.className = `text-[var(--app-ink)] text-[0.98rem] font-semibold leading-snug w-full ${baseTextPad}`;
         } else if (isTogether) {
             banner.className = 'status-banner theme-success';
             textEl.className = `text-[var(--app-ink)] text-[1rem] font-bold leading-snug w-full ${baseTextPad}`;
@@ -680,13 +680,13 @@ function setStatusBanner(stateType, htmlContent) {
             banner.className = 'status-banner theme-success';
             textEl.className = `text-[var(--app-ink)] text-[1rem] font-bold leading-snug w-full ${baseTextPad}`;
         } else {
-            banner.className = 'status-banner !bg-[#f0fdf4] !border-[#16a34a]';
-            textEl.className = `text-[#15803d] text-[1rem] font-bold leading-snug w-full ${baseTextPad}`;
+            banner.className = 'status-banner theme-success';
+            textEl.className = `text-[var(--app-ink)] text-[1rem] font-bold leading-snug w-full ${baseTextPad}`;
         }
         textEl.innerHTML = htmlContent;
     } else {
         banner.className = 'status-banner';
-        textEl.className = `text-[#222222] text-[0.98rem] font-medium leading-snug w-full ${baseTextPad}`;
+        textEl.className = `text-[var(--app-ink)] text-[0.98rem] font-medium leading-snug w-full ${baseTextPad}`;
         textEl.innerHTML = htmlContent;
     }
 }

@@ -2832,7 +2832,7 @@ function showHistoryToast(message, isSuccess = true) {
         document.body.appendChild(toast);
     }
     toast.textContent = message;
-    toast.className = `fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-xs font-semibold shadow-lg transition-all duration-300 pointer-events-none ${isSuccess ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900' : 'bg-red-600 text-white'} opacity-100 translate-y-0`;
+    toast.className = `fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-xs font-semibold shadow-lg transition-all duration-300 pointer-events-none ${isSuccess ? 'bg-[var(--app-ink)] text-[var(--color-canvas)]' : 'bg-red-600 text-white'} opacity-100 translate-y-0`;
     clearTimeout(toast._timer);
     toast._timer = setTimeout(() => {
         toast.classList.remove('opacity-100', 'translate-y-0');
@@ -2852,15 +2852,15 @@ function switchDrawerTab(tab) {
     const historyArea = document.getElementById('sidebarHistoryArea');
 
     if (tab === 'history') {
-        if (tabHistory) tabHistory.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 bg-white text-[#222222] shadow-sm cursor-pointer';
-        if (tabTools) tabTools.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 text-[#6a6a6a] hover:text-[#222222] cursor-pointer';
+        if (tabHistory) tabHistory.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 bg-[var(--color-canvas)] text-[var(--app-ink)] shadow-sm cursor-pointer';
+        if (tabTools) tabTools.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 text-[var(--app-muted)] hover:text-[var(--app-ink)] cursor-pointer';
         searchContainer?.classList.add('hidden');
         contentArea?.classList.add('hidden');
         historyArea?.classList.remove('hidden');
         renderHistoryPanel();
     } else {
-        if (tabTools) tabTools.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 bg-white text-[#222222] shadow-sm cursor-pointer';
-        if (tabHistory) tabHistory.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 text-[#6a6a6a] hover:text-[#222222] cursor-pointer';
+        if (tabTools) tabTools.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 bg-[var(--color-canvas)] text-[var(--app-ink)] shadow-sm cursor-pointer';
+        if (tabHistory) tabHistory.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 text-[var(--app-muted)] hover:text-[var(--app-ink)] cursor-pointer';
         searchContainer?.classList.remove('hidden');
         contentArea?.classList.remove('hidden');
         historyArea?.classList.add('hidden');
@@ -2881,30 +2881,30 @@ function updateHistoryBadge() {
 
 function createHistoryCardHTML(item) {
     return `
-        <div class="history-item-card bg-white dark:bg-[#262626] border border-[var(--app-hairline)] rounded-xl p-2.5 shadow-sm hover:border-[var(--app-accent)] transition cursor-pointer group" data-id="${item.id}">
+        <div class="history-item-card themed-subcard rounded-xl p-2.5 shadow-sm hover:border-[var(--app-accent)] transition cursor-pointer group" data-id="${item.id}">
             <div class="flex items-start justify-between gap-1.5">
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-1.5 flex-wrap">
-                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--app-accent)]/10 text-[var(--app-accent)]">
+                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
                             ${escapeHTML(item.toolTitle)}
                         </span>
-                        ${item.label ? `<span class="text-xs font-bold text-[#222] dark:text-white truncate max-w-[160px]">${escapeHTML(item.label)}</span>` : ''}
+                        ${item.label ? `<span class="text-xs font-bold text-[var(--app-ink)] truncate max-w-[160px]">${escapeHTML(item.label)}</span>` : ''}
                     </div>
-                    <div class="text-xs font-semibold text-[#1a1a1a] dark:text-[#eee] mt-1 truncate">
+                    <div class="text-xs font-semibold text-[var(--app-ink)] mt-1 truncate">
                         ${escapeHTML(item.shortSummary || 'ผลการคำนวณ')}
                     </div>
-                    ${item.detailText ? `<div class="text-[11px] text-[#666] dark:text-[#999] mt-0.5 truncate">${escapeHTML(item.detailText)}</div>` : ''}
+                    ${item.detailText ? `<div class="text-[11px] text-[var(--app-body)] mt-0.5 truncate">${escapeHTML(item.detailText)}</div>` : ''}
                 </div>
                 <div class="flex items-center gap-0.5 shrink-0 ml-1">
-                    <button type="button" class="btn-pin-history p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm" title="${item.isSaved ? 'เลิกบันทึก' : 'บันทึกเป็นชุดเปรียบเทียบ'}" data-id="${item.id}">
+                    <button type="button" class="btn-pin-history p-1.5 rounded-full hover:bg-[var(--app-surface-soft)] text-sm" title="${item.isSaved ? 'เลิกบันทึก' : 'บันทึกเป็นชุดเปรียบเทียบ'}" data-id="${item.id}">
                         ${item.isSaved ? '★' : '☆'}
                     </button>
-                    ${item.isSaved ? `<button type="button" class="btn-dup-history p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs" title="ทำสำเนาชุดนี้" data-id="${item.id}">ทำสำเนา</button>` : ''}
-                    ${item.isSaved ? `<button type="button" class="btn-rename-history p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs" title="เปลี่ยนชื่อ" data-id="${item.id}">เปลี่ยนชื่อ</button>` : ''}
+                    ${item.isSaved ? `<button type="button" class="btn-dup-history p-1.5 rounded-full hover:bg-[var(--app-surface-soft)] text-xs" title="ทำสำเนาชุดนี้" data-id="${item.id}">ทำสำเนา</button>` : ''}
+                    ${item.isSaved ? `<button type="button" class="btn-rename-history p-1.5 rounded-full hover:bg-[var(--app-surface-soft)] text-xs" title="เปลี่ยนชื่อ" data-id="${item.id}">เปลี่ยนชื่อ</button>` : ''}
                     <button type="button" class="btn-del-history p-1.5 rounded-full hover:bg-red-50 text-neutral-400 hover:text-red-500 text-xs" title="ลบรายการนี้" data-id="${item.id}">✕</button>
                 </div>
             </div>
-            <div class="flex items-center justify-between mt-2 pt-1.5 border-t border-[var(--color-hairline-soft)] text-[10px] text-[#888]">
+            <div class="flex items-center justify-between mt-2 pt-1.5 border-t border-[var(--app-hairline)] text-[10px] text-[var(--app-muted)]">
                 <span>${escapeHTML(item.timeDisplay)}</span>
                 <span class="text-[var(--app-accent)] font-semibold group-hover:underline">แตะเพื่อโหลด ↗</span>
             </div>
@@ -4742,12 +4742,12 @@ function renderCompareMatrix() {
 
     let tableHTML = `
         <thead>
-            <tr class="bg-neutral-100 dark:bg-white/10 border-b border-[var(--app-hairline)]">
-                <th class="p-2.5 font-bold text-neutral-600 dark:text-neutral-300 w-1/3">คุณสมบัติ / ค่าตัวเลข</th>
+            <tr class="bg-[var(--app-surface-soft)] border-b border-[var(--app-hairline)]">
+                <th class="p-2.5 font-bold text-[var(--app-body)] w-1/3">คุณสมบัติ / ค่าตัวเลข</th>
                 ${compData.items.map((item, idx) => `
-                    <th class="p-2.5 text-right font-bold border-l border-[var(--app-hairline)] ${idx === compData.winnerIndex ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-200' : 'text-[var(--color-ink)]'}">
+                    <th class="p-2.5 text-right font-bold border-l border-[var(--app-hairline)] ${idx === compData.winnerIndex ? 'bg-[var(--app-accent-soft)] text-[var(--app-ink)]' : 'text-[var(--app-ink)]'}">
                         <div class="truncate max-w-[170px] inline-block font-bold">${escapeHTML(item.label)}</div>
-                        ${idx === compData.winnerIndex ? '<span class="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">คุ้มค่าที่สุด</span>' : ''}
+                        ${idx === compData.winnerIndex ? '<span class="block text-[10px] font-bold text-[var(--app-accent)] mt-0.5">คุ้มค่าที่สุด</span>' : ''}
                         <div class="mt-1">
                             <button type="button" class="btn-load-compare-set px-2 py-0.5 text-[10px] font-semibold rounded bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition shadow-sm cursor-pointer" data-idx="${idx}">
                                 ใช้ชุดนี้
@@ -4759,12 +4759,12 @@ function renderCompareMatrix() {
         </thead>
         <tbody>
             ${compData.rows.map((row, rIdx) => `
-                <tr class="border-b border-[var(--app-hairline)] ${row.highlight ? 'bg-emerald-50/50 dark:bg-emerald-950/20 font-bold' : (rIdx % 2 === 0 ? 'bg-white dark:bg-transparent' : 'bg-neutral-50/70 dark:bg-white/5')}">
-                    <td class="p-2.5 text-neutral-600 dark:text-neutral-400 font-medium">
+                <tr class="border-b border-[var(--app-hairline)] ${row.highlight ? 'bg-[var(--app-accent-soft)] font-bold' : (rIdx % 2 === 0 ? 'bg-[var(--color-canvas)]' : 'bg-[var(--app-surface-soft)]')}">
+                    <td class="p-2.5 text-[var(--app-body)] font-medium">
                         ${escapeHTML(row.label)}
                     </td>
                     ${row.values.map((val, vIdx) => `
-                        <td class="p-2.5 text-right border-l border-[var(--app-hairline)] ${vIdx === row.bestIndex ? 'text-emerald-700 dark:text-emerald-300 font-bold' : 'text-[var(--color-ink)] font-semibold'}">
+                        <td class="p-2.5 text-right border-l border-[var(--app-hairline)] ${vIdx === row.bestIndex ? 'text-[var(--app-accent)] font-bold' : 'text-[var(--app-ink)] font-semibold'}">
                             ${escapeHTML(val)} ${vIdx === row.bestIndex ? '✓' : ''}
                         </td>
                     `).join('')}
@@ -5217,11 +5217,11 @@ function applyTheme(themeName) {
     const btnTogether = document.getElementById('menuThemeTogether');
     const btnFerrari = document.getElementById('menuThemeFerrari');
     if (btnAirbnb && btnClassic && btnDark && btnTogether && btnFerrari) {
-        btnAirbnb.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isAirbnb ? 'border-[#222222] bg-[#f7f7f7] text-[#222222]' : 'border-[#dddddd] text-[#6a6a6a]'}`;
-        btnClassic.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${selected === 'classic' ? 'border-[#2b3990] bg-[#eef1ff] text-[#2b3990]' : 'border-[#dddddd] text-[#6a6a6a]'}`;
-        btnDark.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isDark ? 'border-[#d98cff] bg-[#3a2348] text-[#d98cff]' : 'border-[#dddddd] text-[#6a6a6a]'}`;
-        btnTogether.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isTogether ? 'border-[#fc4c02] bg-[#313641] text-white' : 'border-[#dddddd] text-[#6a6a6a]'}`;
-        btnFerrari.className = `col-span-2 py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isFerrari ? 'border-[#da291c] bg-[#303030] text-white' : 'border-[#dddddd] text-[#6a6a6a]'}`;
+        btnAirbnb.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isAirbnb ? 'border-[#222222] bg-[#f7f7f7] text-[#222222]' : 'border-[var(--app-hairline)] text-[var(--app-muted)]'}`;
+        btnClassic.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${selected === 'classic' ? 'border-[#2b3990] bg-[#eef1ff] text-[#2b3990]' : 'border-[var(--app-hairline)] text-[var(--app-muted)]'}`;
+        btnDark.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isDark ? 'border-[#d98cff] bg-[#3a2348] text-[#d98cff]' : 'border-[var(--app-hairline)] text-[var(--app-muted)]'}`;
+        btnTogether.className = `py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isTogether ? 'border-[#fc4c02] bg-[#313641] text-white' : 'border-[var(--app-hairline)] text-[var(--app-muted)]'}`;
+        btnFerrari.className = `col-span-2 py-1.5 px-2 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition ${isFerrari ? 'border-[#da291c] bg-[#303030] text-white' : 'border-[var(--app-hairline)] text-[var(--app-muted)]'}`;
     }
 
     if (typeof renderActiveTool === 'function') {
@@ -6276,10 +6276,10 @@ function createKeypadFieldHTML(fieldIndex, label, value, unitSuffix = '', placeh
     // Touch devices use the in-app keypad only; PC keeps the native keyboard.
     const sharedInputMode = window.matchMedia('(pointer: coarse)').matches ? 'none' : 'decimal';
     return `<div><div class="clev-field-box ${isActive ? 'active-field' : ''}" data-field-index="${fieldIndex}">
-        <label for="numeric-field-${fieldIndex}" class="text-sm font-medium text-[#222222]">${label}</label>
+        <label for="numeric-field-${fieldIndex}" class="text-sm font-medium text-[var(--app-ink)]">${label}</label>
         <div class="flex items-center gap-1.5 min-w-0" style="max-width:55%">
             <input id="numeric-field-${fieldIndex}" data-shared-field="${fieldIndex}" type="text" inputmode="${sharedInputMode}" autocomplete="off" spellcheck="false" class="shared-number-input" aria-invalid="${invalid}" ${invalid ? `aria-describedby="numeric-error-${fieldIndex}"` : ''} value="${escapeHTML(displayVal)}" placeholder="${escapeHTML(placeholder)}">
-            ${unitSuffix ? `<span class="text-xs font-medium text-[#6a6a6a]">${unitSuffix}</span>` : ''}
+            ${unitSuffix ? `<span class="text-xs font-medium text-[var(--app-muted)]">${unitSuffix}</span>` : ''}
         </div>
     </div>${invalid ? `<p id="numeric-error-${fieldIndex}" role="alert" class="text-xs px-3 py-1">กรุณากรอกตัวเลข เช่น 1,000 หรือ ๑๐๐๐</p>` : ''}</div>`;
 }
@@ -6491,11 +6491,11 @@ function renderUnitPriceTool(container) {
                     calcRow.querySelector('.cell-label span').textContent = `${rows[index].id}${isBest ? ' ★' : ''}`;
                     if (item) {
                         const highlightClass = isBest
-                            ? (isAirbnb ? 'text-[#ff385c] font-bold' : appState.theme === 'together' ? 'text-[var(--app-accent)] font-bold' : 'text-green-700 font-bold')
-                            : 'text-[#222222] font-semibold';
+                            ? (isAirbnb ? 'text-[var(--app-accent)] font-bold' : appState.theme === 'together' ? 'text-[var(--app-accent)] font-bold' : 'text-green-700 font-bold')
+                            : 'text-[var(--app-ink)] font-semibold';
                         const unitLabelClass = isBest
-                            ? (isAirbnb ? 'text-[#ff385c]' : appState.theme === 'together' ? 'text-[var(--app-accent)]' : 'text-green-700')
-                            : 'text-[#717171]';
+                            ? (isAirbnb ? 'text-[var(--app-accent)]' : appState.theme === 'together' ? 'text-[var(--app-accent)]' : 'text-green-700')
+                            : 'text-[var(--app-muted)]';
                         cell.innerHTML = `<div class="flex flex-col items-center justify-center leading-tight py-0.5"><span class="text-[1.02rem] ${highlightClass}">${formatUnitPrice(item.normalizedPrice)}</span><span class="text-[10px] ${unitLabelClass} font-medium">บาท/${item.baseUnit}</span></div>`;
                     } else {
                         cell.innerHTML = `<span class="placeholder-text text-xs">ราคาต่อหน่วย</span>`;
@@ -6509,7 +6509,7 @@ function renderUnitPriceTool(container) {
                 } else if (hasMismatchedFamilies) {
                     setStatusBanner('error', 'ชนิดหน่วยไม่ตรงกัน (กรุณาเลือกหน่วยกลุ่มเดียวกัน เช่น กรัม กับ กิโลกรัม)');
                 } else if (liveItems.length === 1) {
-                    setStatusBanner('info', `ตัวเลือก <b>${liveItems[0].id}</b>: ${formatUnitPrice(liveItems[0].normalizedPrice)} บาท/${liveItems[0].baseUnit} <span class="text-xs font-normal text-[#6a6a6a] block">ป้อนแถวอื่นเพิ่มเพื่อเปรียบเทียบความคุ้มค่า</span>`);
+                    setStatusBanner('info', `ตัวเลือก <b>${liveItems[0].id}</b>: ${formatUnitPrice(liveItems[0].normalizedPrice)} บาท/${liveItems[0].baseUnit} <span class="text-xs font-normal text-[var(--app-muted)] block">ป้อนแถวอื่นเพิ่มเพื่อเปรียบเทียบความคุ้มค่า</span>`);
                 } else {
                     const best = liveItems.find(item => Math.abs(item.normalizedPrice - liveMin) < 1e-7);
                     const bestLabels = liveItems.filter(item => Math.abs(item.normalizedPrice - liveMin) < 1e-7).map(item => item.id).join(', ');
@@ -6517,7 +6517,7 @@ function renderUnitPriceTool(container) {
                     if (next) {
                         const pct = (((next.normalizedPrice - best.normalizedPrice) / next.normalizedPrice) * 100).toFixed(1);
                         const diff = next.normalizedPrice - best.normalizedPrice;
-                        setStatusBanner('success', `<span class="text-[var(--app-accent)]">★ ตัวเลือก ${bestLabels} คุ้มที่สุด</span> (${formatUnitPrice(best.normalizedPrice)} บาท/${best.baseUnit})<span class="text-xs font-medium block text-[#3f3f3f]">ถูกกว่าตัวเลือก ${next.id} ${pct}% หรือประหยัด ${formatUnitPrice(diff)} บาท/${best.baseUnit}</span>`);
+                        setStatusBanner('success', `<span class="text-[var(--app-accent)]">★ ตัวเลือก ${bestLabels} คุ้มที่สุด</span> (${formatUnitPrice(best.normalizedPrice)} บาท/${best.baseUnit})<span class="text-xs font-medium block text-[var(--app-body)]">ถูกกว่าตัวเลือก ${next.id} ${pct}% หรือประหยัด ${formatUnitPrice(diff)} บาท/${best.baseUnit}</span>`);
                     } else {
                         setStatusBanner('success', `ตัวเลือก <b>${bestLabels}</b> ราคาต่อหน่วยเท่ากัน (${formatUnitPrice(liveMin)} บาท/${best.baseUnit})`);
                     }
@@ -6689,7 +6689,7 @@ function renderDiscountTool(container) {
 
             <div class="flex gap-1.5 pt-0.5">
                 ${[10, 15, 20, 25, 30, 50, 70].map(pct => `
-                    <button class="quick-disc flex-1 bg-white border border-[var(--app-hairline)] rounded-full py-1 text-xs font-semibold text-[var(--app-accent)] hover:bg-[var(--app-accent-soft)] transition" data-pct="${pct}">-${pct}%</button>
+                    <button class="quick-disc flex-1 bg-[var(--color-canvas)] border border-[var(--app-hairline)] rounded-full py-1 text-xs font-semibold text-[var(--app-accent)] hover:bg-[var(--app-accent-soft)] transition" data-pct="${pct}">-${pct}%</button>
                 `).join('')}
             </div>
         </div>
@@ -6708,7 +6708,7 @@ function renderDiscountTool(container) {
     } else if (isOver100) {
         setStatusBanner('error', `ส่วนลดไม่ควรเกิน 100% (คำนวณสูงสุดที่ 100%) | ราคาสุทธิ: ${formatMoney(finalPrice)} บาท`);
     } else {
-        setStatusBanner('success', `ราคาสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(finalPrice)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">ประหยัดไป ${formatMoney(saved)} บาท</span>`);
+        setStatusBanner('success', `ราคาสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(finalPrice)} บาท</span><span class="text-xs font-medium block text-[var(--app-body)]">ประหยัดไป ${formatMoney(saved)} บาท</span>`);
     }
 }
 
@@ -6787,8 +6787,8 @@ function renderUnitConverterTool(container) {
         const isSelected = idx === st.fromIdx;
         const isTarget = idx === st.targetIdx;
         return `
-            <div class="flex justify-between items-center py-1.5 px-3 border-b border-[#ebebeb] last:border-none ${isSelected ? 'bg-[var(--app-accent-soft)] font-bold text-[var(--app-accent)]' : ''} ${isTarget ? 'ring-1 ring-inset ring-[var(--app-accent)]' : ''}">
-                <span class="text-xs text-[#222222]">${u.name}</span>
+            <div class="flex justify-between items-center py-1.5 px-3 border-b border-[var(--app-hairline)] last:border-none ${isSelected ? 'bg-[var(--app-accent-soft)] font-bold text-[var(--app-accent)]' : ''} ${isTarget ? 'ring-1 ring-inset ring-[var(--app-accent)]' : ''}">
+                <span class="text-xs text-[var(--app-ink)]">${u.name}</span>
                 <span class="text-sm font-mono">${formatNum(res, 4)}</span>
             </div>
         `;
@@ -6797,21 +6797,21 @@ function renderUnitConverterTool(container) {
     container.innerHTML = `
         <div class="flex flex-col gap-1.5">
             <div class="grid grid-cols-3 gap-1.5">
-                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-1.5">
-                    <label class="text-[10px] text-[#6a6a6a] block">หมวดหมู่หน่วย</label>
-                    <select id="unitCatSel" class="w-full font-semibold text-xs bg-transparent outline-none text-[#222222]">
+                <div class="themed-subcard p-1.5">
+                    <label class="text-[10px] text-[var(--app-muted)] block">หมวดหมู่หน่วย</label>
+                    <select id="unitCatSel" class="w-full font-semibold text-xs bg-transparent outline-none text-[var(--app-ink)]">
                         ${Object.entries(UNIT_CATEGORIES).map(([k, v]) => `<option value="${k}" ${st.cat === k ? 'selected' : ''}>${v.label}</option>`).join('')}
                     </select>
                 </div>
-                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-1.5">
-                    <label class="text-[10px] text-[#6a6a6a] block">หน่วยตั้งต้น</label>
-                    <select id="unitFromSel" class="w-full font-semibold text-xs bg-transparent outline-none text-[#222222]">
+                <div class="themed-subcard p-1.5">
+                    <label class="text-[10px] text-[var(--app-muted)] block">หน่วยตั้งต้น</label>
+                    <select id="unitFromSel" class="w-full font-semibold text-xs bg-transparent outline-none text-[var(--app-ink)]">
                         ${catObj.units.map((u, i) => `<option value="${i}" ${st.fromIdx === i ? 'selected' : ''}>${u.name}</option>`).join('')}
                     </select>
                 </div>
-                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-1.5">
-                    <label class="text-[10px] text-[#6a6a6a] block">หน่วยปลายทาง</label>
-                    <select id="unitToSel" class="w-full font-semibold text-xs bg-transparent outline-none text-[#222222]">
+                <div class="themed-subcard p-1.5">
+                    <label class="text-[10px] text-[var(--app-muted)] block">หน่วยปลายทาง</label>
+                    <select id="unitToSel" class="w-full font-semibold text-xs bg-transparent outline-none text-[var(--app-ink)]">
                         ${catObj.units.map((u, i) => `<option value="${i}" ${st.targetIdx === i ? 'selected' : ''}>${u.name}</option>`).join('')}
                     </select>
                 </div>
@@ -6819,12 +6819,12 @@ function renderUnitConverterTool(container) {
 
             ${createKeypadFieldHTML(0, `ค่าที่ต้องการแปลง`, st.val, fromUnit.name.split(' ')[0], 'ป้อนตัวเลข')}
 
-            <div class="bg-white border-2 border-[var(--app-accent)] rounded-[var(--app-btn-radius)] p-3 flex justify-between items-center">
-                <span class="text-xs font-semibold">ผลลัพธ์ปลายทาง<br><span class="font-normal text-[#6a6a6a]">${targetUnit.name}</span></span>
+            <div class="bg-[var(--color-canvas)] border-2 border-[var(--app-accent)] rounded-[var(--app-btn-radius)] p-3 flex justify-between items-center">
+                <span class="text-xs font-semibold">ผลลัพธ์ปลายทาง<br><span class="font-normal text-[var(--app-muted)]">${targetUnit.name}</span></span>
                 <span class="text-xl font-bold text-[var(--app-accent)]">${formatNum(convertValue(inputVal, fromUnit, targetUnit), 6)}</span>
             </div>
 
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] overflow-y-auto max-h-[180px] thin-scroll">
+            <div class="themed-subcard overflow-y-auto max-h-[180px] thin-scroll">
                 ${resultsHTML}
             </div>
         </div>
@@ -7677,12 +7677,12 @@ function renderVatWhtTool(container) {
     const whtAmount = base * wht / 100;
     const net = gross - whtAmount;
     container.innerHTML = `<div class="flex flex-col gap-3 p-1">
-        <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)">
-            <div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">ยอดเงิน</label><input id="whtAmount" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.amount))}" placeholder="เช่น 10,000" class="airbnb-input w-full"></div>
-            <div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">ยอดที่กรอกคือ</label><select id="whtMode" class="airbnb-input w-full"><option value="before" ${st.mode === 'before' ? 'selected' : ''}>ยอดก่อน VAT</option><option value="after" ${st.mode === 'after' ? 'selected' : ''}>ยอดรวม VAT แล้ว</option></select></div><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">VAT (%)</label><input id="whtVat" type="number" value="${st.vatRate}" class="airbnb-input w-full"></div></div>
-            <div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">หัก ณ ที่จ่าย (%)</label><select id="whtRate" class="airbnb-input w-full"><option value="0" ${wht === 0 ? 'selected' : ''}>ไม่หัก</option><option value="1" ${wht === 1 ? 'selected' : ''}>1%</option><option value="3" ${wht === 3 ? 'selected' : ''}>3%</option><option value="5" ${wht === 5 ? 'selected' : ''}>5%</option></select></div>
+        <div class="themed-tool-card p-4 space-y-3">
+            <div><label class="text-xs font-semibold text-[var(--app-body)] block mb-1">ยอดเงิน</label><input id="whtAmount" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.amount))}" placeholder="เช่น 10,000" class="airbnb-input w-full"></div>
+            <div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-semibold text-[var(--app-body)] block mb-1">ยอดที่กรอกคือ</label><select id="whtMode" class="airbnb-input w-full"><option value="before" ${st.mode === 'before' ? 'selected' : ''}>ยอดก่อน VAT</option><option value="after" ${st.mode === 'after' ? 'selected' : ''}>ยอดรวม VAT แล้ว</option></select></div><div><label class="text-xs font-semibold text-[var(--app-body)] block mb-1">VAT (%)</label><input id="whtVat" type="number" value="${st.vatRate}" class="airbnb-input w-full"></div></div>
+            <div><label class="text-xs font-semibold text-[var(--app-body)] block mb-1">หัก ณ ที่จ่าย (%)</label><select id="whtRate" class="airbnb-input w-full"><option value="0" ${wht === 0 ? 'selected' : ''}>ไม่หัก</option><option value="1" ${wht === 1 ? 'selected' : ''}>1%</option><option value="3" ${wht === 3 ? 'selected' : ''}>3%</option><option value="5" ${wht === 5 ? 'selected' : ''}>5%</option></select></div>
         </div>
-        <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2" style="box-shadow:var(--app-elevation)"><div class="flex justify-between"><span>ยอดก่อน VAT</span><b>${Number.isFinite(amount) ? formatMoney(base) : '-'} บาท</b></div><div class="flex justify-between"><span>VAT ${vat}%</span><b>${Number.isFinite(amount) ? formatMoney(vatAmount) : '-'} บาท</b></div><div class="flex justify-between"><span>ยอดรวม VAT</span><b>${Number.isFinite(amount) ? formatMoney(gross) : '-'} บาท</b></div><div class="flex justify-between"><span>หัก ณ ที่จ่าย ${wht}%</span><b>${Number.isFinite(amount) ? `- ${formatMoney(whtAmount)}` : '-'} บาท</b></div><div class="mt-2 p-3 rounded-xl border border-[#16a34a] bg-[#f0fdf4] text-[#15803d] theme-result-highlight flex justify-between"><span class="font-semibold">ยอดโอนสุทธิ</span><b>${Number.isFinite(amount) ? formatMoney(net) : '-'} บาท</b></div>${Number.isFinite(amount) ? `<div class="flex justify-end pt-1"><button id="btnPrintVatWhtSummary" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">พิมพ์ใบสรุปภาษี / PDF</button></div>` : ''}</div></div>`;
+        <div class="themed-tool-card p-4 space-y-2"><div class="flex justify-between"><span>ยอดก่อน VAT</span><b>${Number.isFinite(amount) ? formatMoney(base) : '-'} บาท</b></div><div class="flex justify-between"><span>VAT ${vat}%</span><b>${Number.isFinite(amount) ? formatMoney(vatAmount) : '-'} บาท</b></div><div class="flex justify-between"><span>ยอดรวม VAT</span><b>${Number.isFinite(amount) ? formatMoney(gross) : '-'} บาท</b></div><div class="flex justify-between"><span>หัก ณ ที่จ่าย ${wht}%</span><b>${Number.isFinite(amount) ? `- ${formatMoney(whtAmount)}` : '-'} บาท</b></div><div class="mt-2 p-3 rounded-xl border border-[var(--app-accent)] bg-[var(--app-accent-soft)] text-[var(--app-ink)] theme-result-highlight flex justify-between"><span class="font-semibold">ยอดโอนสุทธิ</span><b class="text-[var(--app-accent)]">${Number.isFinite(amount) ? formatMoney(net) : '-'} บาท</b></div>${Number.isFinite(amount) ? `<div class="flex justify-end pt-1"><button id="btnPrintVatWhtSummary" type="button" class="tool-action-btn text-xs cursor-pointer">พิมพ์ใบสรุปภาษี / PDF</button></div>` : ''}</div></div>`;
     const whtInput = document.getElementById('whtAmount');
     whtInput.addEventListener('blur', () => {
         const formatted = formatInputDisplay(whtInput.value);
@@ -9463,15 +9463,15 @@ function renderCurrencyTool(container) {
     container.innerHTML = `
         <div class="flex flex-col gap-1.5">
             <div class="grid grid-cols-2 gap-1.5">
-                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-2">
-                    <label class="text-[11px] text-[#6a6a6a] block">จากสกุลเงิน</label>
-                    <select id="currFromSel" class="w-full font-semibold text-sm bg-transparent outline-none mt-0.5 text-[#222222]">
+                <div class="themed-subcard p-2">
+                    <label class="text-[11px] text-[var(--app-muted)] block">จากสกุลเงิน</label>
+                    <select id="currFromSel" class="w-full font-semibold text-sm bg-transparent outline-none mt-0.5 text-[var(--app-ink)]">
                         ${currencies.map(c => `<option value="${c.code}" ${st.from === c.code ? 'selected' : ''}>${c.name}</option>`).join('')}
                     </select>
                 </div>
-                <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-2">
-                    <label class="text-[11px] text-[#6a6a6a] block">เป็นสกุลเงิน</label>
-                    <select id="currToSel" class="w-full font-semibold text-sm bg-transparent outline-none mt-0.5 text-[#222222]">
+                <div class="themed-subcard p-2">
+                    <label class="text-[11px] text-[var(--app-muted)] block">เป็นสกุลเงิน</label>
+                    <select id="currToSel" class="w-full font-semibold text-sm bg-transparent outline-none mt-0.5 text-[var(--app-ink)]">
                         ${currencies.map(c => `<option value="${c.code}" ${st.to === c.code ? 'selected' : ''}>${c.name}</option>`).join('')}
                     </select>
                 </div>
@@ -9480,9 +9480,9 @@ function renderCurrencyTool(container) {
             ${createKeypadFieldHTML(0, `จำนวนเงิน (${st.from})`, st.amount, st.from, 'ป้อนจำนวนเงิน')}
             ${createKeypadFieldHTML(1, `กำหนดเรทเอง (1 ${st.from} = ? ${st.to})`, st.customRateToTHB, st.to, `อัตโนมัติ (${formatNum(fromRate / toRate, 4)})`)}
 
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-2.5 space-y-2 text-xs text-[#3f3f3f]">
-                <div class="flex items-center justify-between gap-2"><span>เรทที่ใช้: <b>1 ${st.from} = ${formatNum(effectiveRate, 4)} ${st.to}</b></span><button id="swapCurrBtn" class="px-3 py-1 bg-[#f7f7f7] border border-[#dddddd] rounded-full font-semibold text-[var(--app-accent)]">⇄ สลับ</button></div>
-                <div class="flex items-center justify-between gap-2 text-[11px] text-[#6a6a6a]"><span>${escapeHTML(st.rateSource)}${rateDateText ? ` · วันที่เรท ${escapeHTML(rateDateText)}` : ([st.from, st.to].some(c => c !== 'THB') ? ' · ยังไม่มีวันที่เรท' : '')}${st.lastUpdated ? ` · ดึงข้อมูล ${new Date(st.lastUpdated).toLocaleString('th-TH')}` : ''}</span><button id="refreshRatesBtn" class="px-2.5 py-1 border border-[var(--app-hairline)] rounded-full font-semibold text-[var(--app-accent)]">↻ อัปเดตเรท</button></div>
+            <div class="themed-subcard p-2.5 space-y-2 text-xs text-[var(--app-body)]">
+                <div class="flex items-center justify-between gap-2"><span>เรทที่ใช้: <b>1 ${st.from} = ${formatNum(effectiveRate, 4)} ${st.to}</b></span><button id="swapCurrBtn" class="px-3 py-1 bg-[var(--app-surface-soft)] border border-[var(--app-hairline)] rounded-full font-semibold text-[var(--app-accent)]">⇄ สลับ</button></div>
+                <div class="flex items-center justify-between gap-2 text-[11px] text-[var(--app-muted)]"><span>${escapeHTML(st.rateSource)}${rateDateText ? ` · วันที่เรท ${escapeHTML(rateDateText)}` : ([st.from, st.to].some(c => c !== 'THB') ? ' · ยังไม่มีวันที่เรท' : '')}${st.lastUpdated ? ` · ดึงข้อมูล ${new Date(st.lastUpdated).toLocaleString('th-TH')}` : ''}</span><button id="refreshRatesBtn" class="px-2.5 py-1 border border-[var(--app-hairline)] rounded-full font-semibold text-[var(--app-accent)]">↻ อัปเดตเรท</button></div>
             </div>
         </div>
     `;
@@ -9588,8 +9588,8 @@ function renderLoanTool(container) {
     attachFieldClickListeners(container);
 
     const loanRoot = container.firstElementChild;
-    loanRoot.insertAdjacentHTML('afterbegin', `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-2"><label class="text-xs text-[#6a6a6a] block mb-1">วิธีคำนวณดอกเบี้ย</label><select id="loanCalcMethod" class="w-full font-semibold text-sm bg-transparent outline-none"><option value="reducing" ${st.calcMethod !== 'flat' ? 'selected' : ''}>ลดต้นลดดอก</option><option value="flat" ${st.calcMethod === 'flat' ? 'selected' : ''}>ค่างวดคงที่ (Flat Rate)</option></select></div>`);
-    loanRoot.insertAdjacentHTML('afterbegin', `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-2"><label class="text-xs text-[#6a6a6a] block mb-1">ประเภทอัตราดอกเบี้ย</label><select id="loanRateType" class="w-full font-semibold text-sm bg-transparent outline-none"><option value="fixed" ${st.rateType !== 'step' ? 'selected' : ''}>Fixed Rate (คงที่)</option><option value="step" ${st.rateType === 'step' ? 'selected' : ''}>Step Rate (ขั้นบันได)</option></select><div id="loanStepFields" class="grid grid-cols-2 gap-2 mt-2" style="display:${st.rateType === 'step' ? 'grid' : 'none'}"><input id="loanPromoMonths" type="number" min="0" value="${st.promoMonths}" placeholder="ช่วงแรก (เดือน)" class="airbnb-input w-full"><input id="loanRateAfter" type="number" step="0.01" value="${st.rateAfter}" placeholder="ดอกเบี้ยหลังช่วงแรก" class="airbnb-input w-full"></div></div>`);
+    loanRoot.insertAdjacentHTML('afterbegin', `<div class="themed-tool-card p-2"><label class="text-xs text-[var(--app-muted)] block mb-1">วิธีคำนวณดอกเบี้ย</label><select id="loanCalcMethod" class="w-full font-semibold text-sm bg-transparent outline-none"><option value="reducing" ${st.calcMethod !== 'flat' ? 'selected' : ''}>ลดต้นลดดอก</option><option value="flat" ${st.calcMethod === 'flat' ? 'selected' : ''}>ค่างวดคงที่ (Flat Rate)</option></select></div>`);
+    loanRoot.insertAdjacentHTML('afterbegin', `<div class="themed-tool-card p-2"><label class="text-xs text-[var(--app-muted)] block mb-1">ประเภทอัตราดอกเบี้ย</label><select id="loanRateType" class="w-full font-semibold text-sm bg-transparent outline-none"><option value="fixed" ${st.rateType !== 'step' ? 'selected' : ''}>Fixed Rate (คงที่)</option><option value="step" ${st.rateType === 'step' ? 'selected' : ''}>Step Rate (ขั้นบันได)</option></select><div id="loanStepFields" class="grid grid-cols-2 gap-2 mt-2" style="display:${st.rateType === 'step' ? 'grid' : 'none'}"><input id="loanPromoMonths" type="number" min="0" value="${st.promoMonths}" placeholder="ช่วงแรก (เดือน)" class="airbnb-input w-full"><input id="loanRateAfter" type="number" step="0.01" value="${st.rateAfter}" placeholder="ดอกเบี้ยหลังช่วงแรก" class="airbnb-input w-full"></div></div>`);
     loanRoot.insertAdjacentHTML('afterbegin', createLoanModeTabs('amortization'));
     container.querySelectorAll('.loan-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -9600,10 +9600,10 @@ function renderLoanTool(container) {
     });
     if (schedule.length) {
         const table = document.createElement('div');
-        table.className = 'bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 mt-2 overflow-auto';
+        table.className = 'themed-tool-card p-3 mt-2 overflow-auto';
         table.innerHTML = `
             <div class="flex items-center justify-between gap-2 mb-2">
-                <div class="text-xs font-semibold text-[#6a6a6a]">ตารางผ่อนชำระ (${schedule.length} งวด)</div>
+                <div class="text-xs font-semibold text-[var(--app-muted)]">ตารางผ่อนชำระ (${schedule.length} งวด)</div>
                 <div class="flex items-center gap-1.5 flex-wrap justify-end">
                     <button id="btnPrintLoanSummary" type="button" title="พิมพ์สรุปสินเชื่อหรือบันทึกเป็นไฟล์ PDF" class="px-2 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
                         พิมพ์/PDF
@@ -9611,7 +9611,7 @@ function renderLoanTool(container) {
                     <button id="btnExportLoanMonthly" type="button" title="ดาวน์โหลดตารางผ่อนรายเดือนทุกงวดเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition-all shadow-sm flex items-center gap-1 cursor-pointer">
                         รายงวด (.CSV)
                     </button>
-                    <button id="btnExportLoanYearly" type="button" title="ดาวน์โหลดสรุปยอดผ่อนรายปีเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2 py-1 text-xs font-medium rounded-lg border border-[var(--app-hairline)] text-[#4a4a4a] bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
+                    <button id="btnExportLoanYearly" type="button" title="ดาวน์โหลดสรุปยอดผ่อนรายปีเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2 py-1 text-xs font-medium rounded-lg border border-[var(--app-hairline)] text-[var(--app-body)] bg-[var(--app-surface-soft)] active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
                         สรุปรายปี (.CSV)
                     </button>
                 </div>
@@ -9620,9 +9620,9 @@ function renderLoanTool(container) {
                 <thead>
                     <tr class="border-b"><th class="text-left py-1">งวด</th><th class="text-right py-1">จ่าย</th><th class="text-right py-1">ดอกเบี้ย</th><th class="text-right py-1">เงินต้น</th><th class="text-right py-1">คงเหลือ</th></tr>
                 </thead>
-                <tbody>${schedule.slice(0, 120).map(item => `<tr class="border-b border-[#eee]"><td class="py-1">${item.month}</td><td class="text-right">${formatMoney(item.payment)}</td><td class="text-right">${formatMoney(item.interest)}</td><td class="text-right">${formatMoney(item.principal)}</td><td class="text-right">${formatMoney(item.balance)}</td></tr>`).join('')}</tbody>
+                <tbody>${schedule.slice(0, 120).map(item => `<tr class="border-b border-[var(--app-hairline)]"><td class="py-1">${item.month}</td><td class="text-right">${formatMoney(item.payment)}</td><td class="text-right">${formatMoney(item.interest)}</td><td class="text-right">${formatMoney(item.principal)}</td><td class="text-right">${formatMoney(item.balance)}</td></tr>`).join('')}</tbody>
             </table>
-            ${schedule.length > 120 ? `<div class="text-[11px] text-[#888] text-center mt-2">แสดงบนหน้าจอ 120 งวดแรก · ดาวน์โหลดไฟล์ CSV เพื่อดูครบทั้ง ${schedule.length} งวด</div>` : ''}
+            ${schedule.length > 120 ? `<div class="text-[11px] text-[var(--app-muted)] text-center mt-2">แสดงบนหน้าจอ 120 งวดแรก · ดาวน์โหลดไฟล์ CSV เพื่อดูครบทั้ง ${schedule.length} งวด</div>` : ''}
         `;
         loanRoot.appendChild(table);
 
@@ -9652,7 +9652,7 @@ function renderLoanTool(container) {
     if (P <= 0 || n <= 0) {
         setStatusBanner('empty', 'ป้อนวงเงินกู้ ดอกเบี้ย และจำนวนเดือนเพื่อคำนวณยอดผ่อน');
     } else {
-        setStatusBanner('success', `ผ่อนเดือนละ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(monthlyPay)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">ดอกเบี้ยรวม: ${formatMoney(totalInterest)} ฿ | โปะเพิ่ม: ${formatMoney(extra)} ฿/เดือน | เหลือ ${extraMonths} เดือน</span><span class="text-xs font-bold block text-[var(--app-accent)]">ประหยัดดอกเบี้ย ${formatMoney(interestSaved)} ฿ และลดระยะเวลา ${monthsSaved} เดือน</span>`);
+        setStatusBanner('success', `ผ่อนเดือนละ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(monthlyPay)} บาท</span><span class="text-xs font-medium block text-[var(--app-body)]">ดอกเบี้ยรวม: ${formatMoney(totalInterest)} ฿ | โปะเพิ่ม: ${formatMoney(extra)} ฿/เดือน | เหลือ ${extraMonths} เดือน</span><span class="text-xs font-bold block text-[var(--app-accent)]">ประหยัดดอกเบี้ย ${formatMoney(interestSaved)} ฿ และลดระยะเวลา ${monthsSaved} เดือน</span>`);
     }
 }
 
@@ -10141,13 +10141,13 @@ function renderSavingsTool(container) {
             ${createKeypadFieldHTML(1, 'ฝากเพิ่มรายเดือน', st.monthly, 'บาท/เดือน', 'เช่น 3,000')}
             ${createKeypadFieldHTML(2, 'อัตราดอกเบี้ยต่อปี', st.interestRate, '% ต่อปี', 'เช่น 2.5')}
             ${st.mode === 'retirement'
-                ? `<div class="p-3 text-sm">ระยะสะสมเงินก่อนเกษียณ: <b>${formatNum(retirementYears)} ปี</b><div class="text-xs text-[#6a6a6a] mt-1">เป้าหมายครอบคลุมค่าใช้จ่ายหลังเกษียณ 25 ปี ตามค่าใช้จ่ายรายเดือนที่กรอก ยังไม่รวมเงินเฟ้อและผลตอบแทนหลังเกษียณ</div></div>`
+                ? `<div class="p-3 text-sm">ระยะสะสมเงินก่อนเกษียณ: <b>${formatNum(retirementYears)} ปี</b><div class="text-xs text-[var(--app-muted)] mt-1">เป้าหมายครอบคลุมค่าใช้จ่ายหลังเกษียณ 25 ปี ตามค่าใช้จ่ายรายเดือนที่กรอก ยังไม่รวมเงินเฟ้อและผลตอบแทนหลังเกษียณ</div></div>`
                 : createKeypadFieldHTML(3, 'ระยะเวลาออม', st.years, 'ปี', 'เช่น 5')}
         </div>
     `;
 
     const savingsRoot = container.firstElementChild;
-    savingsRoot.insertAdjacentHTML('afterbegin', `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-2 space-y-2"><label class="text-xs text-[#6a6a6a] block mb-1">โหมดวางแผนเงินออม</label><select id="savingsMode" class="w-full font-semibold text-sm bg-transparent outline-none"><option value="growth" ${st.mode === 'growth' ? 'selected' : ''}>เงินออมเติบโต</option><option value="goal" ${st.mode === 'goal' ? 'selected' : ''}>เป้าหมายเงินออม</option><option value="emergency" ${st.mode === 'emergency' ? 'selected' : ''}>กองทุนฉุกเฉิน</option><option value="retirement" ${st.mode === 'retirement' ? 'selected' : ''}>เงินออมเพื่อเกษียณ</option></select><div class="grid grid-cols-2 gap-2"><input id="savingsAnnualIncrease" type="number" step="0.1" value="${st.annualIncrease}" placeholder="เพิ่มเงินฝาก/ปี (%)" class="airbnb-input w-full"><input id="savingsInflation" type="number" step="0.1" value="${st.inflationRate}" placeholder="เงินเฟ้อ (%)" class="airbnb-input w-full"></div><div id="savingsModeFields" class="grid grid-cols-2 gap-2"></div></div>`);
+    savingsRoot.insertAdjacentHTML('afterbegin', `<div class="themed-tool-card p-2 space-y-2"><label class="text-xs text-[var(--app-muted)] block mb-1">โหมดวางแผนเงินออม</label><select id="savingsMode" class="w-full font-semibold text-sm bg-transparent outline-none"><option value="growth" ${st.mode === 'growth' ? 'selected' : ''}>เงินออมเติบโต</option><option value="goal" ${st.mode === 'goal' ? 'selected' : ''}>เป้าหมายเงินออม</option><option value="emergency" ${st.mode === 'emergency' ? 'selected' : ''}>กองทุนฉุกเฉิน</option><option value="retirement" ${st.mode === 'retirement' ? 'selected' : ''}>เงินออมเพื่อเกษียณ</option></select><div class="grid grid-cols-2 gap-2"><input id="savingsAnnualIncrease" type="number" step="0.1" value="${st.annualIncrease}" placeholder="เพิ่มเงินฝาก/ปี (%)" class="airbnb-input w-full"><input id="savingsInflation" type="number" step="0.1" value="${st.inflationRate}" placeholder="เงินเฟ้อ (%)" class="airbnb-input w-full"></div><div id="savingsModeFields" class="grid grid-cols-2 gap-2"></div></div>`);
     const modeFields = container.querySelector('#savingsModeFields');
     const renderModeFields = () => {
         if (st.mode === 'goal') modeFields.innerHTML = `<input id="savingsGoalTarget" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.goalTarget))}" placeholder="เป้าหมาย เช่น 100,000" class="airbnb-input w-full">`;
@@ -10172,15 +10172,15 @@ function renderSavingsTool(container) {
     saveField('savingsRetirementMonthly', 'retirementMonthly');
     if (yearlyRows.length) {
         const yearlyTable = document.createElement('div');
-        yearlyTable.className = 'bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 mt-2 overflow-auto';
+        yearlyTable.className = 'themed-tool-card p-3 mt-2 overflow-auto';
         yearlyTable.innerHTML = `
             <div class="flex items-center justify-between gap-2 mb-2">
-                <div class="text-xs font-semibold text-[#6a6a6a]">ตารางเงินออมสะสม (${years} ปี)</div>
+                <div class="text-xs font-semibold text-[var(--app-muted)]">ตารางเงินออมสะสม (${years} ปี)</div>
                 <div class="flex items-center gap-1.5 flex-wrap justify-end">
                     <button id="btnPrintSavingsSummary" type="button" title="พิมพ์แผนการออมเงินหรือบันทึกเป็นไฟล์ PDF" class="px-2 py-1 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
                         พิมพ์/PDF
                     </button>
-                    <button id="btnExportSavingsMonthly" type="button" title="ดาวน์โหลดตารางเงินออมรายเดือนทุกงวดเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2 py-1 text-xs font-medium rounded-lg border border-[var(--app-hairline)] text-[#4a4a4a] bg-neutral-50 hover:bg-neutral-100 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
+                    <button id="btnExportSavingsMonthly" type="button" title="ดาวน์โหลดตารางเงินออมรายเดือนทุกงวดเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2 py-1 text-xs font-medium rounded-lg border border-[var(--app-hairline)] text-[var(--app-body)] bg-[var(--app-surface-soft)] active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
                         รายงวด (.CSV)
                     </button>
                     <button id="btnExportSavingsYearly" type="button" title="ดาวน์โหลดสรุปเงินออมรายปีเป็นไฟล์ CSV สำหรับ Excel / Google Sheets" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-[var(--app-accent)] text-white hover:opacity-90 active:scale-95 transition-all shadow-sm flex items-center gap-1 cursor-pointer">
@@ -10190,7 +10190,7 @@ function renderSavingsTool(container) {
             </div>
             <table class="w-full text-xs">
                 <thead><tr class="border-b"><th class="text-left py-1">ปี</th><th class="text-right py-1">เงินต้นสะสม</th><th class="text-right py-1">ดอกเบี้ยสะสม</th><th class="text-right py-1">ยอดรวม</th></tr></thead>
-                <tbody>${yearlyRows.map(row => `<tr class="border-b border-[#eee]"><td class="py-1">${row.year}</td><td class="text-right">${formatMoney(row.principal)}</td><td class="text-right">${formatMoney(row.interest)}</td><td class="text-right">${formatMoney(row.balance)}</td></tr>`).join('')}</tbody>
+                <tbody>${yearlyRows.map(row => `<tr class="border-b border-[var(--app-hairline)]"><td class="py-1">${row.year}</td><td class="text-right">${formatMoney(row.principal)}</td><td class="text-right">${formatMoney(row.interest)}</td><td class="text-right">${formatMoney(row.balance)}</td></tr>`).join('')}</tbody>
             </table>
         `;
         savingsRoot.appendChild(yearlyTable);
@@ -10222,7 +10222,7 @@ function renderSavingsTool(container) {
         setStatusBanner('empty', 'ป้อนเงินออมเริ่มต้นหรือเงินฝากรายเดือนเพื่อคำนวณผลตอบแทน');
     } else {
         const targetText = modeTarget > 0 ? ` | เป้าหมาย: ${formatMoney(modeTarget)} ฿ | ${totalBalance >= modeTarget ? 'ถึงเป้าหมายแล้ว' : 'ยังขาด ' + formatMoney(modeTarget - totalBalance) + ' ฿' + (requiredMonthly ? ' · ควรออมประมาณ ' + formatMoney(requiredMonthly) + ' ฿/เดือน' : '')}` : '';
-        setStatusBanner('success', `เงินออมรวมสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(totalBalance)} บาท</span><span class="text-xs font-medium block text-[#3f3f3f]">เงินต้น: ${formatMoney(totalPrincipal)} ฿ | ดอกเบี้ย: +${formatMoney(interestEarned)} ฿ | มูลค่าหลังเงินเฟ้อ: ${formatMoney(realValue)} ฿${targetText}</span>`);
+        setStatusBanner('success', `เงินออมรวมสุทธิ: <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(totalBalance)} บาท</span><span class="text-xs font-medium block text-[var(--app-body)]">เงินต้น: ${formatMoney(totalPrincipal)} ฿ | ดอกเบี้ย: +${formatMoney(interestEarned)} ฿ | มูลค่าหลังเงินเฟ้อ: ${formatMoney(realValue)} ฿${targetText}</span>`);
     }
 }
 
@@ -10952,7 +10952,7 @@ function renderWorkdayTool(container) {
         if (st.mode === 'between') result = countWorkingDays(start, end, isWorkday);
         else target = offsetWorkingDays(start, integerOrDefault(st.offset, 0), isWorkday);
     } catch (error) { calculationError = error.message; }
-    container.innerHTML = `<div class="flex flex-col gap-3 p-1"><div class="segment-group grid-cols-2 balanced-segment-modes"><button class="segment-btn work-mode ${st.mode === 'between' ? 'active' : ''}" data-mode="between">นับวันทำการ</button><button class="segment-btn work-mode ${st.mode === 'add' ? 'active' : ''}" data-mode="add">เพิ่ม/ลดวันทำการ</button></div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)"><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่เริ่มต้น</label><input id="workStart" type="date" value="${st.startDate}" class="airbnb-input w-full"></div>${st.mode === 'between' ? `<div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่สิ้นสุด</label><input id="workEnd" type="date" value="${st.endDate}" class="airbnb-input w-full"></div>` : `<div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">จำนวนวันทำการ (+/-)</label><input id="workOffset" type="number" value="${st.offset}" class="airbnb-input w-full"></div>`}</div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-5 text-center" style="box-shadow:var(--app-elevation)"><div class="text-xs text-[#6a6a6a]">${st.mode === 'between' ? 'วันทำการทั้งหมด' : 'วันที่ได้ผลลัพธ์'}</div><div class="text-2xl font-bold text-[var(--app-accent)]">${st.mode === 'between' ? result.toLocaleString('th-TH') + ' วัน' : formatThaiDate(formatLocalDate(target))}</div></div></div>`;
+    container.innerHTML = `<div class="flex flex-col gap-3 p-1"><div class="segment-group grid-cols-2 balanced-segment-modes"><button class="segment-btn work-mode ${st.mode === 'between' ? 'active' : ''}" data-mode="between">นับวันทำการ</button><button class="segment-btn work-mode ${st.mode === 'add' ? 'active' : ''}" data-mode="add">เพิ่ม/ลดวันทำการ</button></div><div class="themed-tool-card p-4 space-y-3" style="box-shadow:var(--app-elevation)"><div><label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">วันที่เริ่มต้น</label><input id="workStart" type="date" value="${st.startDate}" class="airbnb-input w-full"></div>${st.mode === 'between' ? `<div><label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">วันที่สิ้นสุด</label><input id="workEnd" type="date" value="${st.endDate}" class="airbnb-input w-full"></div>` : `<div><label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">จำนวนวันทำการ (+/-)</label><input id="workOffset" type="number" value="${st.offset}" class="airbnb-input w-full"></div>`}</div><div class="themed-tool-card p-5 text-center" style="box-shadow:var(--app-elevation)"><div class="text-xs text-[var(--app-muted)]">${st.mode === 'between' ? 'วันทำการทั้งหมด' : 'วันที่ได้ผลลัพธ์'}</div><div class="text-2xl font-bold text-[var(--app-accent)]">${st.mode === 'between' ? result.toLocaleString('th-TH') + ' วัน' : formatThaiDate(formatLocalDate(target))}</div></div></div>`;
     const workEraBar = document.createElement('div');
     workEraBar.className = 'segment-group grid-cols-2 balanced-segment-modes';
     workEraBar.innerHTML = `<button class="segment-btn work-era ${st.calendarEra === 'BE' ? 'active' : ''}" data-era="BE">พ.ศ.</button><button class="segment-btn work-era ${st.calendarEra === 'CE' ? 'active' : ''}" data-era="CE">ค.ศ.</button>`;
@@ -10969,13 +10969,13 @@ function renderWorkdayTool(container) {
             if (isWorkday(cursor)) dates.push(formatThaiDate(formatLocalDate(cursor)));
         }
         const listPanel = document.createElement('div');
-        listPanel.className = 'bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2';
-        listPanel.innerHTML = `<div class="text-xs font-semibold text-[#6a6a6a]">รายการวันทำการ ${listCount} วัน</div><div class="text-sm leading-7">${dates.length ? dates.map((date, index) => `${index + 1}. ${date}`).join('<br>') : 'กรอกจำนวนวันทำการเพื่อแสดงรายการ'}</div>`;
+        listPanel.className = 'themed-tool-card p-4 space-y-2';
+        listPanel.innerHTML = `<div class="text-xs font-semibold text-[var(--app-muted)]">รายการวันทำการ ${listCount} วัน</div><div class="text-sm leading-7">${dates.length ? dates.map((date, index) => `${index + 1}. ${date}`).join('<br>') : 'กรอกจำนวนวันทำการเพื่อแสดงรายการ'}</div>`;
         container.querySelector('.work-mode').parentElement.parentElement.appendChild(listPanel);
     }
     const workOptions = document.createElement('div');
-    workOptions.className = 'bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2';
-    workOptions.innerHTML = `<div class="text-xs font-semibold text-[#6a6a6a]">ตั้งค่าวันทำการ</div><div class="flex flex-wrap gap-2">${[['1','จ'],['2','อ'],['3','พ'],['4','พฤ'],['5','ศ'],['6','ส'],['0','อา']].map(([day, label]) => `<label class="text-xs flex items-center gap-1"><input type="checkbox" class="work-day" value="${day}" ${st.workDays.includes(Number(day)) ? 'checked' : ''}>${label}</label>`).join('')}</div><label class="text-xs flex items-center gap-2"><input type="checkbox" id="workThaiHolidays" ${st.includeThaiHolidays ? 'checked' : ''}> ตัดวันหยุดไทยพื้นฐาน</label><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันหยุดเพิ่มเติม (คั่นด้วย , เช่น 13/04/2569,14/04/2569)</label><input id="workCustomHolidays" type="text" value="${st.customHolidays || ''}" placeholder="วว/ดด/ปปปป" class="airbnb-input w-full"></div>`;
+    workOptions.className = 'themed-tool-card p-3 space-y-2';
+    workOptions.innerHTML = `<div class="text-xs font-semibold text-[var(--app-muted)]">ตั้งค่าวันทำการ</div><div class="flex flex-wrap gap-2">${[['1','จ'],['2','อ'],['3','พ'],['4','พฤ'],['5','ศ'],['6','ส'],['0','อา']].map(([day, label]) => `<label class="text-xs flex items-center gap-1"><input type="checkbox" class="work-day" value="${day}" ${st.workDays.includes(Number(day)) ? 'checked' : ''}>${label}</label>`).join('')}</div><label class="text-xs flex items-center gap-2"><input type="checkbox" id="workThaiHolidays" ${st.includeThaiHolidays ? 'checked' : ''}> ตัดวันหยุดไทยพื้นฐาน</label><div><label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">วันหยุดเพิ่มเติม (คั่นด้วย , เช่น 13/04/2569,14/04/2569)</label><input id="workCustomHolidays" type="text" value="${st.customHolidays || ''}" placeholder="วว/ดด/ปปปป" class="airbnb-input w-full"></div>`;
     workEraBar.insertAdjacentElement('afterend', workOptions);
     if (calculationError || recoveredDays) {
         const message = document.createElement('p');
@@ -11060,52 +11060,52 @@ function renderDateCalcTool(container) {
                         <button class="segment-btn era-btn ${st.calendarEra === 'BE' ? 'active' : ''}" data-era="BE">พ.ศ.</button>
                         <button class="segment-btn era-btn ${st.calendarEra === 'CE' ? 'active' : ''}" data-era="CE">ค.ศ.</button>
                     </div>
-                    ${st.mode !== 'age' ? `<div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2"><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="dateInclusive" ${st.inclusive ? 'checked' : ''}> นับรวมวันเริ่มต้น</label><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="dateWorkdays" ${st.workdays ? 'checked' : ''}> นับเฉพาะวันทำการ (ตัดเสาร์-อาทิตย์)</label><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="dateThaiHolidays" ${st.includeThaiHolidays ? 'checked' : ''}> ตัดวันหยุดไทยพื้นฐาน</label></div>` : ''}
+                    ${st.mode !== 'age' ? `<div class="themed-tool-card p-3 space-y-2"><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="dateInclusive" ${st.inclusive ? 'checked' : ''}> นับรวมวันเริ่มต้น</label><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="dateWorkdays" ${st.workdays ? 'checked' : ''}> นับเฉพาะวันทำการ (ตัดเสาร์-อาทิตย์)</label><label class="flex items-center gap-2 text-sm"><input type="checkbox" id="dateThaiHolidays" ${st.includeThaiHolidays ? 'checked' : ''}> ตัดวันหยุดไทยพื้นฐาน</label></div>` : ''}
 
                     ${st.mode === 'age' ? `
-                        <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3">
-                            <div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันเกิด (วัน/เดือน/ปี)</label><input type="text" inputmode="numeric" id="birthDateInp" value="${formatDateInputThai(st.birthDate, st.calendarEra)}" placeholder="เช่น 01/01/2533" class="airbnb-input w-full"></div>
-                            <div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">คำนวณถึงวันที่ (วัน/เดือน/ปี)</label><input type="text" inputmode="numeric" id="referenceDateInp" value="${formatDateInputThai(st.referenceDate, st.calendarEra)}" placeholder="เช่น 14/10/2569" class="airbnb-input w-full"></div>
+                        <div class="themed-tool-card p-4 space-y-3">
+                            <div><label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">วันเกิด (วัน/เดือน/ปี)</label><input type="text" inputmode="numeric" id="birthDateInp" value="${formatDateInputThai(st.birthDate, st.calendarEra)}" placeholder="เช่น 01/01/2533" class="airbnb-input w-full"></div>
+                            <div><label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">คำนวณถึงวันที่ (วัน/เดือน/ปี)</label><input type="text" inputmode="numeric" id="referenceDateInp" value="${formatDateInputThai(st.referenceDate, st.calendarEra)}" placeholder="เช่น 14/10/2569" class="airbnb-input w-full"></div>
                         </div>
-                        <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-5 text-center"><div class="text-xs text-[#6a6a6a]">อายุ</div><div id="ageResult" class="text-2xl font-bold text-[var(--app-accent)]">${ageText}</div></div>
+                        <div class="themed-tool-card p-5 text-center"><div class="text-xs text-[var(--app-muted)]">อายุ</div><div id="ageResult" class="text-2xl font-bold text-[var(--app-accent)]">${ageText}</div></div>
                     ` : st.mode === 'diff' ? `
-                        <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow: var(--app-elevation);">
+                        <div class="themed-tool-card p-4 space-y-3" style="box-shadow: var(--app-elevation);">
                             <div>
-                                <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่เริ่มต้น</label>
+                                <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">วันที่เริ่มต้น</label>
                                 <input type="text" inputmode="numeric" id="dateStartInp" value="${formatDateInputThai(st.startDate, st.calendarEra)}" placeholder="วว/ดด/ปปปป" class="airbnb-input w-full">
                             </div>
                             <div>
-                                <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่สิ้นสุด</label>
+                                <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">วันที่สิ้นสุด</label>
                                 <input type="text" inputmode="numeric" id="dateEndInp" value="${formatDateInputThai(st.endDate, st.calendarEra)}" placeholder="วว/ดด/ปปปป" class="airbnb-input w-full">
                             </div>
                         </div>
-                        <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-5 text-center space-y-1" style="box-shadow: var(--app-elevation);">
-                            <div class="text-xs text-[#6a6a6a]">ระยะห่างทั้งหมด</div>
+                        <div class="themed-tool-card p-5 text-center space-y-1" style="box-shadow: var(--app-elevation);">
+                            <div class="text-xs text-[var(--app-muted)]">ระยะห่างทั้งหมด</div>
                             <div class="text-3xl font-bold text-[var(--app-accent)]">${formatNum(countedDiffDays)} วัน</div>
-                            <div class="text-xs text-[#6a6a6a]">${st.workdays ? 'นับตามวันทำงานและวันหยุดที่เลือก' : (Number.isFinite(countedDiffDays) ? `(${Math.floor(countedDiffDays / 7)} สัปดาห์ กับ ${countedDiffDays % 7} วัน)` : '')}</div>
+                            <div class="text-xs text-[var(--app-muted)]">${st.workdays ? 'นับตามวันทำงานและวันหยุดที่เลือก' : (Number.isFinite(countedDiffDays) ? `(${Math.floor(countedDiffDays / 7)} สัปดาห์ กับ ${countedDiffDays % 7} วัน)` : '')}</div>
                         </div>
                     ` : `
-                        <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow: var(--app-elevation);">
+                        <div class="themed-tool-card p-4 space-y-3" style="box-shadow: var(--app-elevation);">
                             <div>
-                                <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันที่ตั้งต้น</label>
+                                <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">วันที่ตั้งต้น</label>
                                 <input type="text" inputmode="numeric" id="dateStartInp" value="${formatDateInputThai(st.startDate, st.calendarEra)}" placeholder="วว/ดด/ปปปป" class="airbnb-input w-full">
                             </div>
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
-                                    <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">การคำนวณ</label>
+                                    <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">การคำนวณ</label>
                                     <select id="dateOpSel" class="airbnb-input w-full">
                                         <option value="add" ${st.op === 'add' ? 'selected' : ''}>+ บวกเพิ่ม (วันข้างหน้า)</option>
                                         <option value="sub" ${st.op === 'sub' ? 'selected' : ''}>- ลบออก (ย้อนหลัง)</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">จำนวนวัน</label>
+                                    <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">จำนวนวัน</label>
                                     <input type="number" id="dateOffsetInp" value="${st.daysOffset}" min="0" class="airbnb-input w-full">
                                 </div>
                             </div>
                         </div>
-                        <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-5 text-center space-y-1" style="box-shadow: var(--app-elevation);">
-                            <div class="text-xs text-[#6a6a6a]">ตรงกับวันที่</div>
+                        <div class="themed-tool-card p-5 text-center space-y-1" style="box-shadow: var(--app-elevation);">
+                            <div class="text-xs text-[var(--app-muted)]">ตรงกับวันที่</div>
                             <div class="text-xl font-bold text-[var(--app-accent)]">${formatThaiDate(formatLocalDate(adjustedTargetDate))}</div>
                         </div>
                     `}
@@ -11204,28 +11204,28 @@ function renderGpaTool(container) {
     container.innerHTML = `
         <div class="flex flex-col gap-2.5 h-full">
             <!-- Airbnb Rating Display Card Style (64px/700 in Airbnb theme) -->
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3.5 flex items-center justify-between" style="box-shadow: var(--app-elevation);">
+            <div class="themed-tool-card p-3.5 flex items-center justify-between" style="box-shadow: var(--app-elevation);">
                 <div>
-                    <div class="text-xs font-semibold text-[#6a6a6a]">เกรดเฉลี่ยสะสม (GPA)</div>
-                    <div class="text-4xl font-bold text-[#222222] leading-tight mt-0.5">${gpa.toFixed(2)}</div>
+                    <div class="text-xs font-semibold text-[var(--app-muted)]">เกรดเฉลี่ยสะสม (GPA)</div>
+                    <div class="text-4xl font-bold text-[var(--app-ink)] leading-tight mt-0.5">${gpa.toFixed(2)}</div>
                 </div>
                 <div class="text-right">
-                    <div class="text-xs text-[#6a6a6a] mb-1.5">หน่วยกิตรวม: <b class="text-[#222222]">${totalCredits}</b></div>
+                    <div class="text-xs text-[var(--app-muted)] mb-1.5">หน่วยกิตรวม: <b class="text-[var(--app-ink)]">${totalCredits}</b></div>
                     <button id="addCourseBtn" class="bg-[var(--app-accent)] text-white px-3.5 py-1.5 rounded-full text-xs font-semibold">+ เพิ่มวิชา</button>
                 </div>
             </div>
 
             <div class="flex-1 overflow-y-auto space-y-1.5 thin-scroll pr-0.5">
                 ${st.courses.map((c, idx) => `
-                    <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-2.5 flex items-center gap-2">
-                        <span class="text-xs font-bold text-[#6a6a6a] w-14 shrink-0">วิชาที่ ${idx + 1}</span>
-                        <select class="gpa-credit border border-[#dddddd] rounded-md px-2 py-1 text-xs font-semibold flex-1 text-[#222222]" data-idx="${idx}">
+                    <div class="themed-subcard p-2.5 flex items-center gap-2">
+                        <span class="text-xs font-bold text-[var(--app-muted)] w-14 shrink-0">วิชาที่ ${idx + 1}</span>
+                        <select class="gpa-credit border border-[var(--app-hairline)] bg-[var(--color-canvas)] rounded-md px-2 py-1 text-xs font-semibold flex-1 text-[var(--app-ink)]" data-idx="${idx}">
                             ${[1, 1.5, 2, 2.5, 3, 4, 6].map(cr => `<option value="${cr}" ${Number(c.credit) === cr ? 'selected' : ''}>${cr} หน่วยกิต</option>`).join('')}
                         </select>
-                        <select class="gpa-grade border border-[#dddddd] rounded-md px-2 py-1 text-xs font-bold text-[var(--app-accent)] flex-1" data-idx="${idx}">
+                        <select class="gpa-grade border border-[var(--app-hairline)] bg-[var(--color-canvas)] rounded-md px-2 py-1 text-xs font-bold text-[var(--app-accent)] flex-1" data-idx="${idx}">
                             ${gradeOptions.map(g => `<option value="${g.val}" ${c.grade === g.val ? 'selected' : ''}>เกรด ${g.label}</option>`).join('')}
                         </select>
-                        <button class="del-course text-[#c13515] hover:bg-red-50 w-7 h-7 rounded-full text-xs font-bold" data-idx="${idx}">✕</button>
+                        <button class="del-course text-[#be123c] hover:bg-red-50 w-7 h-7 rounded-full text-xs font-bold" data-idx="${idx}">✕</button>
                     </div>
                 `).join('')}
             </div>
@@ -11320,15 +11320,15 @@ function renderWorldTimeTool(container) {
                 <div><div class="text-xs">เวลาประเทศไทยปัจจุบัน</div><div class="text-2xl font-bold font-mono" data-world-time="Asia/Bangkok"></div></div>
                 <div class="text-right text-xs" data-world-date="Asia/Bangkok"></div>
             </div>
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-3 space-y-2">
+            <div class="themed-tool-card p-3 space-y-2">
                 <div class="flex gap-2"><input id="worldSearch" type="search" aria-label="ค้นหาเมืองหรือประเทศ" value="${escapeHTML(st.search)}" placeholder="ค้นหาเมือง/ประเทศ" class="airbnb-input w-full min-w-0"><button id="worldFormat" class="airbnb-input whitespace-nowrap" aria-label="เปลี่ยนรูปแบบเวลา">${st.use24h ? '24 ชั่วโมง' : '12 ชั่วโมง'}</button></div>
                 <div class="grid grid-cols-2 gap-2"><label class="text-xs">วันที่นัดหมายที่กรุงเทพฯ<input id="worldMeetingDate" type="date" value="${escapeHTML(st.meetingDate)}" class="airbnb-input w-full mt-1"></label><label class="text-xs">เวลานัดหมายที่กรุงเทพฯ<input id="worldMeetingTime" type="time" value="${escapeHTML(st.meetingTime)}" class="airbnb-input w-full mt-1"></label></div>
-                <div id="worldMeetingResult" class="text-xs text-[#6a6a6a]"></div>
+                <div id="worldMeetingResult" class="text-xs text-[var(--app-muted)]"></div>
             </div>
             <div class="flex-1 overflow-y-auto space-y-1.5 thin-scroll pr-0.5">
-                ${orderedCities.map(city => `<div data-world-search="${escapeHTML((city.name + ' ' + city.country).toLocaleLowerCase())}" class="world-city-card bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] px-3.5 py-2.5">
-                    <div class="flex items-center justify-between gap-2"><div><div class="font-semibold text-sm">${city.name}</div><div class="text-[11px] text-[#6a6a6a]">${city.country}</div></div><div class="text-right"><div class="font-mono font-bold text-lg text-[var(--app-accent)]" data-world-time="${city.tz}"></div><div class="text-[11px] text-[#6a6a6a]" data-world-date="${city.tz}"></div></div><button type="button" data-world-pin="${city.tz}" aria-label="ปักหมุด ${city.name}" aria-pressed="${st.favoriteCities.includes(city.tz)}" class="p-2 text-xl">${st.favoriteCities.includes(city.tz) ? '★' : '☆'}</button></div>
-                    <div class="text-xs text-[#6a6a6a] mt-1" data-world-meeting="${city.tz}"></div>
+                ${orderedCities.map(city => `<div data-world-search="${escapeHTML((city.name + ' ' + city.country).toLocaleLowerCase())}" class="world-city-card themed-subcard px-3.5 py-2.5">
+                    <div class="flex items-center justify-between gap-2"><div><div class="font-semibold text-sm">${city.name}</div><div class="text-[11px] text-[var(--app-muted)]">${city.country}</div></div><div class="text-right"><div class="font-mono font-bold text-lg text-[var(--app-accent)]" data-world-time="${city.tz}"></div><div class="text-[11px] text-[var(--app-muted)]" data-world-date="${city.tz}"></div></div><button type="button" data-world-pin="${city.tz}" aria-label="ปักหมุด ${city.name}" aria-pressed="${st.favoriteCities.includes(city.tz)}" class="p-2 text-xl">${st.favoriteCities.includes(city.tz) ? '★' : '☆'}</button></div>
+                    <div class="text-xs text-[var(--app-muted)] mt-1" data-world-meeting="${city.tz}"></div>
                 </div>`).join('')}
                 <p id="worldNoResults" class="p-3 text-sm" hidden>ไม่พบเมืองที่ค้นหา</p>
             </div>
@@ -11433,9 +11433,9 @@ function renderHealthTool(container) {
             ${createKeypadFieldHTML(0, 'น้ำหนัก (Weight)', st.weight, 'กก.', '65')}
             ${createKeypadFieldHTML(1, 'ส่วนสูง (Height)', st.height, 'ซม.', '170')}
             ${createKeypadFieldHTML(2, 'อายุ (Age)', st.age, 'ปี', '28')}
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-btn-radius)] p-2">
-                <label class="text-xs text-[#6a6a6a] block mb-1">ระดับกิจกรรมสำหรับคำนวณ TDEE</label>
-                <select id="healthActivity" class="w-full font-semibold text-sm bg-transparent outline-none text-[#222222]">
+            <div class="themed-subcard p-2">
+                <label class="text-xs text-[var(--app-muted)] block mb-1">ระดับกิจกรรมสำหรับคำนวณ TDEE</label>
+                <select id="healthActivity" class="w-full font-semibold text-sm bg-transparent outline-none text-[var(--app-ink)]">
                     ${activityOptions.map(option => `<option value="${option.value}" ${st.activity === option.value ? 'selected' : ''}>${option.label}</option>`).join('')}
                 </select>
             </div>
@@ -11457,7 +11457,7 @@ function renderHealthTool(container) {
     if (bmi <= 0) {
         setStatusBanner('empty', 'ป้อนน้ำหนักและส่วนสูงเพื่อคำนวณค่า BMI และ BMR');
     } else {
-        setStatusBanner('success', `BMI: <b class="text-[var(--app-accent)] underline">${formatNum(bmi, 1)}</b> (${bmiCategory})<span class="text-xs font-medium block text-[#3f3f3f]">พลังงานพื้นฐาน (BMR): ${Math.round(bmr).toLocaleString()} kcal/วัน · พลังงานที่ใช้ต่อวัน (TDEE): <b>${Math.round(tdee).toLocaleString()} kcal/วัน</b></span>`);
+        setStatusBanner('success', `BMI: <b class="text-[var(--app-accent)] underline">${formatNum(bmi, 1)}</b> (${bmiCategory})<span class="text-xs font-medium block text-[var(--app-body)]">พลังงานพื้นฐาน (BMR): ${Math.round(bmr).toLocaleString()} kcal/วัน · พลังงานที่ใช้ต่อวัน (TDEE): <b>${Math.round(tdee).toLocaleString()} kcal/วัน</b></span>`);
     }
 }
 
@@ -11478,30 +11478,30 @@ function renderOvulationTool(container) {
 
     container.innerHTML = `
         <div class="flex flex-col gap-3 p-1">
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow: var(--app-elevation);">
+            <div class="themed-tool-card p-4 space-y-3" style="box-shadow: var(--app-elevation);">
                 <div>
-                    <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">วันแรกของประจำเดือนครั้งล่าสุด</label>
+                    <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">วันแรกของประจำเดือนครั้งล่าสุด</label>
                     <input type="date" id="ovuDateInput" value="${st.lastPeriodDate}" class="airbnb-input w-full">
                 </div>
                 <div>
-                    <label class="text-xs font-semibold text-[#6a6a6a] block mb-1">ความยาวรอบเดือนเฉลี่ย: <b class="text-[var(--app-accent)]">${cycle} วัน</b></label>
+                    <label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">ความยาวรอบเดือนเฉลี่ย: <b class="text-[var(--app-accent)]">${cycle} วัน</b></label>
                     <input type="range" id="ovuCycleInput" min="21" max="35" value="${cycle}" class="w-full accent-[var(--app-accent)]">
-                    <div class="flex justify-between text-[11px] text-[#6a6a6a]"><span>21 วัน</span><span>28 วัน (ปกติ)</span><span>35 วัน</span></div>
+                    <div class="flex justify-between text-[11px] text-[var(--app-muted)]"><span>21 วัน</span><span>28 วัน (ปกติ)</span><span>35 วัน</span></div>
                 </div>
             </div>
 
-            <div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow: var(--app-elevation);">
-                <div class="flex justify-between items-center border-b border-[#ebebeb] pb-2.5">
-                    <span class="text-xs font-semibold text-[#222222]">วันตกไข่โดยประมาณ</span>
+            <div class="themed-tool-card p-4 space-y-3" style="box-shadow: var(--app-elevation);">
+                <div class="flex justify-between items-center border-b border-[var(--app-hairline)] pb-2.5">
+                    <span class="text-xs font-semibold text-[var(--app-ink)]">วันตกไข่โดยประมาณ</span>
                     <span class="text-sm font-bold text-[var(--app-accent)]">${formatThaiDate(toISO(ovulationDate))}</span>
                 </div>
-                <div class="flex justify-between items-center border-b border-[#ebebeb] pb-2.5">
-                    <span class="text-xs font-semibold text-[#222222]">ช่วงเวลาเจริญพันธุ์</span>
+                <div class="flex justify-between items-center border-b border-[var(--app-hairline)] pb-2.5">
+                    <span class="text-xs font-semibold text-[var(--app-ink)]">ช่วงเวลาเจริญพันธุ์</span>
                     <span class="text-xs font-bold text-[var(--app-accent)]">${formatThaiDate(toISO(fertileStart))} - ${formatThaiDate(toISO(fertileEnd))}</span>
                 </div>
                 <div class="flex justify-between items-center">
-                    <span class="text-xs font-semibold text-[#6a6a6a]">ประจำเดือนรอบถัดไป</span>
-                    <span class="text-xs font-bold text-[#222222]">${formatThaiDate(toISO(nextPeriod))}</span>
+                    <span class="text-xs font-semibold text-[var(--app-muted)]">ประจำเดือนรอบถัดไป</span>
+                    <span class="text-xs font-bold text-[var(--app-ink)]">${formatThaiDate(toISO(nextPeriod))}</span>
                 </div>
             </div>
         </div>
@@ -12111,7 +12111,7 @@ function renderFuelEffTool(container) {
     if (kmPerLiter <= 0) {
         setStatusBanner('empty', 'ป้อนระยะทางที่วิ่งและปริมาณน้ำมันที่ใช้');
     } else {
-        setStatusBanner('success', `อัตราสิ้นเปลือง: <span class="text-lg text-[var(--app-accent)] underline">${formatNum(kmPerLiter, 2)} กม./ลิตร</span><span class="text-xs font-medium block text-[#3f3f3f]">หรือคิดเป็น ${formatNum(literPer100Km, 2)} ลิตร ต่อ 100 กม.</span>`);
+        setStatusBanner('success', `อัตราสิ้นเปลือง: <span class="text-lg text-[var(--app-accent)] underline">${formatNum(kmPerLiter, 2)} กม./ลิตร</span><span class="text-xs font-medium block text-[var(--app-body)]">หรือคิดเป็น ${formatNum(literPer100Km, 2)} ลิตร ต่อ 100 กม.</span>`);
     }
 }
 
@@ -12124,7 +12124,7 @@ function renderAreaCostTool(container) {
     const rate = parseNumericInput(st.rate), price = evaluateArithmeticExpression(st.price), rounds = numberOrDefault(st.rounds, 1);
     const totalRai = rai + ngan / 4 + wa / 400;
     const qty = totalRai * rate * rounds, total = qty * price;
-    container.innerHTML = `<div class="flex flex-col gap-3 p-1"><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-3" style="box-shadow:var(--app-elevation)"><div class="text-xs text-[#6a6a6a]">พื้นที่แบบผสม: 1 ไร่ = 4 งาน = 400 ตารางวา</div><div class="grid grid-cols-3 gap-2">${[['areaRai','ไร่',st.rai],['areaNgan','งาน',st.ngan],['areaWa','ตารางวา',st.wa]].map(([id,l,v])=>`<div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">${l}</label><input id="${id}" type="number" min="0" value="${v}" class="airbnb-input w-full"></div>`).join('')}</div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">อัตราใช้ (กก./ไร่)</label><input id="areaRate" type="number" value="${st.rate}" placeholder="เช่น 25" class="airbnb-input w-full"></div><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">ราคา (บาท/กก.)</label><input id="areaPrice" type="text" inputmode="decimal" value="${st.price}" placeholder="เช่น 980/50" class="airbnb-input w-full"><div class="text-[10px] text-[#6a6a6a] mt-1">รองรับ + - * / เช่น 980/50 = ราคาต่อกก.</div></div></div><div><label class="text-xs font-semibold text-[#6a6a6a] block mb-1">จำนวนรอบ</label><input id="areaRounds" type="number" min="1" value="${st.rounds}" class="airbnb-input w-full"></div></div><div class="bg-white border border-[var(--app-hairline)] rounded-[var(--app-card-radius)] p-4 space-y-2" style="box-shadow:var(--app-elevation)"><div class="flex justify-between"><span>พื้นที่รวม</span><b>${formatNum(totalRai, 4)} ไร่</b></div><div class="flex justify-between"><span>ปริมาณรวม</span><b>${formatNum(qty, 2)} กก.</b></div><div class="flex justify-between"><span>ต้นทุนต่อไร่</span><b>${formatMoney((rate || 0) * (price || 0) * rounds)} บาท</b></div></div></div>`;
+    container.innerHTML = `<div class="flex flex-col gap-3 p-1"><div class="themed-tool-card p-4 space-y-3" style="box-shadow:var(--app-elevation)"><div class="text-xs text-[var(--app-muted)]">พื้นที่แบบผสม: 1 ไร่ = 4 งาน = 400 ตารางวา</div><div class="grid grid-cols-3 gap-2">${[['areaRai','ไร่',st.rai],['areaNgan','งาน',st.ngan],['areaWa','ตารางวา',st.wa]].map(([id,l,v])=>`<div><label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">${l}</label><input id="${id}" type="number" min="0" value="${v}" class="airbnb-input w-full"></div>`).join('')}</div><div class="grid grid-cols-2 gap-2"><div><label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">อัตราใช้ (กก./ไร่)</label><input id="areaRate" type="number" value="${st.rate}" placeholder="เช่น 25" class="airbnb-input w-full"></div><div><label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">ราคา (บาท/กก.)</label><input id="areaPrice" type="text" inputmode="decimal" value="${st.price}" placeholder="เช่น 980/50" class="airbnb-input w-full"><div class="text-[10px] text-[var(--app-muted)] mt-1">รองรับ + - * / เช่น 980/50 = ราคาต่อกก.</div></div></div><div><label class="text-xs font-semibold text-[var(--app-muted)] block mb-1">จำนวนรอบ</label><input id="areaRounds" type="number" min="1" value="${st.rounds}" class="airbnb-input w-full"></div></div><div class="themed-tool-card p-4 space-y-2" style="box-shadow:var(--app-elevation)"><div class="flex justify-between"><span>พื้นที่รวม</span><b>${formatNum(totalRai, 4)} ไร่</b></div><div class="flex justify-between"><span>ปริมาณรวม</span><b>${formatNum(qty, 2)} กก.</b></div><div class="flex justify-between"><span>ต้นทุนต่อไร่</span><b>${formatMoney((rate || 0) * (price || 0) * rounds)} บาท</b></div></div></div>`;
     const areaPriceInput = document.getElementById('areaPrice');
     const pricePreview = document.createElement('div');
     pricePreview.className = 'text-xs font-semibold text-[var(--app-accent)] mt-1';
@@ -12165,7 +12165,7 @@ function renderHexTool(container) {
                 ].map(item => `
                     <div class="clev-field-box ${st.activeBase === item.base ? 'active-field' : ''}" data-base="${item.base}">
                         <span class="text-xs font-bold text-[var(--app-accent)]">${item.label}</span>
-                        <span class="font-mono font-semibold text-sm break-all text-[#222222]">${item.val}</span>
+                        <span class="font-mono font-semibold text-sm break-all text-[var(--app-ink)]">${item.val}</span>
                     </div>
                 `).join('')}
             </div>
@@ -13408,23 +13408,23 @@ function renderTaxPersonalTool(container) {
             <div class="themed-tool-card p-4 space-y-3">
                 <div class="text-xs font-bold text-[var(--app-ink)]">ข้อมูลรายได้พึงประเมินทั้งปี</div>
                 <div>
-                    <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">เงินเดือนประจำ (บาท/เดือน)</label>
+                    <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">เงินเดือนประจำ (บาท/เดือน)</label>
                     <input id="taxSalaryMonthly" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.salaryMonthly))}" placeholder="เช่น 50,000" class="airbnb-input w-full">
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">โบนัสทั้งปี (บาท)</label>
+                        <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">โบนัสทั้งปี (บาท)</label>
                         <input id="taxBonusYearly" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.bonusYearly))}" placeholder="เช่น 50,000" class="airbnb-input w-full">
                     </div>
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">รายได้อื่น/ฟรีแลนซ์ทั้งปี</label>
+                        <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">รายได้อื่น/ฟรีแลนซ์ทั้งปี</label>
                         <input id="taxOtherIncome" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.otherIncomeYearly))}" placeholder="0" class="airbnb-input w-full">
                     </div>
                 </div>
                 <div>
-                    <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ภาษีหัก ณ ที่จ่ายสะสมทั้งปี (ถูกหักไว้แล้ว)</label>
+                    <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">ภาษีหัก ณ ที่จ่ายสะสมทั้งปี (ถูกหักไว้แล้ว)</label>
                     <input id="taxWithholding" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.withholdingTax))}" placeholder="เช่น 12,000" class="airbnb-input w-full">
-                    <span class="text-[11px] text-[#888888] dark:text-neutral-400 mt-0.5 block">ดูได้จากหนังสือรับรอง 50 ทวิ ที่บริษัทออกให้</span>
+                    <span class="text-[11px] text-[var(--app-muted)] mt-0.5 block">ดูได้จากหนังสือรับรอง 50 ทวิ ที่บริษัทออกให้</span>
                 </div>
             </div>
 
@@ -13713,14 +13713,14 @@ function renderPropertyTransferTool(container) {
                 <div class="text-xs font-bold text-[var(--app-ink)]">เงื่อนไขและมาตรการรัฐ</div>
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <div>
-                        <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">มาตรการค่าโอน-จำนอง</label>
+                        <label class="font-semibold text-[var(--app-body)] block mb-1">มาตรการค่าโอน-จำนอง</label>
                         <select id="propGovMeasure" class="airbnb-input w-full">
                             <option value="standard" ${st.isGovMeasure !== 'reduced' ? 'selected' : ''}>อัตราปกติ (โอน 2% / จำนอง 1%)</option>
                             <option value="reduced" ${st.isGovMeasure === 'reduced' ? 'selected' : ''}>ลดหย่อนรัฐ (โอน 0.01% / จำนอง 0.01%)</option>
                         </select>
                     </div>
                     <div>
-                        <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">สิทธิภาษีธุรกิจเฉพาะ</label>
+                        <label class="font-semibold text-[var(--app-body)] block mb-1">สิทธิภาษีธุรกิจเฉพาะ</label>
                         <select id="propExemptSBT" class="airbnb-input w-full">
                             <option value="no" ${st.exemptSBT === 'no' ? 'selected' : ''}>เสียธุรกิจเฉพาะ 3.3%</option>
                             <option value="yes" ${st.exemptSBT === 'yes' ? 'selected' : ''}>ยกเว้น/เสียอากร 0.5% (ชื่อเกิน 1 ปี/มรดก)</option>
@@ -13730,13 +13730,13 @@ function renderPropertyTransferTool(container) {
 
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <div>
-                        <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">จำนวนปีที่ถือครองของผู้ขาย</label>
+                        <label class="font-semibold text-[var(--app-body)] block mb-1">จำนวนปีที่ถือครองของผู้ขาย</label>
                         <select id="propHoldingYears" class="airbnb-input w-full">
                             ${[1,2,3,4,5,6,7,8,9,10].map(y => `<option value="${y}" ${String(st.holdingYears) === String(y) ? 'selected' : ''}>${y} ปี (หัก คชจ. ${y === 1 ? '92%' : (y === 2 ? '84%' : (y === 3 ? '77%' : (y === 4 ? '71%' : (y === 5 ? '65%' : (y === 6 ? '60%' : (y === 7 ? '55%' : '50%'))))))})</option>`).join('')}
                         </select>
                     </div>
                     <div>
-                        <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ข้อตกลงการแบ่งจ่าย</label>
+                        <label class="font-semibold text-[var(--app-body)] block mb-1">ข้อตกลงการแบ่งจ่าย</label>
                         <select id="propSplitMode" class="airbnb-input w-full">
                             <option value="custom" ${st.splitMode === 'custom' ? 'selected' : ''}>ธรรมเนียมทั่วไป (โอนคนละครึ่ง)</option>
                             <option value="half" ${st.splitMode === 'half' ? 'selected' : ''}>คนละครึ่งทุกรายการ</option>
@@ -13751,17 +13751,17 @@ function renderPropertyTransferTool(container) {
             <div class="themed-tool-card p-4 space-y-3">
                 <div class="text-xs font-bold text-[var(--app-ink)]">ข้อมูลราคาทรัพย์และวงเงินจำนอง</div>
                 <div>
-                    <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ราคาประเมินทุนทรัพย์ของกรมที่ดิน (บาท)</label>
+                    <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">ราคาประเมินทุนทรัพย์ของกรมที่ดิน (บาท)</label>
                     <input id="propAppraisedValue" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.appraisedValue))}" placeholder="เช่น 3,000,000" class="airbnb-input w-full">
-                    <span class="text-[11px] text-[#888888] dark:text-neutral-400 mt-0.5 block">ใช้เป็นฐานคิดค่าธรรมเนียมโอน และภาษีเงินได้หัก ณ ที่จ่าย</span>
+                    <span class="text-[11px] text-[var(--app-muted)] mt-0.5 block">ใช้เป็นฐานคิดค่าธรรมเนียมโอน และภาษีเงินได้หัก ณ ที่จ่าย</span>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ราคาซื้อขายจริงตามสัญญา (บาท)</label>
+                        <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">ราคาซื้อขายจริงตามสัญญา (บาท)</label>
                         <input id="propSalePrice" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.salePrice))}" placeholder="เช่น 3,200,000" class="airbnb-input w-full">
                     </div>
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">วงเงินกู้จดจำนอง (ป้อน 0 หากซื้อสด)</label>
+                        <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">วงเงินกู้จดจำนอง (ป้อน 0 หากซื้อสด)</label>
                         <input id="propMortgageAmount" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.mortgageAmount))}" placeholder="เช่น 2,500,000" class="airbnb-input w-full">
                     </div>
                 </div>
@@ -14287,14 +14287,14 @@ function renderGoldThaiTool(container) {
 
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <div>
-                        <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ประเภททองคำ</label>
+                        <label class="font-semibold text-[var(--app-body)] block mb-1">ประเภททองคำ</label>
                         <select id="goldTypeSelect" class="airbnb-input w-full">
                             <option value="ornament" ${st.goldType === 'ornament' ? 'selected' : ''}>ทองรูปพรรณ (มีค่ากำเหน็จ)</option>
                             <option value="bar" ${st.goldType === 'bar' ? 'selected' : ''}>ทองคำแท่ง (ไม่มี/กำเหน็จน้อย)</option>
                         </select>
                     </div>
                     <div>
-                        <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">หน่วยน้ำหนัก</label>
+                        <label class="font-semibold text-[var(--app-body)] block mb-1">หน่วยน้ำหนัก</label>
                         <select id="goldUnitSelect" class="airbnb-input w-full">
                             <option value="baht" ${st.weightUnit === 'baht' ? 'selected' : ''}>บาททองคำ</option>
                             <option value="salung" ${st.weightUnit === 'salung' ? 'selected' : ''}>สลึง (1/4 บาท)</option>
@@ -14305,19 +14305,19 @@ function renderGoldThaiTool(container) {
 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">
+                        <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">
                             จำนวนน้ำหนัก (${st.weightUnit === 'baht' ? 'บาท' : (st.weightUnit === 'salung' ? 'สลึง' : 'กรัม')})
                         </label>
                         <input id="goldWeightInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.weightValue))}" placeholder="เช่น 1 หรือ 0.5" class="airbnb-input w-full">
                     </div>
                     ${st.mode === 'savings' ? `
                         <div>
-                            <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ต้นทุนเฉลี่ยที่ซื้อมา (บาทละ)</label>
+                            <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">ต้นทุนเฉลี่ยที่ซื้อมา (บาทละ)</label>
                             <input id="goldSavingsCostInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.savingsCostPerBaht))}" placeholder="เช่น 40,000" class="airbnb-input w-full">
                         </div>
                     ` : `
                         <div>
-                            <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ค่ากำเหน็จ (บาท)</label>
+                            <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">ค่ากำเหน็จ (บาท)</label>
                             <input id="goldCraftFeeInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.craftFee))}" placeholder="เช่น 800" class="airbnb-input w-full">
                         </div>
                     `}
@@ -14505,20 +14505,20 @@ function renderElectricityBillTool(container) {
                     
                     <div class="grid grid-cols-2 gap-2 text-xs">
                         <div>
-                            <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ประเภทบ้านอยู่อาศัย</label>
+                            <label class="font-semibold text-[var(--app-body)] block mb-1">ประเภทบ้านอยู่อาศัย</label>
                             <select id="elecTariffType" class="airbnb-input w-full">
                                 <option value="type1_2" ${st.tariffType === 'type1_2' ? 'selected' : ''}>ประเภท 1.2 (เกิน 150 หน่วย/ด.)</option>
                                 <option value="type1_1" ${st.tariffType === 'type1_1' ? 'selected' : ''}>ประเภท 1.1 (ไม่เกิน 150 หน่วย/ด.)</option>
                             </select>
                         </div>
                         <div>
-                            <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ค่าไฟฟ้าผันแปร Ft (บาท/หน่วย) · ค่าตั้งต้น ตรวจกับบิลล่าสุด</label>
+                            <label class="font-semibold text-[var(--app-body)] block mb-1">ค่าไฟฟ้าผันแปร Ft (บาท/หน่วย) · ค่าตั้งต้น ตรวจกับบิลล่าสุด</label>
                             <input id="elecFtRate" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.ftRate))}" class="airbnb-input w-full" placeholder="0.3972">
                         </div>
                     </div>
 
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">จำนวนหน่วยไฟฟ้าที่ใช้ (Unit / kWh)</label>
+                        <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">จำนวนหน่วยไฟฟ้าที่ใช้ (Unit / kWh)</label>
                         <input id="elecUnitsInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.units))}" placeholder="เช่น 350" class="airbnb-input w-full text-base font-semibold">
                     </div>
                 </div>
@@ -14624,15 +14624,15 @@ function renderElectricityBillTool(container) {
                                 </div>
                                 <div class="grid grid-cols-3 gap-2">
                                     <div>
-                                        <label class="text-[10px] text-neutral-500 block">กำลังไฟ (วัตต์)</label>
+                                        <label class="text-[10px] text-[var(--app-muted)] block">กำลังไฟ (วัตต์)</label>
                                         <input type="number" data-app-field="watts" data-app-idx="${idx}" value="${item.watts}" class="airbnb-input w-full text-xs">
                                     </div>
                                     <div>
-                                        <label class="text-[10px] text-neutral-500 block">จำนวนเครื่อง</label>
+                                        <label class="text-[10px] text-[var(--app-muted)] block">จำนวนเครื่อง</label>
                                         <input type="number" min="1" data-app-field="qty" data-app-idx="${idx}" value="${item.qty}" class="airbnb-input w-full text-xs">
                                     </div>
                                     <div>
-                                        <label class="text-[10px] text-neutral-500 block">ชั่วโมงเปิด/วัน</label>
+                                        <label class="text-[10px] text-[var(--app-muted)] block">ชั่วโมงเปิด/วัน</label>
                                         <input type="number" step="0.5" min="0" max="24" data-app-field="hoursPerDay" data-app-idx="${idx}" value="${item.hours}" class="airbnb-input w-full text-xs">
                                     </div>
                                 </div>
@@ -17109,8 +17109,8 @@ function setStatusBanner(stateType, htmlContent) {
             scheduleRecordHistory(appState.activeToolId);
         }
         if (isAirbnb) {
-            banner.className = 'status-banner !border-[#ff385c] !bg-[#fff8f9]';
-            textEl.className = `text-[#222222] text-[0.98rem] font-semibold leading-snug w-full ${baseTextPad}`;
+            banner.className = 'status-banner theme-success';
+            textEl.className = `text-[var(--app-ink)] text-[0.98rem] font-semibold leading-snug w-full ${baseTextPad}`;
         } else if (isTogether) {
             banner.className = 'status-banner theme-success';
             textEl.className = `text-[var(--app-ink)] text-[1rem] font-bold leading-snug w-full ${baseTextPad}`;
@@ -17118,13 +17118,13 @@ function setStatusBanner(stateType, htmlContent) {
             banner.className = 'status-banner theme-success';
             textEl.className = `text-[var(--app-ink)] text-[1rem] font-bold leading-snug w-full ${baseTextPad}`;
         } else {
-            banner.className = 'status-banner !bg-[#f0fdf4] !border-[#16a34a]';
-            textEl.className = `text-[#15803d] text-[1rem] font-bold leading-snug w-full ${baseTextPad}`;
+            banner.className = 'status-banner theme-success';
+            textEl.className = `text-[var(--app-ink)] text-[1rem] font-bold leading-snug w-full ${baseTextPad}`;
         }
         textEl.innerHTML = htmlContent;
     } else {
         banner.className = 'status-banner';
-        textEl.className = `text-[#222222] text-[0.98rem] font-medium leading-snug w-full ${baseTextPad}`;
+        textEl.className = `text-[var(--app-ink)] text-[0.98rem] font-medium leading-snug w-full ${baseTextPad}`;
         textEl.innerHTML = htmlContent;
     }
 }

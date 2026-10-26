@@ -215,7 +215,7 @@ function showHistoryToast(message, isSuccess = true) {
         document.body.appendChild(toast);
     }
     toast.textContent = message;
-    toast.className = `fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-xs font-semibold shadow-lg transition-all duration-300 pointer-events-none ${isSuccess ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900' : 'bg-red-600 text-white'} opacity-100 translate-y-0`;
+    toast.className = `fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-xs font-semibold shadow-lg transition-all duration-300 pointer-events-none ${isSuccess ? 'bg-[var(--app-ink)] text-[var(--color-canvas)]' : 'bg-red-600 text-white'} opacity-100 translate-y-0`;
     clearTimeout(toast._timer);
     toast._timer = setTimeout(() => {
         toast.classList.remove('opacity-100', 'translate-y-0');
@@ -235,15 +235,15 @@ function switchDrawerTab(tab) {
     const historyArea = document.getElementById('sidebarHistoryArea');
 
     if (tab === 'history') {
-        if (tabHistory) tabHistory.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 bg-white text-[#222222] shadow-sm cursor-pointer';
-        if (tabTools) tabTools.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 text-[#6a6a6a] hover:text-[#222222] cursor-pointer';
+        if (tabHistory) tabHistory.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 bg-[var(--color-canvas)] text-[var(--app-ink)] shadow-sm cursor-pointer';
+        if (tabTools) tabTools.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 text-[var(--app-muted)] hover:text-[var(--app-ink)] cursor-pointer';
         searchContainer?.classList.add('hidden');
         contentArea?.classList.add('hidden');
         historyArea?.classList.remove('hidden');
         renderHistoryPanel();
     } else {
-        if (tabTools) tabTools.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 bg-white text-[#222222] shadow-sm cursor-pointer';
-        if (tabHistory) tabHistory.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 text-[#6a6a6a] hover:text-[#222222] cursor-pointer';
+        if (tabTools) tabTools.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 bg-[var(--color-canvas)] text-[var(--app-ink)] shadow-sm cursor-pointer';
+        if (tabHistory) tabHistory.className = 'py-1.5 rounded-lg transition-all text-center flex items-center justify-center gap-1.5 text-[var(--app-muted)] hover:text-[var(--app-ink)] cursor-pointer';
         searchContainer?.classList.remove('hidden');
         contentArea?.classList.remove('hidden');
         historyArea?.classList.add('hidden');
@@ -264,30 +264,30 @@ function updateHistoryBadge() {
 
 function createHistoryCardHTML(item) {
     return `
-        <div class="history-item-card bg-white dark:bg-[#262626] border border-[var(--app-hairline)] rounded-xl p-2.5 shadow-sm hover:border-[var(--app-accent)] transition cursor-pointer group" data-id="${item.id}">
+        <div class="history-item-card themed-subcard rounded-xl p-2.5 shadow-sm hover:border-[var(--app-accent)] transition cursor-pointer group" data-id="${item.id}">
             <div class="flex items-start justify-between gap-1.5">
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-1.5 flex-wrap">
-                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--app-accent)]/10 text-[var(--app-accent)]">
+                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
                             ${escapeHTML(item.toolTitle)}
                         </span>
-                        ${item.label ? `<span class="text-xs font-bold text-[#222] dark:text-white truncate max-w-[160px]">${escapeHTML(item.label)}</span>` : ''}
+                        ${item.label ? `<span class="text-xs font-bold text-[var(--app-ink)] truncate max-w-[160px]">${escapeHTML(item.label)}</span>` : ''}
                     </div>
-                    <div class="text-xs font-semibold text-[#1a1a1a] dark:text-[#eee] mt-1 truncate">
+                    <div class="text-xs font-semibold text-[var(--app-ink)] mt-1 truncate">
                         ${escapeHTML(item.shortSummary || 'ผลการคำนวณ')}
                     </div>
-                    ${item.detailText ? `<div class="text-[11px] text-[#666] dark:text-[#999] mt-0.5 truncate">${escapeHTML(item.detailText)}</div>` : ''}
+                    ${item.detailText ? `<div class="text-[11px] text-[var(--app-body)] mt-0.5 truncate">${escapeHTML(item.detailText)}</div>` : ''}
                 </div>
                 <div class="flex items-center gap-0.5 shrink-0 ml-1">
-                    <button type="button" class="btn-pin-history p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-sm" title="${item.isSaved ? 'เลิกบันทึก' : 'บันทึกเป็นชุดเปรียบเทียบ'}" data-id="${item.id}">
+                    <button type="button" class="btn-pin-history p-1.5 rounded-full hover:bg-[var(--app-surface-soft)] text-sm" title="${item.isSaved ? 'เลิกบันทึก' : 'บันทึกเป็นชุดเปรียบเทียบ'}" data-id="${item.id}">
                         ${item.isSaved ? '★' : '☆'}
                     </button>
-                    ${item.isSaved ? `<button type="button" class="btn-dup-history p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs" title="ทำสำเนาชุดนี้" data-id="${item.id}">ทำสำเนา</button>` : ''}
-                    ${item.isSaved ? `<button type="button" class="btn-rename-history p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs" title="เปลี่ยนชื่อ" data-id="${item.id}">เปลี่ยนชื่อ</button>` : ''}
+                    ${item.isSaved ? `<button type="button" class="btn-dup-history p-1.5 rounded-full hover:bg-[var(--app-surface-soft)] text-xs" title="ทำสำเนาชุดนี้" data-id="${item.id}">ทำสำเนา</button>` : ''}
+                    ${item.isSaved ? `<button type="button" class="btn-rename-history p-1.5 rounded-full hover:bg-[var(--app-surface-soft)] text-xs" title="เปลี่ยนชื่อ" data-id="${item.id}">เปลี่ยนชื่อ</button>` : ''}
                     <button type="button" class="btn-del-history p-1.5 rounded-full hover:bg-red-50 text-neutral-400 hover:text-red-500 text-xs" title="ลบรายการนี้" data-id="${item.id}">✕</button>
                 </div>
             </div>
-            <div class="flex items-center justify-between mt-2 pt-1.5 border-t border-[var(--color-hairline-soft)] text-[10px] text-[#888]">
+            <div class="flex items-center justify-between mt-2 pt-1.5 border-t border-[var(--app-hairline)] text-[10px] text-[var(--app-muted)]">
                 <span>${escapeHTML(item.timeDisplay)}</span>
                 <span class="text-[var(--app-accent)] font-semibold group-hover:underline">แตะเพื่อโหลด ↗</span>
             </div>

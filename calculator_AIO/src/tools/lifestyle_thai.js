@@ -383,14 +383,14 @@ function renderGoldThaiTool(container) {
 
                 <div class="grid grid-cols-2 gap-2 text-xs">
                     <div>
-                        <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ประเภททองคำ</label>
+                        <label class="font-semibold text-[var(--app-body)] block mb-1">ประเภททองคำ</label>
                         <select id="goldTypeSelect" class="airbnb-input w-full">
                             <option value="ornament" ${st.goldType === 'ornament' ? 'selected' : ''}>ทองรูปพรรณ (มีค่ากำเหน็จ)</option>
                             <option value="bar" ${st.goldType === 'bar' ? 'selected' : ''}>ทองคำแท่ง (ไม่มี/กำเหน็จน้อย)</option>
                         </select>
                     </div>
                     <div>
-                        <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">หน่วยน้ำหนัก</label>
+                        <label class="font-semibold text-[var(--app-body)] block mb-1">หน่วยน้ำหนัก</label>
                         <select id="goldUnitSelect" class="airbnb-input w-full">
                             <option value="baht" ${st.weightUnit === 'baht' ? 'selected' : ''}>บาททองคำ</option>
                             <option value="salung" ${st.weightUnit === 'salung' ? 'selected' : ''}>สลึง (1/4 บาท)</option>
@@ -401,19 +401,19 @@ function renderGoldThaiTool(container) {
 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">
+                        <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">
                             จำนวนน้ำหนัก (${st.weightUnit === 'baht' ? 'บาท' : (st.weightUnit === 'salung' ? 'สลึง' : 'กรัม')})
                         </label>
                         <input id="goldWeightInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.weightValue))}" placeholder="เช่น 1 หรือ 0.5" class="airbnb-input w-full">
                     </div>
                     ${st.mode === 'savings' ? `
                         <div>
-                            <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ต้นทุนเฉลี่ยที่ซื้อมา (บาทละ)</label>
+                            <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">ต้นทุนเฉลี่ยที่ซื้อมา (บาทละ)</label>
                             <input id="goldSavingsCostInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.savingsCostPerBaht))}" placeholder="เช่น 40,000" class="airbnb-input w-full">
                         </div>
                     ` : `
                         <div>
-                            <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ค่ากำเหน็จ (บาท)</label>
+                            <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">ค่ากำเหน็จ (บาท)</label>
                             <input id="goldCraftFeeInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.craftFee))}" placeholder="เช่น 800" class="airbnb-input w-full">
                         </div>
                     `}
@@ -601,20 +601,20 @@ function renderElectricityBillTool(container) {
                     
                     <div class="grid grid-cols-2 gap-2 text-xs">
                         <div>
-                            <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ประเภทบ้านอยู่อาศัย</label>
+                            <label class="font-semibold text-[var(--app-body)] block mb-1">ประเภทบ้านอยู่อาศัย</label>
                             <select id="elecTariffType" class="airbnb-input w-full">
                                 <option value="type1_2" ${st.tariffType === 'type1_2' ? 'selected' : ''}>ประเภท 1.2 (เกิน 150 หน่วย/ด.)</option>
                                 <option value="type1_1" ${st.tariffType === 'type1_1' ? 'selected' : ''}>ประเภท 1.1 (ไม่เกิน 150 หน่วย/ด.)</option>
                             </select>
                         </div>
                         <div>
-                            <label class="font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">ค่าไฟฟ้าผันแปร Ft (บาท/หน่วย) · ค่าตั้งต้น ตรวจกับบิลล่าสุด</label>
+                            <label class="font-semibold text-[var(--app-body)] block mb-1">ค่าไฟฟ้าผันแปร Ft (บาท/หน่วย) · ค่าตั้งต้น ตรวจกับบิลล่าสุด</label>
                             <input id="elecFtRate" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.ftRate))}" class="airbnb-input w-full" placeholder="0.3972">
                         </div>
                     </div>
 
                     <div>
-                        <label class="text-xs font-semibold text-[#6a6a6a] dark:text-neutral-400 block mb-1">จำนวนหน่วยไฟฟ้าที่ใช้ (Unit / kWh)</label>
+                        <label class="text-xs font-semibold text-[var(--app-body)] block mb-1">จำนวนหน่วยไฟฟ้าที่ใช้ (Unit / kWh)</label>
                         <input id="elecUnitsInput" type="text" inputmode="decimal" value="${escapeHTML(formatInputDisplay(st.units))}" placeholder="เช่น 350" class="airbnb-input w-full text-base font-semibold">
                     </div>
                 </div>
@@ -720,15 +720,15 @@ function renderElectricityBillTool(container) {
                                 </div>
                                 <div class="grid grid-cols-3 gap-2">
                                     <div>
-                                        <label class="text-[10px] text-neutral-500 block">กำลังไฟ (วัตต์)</label>
+                                        <label class="text-[10px] text-[var(--app-muted)] block">กำลังไฟ (วัตต์)</label>
                                         <input type="number" data-app-field="watts" data-app-idx="${idx}" value="${item.watts}" class="airbnb-input w-full text-xs">
                                     </div>
                                     <div>
-                                        <label class="text-[10px] text-neutral-500 block">จำนวนเครื่อง</label>
+                                        <label class="text-[10px] text-[var(--app-muted)] block">จำนวนเครื่อง</label>
                                         <input type="number" min="1" data-app-field="qty" data-app-idx="${idx}" value="${item.qty}" class="airbnb-input w-full text-xs">
                                     </div>
                                     <div>
-                                        <label class="text-[10px] text-neutral-500 block">ชั่วโมงเปิด/วัน</label>
+                                        <label class="text-[10px] text-[var(--app-muted)] block">ชั่วโมงเปิด/วัน</label>
                                         <input type="number" step="0.5" min="0" max="24" data-app-field="hoursPerDay" data-app-idx="${idx}" value="${item.hours}" class="airbnb-input w-full text-xs">
                                     </div>
                                 </div>
