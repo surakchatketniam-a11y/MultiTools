@@ -231,7 +231,7 @@ function buildApplianceRanking(appCalc) {
 }
 
 // ตารางจัดอันดับ แสดงเฉพาะจอใหญ่ (hidden lg:block) เพื่อไม่กระทบมือถือ
-function renderApplianceRankingTable(ranking) {
+function renderApplianceRankingTable(ranking, extraHTML = '') {
     if (!ranking.length) return '';
     const top = ranking[0];
     const insight = top.monthlyKwh > 0
@@ -268,6 +268,7 @@ function renderApplianceRankingTable(ranking) {
                     </tbody>
                 </table>
             </div>
+            ${extraHTML}
         </div>`;
 }
 
@@ -811,7 +812,7 @@ function renderElectricityBillTool(container) {
                         </div>
                     </div>
                 </div>
-                ${renderApplianceRankingTable(buildApplianceRanking(appCalc))}
+                ${renderApplianceRankingTable(buildApplianceRanking(appCalc), renderApplianceWhatIfSection(st.appliances, calc.avgRatePerUnit || 4.5))}
             `}
         </div>
     `;

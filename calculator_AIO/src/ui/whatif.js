@@ -78,6 +78,49 @@ function computeTaxInsights(params) {
     });
 }
 
+// Car loan: effect of putting `extraDown` baht more into the down payment.
+function computeCarLoanWhatIf(params, extraDown) {
+    const p = params || {};
+    const base = calculateCarLoan(p);
+    const extra = Math.max(0, safeNumber(extraDown, 0));
+    const alt = calculateCarLoan({ ...p, downPaymentType: 'amount', downPaymentValue: Math.min(base.price, base.downPaymentAmount + extra) });
+    return {
+        extraDown: Math.min(extra, Math.max(0, base.price - base.downPaymentAmount)),
+        baseMonthly: base.monthlyPayment,
+        newMonthly: alt.monthlyPayment,
+        monthlySaved: Math.max(0, base.monthlyPayment - alt.monthlyPayment),
+        interestSaved: Math.max(0, base.totalInterest - alt.totalInterest),
+        newPrincipal: alt.principal,
+        newTotalRepayment: alt.totalRepayment
+    };
+}
+
+// Air conditioners = items with an "air..." id or an air-con name.
+function isAirConditionerItem(item) {
+    const it = item || {};
+    return /^air/i.test(String(it.id || '')) || /แอร์|เครื่องปรับอากาศ|air\s*con/i.test(String(it.name || ''));
+}
+
+// Appliances: cut `reduceHours` per day off every air conditioner (never below 0).
+function computeApplianceWhatIf(appliances, unitCost, reduceHours) {
+    const list = Array.isArray(appliances) ? appliances : [];
+    const rate = Math.max(0, safeNumber(unitCost, 4.5));
+    const cut = Math.max(0, safeNumber(reduceHours, 0));
+    const base = calculateApplianceEnergy(list, rate);
+    const alt = calculateApplianceEnergy(list.map(item => (isAirConditionerItem(item)
+        ? { ...item, hoursPerDay: Math.max(0, safeNumber(item.hoursPerDay, 0) - cut) }
+        : item)), rate);
+    const acItems = list.filter(isAirConditionerItem);
+    return {
+        acCount: acItems.length,
+        maxHours: Math.max(0, ...acItems.map(item => safeNumber(item.hoursPerDay, 0))),
+        savedKwh: Math.max(0, base.totalMonthlyKwh - alt.totalMonthlyKwh),
+        savedBaht: Math.max(0, base.totalMonthlyCost - alt.totalMonthlyCost),
+        savedBahtYearly: Math.max(0, base.totalMonthlyCost - alt.totalMonthlyCost) * 12,
+        newMonthlyCost: alt.totalMonthlyCost
+    };
+}
+
 /* ---------- section renderers ---------- */
 
 function whatIfSection(kind, title, bodyHTML, attrs = '') {
@@ -138,6 +181,27 @@ function renderTaxInsightsSection(params) {
         `data-quotas="${escapeHTML(JSON.stringify(open.map(i => ({ key: i.key, remaining: i.remaining }))))}"`);
 }
 
+function renderCarLoanWhatIfSection(params) {
+    const base = calculateCarLoan(params || {});
+    const max = Math.floor(Math.min(base.principal, base.price * 0.3) / 5000) * 5000;
+    if (!(base.principal > 0) || max < 5000) return '';
+    return whatIfSection('car', 'ลองเพิ่มเงินดาวน์', `
+        ${whatIfRange('whatifCarDown', 'ดาวน์เพิ่ม (บาท)', 0, max, 5000)}
+        ${whatIfRow('ค่างวดลดลง', 'monthlySaved', '0.00 ฿/เดือน')}
+        ${whatIfRow('ดอกเบี้ยที่ประหยัดได้', 'interestSaved', '0.00 ฿')}
+        ${whatIfRow('ค่างวดใหม่', 'newMonthly', `${formatMoney(base.monthlyPayment)} ฿/เดือน`)}`);
+}
+
+function renderApplianceWhatIfSection(appliances, unitCost) {
+    const info = computeApplianceWhatIf(appliances, unitCost, 0);
+    if (!info.acCount || !(info.maxHours > 0)) return '';
+    return whatIfSection('ac', 'ลองลดชั่วโมงเปิดแอร์', `
+        ${whatIfRange('whatifAcHours', 'ลดเวลาเปิดแอร์ (ชั่วโมง/วัน)', 0, Math.floor(info.maxHours * 2) / 2, 0.5)}
+        ${whatIfRow('ประหยัดค่าไฟต่อเดือน', 'savedBaht', '0.00 ฿')}
+        ${whatIfRow('ประหยัดค่าไฟต่อปี', 'savedBahtYearly', '0.00 ฿')}
+        ${whatIfRow('ใช้ไฟลดลง', 'savedKwh', '0.0 หน่วย/เดือน')}`);
+}
+
 /* ---------- live updates (one delegated listener, no re-render) ---------- */
 
 function updateWhatIfSection(section, resetSlider) {
@@ -173,6 +237,20 @@ function updateWhatIfSection(section, resetSlider) {
         set('extraMonthly', `${formatMoney(r.extraMonthly)} ฿`);
         set('extraYearly', `${formatMoney(r.extraYearly)} ฿`);
         set('split', `${r.newWantsPct}% / ${r.newSavingsPct}%`);
+    } else if (kind === 'car') {
+        const r = computeCarLoanWhatIf(appState.car_loan, value);
+        set('slider', `${formatMoney(value)} ฿`);
+        set('monthlySaved', `${formatMoney(r.monthlySaved)} ฿/เดือน`);
+        set('interestSaved', `${formatMoney(r.interestSaved)} ฿`);
+        set('newMonthly', `${formatMoney(r.newMonthly)} ฿/เดือน`);
+    } else if (kind === 'ac') {
+        const st = appState.electricity_bill;
+        const rate = calculateElectricityBill(st).avgRatePerUnit || 4.5;
+        const r = computeApplianceWhatIf(st.appliances, rate, value);
+        set('slider', `${value} ชม./วัน`);
+        set('savedBaht', `${formatMoney(r.savedBaht)} ฿`);
+        set('savedBahtYearly', `${formatMoney(r.savedBahtYearly)} ฿`);
+        set('savedKwh', `${r.savedKwh.toFixed(1)} หน่วย/เดือน`);
     } else if (kind === 'tax') {
         const fund = section.querySelector('[data-whatif-fund]')?.value;
         const r = computeTaxWhatIf(appState.tax_personal, fund, value);

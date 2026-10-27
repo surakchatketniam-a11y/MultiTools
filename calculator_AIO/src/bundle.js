@@ -6610,21 +6610,27 @@ function renderDonutChart(slices, options = {}) {
 // Area/line chart of a value series (x = index, y = value).
 function renderLineChart(points, options = {}) {
     if (!Array.isArray(points) || points.length < 2) return '';
+    const secondary = Array.isArray(options.secondary) && options.secondary.length > 1 ? options.secondary : null;
     const width = 300, height = 110, padX = 4, padTop = 8, padBottom = 6;
-    const maxY = Math.max(...points.map(p => p.balance), 1);
+    const maxY = Math.max(...points.map(p => p.balance), ...(secondary || []).map(p => p.balance), 1);
     const maxX = Math.max(points[points.length - 1].month, 1);
     const xy = p => [
         padX + (p.month / maxX) * (width - padX * 2),
         padTop + (1 - p.balance / maxY) * (height - padTop - padBottom)
     ];
+    const toPath = list => list.map(xy).map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
     const coords = points.map(xy);
-    const line = coords.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
+    const line = toPath(points);
     const baseY = height - padBottom;
     const area = `${line} L${coords[coords.length - 1][0].toFixed(1)} ${baseY} L${coords[0][0].toFixed(1)} ${baseY} Z`;
+    const second = secondary
+        ? `<path d="${toPath(secondary)}" fill="none" stroke="var(--app-ink)" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>`
+        : '';
     return `<svg viewBox="0 0 ${width} ${height}" class="w-full h-auto" role="img" aria-label="${escapeHTML(options.ariaLabel || 'กราฟยอดคงเหลือ')}" preserveAspectRatio="none">
         <line x1="${padX}" y1="${baseY}" x2="${width - padX}" y2="${baseY}" stroke="var(--app-hairline)" stroke-width="1"></line>
         <path d="${area}" fill="var(--app-accent)" fill-opacity="0.14"></path>
         <path d="${line}" fill="none" stroke="var(--app-accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>
+        ${second}
     </svg>`;
 }
 
@@ -6716,6 +6722,66 @@ function renderSalaryChartPanel(params) {
         ${renderSalaryWhatIfSection(params)}`);
 }
 
+// Car loan (flat rate): split of what is repaid, plus remaining balance with and without the early-payoff discount.
+function buildCarLoanChartData(calc, rows) {
+    if (!calc || !(calc.principal > 0) || !Array.isArray(rows) || !rows.length) return null;
+    const total = calc.principal + calc.totalInterest + calc.totalVat;
+    const points = [{ month: 0, balance: calc.totalRepayment }];
+    const payoffPoints = [{ month: 0, balance: calc.totalRepayment }];
+    rows.forEach(r => {
+        points.push({ month: r.month, balance: r.fullRemaining });
+        payoffPoints.push({ month: r.month, balance: r.payoffAmount });
+    });
+    return {
+        principal: calc.principal,
+        interest: calc.totalInterest,
+        vat: calc.totalVat,
+        totalRepayment: calc.totalRepayment,
+        interestSharePct: chartPercent(calc.totalInterest, total),
+        points,
+        payoffPoints,
+        maxSaved: Math.max(...rows.map(r => r.saved))
+    };
+}
+
+function renderCarLoanChartPanel(calc, rows, params) {
+    const data = buildCarLoanChartData(calc, rows);
+    if (!data) return '';
+    const slices = [
+        { value: data.principal, tone: 'accent' },
+        { value: data.interest, tone: 'ink' }
+    ];
+    const legend = [
+        { label: 'เงินต้น (ยอดจัด)', tone: 'accent', text: `${formatMoney(data.principal)} ฿` },
+        { label: 'ดอกเบี้ย', tone: 'ink', text: `${formatMoney(data.interest)} ฿` }
+    ];
+    if (data.vat > 0) {
+        slices.push({ value: data.vat, tone: 'muted' });
+        legend.push({ label: 'VAT 7% (รถมือสอง)', tone: 'muted', text: `${formatMoney(data.vat)} ฿` });
+    }
+    const donut = renderDonutChart(slices, {
+        centerText: `${data.interestSharePct.toFixed(1)}%`,
+        centerSub: 'ดอกเบี้ย',
+        ariaLabel: `เงินต้น ${formatMoney(data.principal)} บาท ดอกเบี้ย ${formatMoney(data.interest)} บาท`
+    });
+    const last = data.points[data.points.length - 1];
+    return renderChartPanel('ภาพรวมสินเชื่อรถ', `
+        <div class="flex items-center gap-4">
+            ${donut}
+            <div class="flex-1 min-w-0">${renderChartLegend(legend)}</div>
+        </div>
+        <div>
+            <div class="font-semibold text-[var(--app-body)] mb-1">ยอดคงเหลือตลอดสัญญา</div>
+            ${renderLineChart(data.points, { secondary: data.payoffPoints, ariaLabel: `ยอดผ่อนคงเหลือลดจาก ${formatMoney(data.totalRepayment)} เหลือ ${formatMoney(last.balance)} บาท ใน ${last.month} งวด เส้นประคือยอดปิดบัญชีหลังส่วนลด สคบ.` })}
+            <div class="flex justify-between text-[10px] text-[var(--app-body)] mt-0.5"><span>งวดที่ 0 · ${formatMoney(data.totalRepayment)}</span><span>งวดที่ ${last.month} · ${formatMoney(last.balance)}</span></div>
+            <ul class="chart-legend text-[11px] text-[var(--app-body)] mt-1 space-y-0.5">
+                <li>เส้นทึบ: ยอดผ่อนคงเหลือตามสัญญา</li>
+                <li>เส้นประ: ยอดปิดบัญชีหลังส่วนลด สคบ. (ประหยัดสูงสุด ${formatMoney(data.maxSaved)} ฿)</li>
+            </ul>
+        </div>
+        ${params ? renderCarLoanWhatIfSection(params) : ''}`);
+}
+
 // <<< src/ui/charts.js <<<
 
 // >>> src/ui/whatif.js >>>
@@ -6799,6 +6865,49 @@ function computeTaxInsights(params) {
     });
 }
 
+// Car loan: effect of putting `extraDown` baht more into the down payment.
+function computeCarLoanWhatIf(params, extraDown) {
+    const p = params || {};
+    const base = calculateCarLoan(p);
+    const extra = Math.max(0, safeNumber(extraDown, 0));
+    const alt = calculateCarLoan({ ...p, downPaymentType: 'amount', downPaymentValue: Math.min(base.price, base.downPaymentAmount + extra) });
+    return {
+        extraDown: Math.min(extra, Math.max(0, base.price - base.downPaymentAmount)),
+        baseMonthly: base.monthlyPayment,
+        newMonthly: alt.monthlyPayment,
+        monthlySaved: Math.max(0, base.monthlyPayment - alt.monthlyPayment),
+        interestSaved: Math.max(0, base.totalInterest - alt.totalInterest),
+        newPrincipal: alt.principal,
+        newTotalRepayment: alt.totalRepayment
+    };
+}
+
+// Air conditioners = items with an "air..." id or an air-con name.
+function isAirConditionerItem(item) {
+    const it = item || {};
+    return /^air/i.test(String(it.id || '')) || /แอร์|เครื่องปรับอากาศ|air\s*con/i.test(String(it.name || ''));
+}
+
+// Appliances: cut `reduceHours` per day off every air conditioner (never below 0).
+function computeApplianceWhatIf(appliances, unitCost, reduceHours) {
+    const list = Array.isArray(appliances) ? appliances : [];
+    const rate = Math.max(0, safeNumber(unitCost, 4.5));
+    const cut = Math.max(0, safeNumber(reduceHours, 0));
+    const base = calculateApplianceEnergy(list, rate);
+    const alt = calculateApplianceEnergy(list.map(item => (isAirConditionerItem(item)
+        ? { ...item, hoursPerDay: Math.max(0, safeNumber(item.hoursPerDay, 0) - cut) }
+        : item)), rate);
+    const acItems = list.filter(isAirConditionerItem);
+    return {
+        acCount: acItems.length,
+        maxHours: Math.max(0, ...acItems.map(item => safeNumber(item.hoursPerDay, 0))),
+        savedKwh: Math.max(0, base.totalMonthlyKwh - alt.totalMonthlyKwh),
+        savedBaht: Math.max(0, base.totalMonthlyCost - alt.totalMonthlyCost),
+        savedBahtYearly: Math.max(0, base.totalMonthlyCost - alt.totalMonthlyCost) * 12,
+        newMonthlyCost: alt.totalMonthlyCost
+    };
+}
+
 /* ---------- section renderers ---------- */
 
 function whatIfSection(kind, title, bodyHTML, attrs = '') {
@@ -6859,6 +6968,27 @@ function renderTaxInsightsSection(params) {
         `data-quotas="${escapeHTML(JSON.stringify(open.map(i => ({ key: i.key, remaining: i.remaining }))))}"`);
 }
 
+function renderCarLoanWhatIfSection(params) {
+    const base = calculateCarLoan(params || {});
+    const max = Math.floor(Math.min(base.principal, base.price * 0.3) / 5000) * 5000;
+    if (!(base.principal > 0) || max < 5000) return '';
+    return whatIfSection('car', 'ลองเพิ่มเงินดาวน์', `
+        ${whatIfRange('whatifCarDown', 'ดาวน์เพิ่ม (บาท)', 0, max, 5000)}
+        ${whatIfRow('ค่างวดลดลง', 'monthlySaved', '0.00 ฿/เดือน')}
+        ${whatIfRow('ดอกเบี้ยที่ประหยัดได้', 'interestSaved', '0.00 ฿')}
+        ${whatIfRow('ค่างวดใหม่', 'newMonthly', `${formatMoney(base.monthlyPayment)} ฿/เดือน`)}`);
+}
+
+function renderApplianceWhatIfSection(appliances, unitCost) {
+    const info = computeApplianceWhatIf(appliances, unitCost, 0);
+    if (!info.acCount || !(info.maxHours > 0)) return '';
+    return whatIfSection('ac', 'ลองลดชั่วโมงเปิดแอร์', `
+        ${whatIfRange('whatifAcHours', 'ลดเวลาเปิดแอร์ (ชั่วโมง/วัน)', 0, Math.floor(info.maxHours * 2) / 2, 0.5)}
+        ${whatIfRow('ประหยัดค่าไฟต่อเดือน', 'savedBaht', '0.00 ฿')}
+        ${whatIfRow('ประหยัดค่าไฟต่อปี', 'savedBahtYearly', '0.00 ฿')}
+        ${whatIfRow('ใช้ไฟลดลง', 'savedKwh', '0.0 หน่วย/เดือน')}`);
+}
+
 /* ---------- live updates (one delegated listener, no re-render) ---------- */
 
 function updateWhatIfSection(section, resetSlider) {
@@ -6894,6 +7024,20 @@ function updateWhatIfSection(section, resetSlider) {
         set('extraMonthly', `${formatMoney(r.extraMonthly)} ฿`);
         set('extraYearly', `${formatMoney(r.extraYearly)} ฿`);
         set('split', `${r.newWantsPct}% / ${r.newSavingsPct}%`);
+    } else if (kind === 'car') {
+        const r = computeCarLoanWhatIf(appState.car_loan, value);
+        set('slider', `${formatMoney(value)} ฿`);
+        set('monthlySaved', `${formatMoney(r.monthlySaved)} ฿/เดือน`);
+        set('interestSaved', `${formatMoney(r.interestSaved)} ฿`);
+        set('newMonthly', `${formatMoney(r.newMonthly)} ฿/เดือน`);
+    } else if (kind === 'ac') {
+        const st = appState.electricity_bill;
+        const rate = calculateElectricityBill(st).avgRatePerUnit || 4.5;
+        const r = computeApplianceWhatIf(st.appliances, rate, value);
+        set('slider', `${value} ชม./วัน`);
+        set('savedBaht', `${formatMoney(r.savedBaht)} ฿`);
+        set('savedBahtYearly', `${formatMoney(r.savedBahtYearly)} ฿`);
+        set('savedKwh', `${r.savedKwh.toFixed(1)} หน่วย/เดือน`);
     } else if (kind === 'tax') {
         const fund = section.querySelector('[data-whatif-fund]')?.value;
         const r = computeTaxWhatIf(appState.tax_personal, fund, value);
@@ -14882,7 +15026,7 @@ function buildApplianceRanking(appCalc) {
 }
 
 // ตารางจัดอันดับ แสดงเฉพาะจอใหญ่ (hidden lg:block) เพื่อไม่กระทบมือถือ
-function renderApplianceRankingTable(ranking) {
+function renderApplianceRankingTable(ranking, extraHTML = '') {
     if (!ranking.length) return '';
     const top = ranking[0];
     const insight = top.monthlyKwh > 0
@@ -14919,6 +15063,7 @@ function renderApplianceRankingTable(ranking) {
                     </tbody>
                 </table>
             </div>
+            ${extraHTML}
         </div>`;
 }
 
@@ -15462,7 +15607,7 @@ function renderElectricityBillTool(container) {
                         </div>
                     </div>
                 </div>
-                ${renderApplianceRankingTable(buildApplianceRanking(appCalc))}
+                ${renderApplianceRankingTable(buildApplianceRanking(appCalc), renderApplianceWhatIfSection(st.appliances, calc.avgRatePerUnit || 4.5))}
             `}
         </div>
     `;
@@ -16002,6 +16147,7 @@ function renderCarLoanTool(container) {
     };
 
     const calc = calculateCarLoan(st);
+    const payoffRows = buildCarLoanPayoffSchedule(st);
 
     container.innerHTML = `
         <div class="finance-thai-tool flex flex-col gap-3 p-1">
@@ -16158,7 +16304,9 @@ function renderCarLoanTool(container) {
                 </div>
             </div>
 
-            ${renderCarLoanPayoffTable(buildCarLoanPayoffSchedule(st), calc.payoffMonth)}
+            ${renderCarLoanChartPanel(calc, payoffRows, st)}
+
+            ${renderCarLoanPayoffTable(payoffRows, calc.payoffMonth)}
         </div>
     `;
 
