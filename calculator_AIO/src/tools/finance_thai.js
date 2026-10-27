@@ -416,6 +416,7 @@ function renderCarLoanTool(container) {
     };
 
     const calc = calculateCarLoan(st);
+    const payoffRows = buildCarLoanPayoffSchedule(st);
 
     container.innerHTML = `
         <div class="finance-thai-tool flex flex-col gap-3 p-1">
@@ -572,7 +573,9 @@ function renderCarLoanTool(container) {
                 </div>
             </div>
 
-            ${renderCarLoanPayoffTable(buildCarLoanPayoffSchedule(st), calc.payoffMonth)}
+            ${renderCarLoanChartPanel(calc, payoffRows, st)}
+
+            ${renderCarLoanPayoffTable(payoffRows, calc.payoffMonth)}
         </div>
     `;
 

@@ -149,21 +149,27 @@ function renderDonutChart(slices, options = {}) {
 // Area/line chart of a value series (x = index, y = value).
 function renderLineChart(points, options = {}) {
     if (!Array.isArray(points) || points.length < 2) return '';
+    const secondary = Array.isArray(options.secondary) && options.secondary.length > 1 ? options.secondary : null;
     const width = 300, height = 110, padX = 4, padTop = 8, padBottom = 6;
-    const maxY = Math.max(...points.map(p => p.balance), 1);
+    const maxY = Math.max(...points.map(p => p.balance), ...(secondary || []).map(p => p.balance), 1);
     const maxX = Math.max(points[points.length - 1].month, 1);
     const xy = p => [
         padX + (p.month / maxX) * (width - padX * 2),
         padTop + (1 - p.balance / maxY) * (height - padTop - padBottom)
     ];
+    const toPath = list => list.map(xy).map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
     const coords = points.map(xy);
-    const line = coords.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
+    const line = toPath(points);
     const baseY = height - padBottom;
     const area = `${line} L${coords[coords.length - 1][0].toFixed(1)} ${baseY} L${coords[0][0].toFixed(1)} ${baseY} Z`;
+    const second = secondary
+        ? `<path d="${toPath(secondary)}" fill="none" stroke="var(--app-ink)" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>`
+        : '';
     return `<svg viewBox="0 0 ${width} ${height}" class="w-full h-auto" role="img" aria-label="${escapeHTML(options.ariaLabel || 'กราฟยอดคงเหลือ')}" preserveAspectRatio="none">
         <line x1="${padX}" y1="${baseY}" x2="${width - padX}" y2="${baseY}" stroke="var(--app-hairline)" stroke-width="1"></line>
         <path d="${area}" fill="var(--app-accent)" fill-opacity="0.14"></path>
         <path d="${line}" fill="none" stroke="var(--app-accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>
+        ${second}
     </svg>`;
 }
 
@@ -253,4 +259,64 @@ function renderSalaryChartPanel(params) {
         </div>
         ${data.overAllocated ? `<div class="text-[var(--app-body)]">สัดส่วนรวมเกิน 100% (${data.totalPct}%) กรุณาปรับให้ไม่เกินเงินเดือน</div>` : ''}
         ${renderSalaryWhatIfSection(params)}`);
+}
+
+// Car loan (flat rate): split of what is repaid, plus remaining balance with and without the early-payoff discount.
+function buildCarLoanChartData(calc, rows) {
+    if (!calc || !(calc.principal > 0) || !Array.isArray(rows) || !rows.length) return null;
+    const total = calc.principal + calc.totalInterest + calc.totalVat;
+    const points = [{ month: 0, balance: calc.totalRepayment }];
+    const payoffPoints = [{ month: 0, balance: calc.totalRepayment }];
+    rows.forEach(r => {
+        points.push({ month: r.month, balance: r.fullRemaining });
+        payoffPoints.push({ month: r.month, balance: r.payoffAmount });
+    });
+    return {
+        principal: calc.principal,
+        interest: calc.totalInterest,
+        vat: calc.totalVat,
+        totalRepayment: calc.totalRepayment,
+        interestSharePct: chartPercent(calc.totalInterest, total),
+        points,
+        payoffPoints,
+        maxSaved: Math.max(...rows.map(r => r.saved))
+    };
+}
+
+function renderCarLoanChartPanel(calc, rows, params) {
+    const data = buildCarLoanChartData(calc, rows);
+    if (!data) return '';
+    const slices = [
+        { value: data.principal, tone: 'accent' },
+        { value: data.interest, tone: 'ink' }
+    ];
+    const legend = [
+        { label: 'เงินต้น (ยอดจัด)', tone: 'accent', text: `${formatMoney(data.principal)} ฿` },
+        { label: 'ดอกเบี้ย', tone: 'ink', text: `${formatMoney(data.interest)} ฿` }
+    ];
+    if (data.vat > 0) {
+        slices.push({ value: data.vat, tone: 'muted' });
+        legend.push({ label: 'VAT 7% (รถมือสอง)', tone: 'muted', text: `${formatMoney(data.vat)} ฿` });
+    }
+    const donut = renderDonutChart(slices, {
+        centerText: `${data.interestSharePct.toFixed(1)}%`,
+        centerSub: 'ดอกเบี้ย',
+        ariaLabel: `เงินต้น ${formatMoney(data.principal)} บาท ดอกเบี้ย ${formatMoney(data.interest)} บาท`
+    });
+    const last = data.points[data.points.length - 1];
+    return renderChartPanel('ภาพรวมสินเชื่อรถ', `
+        <div class="flex items-center gap-4">
+            ${donut}
+            <div class="flex-1 min-w-0">${renderChartLegend(legend)}</div>
+        </div>
+        <div>
+            <div class="font-semibold text-[var(--app-body)] mb-1">ยอดคงเหลือตลอดสัญญา</div>
+            ${renderLineChart(data.points, { secondary: data.payoffPoints, ariaLabel: `ยอดผ่อนคงเหลือลดจาก ${formatMoney(data.totalRepayment)} เหลือ ${formatMoney(last.balance)} บาท ใน ${last.month} งวด เส้นประคือยอดปิดบัญชีหลังส่วนลด สคบ.` })}
+            <div class="flex justify-between text-[10px] text-[var(--app-body)] mt-0.5"><span>งวดที่ 0 · ${formatMoney(data.totalRepayment)}</span><span>งวดที่ ${last.month} · ${formatMoney(last.balance)}</span></div>
+            <ul class="chart-legend text-[11px] text-[var(--app-body)] mt-1 space-y-0.5">
+                <li>เส้นทึบ: ยอดผ่อนคงเหลือตามสัญญา</li>
+                <li>เส้นประ: ยอดปิดบัญชีหลังส่วนลด สคบ. (ประหยัดสูงสุด ${formatMoney(data.maxSaved)} ฿)</li>
+            </ul>
+        </div>
+        ${params ? renderCarLoanWhatIfSection(params) : ''}`);
 }

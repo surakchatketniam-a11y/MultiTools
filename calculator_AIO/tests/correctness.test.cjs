@@ -3507,3 +3507,117 @@ test('desktop layout: planner groups full-width, form and result items without l
     assert.equal(ctx.isDesktopLayout(), false);
     assert.doesNotThrow(() => ctx.arrangeDesktopColumns(null));
 });
+
+test('car loan: chart data, panel, and down-payment what-if agree with the calculator', () => {
+    const ctx = context();
+    const params = { vehicleType: 'car', condition: 'new', price: '850000', downPaymentType: 'percent', downPaymentValue: '20', interestRate: '2.59', periodMonths: '60', payoffMonth: '30' };
+    const calc = ctx.calculateCarLoan(params);
+    const rows = ctx.buildCarLoanPayoffSchedule(params);
+    const data = ctx.buildCarLoanChartData(calc, rows);
+    assert.equal(data.points.length, 61, 'month 0 plus 60 installments');
+    assert.equal(data.points[0].month, 0);
+    assert.ok(Math.abs(data.points[0].balance - calc.totalRepayment) < 0.01);
+    assert.equal(data.points[60].month, 60);
+    assert.equal(data.points[60].balance, 0);
+    assert.equal(data.payoffPoints.length, 61);
+    assert.ok(data.payoffPoints.every((p, i) => p.balance <= data.points[i].balance + 0.005), 'payoff never above the scheduled balance');
+    assert.ok(Math.abs(data.interestSharePct - (calc.totalInterest / (calc.principal + calc.totalInterest)) * 100) < 1e-9);
+    assert.equal(data.vat, 0);
+    assert.ok(data.maxSaved > 0);
+
+    const used = ctx.calculateCarLoan({ ...params, condition: 'used', interestRate: '4.5' });
+    const usedData = ctx.buildCarLoanChartData(used, ctx.buildCarLoanPayoffSchedule({ ...params, condition: 'used', interestRate: '4.5' }));
+    assert.ok(usedData.vat > 0, 'used car shows VAT');
+
+    assert.equal(ctx.buildCarLoanChartData(ctx.calculateCarLoan({ ...params, price: '0' }), []), null);
+    assert.equal(ctx.buildCarLoanChartData(null, rows), null);
+    assert.equal(ctx.renderCarLoanChartPanel(ctx.calculateCarLoan({ ...params, price: '0' }), [], params), '');
+
+    const html = ctx.renderCarLoanChartPanel(calc, rows, params);
+    assert.ok(html.includes('hidden lg:block') && html.includes('<svg'));
+    assert.ok(html.includes('stroke-dasharray'), 'second (payoff) series is drawn dashed');
+    assert.ok(html.includes('data-whatif="car"'));
+    assert.ok(!ctx.renderCarLoanChartPanel(calc, rows).includes('data-whatif'), 'no what-if without params');
+    assert.ok(!/#[0-9a-fA-F]{3,6}\b/.test(html), 'theme variables only');
+
+    // down-payment what-if
+    const none = ctx.computeCarLoanWhatIf(params, 0);
+    assert.equal(none.monthlySaved, 0);
+    assert.equal(none.interestSaved, 0);
+    assert.ok(Math.abs(none.newMonthly - calc.monthlyPayment) < 1e-9);
+
+    const more = ctx.computeCarLoanWhatIf(params, 100000);
+    const direct = ctx.calculateCarLoan({ ...params, downPaymentType: 'amount', downPaymentValue: calc.downPaymentAmount + 100000 });
+    assert.ok(Math.abs(more.newMonthly - direct.monthlyPayment) < 1e-9);
+    assert.ok(Math.abs(more.interestSaved - (calc.totalInterest - direct.totalInterest)) < 1e-9);
+    assert.ok(more.monthlySaved > 0 && more.interestSaved > 0 && more.newPrincipal === calc.principal - 100000);
+    assert.ok(ctx.computeCarLoanWhatIf(params, 200000).interestSaved > more.interestSaved);
+
+    // clamps to the vehicle price, ignores negative/invalid, works for used cars (VAT included)
+    const huge = ctx.computeCarLoanWhatIf(params, 99999999);
+    assert.equal(huge.newPrincipal, 0);
+    assert.equal(huge.extraDown, calc.price - calc.downPaymentAmount);
+    assert.equal(ctx.computeCarLoanWhatIf(params, -5000).monthlySaved, 0);
+    assert.equal(ctx.computeCarLoanWhatIf(params, 'abc').monthlySaved, 0);
+    const usedMore = ctx.computeCarLoanWhatIf({ ...params, condition: 'used', interestRate: '4.5' }, 100000);
+    assert.ok(usedMore.monthlySaved > more.monthlySaved * 0.99, 'VAT scales the monthly saving for used cars');
+
+    // slider section only appears when there is room to add down payment
+    assert.ok(ctx.renderCarLoanWhatIfSection(params).includes('type="range"'));
+    assert.equal(ctx.renderCarLoanWhatIfSection({ ...params, price: '0' }), '');
+    assert.equal(ctx.renderCarLoanWhatIfSection({ ...params, price: '10000' }), '');
+});
+
+test('electricity what-if: reducing air-conditioner hours saves the right kWh and baht, other appliances untouched', () => {
+    const ctx = context();
+    const appliances = [
+        { id: 'air12k', name: 'แอร์ Inverter 12,000 BTU', watts: 900, qty: 1, hoursPerDay: 8 },
+        { id: 'fridge', name: 'ตู้เย็น 2 ประตู', watts: 100, qty: 1, hoursPerDay: 24 },
+        { id: 'fan', name: 'พัดลม 16 นิ้ว', watts: 50, qty: 2, hoursPerDay: 8 }
+    ];
+    const none = ctx.computeApplianceWhatIf(appliances, 4.5, 0);
+    assert.equal(none.savedKwh, 0);
+    assert.equal(none.savedBaht, 0);
+    assert.equal(none.acCount, 1);
+    assert.equal(none.maxHours, 8);
+
+    const two = ctx.computeApplianceWhatIf(appliances, 4.5, 2);
+    assert.ok(Math.abs(two.savedKwh - 54) < 1e-9, '900 W x 2 h x 30 days');
+    assert.ok(Math.abs(two.savedBaht - 243) < 1e-9);
+    assert.ok(Math.abs(two.savedBahtYearly - 2916) < 1e-9);
+    const baseCost = ctx.calculateApplianceEnergy(appliances, 4.5).totalMonthlyCost;
+    assert.ok(Math.abs(two.newMonthlyCost - (baseCost - 243)) < 1e-9);
+
+    // clamps at zero hours: saving equals the whole air-conditioner cost, never more
+    const all = ctx.computeApplianceWhatIf(appliances, 4.5, 20);
+    assert.ok(Math.abs(all.savedKwh - 900 * 8 * 30 / 1000) < 1e-9);
+    assert.ok(all.savedBaht <= baseCost);
+
+    // several air conditioners, name-only detection, invalid input
+    const multi = ctx.computeApplianceWhatIf([
+        { id: 'x1', name: 'แอร์ห้องนอน', watts: 600, qty: 1, hoursPerDay: 6 },
+        { id: 'air18k', name: 'ห้องนั่งเล่น', watts: 1400, qty: 1, hoursPerDay: 4 }
+    ], 4, 1);
+    assert.equal(multi.acCount, 2);
+    assert.ok(Math.abs(multi.savedKwh - (600 + 1400) * 1 * 30 / 1000) < 1e-9);
+    assert.equal(ctx.computeApplianceWhatIf(appliances, 4.5, -3).savedBaht, 0);
+    assert.equal(ctx.computeApplianceWhatIf(appliances, 4.5, 'abc').savedBaht, 0);
+    assert.equal(ctx.isAirConditionerItem({ id: 'fan', name: 'พัดลม' }), false);
+    assert.equal(ctx.isAirConditionerItem({ id: 'AIR9K', name: '' }), true);
+    assert.equal(ctx.isAirConditionerItem(null), false);
+
+    // no air conditioner (or never switched on) -> no slider
+    const noAc = [appliances[1], appliances[2]];
+    assert.equal(ctx.computeApplianceWhatIf(noAc, 4.5, 2).acCount, 0);
+    assert.equal(ctx.renderApplianceWhatIfSection(noAc, 4.5), '');
+    assert.equal(ctx.renderApplianceWhatIfSection([{ ...appliances[0], hoursPerDay: 0 }], 4.5), '');
+    assert.equal(ctx.renderApplianceWhatIfSection([], 4.5), '');
+    const section = ctx.renderApplianceWhatIfSection(appliances, 4.5);
+    assert.ok(section.includes('data-whatif="ac"') && section.includes('type="range"') && section.includes('max="8"'));
+
+    // the section is embedded in the (desktop-only) ranking panel
+    const ranking = ctx.buildApplianceRanking(ctx.calculateApplianceEnergy(appliances, 4.5));
+    const panel = ctx.renderApplianceRankingTable(ranking, section);
+    assert.ok(panel.includes('hidden lg:block') && panel.includes('data-whatif="ac"'));
+    assert.ok(!ctx.renderApplianceRankingTable(ranking).includes('data-whatif'));
+});
