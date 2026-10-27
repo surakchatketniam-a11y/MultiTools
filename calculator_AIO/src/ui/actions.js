@@ -383,7 +383,17 @@ function loadDemoForCurrentTool() {
     } else if (id === 'fuel_eff') {
         appState.fuel_eff = { distance: '480', fuelUsed: '32' };
     } else if (id === 'loan') {
-        appState.loan = { principal: '600000', interestRate: '3.85', months: '48', extra: '0', rateType: 'fixed', promoMonths: '12', rateAfter: '6.5', calcMethod: 'reducing' };
+        // Keep the active tab: the refinance tab shares principal/months with the amortization tab,
+        // so fill both sets of fields and only pick the shared values that suit the tab in use.
+        const onRefinance = appState.loan?.tab === 'refinance';
+        appState.loan = {
+            tab: onRefinance ? 'refinance' : 'amortization',
+            principal: onRefinance ? '2000000' : '600000',
+            months: onRefinance ? '240' : '48',
+            interestRate: '3.85', extra: '0', rateType: 'fixed', promoMonths: '12', rateAfter: '6.5', calcMethod: 'reducing',
+            currentRate: '5.50', retentionRate: '3.80', retentionFee: '0', refinanceRate: '2.99',
+            isGovReducedMortgage: 'no', appraisalFee: '2800', insuranceFee: '2000', otherRefinanceFees: '0'
+        };
     } else if (id === 'savings') {
         appState.savings = { initial: '50000', monthly: '5000', interestRate: '2.5', years: '5', compound: true, mode: 'growth', goalTarget: '500000', annualIncrease: '0', inflationRate: '2.5', monthlyExpenses: '15000', emergencyMonths: '6', currentAge: '30', retirementAge: '60', retirementMonthly: '30000' };
     } else if (id === 'currency') {

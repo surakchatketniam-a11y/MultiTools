@@ -633,6 +633,33 @@ function calculateOvertimePay(params) {
 /* -----------------------------------------------------------
  * UI RENDERER: คำนวณค่าล่วงเวลา OT & ค่าทำงานวันหยุด (ot_calc)
  * ----------------------------------------------------------- */
+/* -----------------------------------------------------------
+ * HANDOFF: ส่งยอดฐานเงินเดือนและค่าล่วงเวลาจาก ot_calc ไป salary (โหมดสุทธิ)
+ * ค่ากะรวมอยู่ใน totalOtPay แล้ว จึงแยกออกเป็นช่อง allowance เพื่อไม่ให้นับซ้ำ
+ * ----------------------------------------------------------- */
+function buildOtToSalaryHandoff(params) {
+    const calc = calculateOvertimePay(params);
+    const allowance = Math.round(calc.shiftAllowance);
+    return {
+        baseSalary: String(Math.round(calc.basePayMonthly)),
+        otAmount: String(Math.max(0, Math.round(calc.totalOtPay - calc.shiftAllowance))),
+        allowance: String(allowance),
+        hasAmount: calc.basePayMonthly > 0 || calc.totalOtPay > 0
+    };
+}
+
+function applyOtToSalaryHandoff(otState) {
+    const handoff = buildOtToSalaryHandoff(otState);
+    if (!handoff.hasAmount) return false;
+    appState.salary = appState.salary || {};
+    appState.salary.mode = 'net';
+    appState.salary.baseSalary = handoff.baseSalary;
+    appState.salary.otAmount = handoff.otAmount;
+    appState.salary.allowance = handoff.allowance;
+    persistAppState();
+    return true;
+}
+
 function renderOvertimeTool(container) {
     if (!container) return;
     if (!appState.ot_calc) {
@@ -835,7 +862,10 @@ function renderOvertimeTool(container) {
                     <b class="text-[var(--app-accent)]">+${formatMoney(calc.totalOtPay)} บาท</b>
                 </div>
 
-                <div class="flex justify-end pt-2">
+                <div class="flex flex-wrap justify-end gap-2 pt-2">
+                    <button id="btnOtToSalary" type="button" class="tool-text-btn text-xs">
+                        ส่งยอดไปคำนวณเงินเดือนสุทธิ ↗
+                    </button>
                     <button id="btnPrintOvertimeSummary" type="button" class="tool-action-btn text-xs">
                         พิมพ์ใบสรุปค่าล่วงเวลา / PDF
                     </button>
@@ -904,6 +934,15 @@ function renderOvertimeTool(container) {
 
     container.querySelector('#btnPrintOvertimeSummary')?.addEventListener('click', () => {
         triggerPrintReceipt('ot_calc');
+    });
+
+    container.querySelector('#btnOtToSalary')?.addEventListener('click', () => {
+        if (!applyOtToSalaryHandoff(st)) {
+            if (typeof showHistoryToast === 'function') showHistoryToast('ยังไม่มียอดค่าจ้างหรือค่าล่วงเวลาให้ส่งไปคำนวณ', false);
+            return;
+        }
+        selectTool('salary');
+        if (typeof showHistoryToast === 'function') showHistoryToast('ส่งยอดฐานเงินเดือนและค่าล่วงเวลาไปคำนวณเงินได้สุทธิแล้ว');
     });
 
     setStatusBanner('success', `ค่าล่วงเวลา OT (${formatNum(calc.totalHours, 1)} ชม.): <b class="text-[var(--app-accent)] font-bold">+${formatMoney(calc.totalOtPay)} บาท</b> (ยอดรวมทั้งสิ้น ${formatMoney(calc.totalEarnings)} บ.)`);
