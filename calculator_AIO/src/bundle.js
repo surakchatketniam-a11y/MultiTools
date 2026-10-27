@@ -15829,6 +15829,92 @@ function calculateSocialSecurity(params) {
 }
 
 /* -----------------------------------------------------------
+ * PURE ENGINE: ถ้าส่งสมทบเพิ่มอีก 1-5 ปี สิทธิประโยชน์จะเพิ่มเท่าไร
+ * ใช้ calculateSocialSecurity ต่อปีที่เพิ่ม จึงตรงกับการ์ดผลลัพธ์เสมอ
+ * ----------------------------------------------------------- */
+function buildSocialSecurityExtraYears(params, maxExtraYears = 5) {
+    const p = params || {};
+    const baseMonths = Math.max(1, integerOrDefault(p.contributionMonths, 240));
+    if (!Number.isFinite(baseMonths)) return [];
+    const base = calculateSocialSecurity({ ...p, contributionMonths: baseMonths });
+    const rows = [];
+    for (let extraYears = 0; extraYears <= maxExtraYears; extraYears++) {
+        const calc = extraYears === 0 ? base : calculateSocialSecurity({ ...p, contributionMonths: baseMonths + extraYears * 12 });
+        const benefit = calc.isPension ? calc.monthlyPension : calc.lumpSumTotal;
+        const baseBenefit = base.isPension ? base.monthlyPension : base.lumpSumTotal;
+        const extraContributed = calc.totalWorkerContributed - base.totalWorkerContributed;
+        const comparable = calc.isPension === base.isPension;
+        const delta = comparable ? benefit - baseBenefit : null;
+        rows.push({
+            extraYears,
+            contributionMonths: calc.contributionMonths,
+            years: calc.yearsContributed,
+            isPension: calc.isPension,
+            becomesPension: !base.isPension && calc.isPension,
+            pensionRatePercent: calc.pensionRatePercent,
+            benefit,
+            delta,
+            extraContributed,
+            paybackMonths: calc.isPension && comparable && delta > 0 ? Math.ceil(extraContributed / delta) : null
+        });
+    }
+    return rows;
+}
+
+// กล่องคำแนะนำ แสดงเฉพาะจอใหญ่ (hidden lg:block) เพื่อไม่กระทบมือถือ
+function renderSocialSecurityInsight(rows) {
+    if (!rows.length) return '';
+    const first = rows.find(r => r.becomesPension);
+    const last = rows[rows.length - 1];
+    let headline;
+    if (first) {
+        headline = `ส่งสมทบเพิ่มอีก ${first.extraYears} ปี จะครบ 180 เดือนและเปลี่ยนจากเงินก้อนเป็นบำนาญเดือนละ ${formatMoney(first.benefit)} บาท`;
+    } else if (last.isPension && last.delta > 0) {
+        headline = `ส่งสมทบเพิ่มอีก ${last.extraYears} ปี บำนาญเพิ่มขึ้นเดือนละ ${formatMoney(last.delta)} บาท (ปีละ ${formatMoney(last.delta * 12)} บาท)`;
+    } else if (last.delta > 0) {
+        headline = `ส่งสมทบเพิ่มอีก ${last.extraYears} ปี เงินก้อนที่ได้รับเพิ่มขึ้น ${formatMoney(last.delta)} บาท`;
+    } else {
+        headline = 'การส่งสมทบเพิ่มไม่ทำให้สิทธิประโยชน์เพิ่มขึ้นในเงื่อนไขนี้';
+    }
+    const unit = r => (r.isPension ? 'บาท/เดือน' : 'บาท');
+    const deltaCell = r => {
+        if (r.extraYears === 0) return '-';
+        if (r.becomesPension) return 'เปลี่ยนเป็นบำนาญ';
+        return r.delta > 0 ? `+${formatMoney(r.delta)}` : '-';
+    };
+    return `
+        <div class="social-security-insight themed-tool-card hidden lg:block p-4 space-y-2 text-xs" data-desktop-chart>
+            <div class="font-bold text-[var(--app-ink)]">ถ้าส่งสมทบเพิ่มอีก 1-5 ปี</div>
+            <div class="text-[var(--app-body)]">${headline}</div>
+            <div class="overflow-x-auto thin-scroll">
+                <table class="w-full text-left border-collapse text-[11px]">
+                    <thead>
+                        <tr class="text-[var(--app-muted)] border-b border-[var(--app-hairline)]">
+                            <th scope="col" class="py-1.5 px-1">เพิ่มอีก</th>
+                            <th scope="col" class="py-1.5 px-1 text-right">รวมส่ง (ปี)</th>
+                            <th scope="col" class="py-1.5 px-1 text-right">สิทธิที่ได้รับ</th>
+                            <th scope="col" class="py-1.5 px-1 text-right">เพิ่มจากปัจจุบัน</th>
+                            <th scope="col" class="py-1.5 px-1 text-right">จ่ายเพิ่มสะสม (บาท)</th>
+                            <th scope="col" class="py-1.5 px-1 text-right">คืนทุนส่วนที่เพิ่ม (ด.)</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows.map(r => `
+                        <tr class="border-b border-[var(--app-hairline)] ${r.extraYears === 0 ? 'bg-[var(--app-accent-soft)] font-bold text-[var(--app-ink)]' : 'text-[var(--app-body)]'}"${r.extraYears === 0 ? ' aria-current="true"' : ''}>
+                            <td class="py-1.5 px-1">${r.extraYears === 0 ? 'ปัจจุบัน' : `+${r.extraYears} ปี`}</td>
+                            <td class="py-1.5 px-1 text-right">${formatNum(r.years, 1)}</td>
+                            <td class="py-1.5 px-1 text-right">${formatMoney(r.benefit)} ${unit(r)}</td>
+                            <td class="py-1.5 px-1 text-right text-[var(--app-accent)]">${deltaCell(r)}</td>
+                            <td class="py-1.5 px-1 text-right">${r.extraYears === 0 ? '-' : formatMoney(r.extraContributed)}</td>
+                            <td class="py-1.5 px-1 text-right">${r.paybackMonths == null ? '-' : r.paybackMonths}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-[11px] text-[var(--app-muted)]">คำนวณด้วยสูตรเดียวกับผลลัพธ์ด้านบน เงินบำเหน็จรวมดอกผลเป็นค่าประมาณการ</div>
+        </div>`;
+}
+
+/* -----------------------------------------------------------
  * UI RENDERER: สินเชื่อเช่าซื้อรถยนต์ & มอเตอร์ไซค์ (car_loan)
  * ----------------------------------------------------------- */
 function renderCarLoanTool(container) {
@@ -16227,6 +16313,8 @@ function renderSocialSecurityTool(container) {
                     </button>
                 </div>
             </div>
+
+            ${renderSocialSecurityInsight(buildSocialSecurityExtraYears(st))}
         </div>
     `;
 

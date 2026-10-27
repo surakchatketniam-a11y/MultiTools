@@ -3416,3 +3416,49 @@ test('property transfer: split comparison keeps the total constant and agrees wi
     assert.equal((html.match(/aria-current="true"/g) || []).length, 1);
     assert.ok(!/#[0-9a-fA-F]{3,6}\b/.test(html), 'theme variables only');
 });
+
+test('social security: extra-years insight matches the calculator, flags pension transition, and renders desktop-only', () => {
+    const ctx = context();
+    const m33 = { section: 'm33', wageMonthly: '15000', contributionMonths: '240' };
+    const rows = ctx.buildSocialSecurityExtraYears(m33);
+    assert.deepEqual(Array.from(rows.map(r => r.extraYears)), [0, 1, 2, 3, 4, 5]);
+    assert.equal(rows[0].delta, 0);
+    assert.equal(rows[0].extraContributed, 0);
+    assert.equal(rows[0].benefit, 4125, '27.5% of 15,000 at 240 months');
+    assert.equal(rows[1].benefit, 4350, '29% at 252 months');
+    assert.equal(rows[1].delta, 225);
+    assert.equal(rows[1].extraContributed, 9000, '750 baht x 12 extra months');
+    assert.equal(rows[1].paybackMonths, 40);
+    for (const r of rows) {
+        const single = ctx.calculateSocialSecurity({ ...m33, contributionMonths: String(240 + r.extraYears * 12) });
+        assert.equal(r.benefit, single.monthlyPension, `row +${r.extraYears} matches calculator`);
+    }
+    assert.ok(rows.every((r, i) => i === 0 || r.benefit > rows[i - 1].benefit), 'more years never lowers the pension');
+
+    // 14 years: one more year crosses 180 months and becomes a pension
+    const near = ctx.buildSocialSecurityExtraYears({ section: 'm33', wageMonthly: '15000', contributionMonths: '168' });
+    assert.equal(near[0].isPension, false);
+    assert.equal(near[1].becomesPension, true);
+    assert.equal(near[1].delta, null, 'lump sum vs pension is not comparable');
+    assert.equal(near[1].paybackMonths, null);
+    assert.equal(near[2].becomesPension, true);
+    assert.equal(near[1].benefit, 3000, '20% of 15,000');
+
+    // Section 40 stays a lump sum and grows
+    const m40 = ctx.buildSocialSecurityExtraYears({ section: 'm40', m40Plan: 'plan2', contributionMonths: '120' });
+    assert.ok(m40.every(r => !r.isPension && !r.becomesPension && r.paybackMonths === null));
+    assert.ok(m40[5].delta > 0);
+
+    // Invalid months is safe; shorter horizon is honoured
+    assert.deepEqual(Array.from(ctx.buildSocialSecurityExtraYears({ section: 'm33', contributionMonths: 'abc' })), []);
+    assert.equal(ctx.buildSocialSecurityExtraYears(m33, 3).length, 4);
+    assert.equal(ctx.renderSocialSecurityInsight([]), '');
+
+    const html = ctx.renderSocialSecurityInsight(rows);
+    assert.ok(html.includes('hidden lg:block'));
+    assert.equal((html.match(/<tr /g) || []).length, 7, 'header plus 6 rows');
+    assert.equal((html.match(/aria-current="true"/g) || []).length, 1);
+    assert.ok(html.includes('บำนาญเพิ่มขึ้นเดือนละ'), 'headline describes the pension increase');
+    assert.ok(ctx.renderSocialSecurityInsight(near).includes('เปลี่ยนจากเงินก้อนเป็นบำนาญ'));
+    assert.ok(!/#[0-9a-fA-F]{3,6}\b/.test(html), 'theme variables only');
+});
