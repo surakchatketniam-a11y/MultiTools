@@ -181,7 +181,7 @@
             --app-accent-soft: #eef1ff;
             --app-ink: #111111;
             --app-body: #222222;
-            --app-muted: #8e8e8e;
+            --app-muted: #6a6a6a;
             --app-hairline: #d4d4d4;
             --app-surface-soft: #f7f7f7;
             --app-surface-strong: #e5e7eb;
@@ -498,136 +498,18 @@
             #hamburgerBtn {
                 display: none;
             }
-            /* Results column (pilot: salary tool). Inputs stay in column 1,
-               result cards move to column 2 beside them. */
-            .app-shell .salary-tool {
+            /* Two-column tools (src/ui/desktop_layout.js): form column left, results column right. */
+            .app-shell .desktop-split {
                 display: grid;
                 grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-                align-items: start;
                 gap: 0.75rem;
-            }
-            .app-shell .salary-tool > .salary-intro,
-            .app-shell .salary-tool > .segment-group {
-                grid-column: 1 / -1;
-            }
-            .app-shell .salary-tool > .salary-result {
-                grid-column: 2;
-                grid-row: 2;
-            }
-            .app-shell .salary-tool > .themed-tool-card {
-                grid-column: 1;
-            }
-
-            /* Results column, per tool (desktop only). Each tool's root is flat:
-               its result card(s) move to column 2 and the first/mode blocks span both. */
-            .app-shell .gold-tool {
-                display: grid;
-                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
                 align-items: start;
+            }
+            .app-shell .desktop-split > .desktop-col {
+                display: flex;
+                flex-direction: column;
                 gap: 0.75rem;
-            }
-            .app-shell .gold-tool > .segment-group {
-                grid-column: 1 / -1;
-            }
-            .app-shell .gold-tool > .themed-result-card {
-                grid-column: 2;
-                grid-row: 2;
-            }
-            .app-shell .ecommerce-tool {
-                display: grid;
-                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-                align-items: start;
-                gap: 0.75rem;
-            }
-            .app-shell .ecommerce-tool > .themed-result-card {
-                grid-column: 2;
-                grid-row: 2;
-            }
-            .app-shell .food-costing-tool,
-            .app-shell .property-transfer-tool,
-            .app-shell .legal-labor-tool,
-            .app-shell .overtime-tool,
-            .app-shell .debt-payoff-tool,
-            .app-shell .fuel-cost-tool,
-            .app-shell .electricity-tool,
-            .app-shell .construction-calc-tool,
-            .app-shell .finance-thai-tool:has(> .themed-result-card) {
-                display: grid;
-                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-                align-items: start;
-                gap: 0.75rem;
-            }
-            .app-shell .food-costing-tool > .segment-group,
-            .app-shell .property-transfer-tool > .segment-group,
-            .app-shell .legal-labor-tool > .segment-group,
-            .app-shell .overtime-tool > .segment-group,
-            .app-shell .debt-payoff-tool > .segment-group,
-            .app-shell .fuel-cost-tool > .segment-group,
-            .app-shell .electricity-tool > .segment-group,
-            .app-shell .construction-calc-tool > .segment-group,
-            .app-shell .finance-thai-tool:has(> .themed-result-card) > .segment-group,
-            .app-shell .finance-thai-tool:has(> .themed-result-card) > [class*="intro"] {
-                grid-column: 1 / -1;
-            }
-            .app-shell .personal-tax-tool:has(> .themed-result-card) {
-                display: grid;
-                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-                align-items: start;
-                gap: 0.75rem;
-            }
-            .app-shell .personal-tax-tool:has(> .themed-result-card) > .segment-group {
-                grid-column: 1 / -1;
-            }
-            .app-shell .personal-tax-tool:has(> .themed-result-card) > .themed-result-card {
-                grid-column: 2;
-                grid-row: 2;
-            }
-            .app-shell .electricity-tool > .appliance-ranking {
-                grid-column: 2;
-                grid-row: 2;
-            }
-            .app-shell .transfer-split-compare {
-                grid-column: 1 / -1;
-            }
-            .app-shell .finance-thai-tool > .social-security-insight {
-                grid-column: 2;
-            }
-            .app-shell .car-payoff-schedule {
-                grid-column: 1 / -1;
-            }
-            /* Desktop chart panels (src/ui/charts.js) */
-            .app-shell :is(.salary-tool, .personal-tax-tool) > .desktop-chart {
-                grid-column: 2;
-            }
-            .app-shell .personal-tax-tool:has(> .desktop-chart) {
-                grid-auto-flow: row dense;
-            }
-            .app-shell .loan-amort-tool:has(> .desktop-chart) {
-                display: grid;
-                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-                align-items: start;
-                gap: 0.75rem;
-            }
-            .app-shell .loan-amort-tool:has(> .desktop-chart) > .loan-mode-tabs,
-            .app-shell .loan-amort-tool:has(> .desktop-chart) > .loan-schedule-card {
-                grid-column: 1 / -1;
-                margin-top: 0;
-            }
-            .app-shell .loan-amort-tool:has(> .desktop-chart) > .desktop-chart {
-                grid-column: 2;
-                grid-row: 2 / span 6;
-            }
-            .app-shell .food-costing-tool > .themed-result-card,
-            .app-shell .property-transfer-tool > .themed-result-card,
-            .app-shell .legal-labor-tool > .themed-result-card,
-            .app-shell .overtime-tool > .themed-result-card,
-            .app-shell .debt-payoff-tool > .themed-result-card,
-            .app-shell .fuel-cost-tool > .themed-result-card,
-            .app-shell .electricity-tool > .themed-result-card,
-            .app-shell .construction-calc-tool > .themed-result-card,
-            .app-shell .finance-thai-tool:has(> .themed-result-card) > .themed-result-card {
-                grid-column: 2;
-                grid-row: 2;
+                min-width: 0;
             }
         }
 
@@ -1906,7 +1788,7 @@
     <div id="printFormalReceipt" class="hidden"></div>
 
     <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
-    <script src="src/bundle.js?v=53"></script>
+    <script src="src/bundle.js?v=54"></script>
 
     <script>
         function getSafeDateStr(offsetDays = 0) {
@@ -2469,6 +2351,7 @@
                 case 'food_costing':     renderFoodCostingTool(topPanel); break;
                 case 'construction_calc': renderConstructionTool(topPanel); break;
             }
+            if (typeof arrangeDesktopColumns === 'function') arrangeDesktopColumns(topPanel);
             if (editing) {
                 const replacement = topPanel.querySelector(`input[data-shared-field="${editing.index}"]`);
                 if (replacement) {

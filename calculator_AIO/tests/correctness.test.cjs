@@ -20,6 +20,7 @@ const moduleFiles = [
     'src/ui/keypad.js',
     'src/ui/charts.js',
     'src/ui/whatif.js',
+    'src/ui/desktop_layout.js',
     'src/tools/shop.js',
     'src/tools/biz.js',
     'src/tools/finance.js',
@@ -3461,4 +3462,48 @@ test('social security: extra-years insight matches the calculator, flags pension
     assert.ok(html.includes('บำนาญเพิ่มขึ้นเดือนละ'), 'headline describes the pension increase');
     assert.ok(ctx.renderSocialSecurityInsight(near).includes('เปลี่ยนจากเงินก้อนเป็นบำนาญ'));
     assert.ok(!/#[0-9a-fA-F]{3,6}\b/.test(html), 'theme variables only');
+});
+
+test('desktop layout: planner groups full-width, form and result items without losing any element', () => {
+    const ctx = context();
+    const F = { full: true, result: false }, C = { full: false, result: false }, R = { full: false, result: true };
+    const all = plan => [...plan.leading, ...plan.form, ...plan.results, ...plan.trailing].sort((a, b) => a - b);
+
+    // salary-like: mode switch + intro on top, cards, then the result
+    const salary = ctx.planDesktopColumns([F, F, C, C, R]);
+    assert.deepEqual(Array.from(salary.leading), [0, 1]);
+    assert.deepEqual(Array.from(salary.form), [2, 3]);
+    assert.deepEqual(Array.from(salary.results), [4]);
+    assert.deepEqual(Array.from(salary.trailing), []);
+
+    // loan-like: tabs on top, fields, chart, wide table at the bottom
+    const loan = ctx.planDesktopColumns([F, C, C, C, R, F]);
+    assert.deepEqual(Array.from(loan.leading), [0]);
+    assert.deepEqual(Array.from(loan.form), [1, 2, 3]);
+    assert.deepEqual(Array.from(loan.results), [4]);
+    assert.deepEqual(Array.from(loan.trailing), [5]);
+
+    // result in the middle, several results, wide table in the middle stays in the form column
+    const mixed = ctx.planDesktopColumns([C, R, C, F, C, R, F]);
+    assert.deepEqual(Array.from(mixed.form), [0, 2, 3, 4]);
+    assert.deepEqual(Array.from(mixed.results), [1, 5]);
+    assert.deepEqual(Array.from(mixed.trailing), [6]);
+
+    // every element is placed exactly once
+    for (const p of [salary, loan, mixed]) {
+        const placed = all(p);
+        assert.deepEqual(Array.from(placed), Array.from({ length: placed.length }, (_, i) => i));
+    }
+
+    // nothing to split: no results, no form items, or empty input
+    assert.equal(ctx.planDesktopColumns([F, C, C]), null);
+    assert.equal(ctx.planDesktopColumns([F, R]), null);
+    assert.equal(ctx.planDesktopColumns([R]), null);
+    assert.equal(ctx.planDesktopColumns([F, F]), null);
+    assert.equal(ctx.planDesktopColumns([]), null);
+    assert.equal(ctx.planDesktopColumns(null), null);
+
+    // arranging without a DOM or on a narrow screen is a safe no-op
+    assert.equal(ctx.isDesktopLayout(), false);
+    assert.doesNotThrow(() => ctx.arrangeDesktopColumns(null));
 });
