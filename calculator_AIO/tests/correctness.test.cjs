@@ -3621,3 +3621,134 @@ test('electricity what-if: reducing air-conditioner hours saves the right kWh an
     assert.ok(panel.includes('hidden lg:block') && panel.includes('data-whatif="ac"'));
     assert.ok(!ctx.renderApplianceRankingTable(ranking).includes('data-whatif'));
 });
+
+test('refinance print: 3-year interest comes from interestPaid3Y (never 0.00) and monthly payments are separated', () => {
+    const ctx = context();
+    const loan = { tab: 'refinance', principal: '2000000', months: '240', currentRate: '5.50', retentionRate: '3.80', retentionFee: '0', refinanceRate: '2.99', isGovReducedMortgage: 'no', appraisalFee: '2800', insuranceFee: '2000', otherRefinanceFees: '0' };
+    const calc = ctx.calculateHomeRefinance({ ...loan, isGovReducedMortgage: false });
+    for (const plan of [calc.currentPlan, calc.retentionPlan, calc.refinancePlan]) {
+        assert.equal(plan.totalInterest, undefined, 'engine exposes interestPaid3Y, not totalInterest');
+        assert.ok(plan.interestPaid3Y > 1000);
+    }
+
+    const doc = ctx.generateFormalPrintHTML('loan', { activeToolId: 'loan', loan });
+    assert.ok(doc.includes('เอกสารสรุปผลวิเคราะห์การรีไฟแนนซ์บ้าน'), 'refinance document, not the amortization one');
+    for (const plan of [calc.currentPlan, calc.retentionPlan, calc.refinancePlan]) {
+        assert.ok(doc.includes(`>${ctx.formatMoney(plan.interestPaid3Y)}</td>`), `table shows ${ctx.formatMoney(plan.interestPaid3Y)}`);
+    }
+    // the 3-year interest column (4th cell of each comparison row) holds the real, non-zero figures
+    const rowInterest = [...doc.matchAll(/<tr style="border-bottom: 1px solid #e2e8f0;[^"]*">([\s\S]*?)<\/tr>/g)]
+        .map(m => [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(c => c[1].trim()))
+        .filter(cells => cells.length === 6)
+        .map(cells => cells[3]);
+    assert.deepEqual(rowInterest, [calc.currentPlan, calc.retentionPlan, calc.refinancePlan].map(plan => ctx.formatMoney(plan.interestPaid3Y)));
+    assert.ok(rowInterest.every(value => value !== '0.00'));
+
+    const arrow = `${ctx.formatMoney(calc.currentPlan.monthlyPay)} → ${ctx.formatMoney(calc.refinancePlan.monthlyPay)} บาท`;
+    assert.ok(doc.includes(arrow), 'monthly payments are separated by an arrow');
+    assert.ok(!doc.includes(`${ctx.formatMoney(calc.currentPlan.monthlyPay)} ${ctx.formatMoney(calc.refinancePlan.monthlyPay)} บาท`));
+});
+
+test('loan demo data keeps the refinance tab and fills both tabs', () => {
+    const rawAppStateMatch = html.match(/const appState = \{[\s\S]*?\n        \};/);
+    const ctx = context();
+    vm.runInContext(rawAppStateMatch[0].replace(/const /g, 'var '), ctx);
+    vm.runInContext('function renderActiveTool() {}\n' + source('loadDemoForCurrentTool'), ctx);
+    const refinanceKeys = ['currentRate', 'retentionRate', 'retentionFee', 'refinanceRate', 'isGovReducedMortgage', 'appraisalFee', 'insuranceFee', 'otherRefinanceFees'];
+    const amortKeys = ['interestRate', 'extra', 'rateType', 'promoMonths', 'rateAfter', 'calcMethod'];
+
+    // On the refinance tab: stay there and load refinance-sized shared values
+    ctx.appState.activeToolId = 'loan';
+    ctx.appState.loan = { tab: 'refinance', principal: '1', months: '12', currentRate: '9', refinanceRate: '9' };
+    ctx.loadDemoForCurrentTool();
+    assert.equal(ctx.appState.loan.tab, 'refinance');
+    assert.equal(ctx.appState.loan.principal, '2000000');
+    assert.equal(ctx.appState.loan.months, '240');
+    for (const key of [...refinanceKeys, ...amortKeys]) assert.ok(ctx.appState.loan[key] !== undefined, `refinance demo fills ${key}`);
+    assert.equal(ctx.appState.loan.currentRate, '5.50');
+    const refi = ctx.calculateHomeRefinance({ ...ctx.appState.loan, isGovReducedMortgage: ctx.appState.loan.isGovReducedMortgage === 'yes' });
+    assert.ok(refi.principal === 2000000 && refi.months === 240 && refi.refinanceInterestSaved > 0, 'demo feeds the refinance engine');
+    const doc = ctx.generateFormalPrintHTML('loan', { activeToolId: 'loan', loan: ctx.appState.loan });
+    assert.ok(doc.includes(ctx.formatMoney(refi.currentPlan.interestPaid3Y)));
+
+    // On the amortization tab: stays amortization, original demo numbers, refinance fields also filled
+    ctx.appState.loan = { tab: 'amortization' };
+    ctx.loadDemoForCurrentTool();
+    assert.equal(ctx.appState.loan.tab, 'amortization');
+    assert.equal(ctx.appState.loan.principal, '600000');
+    assert.equal(ctx.appState.loan.months, '48');
+    assert.equal(ctx.appState.loan.interestRate, '3.85');
+    for (const key of refinanceKeys) assert.ok(ctx.appState.loan[key] !== undefined, `amortization demo fills ${key}`);
+
+    // No loan state yet (or no tab) defaults to the amortization tab
+    ctx.appState.loan = undefined;
+    ctx.loadDemoForCurrentTool();
+    assert.equal(ctx.appState.loan.tab, 'amortization');
+});
+
+test('ot_calc hands base wage, overtime and shift pay to salary net mode without double counting', () => {
+    const ctx = context();
+    const monthly = { wageType: 'monthly', wageBase: '25000', workHoursPerDay: '8', otWeekdayHours: '10', holidayWorkHours: '8', holidayOtHours: '4', shiftAllowance: '500' };
+    const calc = ctx.calculateOvertimePay(monthly);
+    const handoff = ctx.buildOtToSalaryHandoff(monthly);
+    assert.equal(handoff.baseSalary, '25000');
+    assert.equal(handoff.allowance, '500');
+    assert.equal(handoff.otAmount, String(Math.round(calc.totalOtPay - 500)), 'shift pay is not counted twice');
+    assert.equal(handoff.hasAmount, true);
+
+    // salary net mode sees the same gross as the OT tool's total earnings
+    const net = ctx.calculateNetSalary({ baseSalary: handoff.baseSalary, otAmount: handoff.otAmount, allowance: handoff.allowance });
+    assert.ok(Math.abs(net.grossMonthly - calc.totalEarnings) <= 1, `gross ${net.grossMonthly} vs ${calc.totalEarnings}`);
+
+    // daily and hourly wages are converted to a monthly base (26 working days)
+    const daily = ctx.buildOtToSalaryHandoff({ ...monthly, wageType: 'daily', wageBase: '500', shiftAllowance: '0' });
+    assert.equal(daily.baseSalary, '13000');
+    const hourly = ctx.buildOtToSalaryHandoff({ ...monthly, wageType: 'hourly', wageBase: '65', shiftAllowance: '0' });
+    assert.equal(hourly.baseSalary, '13520');
+    assert.equal(hourly.allowance, '0');
+
+    // applying it switches salary to net mode and keeps unrelated salary fields
+    const salary = { mode: 'budget', income: '30000', bonusMonthly: '1000', pvdPct: '3' };
+    const stored = [];
+    const ctx2 = context({ appState: { salary }, persistAppState: () => stored.push(1) });
+    assert.equal(ctx2.applyOtToSalaryHandoff(monthly), true);
+    assert.equal(salary.mode, 'net');
+    assert.equal(salary.baseSalary, '25000');
+    assert.equal(salary.allowance, '500');
+    assert.equal(salary.otAmount, handoff.otAmount);
+    assert.equal(salary.bonusMonthly, '1000');
+    assert.equal(salary.pvdPct, '3');
+    assert.equal(salary.income, '30000');
+
+    // nothing to send -> no change
+    const idle = { mode: 'budget' };
+    const ctx3 = context({ appState: { salary: idle } });
+    const none = { wageType: 'hourly', wageBase: '0', workHoursPerDay: '8', otWeekdayHours: '0', holidayWorkHours: '0', holidayOtHours: '0', shiftAllowance: '0' };
+    assert.equal(ctx3.applyOtToSalaryHandoff(none), false);
+    assert.equal(idle.mode, 'budget');
+});
+
+test('ot_calc renders the handoff button and it opens salary with a toast', () => {
+    let selected = null;
+    const toasts = [];
+    const handlers = {};
+    const appState = { ot_calc: { wageType: 'monthly', wageBase: '30000', workHoursPerDay: '8', otWeekdayHours: '10', holidayWorkHours: '0', holidayOtHours: '0', shiftAllowance: '0' }, salary: { mode: 'budget' } };
+    const ctx = context({ appState, setStatusBanner() {}, renderActiveTool() {}, triggerPrintReceipt() {} });
+    ctx.selectTool = id => { selected = id; };
+    ctx.showHistoryToast = message => { toasts.push(message); };
+    const container = {
+        innerHTML: '',
+        querySelectorAll: () => [],
+        querySelector: selector => ({ addEventListener: (event, handler) => { if (event === 'click') handlers[selector] = handler; } })
+    };
+    ctx.renderOvertimeTool(container);
+    assert.ok(container.innerHTML.includes('id="btnOtToSalary"'), 'handoff button is rendered');
+    assert.ok(container.innerHTML.includes('id="btnPrintOvertimeSummary"'), 'print button is still there');
+    assert.equal(typeof handlers['#btnOtToSalary'], 'function');
+
+    handlers['#btnOtToSalary']();
+    assert.equal(selected, 'salary');
+    assert.equal(appState.salary.mode, 'net');
+    assert.equal(appState.salary.baseSalary, '30000');
+    assert.ok(toasts.some(t => t.includes('ส่งยอดฐานเงินเดือนและค่าล่วงเวลาไปคำนวณเงินได้สุทธิแล้ว')));
+});

@@ -360,7 +360,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
                 { label: 'จุดคุ้มทุน (Breakeven)', value: calc.breakevenMonth !== null ? (calc.breakevenMonth === 0 ? 'คุ้มทุนทันที' : `เดือนที่ ${calc.breakevenMonth} (ปีที่ ${(calc.breakevenMonth / 12).toFixed(1)})`) : 'ไม่คุ้มทุน' },
                 { label: 'ประหยัดสุทธิ 3 ปี (Refinance ย้ายค่าย)', value: `${formatMoney(calc.refinanceNetSavings)} บาท`, highlight: calc.isRefinanceBetter },
                 { label: 'ประหยัดสุทธิ 3 ปี (Retention ขอลดดอก)', value: `${formatMoney(calc.retentionNetSavings)} บาท`, highlight: !calc.isRefinanceBetter },
-                { label: 'ผ่อนต่อเดือนเดิม vs รีไฟแนนซ์', value: `${formatMoney(calc.currentPlan.monthlyPay)} ${formatMoney(calc.refinancePlan.monthlyPay)} บาท` }
+                { label: 'ผ่อนต่อเดือนเดิม vs รีไฟแนนซ์', value: `${formatMoney(calc.currentPlan.monthlyPay)} → ${formatMoney(calc.refinancePlan.monthlyPay)} บาท` }
             ];
 
             breakdownHTML = `
@@ -384,7 +384,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
                                 <td style="padding: 6px 8px; font-weight: 600;">1. อยู่อย่างเดิม (ไม่ทำอะไร)</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.currentRate, 2)}%</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.currentPlan.monthlyPay)}</td>
-                                <td style="padding: 6px 8px; text-align: right; color: #b91c1c;">${formatMoney(calc.currentPlan.totalInterest)}</td>
+                                <td style="padding: 6px 8px; text-align: right; color: #b91c1c;">${formatMoney(calc.currentPlan.interestPaid3Y)}</td>
                                 <td style="padding: 6px 8px; text-align: right;">-</td>
                                 <td style="padding: 6px 8px; text-align: right;">0 บาท (เกณฑ์ฐาน)</td>
                             </tr>
@@ -392,7 +392,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
                                 <td style="padding: 6px 8px;">2. ขอลดดอกเบี้ยเดิม (Retention) ${!calc.isRefinanceBetter ? '' : ''}</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.retentionRate, 2)}%</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.retentionPlan.monthlyPay)}</td>
-                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.retentionPlan.totalInterest)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.retentionPlan.interestPaid3Y)}</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.retentionFee)}</td>
                                 <td style="padding: 6px 8px; text-align: right; color: #15803d; font-weight: bold;">+${formatMoney(calc.retentionNetSavings)}</td>
                             </tr>
@@ -400,7 +400,7 @@ function generateFormalPrintHTML(toolId, stateObj) {
                                 <td style="padding: 6px 8px;">3. ย้ายธนาคารใหม่ (Refinance) ${calc.isRefinanceBetter ? '' : ''}</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatNum(calc.refinanceRate, 2)}%</td>
                                 <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.refinancePlan.monthlyPay)}</td>
-                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.refinancePlan.totalInterest)}</td>
+                                <td style="padding: 6px 8px; text-align: right;">${formatMoney(calc.refinancePlan.interestPaid3Y)}</td>
                                 <td style="padding: 6px 8px; text-align: right; color: #b91c1c;">-${formatMoney(calc.totalRefinanceFees)}</td>
                                 <td style="padding: 6px 8px; text-align: right; color: #1d4ed8; font-weight: bold;">+${formatMoney(calc.refinanceNetSavings)}</td>
                             </tr>
