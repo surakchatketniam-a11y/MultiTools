@@ -18,6 +18,9 @@ const moduleFiles = [
     'src/ui/theme.js',
     'src/ui/drawer.js',
     'src/ui/keypad.js',
+    'src/ui/charts.js',
+    'src/ui/whatif.js',
+    'src/ui/desktop_layout.js',
     'src/tools/shop.js',
     'src/tools/biz.js',
     'src/tools/finance.js',
@@ -3120,4 +3123,387 @@ test('construction_calc: tiles, paint, and concrete calculations', () => {
     assert.equal(ctx.hasInvalidNumericInput('construction_calc', { construction_calc: { tab: 'paint', paintWallWidth: '10', paintWallHeight: '3', paintDeductArea: 'notanumber', paintCoats: '2', paintWastagePct: '10', paintPrimerPrice5Gal: '1800', paintPrimerPrice1Gal: '450', paintTopcoatPrice5Gal: '2400', paintTopcoatPrice1Gal: '600', paintLaborPerSqm: '0' } }), true);
     assert.equal(ctx.hasInvalidNumericInput('construction_calc', { construction_calc: { tab: 'concrete', slabWidth: '4', slabLength: '6', slabThickness: '10', concreteWastagePct: '5', concretePricePerCubic: '2000', wireMeshPricePerSqm: '35', concreteLaborPerSqm: '0' } }), false);
     assert.equal(ctx.hasInvalidNumericInput('construction_calc', { construction_calc: { tab: 'concrete', slabWidth: '4', slabLength: '6', slabThickness: 'bad_input', concreteWastagePct: '5', concretePricePerCubic: '2000', wireMeshPricePerSqm: '35', concreteLaborPerSqm: '0' } }), true);
+});
+
+test('desktop charts: loan chart data totals, downsampling, and panel shell', () => {
+    const ctx = context();
+    const empty = ctx.buildLoanChartData([]);
+    assert.equal(empty.totalPaid, 0);
+    assert.equal(empty.points.length, 0);
+    assert.equal(ctx.renderLoanChartPanel([]), '');
+
+    const schedule = ctx.generateLoanSchedule({ principal: '120000', interestRate: '6', months: '12' });
+    const data = ctx.buildLoanChartData(schedule);
+    assert.ok(Math.abs(data.totalPrincipal - 120000) < 0.01, 'principal repaid equals loan amount');
+    assert.ok(data.totalInterest > 0 && data.interestSharePct > 0 && data.interestSharePct < 100);
+    assert.ok(Math.abs(data.totalPaid - (data.totalPrincipal + data.totalInterest)) < 0.01);
+    assert.equal(data.points[0].month, 0);
+    assert.ok(Math.abs(data.points[0].balance - 120000) < 0.01);
+    assert.equal(data.points[data.points.length - 1].month, 12);
+    assert.ok(data.points[data.points.length - 1].balance < 0.01);
+
+    const long = ctx.generateLoanSchedule({ principal: '3000000', interestRate: '4', months: '360' });
+    const longData = ctx.buildLoanChartData(long, 60);
+    assert.ok(longData.points.length <= 62, 'long schedules are downsampled');
+    assert.equal(longData.points[longData.points.length - 1].month, 360, 'last month is always kept');
+
+    const panel = ctx.renderLoanChartPanel(schedule);
+    assert.ok(panel.includes('desktop-chart') && panel.includes('hidden lg:block'), 'panel is desktop-only');
+    assert.ok(panel.includes('<svg'));
+    assert.ok(!/#[0-9a-fA-F]{3,6}\b/.test(panel), 'charts use theme variables, not hex colours');
+});
+
+test('desktop charts: tax waterfall, bracket gauge, and calculator bracket fields', () => {
+    const ctx = context();
+    assert.deepEqual(Array.from(ctx.buildTaxWaterfallSteps(null)), []);
+    assert.deepEqual(Array.from(ctx.buildTaxWaterfallSteps(ctx.calculatePersonalTax({ salaryMonthly: 0 }))), []);
+    assert.equal(ctx.renderTaxChartPanel(ctx.calculatePersonalTax({ salaryMonthly: 0 })), '');
+
+    const calc = ctx.calculatePersonalTax({ salaryMonthly: 65000, bonusYearly: 80000, otherIncomeYearly: 20000 });
+    const steps = ctx.buildTaxWaterfallSteps(calc);
+    assert.equal(steps[0].amount, calc.grossIncome);
+    const last = steps[steps.length - 1];
+    assert.ok(Math.abs(last.amount - calc.netTaxableIncome) < 0.01, 'waterfall ends at net taxable income');
+    const minusTotal = steps.filter(s => s.kind === 'minus').reduce((sum, s) => sum + s.amount, 0);
+    assert.ok(Math.abs(calc.grossIncome - minusTotal - last.amount) < 0.01, 'steps reconcile');
+    assert.ok(calc.bracketStart <= calc.netTaxableIncome);
+    assert.ok(calc.nextBracketStart === null || calc.netTaxableIncome <= calc.nextBracketStart);
+
+    // Deductions larger than income clamp to zero instead of going negative
+    const low = ctx.calculatePersonalTax({ salaryMonthly: 10000 });
+    const lowSteps = ctx.buildTaxWaterfallSteps(low);
+    assert.equal(lowSteps[lowSteps.length - 1].amount, 0);
+    assert.ok(lowSteps.every(s => s.amount >= 0));
+
+    const gauge = ctx.buildTaxBracketGauge({ netTaxableIncome: 600000, marginalRate: 15, bracketStart: 500000, nextBracketStart: 750000, nextRatePercent: 20 });
+    assert.equal(gauge.amountToNext, 150000);
+    assert.ok(Math.abs(gauge.progress - 0.4) < 1e-9);
+    assert.equal(gauge.nextRatePercent, 20);
+
+    const top = ctx.buildTaxBracketGauge({ netTaxableIncome: 6000000, marginalRate: 35, bracketStart: 5000000, nextBracketStart: null, nextRatePercent: null });
+    assert.equal(top.amountToNext, null);
+    assert.equal(top.progress, 1);
+
+    const rich = ctx.calculatePersonalTax({ salaryMonthly: 1000000 });
+    assert.equal(rich.nextBracketStart, null, 'top bracket has no next bracket');
+    assert.ok(ctx.renderTaxChartPanel(rich).includes('ฐานภาษีสูงสุด'));
+});
+
+test('desktop charts: salary 50/30/20 split and pie panel', () => {
+    const ctx = context();
+    const full = ctx.buildSalarySplitData({ income: 40000, needsPct: 50, wantsPct: 30, savingsPct: 20 });
+    assert.equal(full.slices.length, 3, 'no leftover slice when percents total 100');
+    assert.deepEqual(Array.from(full.slices.map(s => s.amount)), [20000, 12000, 8000]);
+    assert.equal(full.overAllocated, false);
+
+    const partial = ctx.buildSalarySplitData({ income: 40000, needsPct: 50, wantsPct: 30, savingsPct: 10 });
+    assert.equal(partial.slices.length, 4);
+    assert.equal(partial.slices[3].pct, 10);
+    assert.equal(partial.slices[3].amount, 4000);
+
+    const over = ctx.buildSalarySplitData({ income: 40000, needsPct: 60, wantsPct: 40, savingsPct: 20 });
+    assert.equal(over.overAllocated, true);
+    assert.equal(over.slices.length, 3);
+
+    assert.equal(ctx.renderSalaryChartPanel({ income: 0, needsPct: 50, wantsPct: 30, savingsPct: 20 }), '');
+    assert.equal(ctx.renderSalaryChartPanel({ income: 40000, needsPct: 0, wantsPct: 0, savingsPct: 0 }), '');
+    const panel = ctx.renderSalaryChartPanel({ income: 40000, needsPct: 50, wantsPct: 30, savingsPct: 20 });
+    assert.ok(panel.includes('hidden lg:block') && panel.includes('<svg'));
+    assert.ok(panel.includes('20,000.00'));
+    assert.equal(ctx.renderDonutChart([{ value: 0, tone: 'accent' }]), '');
+});
+
+test('what-if: loan extra payment saves interest and months, zero delta changes nothing', () => {
+    const ctx = context();
+    const params = { principal: '1000000', interestRate: '6', months: '120', extra: '0' };
+    const none = ctx.computeLoanWhatIf(params, 0);
+    assert.equal(none.interestSaved, 0);
+    assert.equal(none.monthsSaved, 0);
+    assert.equal(none.baseMonths, 120);
+
+    const more = ctx.computeLoanWhatIf(params, 5000);
+    assert.ok(more.interestSaved > 0);
+    assert.ok(more.monthsSaved > 0);
+    assert.equal(more.newMonths, more.baseMonths - more.monthsSaved);
+    assert.ok(more.newInterest < more.baseInterest);
+
+    const bigger = ctx.computeLoanWhatIf(params, 10000);
+    assert.ok(bigger.interestSaved > more.interestSaved, 'bigger extra saves more');
+
+    // existing extra is kept; negative/invalid deltas are ignored; empty loan is safe
+    assert.equal(ctx.computeLoanWhatIf({ ...params, extra: '2000' }, -500).interestSaved, 0);
+    assert.equal(ctx.computeLoanWhatIf(params, 'abc').monthsSaved, 0);
+    const empty = ctx.computeLoanWhatIf({ principal: '', interestRate: '5', months: '12' }, 1000);
+    assert.equal(empty.baseMonths, 0);
+    assert.equal(empty.interestSaved, 0);
+    assert.equal(ctx.renderLoanWhatIfSection([]), '');
+});
+
+test('what-if: salary shift moves lifestyle percent into savings, clamped to lifestyle share', () => {
+    const ctx = context();
+    const base = { income: 40000, wantsPct: 30, savingsPct: 20 };
+    const r = ctx.computeSalaryWhatIf(base, 10);
+    assert.equal(r.newWantsPct, 20);
+    assert.equal(r.newSavingsPct, 30);
+    assert.equal(r.extraMonthly, 4000);
+    assert.equal(r.extraYearly, 48000);
+
+    const clamped = ctx.computeSalaryWhatIf(base, 99);
+    assert.equal(clamped.shift, 30);
+    assert.equal(clamped.newWantsPct, 0);
+    assert.equal(ctx.computeSalaryWhatIf(base, -5).extraMonthly, 0);
+    assert.equal(ctx.computeSalaryWhatIf({ income: 0, wantsPct: 30, savingsPct: 20 }, 10).extraMonthly, 0);
+
+    assert.equal(ctx.renderSalaryWhatIfSection({ income: 0, wantsPct: 30, savingsPct: 20 }), '');
+    assert.equal(ctx.renderSalaryWhatIfSection({ income: 40000, wantsPct: 0, savingsPct: 20 }), '');
+    assert.ok(ctx.renderSalaryWhatIfSection({ income: 40000, wantsPct: 30, savingsPct: 20 }).includes('data-whatif="salary"'));
+});
+
+test('what-if: tax insights report remaining quota and refund, capped by shared retirement limit', () => {
+    const ctx = context();
+    const params = { salaryMonthly: '65000', bonusYearly: '80000', otherIncomeYearly: '20000', withholdingTax: '25000', pvdGpf: '30000', socialSecurity: '9000' };
+    const insights = ctx.computeTaxInsights(params);
+    const byKey = Object.fromEntries(insights.map(i => [i.key, i]));
+    assert.equal(byKey.ssf.remaining, 200000, 'SSF capped at 200k (30% of income is higher)');
+    assert.ok(byKey.rmf.remaining <= 500000 - 30000, 'RMF shares the 500k retirement cap with PVD');
+    assert.ok(byKey.ssf.cashBack > 0 && byKey.thaiEsg.cashBack > 0);
+
+    const w = ctx.computeTaxWhatIf(params, 'ssf', 100000);
+    assert.ok(w.taxSaved > 0 && w.newTax < w.baseTax);
+    assert.equal(ctx.computeTaxWhatIf(params, 'ssf', 0).taxSaved, 0);
+    assert.equal(ctx.computeTaxWhatIf(params, 'ssf', -100).taxSaved, 0);
+
+    // buying more never refunds more than the tax actually owed
+    assert.ok(byKey.ssf.cashBack <= ctx.calculatePersonalTax(params).totalTax + 0.01);
+
+    // quota already used up -> no remaining, section says so
+    const maxed = ctx.computeTaxInsights({ ...params, ssf: '200000', rmf: '270000', thaiEsg: '300000' });
+    assert.ok(maxed.every(i => i.remaining === 0 && i.cashBack === 0));
+    assert.ok(ctx.renderTaxInsightsSection({ ...params, ssf: '200000', rmf: '270000', thaiEsg: '300000' }).includes('ครบตามเพดานแล้ว'));
+
+    // zero income: nothing to unlock
+    assert.ok(ctx.computeTaxInsights({ salaryMonthly: '0' }).every(i => i.remaining === 0));
+
+    const html = ctx.renderTaxInsightsSection(params);
+    assert.ok(html.includes('data-whatif="tax"') && html.includes('type="range"'));
+});
+
+test('car loan: full early-payoff schedule covers every installment and matches the single-month simulation', () => {
+    const ctx = context();
+    const params = { vehicleType: 'car', condition: 'new', price: '850000', downPaymentType: 'percent', downPaymentValue: '20', interestRate: '2.59', periodMonths: '60', payoffMonth: '30' };
+    const rows = ctx.buildCarLoanPayoffSchedule(params);
+    assert.equal(rows.length, 60, 'one row per installment, 1 through 60');
+    assert.equal(rows[0].month, 1);
+    assert.equal(rows[59].month, 60);
+
+    // Every row agrees with the existing single-month calculator
+    for (const r of [rows[0], rows[19], rows[29], rows[39], rows[58]]) {
+        const single = ctx.calculateCarLoan({ ...params, payoffMonth: String(r.month) });
+        assert.ok(Math.abs(single.totalPayoffAmount - r.payoffAmount) < 0.005, `payoff matches at month ${r.month}`);
+        assert.ok(Math.abs(single.totalSavedByEarlyPayoff - r.saved) < 0.01, `saving matches at month ${r.month}`);
+    }
+
+    // Tier boundaries for a 60-month contract: <20 -> 100%, 20..40 -> 70%, >40 -> 60%
+    assert.equal(rows[18].discountTierPercent, 100);
+    assert.equal(rows[19].discountTierPercent, 70);
+    assert.equal(rows[39].discountTierPercent, 70);
+    assert.equal(rows[40].discountTierPercent, 60);
+
+    // Final installment: nothing left to pay, nothing saved
+    assert.equal(rows[59].remainingMonths, 0);
+    assert.equal(rows[59].payoffAmount, 0);
+    assert.equal(rows[59].saved, 0);
+    assert.ok(rows.every(r => r.payoffAmount <= r.fullRemaining + 0.005 && r.saved >= 0));
+
+    // Used car adds VAT consistently
+    const used = ctx.buildCarLoanPayoffSchedule({ ...params, condition: 'used', interestRate: '4.5' });
+    assert.equal(used.length, 60);
+    assert.ok(used[29].fullRemaining > 0 && used[29].payoffAmount < used[29].fullRemaining);
+
+    // Short and invalid contracts
+    assert.equal(ctx.buildCarLoanPayoffSchedule({ ...params, periodMonths: '24' }).length, 24);
+    assert.deepEqual(Array.from(ctx.buildCarLoanPayoffSchedule({ ...params, price: '0' })), []);
+    assert.equal(ctx.renderCarLoanPayoffTable([], 1), '');
+
+    const html = ctx.renderCarLoanPayoffTable(rows, 30);
+    assert.ok(html.includes('hidden lg:block'), 'desktop-only');
+    assert.equal((html.match(/<tr /g) || []).length, 61, 'header plus 60 rows');
+    assert.equal((html.match(/aria-current="true"/g) || []).length, 1, 'only the selected month is highlighted');
+    assert.ok(!/#[0-9a-fA-F]{3,6}\b/.test(html), 'theme variables only');
+});
+
+test('electricity: appliance ranking sorts by consumption, shares add to 100, and renders desktop-only', () => {
+    const ctx = context();
+    const appCalc = ctx.calculateApplianceEnergy([
+        { id: 'fan', name: 'พัดลม', watts: 50, qty: 2, hoursPerDay: 8 },
+        { id: 'air', name: 'แอร์', watts: 900, qty: 1, hoursPerDay: 8 },
+        { id: 'fridge', name: 'ตู้เย็น', watts: 100, qty: 1, hoursPerDay: 24 },
+        { id: 'off', name: 'เครื่องปิด', watts: 500, qty: 1, hoursPerDay: 0 }
+    ], 4.5);
+    const ranking = ctx.buildApplianceRanking(appCalc);
+    assert.deepEqual(Array.from(ranking.map(r => r.name)), ['แอร์', 'ตู้เย็น', 'พัดลม', 'เครื่องปิด']);
+    assert.deepEqual(Array.from(ranking.map(r => r.rank)), [1, 2, 3, 4]);
+    assert.ok(Math.abs(ranking.reduce((s, r) => s + r.sharePct, 0) - 100) < 1e-9);
+    assert.ok(Math.abs(ranking[0].monthlyKwh - 900 * 8 * 30 / 1000) < 1e-9);
+    assert.equal(ranking[3].sharePct, 0);
+    assert.ok(Math.abs(ranking.reduce((s, r) => s + r.monthlyCost, 0) - appCalc.totalMonthlyCost) < 1e-6);
+
+    // Equal consumption keeps the user's original order
+    const ties = ctx.buildApplianceRanking(ctx.calculateApplianceEnergy([
+        { name: 'A', watts: 100, qty: 1, hoursPerDay: 5 },
+        { name: 'B', watts: 100, qty: 1, hoursPerDay: 5 }
+    ]));
+    assert.deepEqual(Array.from(ties.map(r => r.name)), ['A', 'B']);
+
+    // Empty list / all zero usage are safe
+    assert.deepEqual(Array.from(ctx.buildApplianceRanking(ctx.calculateApplianceEnergy([]))), []);
+    assert.deepEqual(Array.from(ctx.buildApplianceRanking(null)), []);
+    assert.equal(ctx.renderApplianceRankingTable([]), '');
+    const zero = ctx.buildApplianceRanking(ctx.calculateApplianceEnergy([{ name: 'Z', watts: 100, qty: 1, hoursPerDay: 0 }]));
+    assert.equal(zero[0].sharePct, 0);
+    assert.ok(ctx.renderApplianceRankingTable(zero).includes('ยังไม่มีเครื่องใช้ไฟฟ้า'));
+
+    const html = ctx.renderApplianceRankingTable(ranking);
+    assert.ok(html.includes('hidden lg:block'));
+    assert.equal((html.match(/<tr /g) || []).length, 5, 'header plus 4 rows');
+    assert.ok(html.includes('แอร์ กินไฟมากที่สุด'));
+    assert.ok(!/#[0-9a-fA-F]{3,6}\b/.test(html), 'theme variables only');
+
+    // Names are escaped
+    const xss = ctx.renderApplianceRankingTable(ctx.buildApplianceRanking(ctx.calculateApplianceEnergy([{ name: '<img onerror=x>', watts: 100, qty: 1, hoursPerDay: 1 }])));
+    assert.ok(!xss.includes('<img onerror'));
+});
+
+test('property transfer: split comparison keeps the total constant and agrees with each single-mode result', () => {
+    const ctx = context();
+    const params = { appraisedValue: '3000000', salePrice: '3200000', mortgageAmount: '2500000', holdingYears: '3', isGovMeasure: 'standard', exemptSBT: 'no', splitMode: 'half' };
+    const rows = ctx.buildTransferSplitComparison(params);
+    assert.deepEqual(Array.from(rows.map(r => r.mode)), ['custom', 'half', 'seller', 'buyer']);
+    assert.equal(rows.filter(r => r.isSelected).length, 1);
+    assert.equal(rows.find(r => r.isSelected).mode, 'half');
+
+    for (const r of rows) {
+        const single = ctx.calculatePropertyTransfer({ ...params, splitMode: r.mode });
+        assert.ok(Math.abs(r.buyerCost - single.buyerCost) < 0.005, `${r.mode} buyer matches`);
+        assert.ok(Math.abs(r.sellerCost - single.sellerCost) < 0.005, `${r.mode} seller matches`);
+        assert.ok(Math.abs(r.buyerCost + r.sellerCost - r.totalCost) < 0.01, `${r.mode} buyer + seller = total`);
+    }
+    assert.ok(rows.every(r => Math.abs(r.totalCost - rows[0].totalCost) < 0.01), 'total is the same under every split');
+
+    const seller = rows.find(r => r.mode === 'seller');
+    const buyer = rows.find(r => r.mode === 'buyer');
+    const mortgageFee = 2500000 * 0.01;
+    assert.ok(Math.abs(seller.buyerCost - mortgageFee) < 0.005, 'buyer still pays mortgage registration when seller covers the rest');
+    assert.equal(buyer.sellerCost, 0);
+    assert.ok(Math.abs(buyer.buyerSharePct - 100) < 1e-9);
+    assert.equal(rows.find(r => r.isSelected).buyerDelta, 0);
+    assert.ok(buyer.buyerDelta > 0 && seller.buyerDelta < 0);
+
+    // Cash purchase (no mortgage) and government reduced-fee measure
+    const cash = ctx.buildTransferSplitComparison({ ...params, mortgageAmount: '0' });
+    assert.equal(cash.find(r => r.mode === 'seller').buyerCost, 0);
+    const reduced = ctx.buildTransferSplitComparison({ ...params, isGovMeasure: 'reduced' });
+    assert.ok(reduced[0].totalCost < rows[0].totalCost);
+
+    // Missing appraisal -> no comparison; default split mode is custom
+    assert.deepEqual(Array.from(ctx.buildTransferSplitComparison({ appraisedValue: '' })), []);
+    assert.equal(ctx.renderTransferSplitComparison([]), '');
+    const dflt = ctx.buildTransferSplitComparison({ ...params, splitMode: undefined });
+    assert.equal(dflt.find(r => r.isSelected).mode, 'custom');
+
+    const html = ctx.renderTransferSplitComparison(rows);
+    assert.ok(html.includes('hidden lg:block'));
+    assert.equal((html.match(/<tr /g) || []).length, 5, 'header plus 4 scenarios');
+    assert.equal((html.match(/aria-current="true"/g) || []).length, 1);
+    assert.ok(!/#[0-9a-fA-F]{3,6}\b/.test(html), 'theme variables only');
+});
+
+test('social security: extra-years insight matches the calculator, flags pension transition, and renders desktop-only', () => {
+    const ctx = context();
+    const m33 = { section: 'm33', wageMonthly: '15000', contributionMonths: '240' };
+    const rows = ctx.buildSocialSecurityExtraYears(m33);
+    assert.deepEqual(Array.from(rows.map(r => r.extraYears)), [0, 1, 2, 3, 4, 5]);
+    assert.equal(rows[0].delta, 0);
+    assert.equal(rows[0].extraContributed, 0);
+    assert.equal(rows[0].benefit, 4125, '27.5% of 15,000 at 240 months');
+    assert.equal(rows[1].benefit, 4350, '29% at 252 months');
+    assert.equal(rows[1].delta, 225);
+    assert.equal(rows[1].extraContributed, 9000, '750 baht x 12 extra months');
+    assert.equal(rows[1].paybackMonths, 40);
+    for (const r of rows) {
+        const single = ctx.calculateSocialSecurity({ ...m33, contributionMonths: String(240 + r.extraYears * 12) });
+        assert.equal(r.benefit, single.monthlyPension, `row +${r.extraYears} matches calculator`);
+    }
+    assert.ok(rows.every((r, i) => i === 0 || r.benefit > rows[i - 1].benefit), 'more years never lowers the pension');
+
+    // 14 years: one more year crosses 180 months and becomes a pension
+    const near = ctx.buildSocialSecurityExtraYears({ section: 'm33', wageMonthly: '15000', contributionMonths: '168' });
+    assert.equal(near[0].isPension, false);
+    assert.equal(near[1].becomesPension, true);
+    assert.equal(near[1].delta, null, 'lump sum vs pension is not comparable');
+    assert.equal(near[1].paybackMonths, null);
+    assert.equal(near[2].becomesPension, true);
+    assert.equal(near[1].benefit, 3000, '20% of 15,000');
+
+    // Section 40 stays a lump sum and grows
+    const m40 = ctx.buildSocialSecurityExtraYears({ section: 'm40', m40Plan: 'plan2', contributionMonths: '120' });
+    assert.ok(m40.every(r => !r.isPension && !r.becomesPension && r.paybackMonths === null));
+    assert.ok(m40[5].delta > 0);
+
+    // Invalid months is safe; shorter horizon is honoured
+    assert.deepEqual(Array.from(ctx.buildSocialSecurityExtraYears({ section: 'm33', contributionMonths: 'abc' })), []);
+    assert.equal(ctx.buildSocialSecurityExtraYears(m33, 3).length, 4);
+    assert.equal(ctx.renderSocialSecurityInsight([]), '');
+
+    const html = ctx.renderSocialSecurityInsight(rows);
+    assert.ok(html.includes('hidden lg:block'));
+    assert.equal((html.match(/<tr /g) || []).length, 7, 'header plus 6 rows');
+    assert.equal((html.match(/aria-current="true"/g) || []).length, 1);
+    assert.ok(html.includes('บำนาญเพิ่มขึ้นเดือนละ'), 'headline describes the pension increase');
+    assert.ok(ctx.renderSocialSecurityInsight(near).includes('เปลี่ยนจากเงินก้อนเป็นบำนาญ'));
+    assert.ok(!/#[0-9a-fA-F]{3,6}\b/.test(html), 'theme variables only');
+});
+
+test('desktop layout: planner groups full-width, form and result items without losing any element', () => {
+    const ctx = context();
+    const F = { full: true, result: false }, C = { full: false, result: false }, R = { full: false, result: true };
+    const all = plan => [...plan.leading, ...plan.form, ...plan.results, ...plan.trailing].sort((a, b) => a - b);
+
+    // salary-like: mode switch + intro on top, cards, then the result
+    const salary = ctx.planDesktopColumns([F, F, C, C, R]);
+    assert.deepEqual(Array.from(salary.leading), [0, 1]);
+    assert.deepEqual(Array.from(salary.form), [2, 3]);
+    assert.deepEqual(Array.from(salary.results), [4]);
+    assert.deepEqual(Array.from(salary.trailing), []);
+
+    // loan-like: tabs on top, fields, chart, wide table at the bottom
+    const loan = ctx.planDesktopColumns([F, C, C, C, R, F]);
+    assert.deepEqual(Array.from(loan.leading), [0]);
+    assert.deepEqual(Array.from(loan.form), [1, 2, 3]);
+    assert.deepEqual(Array.from(loan.results), [4]);
+    assert.deepEqual(Array.from(loan.trailing), [5]);
+
+    // result in the middle, several results, wide table in the middle stays in the form column
+    const mixed = ctx.planDesktopColumns([C, R, C, F, C, R, F]);
+    assert.deepEqual(Array.from(mixed.form), [0, 2, 3, 4]);
+    assert.deepEqual(Array.from(mixed.results), [1, 5]);
+    assert.deepEqual(Array.from(mixed.trailing), [6]);
+
+    // every element is placed exactly once
+    for (const p of [salary, loan, mixed]) {
+        const placed = all(p);
+        assert.deepEqual(Array.from(placed), Array.from({ length: placed.length }, (_, i) => i));
+    }
+
+    // nothing to split: no results, no form items, or empty input
+    assert.equal(ctx.planDesktopColumns([F, C, C]), null);
+    assert.equal(ctx.planDesktopColumns([F, R]), null);
+    assert.equal(ctx.planDesktopColumns([R]), null);
+    assert.equal(ctx.planDesktopColumns([F, F]), null);
+    assert.equal(ctx.planDesktopColumns([]), null);
+    assert.equal(ctx.planDesktopColumns(null), null);
+
+    // arranging without a DOM or on a narrow screen is a safe no-op
+    assert.equal(ctx.isDesktopLayout(), false);
+    assert.doesNotThrow(() => ctx.arrangeDesktopColumns(null));
 });

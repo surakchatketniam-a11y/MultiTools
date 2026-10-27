@@ -181,7 +181,7 @@
             --app-accent-soft: #eef1ff;
             --app-ink: #111111;
             --app-body: #222222;
-            --app-muted: #8e8e8e;
+            --app-muted: #6a6a6a;
             --app-hairline: #d4d4d4;
             --app-surface-soft: #f7f7f7;
             --app-surface-strong: #e5e7eb;
@@ -498,24 +498,18 @@
             #hamburgerBtn {
                 display: none;
             }
-            /* Results column (pilot: salary tool). Inputs stay in column 1,
-               result cards move to column 2 beside them. */
-            .app-shell .salary-tool {
+            /* Two-column tools (src/ui/desktop_layout.js): form column left, results column right. */
+            .app-shell .desktop-split {
                 display: grid;
                 grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-                align-items: start;
                 gap: 0.75rem;
+                align-items: start;
             }
-            .app-shell .salary-tool > .salary-intro,
-            .app-shell .salary-tool > .segment-group {
-                grid-column: 1 / -1;
-            }
-            .app-shell .salary-tool > .salary-result {
-                grid-column: 2;
-                grid-row: 2;
-            }
-            .app-shell .salary-tool > .themed-tool-card {
-                grid-column: 1;
+            .app-shell .desktop-split > .desktop-col {
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+                min-width: 0;
             }
         }
 
@@ -1054,6 +1048,12 @@
         /* Shared dark controls for Dark Luxe and Ferrari. */
         html:is([data-theme="dark"], [data-theme="ferrari"]) .sidebar-drawer,
         html:is([data-theme="dark"], [data-theme="ferrari"]) #dropdownMenu { background-color: var(--app-header-bg); color: var(--app-ink); border-color: var(--app-hairline); }
+        /* The drawer's tab pill and search box use the light canvas/surface tokens; keep them on the dark palette. */
+        html:is([data-theme="dark"], [data-theme="ferrari"]) .sidebar-drawer {
+            --color-canvas: var(--app-header-bg);
+            --color-surface-soft: var(--app-surface-soft);
+            --color-hairline-soft: var(--app-hairline);
+        }
         html:is([data-theme="dark"], [data-theme="ferrari"]) .sidebar-item,
         html:is([data-theme="dark"], [data-theme="ferrari"]) .sidebar-drawer .text-\[var\(--color-ink\)\] { color: var(--app-ink) !important; }
         html:is([data-theme="dark"], [data-theme="ferrari"]) .sidebar-item:hover,
@@ -1788,7 +1788,7 @@
     <div id="printFormalReceipt" class="hidden"></div>
 
     <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
-    <script src="src/bundle.js?v=45"></script>
+    <script src="src/bundle.js?v=54"></script>
 
     <script>
         function getSafeDateStr(offsetDays = 0) {
@@ -2351,6 +2351,7 @@
                 case 'food_costing':     renderFoodCostingTool(topPanel); break;
                 case 'construction_calc': renderConstructionTool(topPanel); break;
             }
+            if (typeof arrangeDesktopColumns === 'function') arrangeDesktopColumns(topPanel);
             if (editing) {
                 const replacement = topPanel.querySelector(`input[data-shared-field="${editing.index}"]`);
                 if (replacement) {

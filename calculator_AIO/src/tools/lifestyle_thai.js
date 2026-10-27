@@ -213,6 +213,65 @@ function calculateApplianceEnergy(appliancesList, avgUnitCost = 4.5) {
 }
 
 /* -----------------------------------------------------------
+ * PURE ENGINE: จัดอันดับเครื่องใช้ไฟฟ้าที่กินไฟมากที่สุด (เรียงตามหน่วยไฟ/เดือน)
+ * ----------------------------------------------------------- */
+function buildApplianceRanking(appCalc) {
+    const items = (appCalc && Array.isArray(appCalc.items)) ? appCalc.items : [];
+    const total = items.reduce((sum, item) => sum + item.monthlyKwh, 0);
+    return items
+        .map((item, index) => ({ item, index }))
+        .sort((a, b) => (b.item.monthlyKwh - a.item.monthlyKwh) || (a.index - b.index))
+        .map(({ item }, i) => ({
+            rank: i + 1,
+            name: item.name,
+            monthlyKwh: item.monthlyKwh,
+            monthlyCost: item.monthlyCost,
+            sharePct: total > 0 ? (item.monthlyKwh / total) * 100 : 0
+        }));
+}
+
+// ตารางจัดอันดับ แสดงเฉพาะจอใหญ่ (hidden lg:block) เพื่อไม่กระทบมือถือ
+function renderApplianceRankingTable(ranking) {
+    if (!ranking.length) return '';
+    const top = ranking[0];
+    const insight = top.monthlyKwh > 0
+        ? `${escapeHTML(top.name)} กินไฟมากที่สุด คิดเป็น ${formatNum(top.sharePct, 1)}% ของทั้งบ้าน (ประมาณ ${formatMoney(top.monthlyCost)} บาท/เดือน)`
+        : 'ยังไม่มีเครื่องใช้ไฟฟ้าที่ระบุชั่วโมงใช้งาน';
+    return `
+        <div class="appliance-ranking themed-tool-card hidden lg:block p-4 space-y-2 text-xs" data-desktop-chart>
+            <div class="font-bold text-[var(--app-ink)]">จัดอันดับเครื่องใช้ไฟฟ้าที่กินไฟมากที่สุด</div>
+            <div class="text-[11px] text-[var(--app-body)]">${insight}</div>
+            <div class="overflow-auto thin-scroll">
+                <table class="w-full text-left border-collapse text-[11px]">
+                    <thead>
+                        <tr class="text-[var(--app-body)] border-b border-[var(--app-hairline)]">
+                            <th scope="col" class="py-1.5 px-1">อันดับ</th>
+                            <th scope="col" class="py-1.5 px-1">เครื่องใช้ไฟฟ้า</th>
+                            <th scope="col" class="py-1.5 px-1 text-right">หน่วย/เดือน</th>
+                            <th scope="col" class="py-1.5 px-1 text-right">ค่าไฟ/เดือน</th>
+                            <th scope="col" class="py-1.5 px-1">สัดส่วน</th>
+                        </tr>
+                    </thead>
+                    <tbody>${ranking.map(r => `
+                        <tr class="border-b border-[var(--app-hairline)] ${r.rank === 1 ? 'font-bold text-[var(--app-ink)]' : 'text-[var(--app-body)]'}">
+                            <td class="py-1.5 px-1">${r.rank}</td>
+                            <td class="py-1.5 px-1">${escapeHTML(r.name)}</td>
+                            <td class="py-1.5 px-1 text-right">${formatNum(r.monthlyKwh, 1)}</td>
+                            <td class="py-1.5 px-1 text-right">${formatMoney(r.monthlyCost)}</td>
+                            <td class="py-1.5 px-1 min-w-[6rem]">
+                                <div class="flex items-center gap-1.5">
+                                    <div class="h-2 flex-1 rounded-full overflow-hidden" style="box-shadow: inset 0 0 0 1px var(--app-hairline)"><div class="h-full rounded-full" style="width:${r.sharePct.toFixed(1)}%;background:var(--app-accent)"></div></div>
+                                    <span class="w-10 text-right">${formatNum(r.sharePct, 1)}%</span>
+                                </div>
+                            </td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>`;
+}
+
+/* -----------------------------------------------------------
  * LIVE API: ระบบดึงราคาทองคำสมาคมค้าทองคำแบบเรียลไทม์
  * ----------------------------------------------------------- */
 function parseThaiGoldApiResponse(payload) {
@@ -752,6 +811,7 @@ function renderElectricityBillTool(container) {
                         </div>
                     </div>
                 </div>
+                ${renderApplianceRankingTable(buildApplianceRanking(appCalc))}
             `}
         </div>
     `;
