@@ -109,6 +109,11 @@ function calculatePersonalTax(params) {
         }
     }
 
+    // ตำแหน่งในขั้นภาษีปัจจุบัน และขั้นถัดไป (ใช้กับมาตรวัดบนเดสก์ท็อป)
+    const currentBracketIndex = brackets.reduce((idx, b, i) => (netTaxableIncome > b.min ? i : idx), 0);
+    const currentBracket = brackets[currentBracketIndex];
+    const nextBracket = brackets[currentBracketIndex + 1] || null;
+
     // ภาษีที่ต้องชำระสุทธิ (หักภาษี ณ ที่จ่าย)
     const taxBalance = totalTax - withholdingTax; // บวก = จ่ายเพิ่ม, ลบ = ได้เงินคืน
 
@@ -127,6 +132,9 @@ function calculatePersonalTax(params) {
         taxByBands,
         totalTax,
         marginalRate,
+        bracketStart: currentBracket.min,
+        nextBracketStart: nextBracket ? nextBracket.min : null,
+        nextRatePercent: nextBracket ? Math.round(nextBracket.rate * 100) : null,
         withholdingTax,
         taxBalance,
         isRefund: taxBalance < 0,
@@ -519,6 +527,8 @@ function renderTaxPersonalTool(container) {
                     ภาษีทั้งปี ${formatMoney(calc.totalTax)} บาท · หัก ณ ที่จ่ายแล้ว ${formatMoney(calc.withholdingTax)} บาท
                 </div>
             </div>
+
+            ${renderTaxChartPanel(calc, st)}
 
             <!-- Tax Metrics Grid -->
             <div class="grid grid-cols-2 gap-2 text-xs">

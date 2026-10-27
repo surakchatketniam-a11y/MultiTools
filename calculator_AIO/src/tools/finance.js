@@ -197,9 +197,11 @@ function renderLoanTool(container) {
             renderActiveTool();
         });
     });
+    loanRoot.classList.add('loan-amort-tool');
     if (schedule.length) {
+        loanRoot.insertAdjacentHTML('beforeend', renderLoanChartPanel(schedule));
         const table = document.createElement('div');
-        table.className = 'themed-tool-card p-3 mt-2 overflow-auto';
+        table.className = 'loan-schedule-card themed-tool-card p-3 mt-2 overflow-auto';
         table.innerHTML = `
             <div class="flex items-center justify-between gap-2 mb-2">
                 <div class="text-xs font-semibold text-[var(--app-muted)]">ตารางผ่อนชำระ (${schedule.length} งวด)</div>
@@ -219,9 +221,9 @@ function renderLoanTool(container) {
                 <thead>
                     <tr class="border-b"><th class="text-left py-1">งวด</th><th class="text-right py-1">จ่าย</th><th class="text-right py-1">ดอกเบี้ย</th><th class="text-right py-1">เงินต้น</th><th class="text-right py-1">คงเหลือ</th></tr>
                 </thead>
-                <tbody>${schedule.slice(0, 120).map(item => `<tr class="border-b border-[var(--app-hairline)]"><td class="py-1">${item.month}</td><td class="text-right">${formatMoney(item.payment)}</td><td class="text-right">${formatMoney(item.interest)}</td><td class="text-right">${formatMoney(item.principal)}</td><td class="text-right">${formatMoney(item.balance)}</td></tr>`).join('')}</tbody>
+                <tbody>${schedule.map((item, i) => `<tr class="border-b border-[var(--app-hairline)]${i >= 120 ? ' hidden lg:table-row' : ''}"><td class="py-1">${item.month}</td><td class="text-right">${formatMoney(item.payment)}</td><td class="text-right">${formatMoney(item.interest)}</td><td class="text-right">${formatMoney(item.principal)}</td><td class="text-right">${formatMoney(item.balance)}</td></tr>`).join('')}</tbody>
             </table>
-            ${schedule.length > 120 ? `<div class="text-[11px] text-[var(--app-muted)] text-center mt-2">แสดงบนหน้าจอ 120 งวดแรก · ดาวน์โหลดไฟล์ CSV เพื่อดูครบทั้ง ${schedule.length} งวด</div>` : ''}
+            ${schedule.length > 120 ? `<div class="lg:hidden text-[11px] text-[var(--app-muted)] text-center mt-2">แสดงบนหน้าจอ 120 งวดแรก · ดาวน์โหลดไฟล์ CSV เพื่อดูครบทั้ง ${schedule.length} งวด</div><div class="hidden lg:block text-[11px] text-[var(--app-muted)] text-center mt-2">แสดงครบทั้ง ${schedule.length} งวด</div>` : ''}
         `;
         loanRoot.appendChild(table);
 

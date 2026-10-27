@@ -21,6 +21,8 @@ const sourceFiles = [
     'src/ui/theme.js',
     'src/ui/drawer.js',
     'src/ui/keypad.js',
+    'src/ui/charts.js',
+    'src/ui/whatif.js',
     'src/tools/shop.js',
     'src/tools/biz.js',
     'src/tools/finance.js',

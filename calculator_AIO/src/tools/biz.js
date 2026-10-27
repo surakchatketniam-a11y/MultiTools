@@ -477,6 +477,7 @@ function renderSalaryTool(container) {
                 <div class="salary-row flex justify-between"><span>แนวทางชำระหนี้เพิ่ม</span><b>${formatMoney(debt)} บาท/เดือน</b></div>
                 ${income > 0 ? `<div class="flex justify-end pt-2"><button id="btnPrintSalarySummary" type="button" class="tool-action-btn text-xs">พิมพ์แผนการเงิน / PDF</button></div>` : ''}
             </div>
+            ${renderSalaryChartPanel({ income, needsPct, wantsPct, savingsPct })}
         `;
     }
 
