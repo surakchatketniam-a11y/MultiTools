@@ -6594,7 +6594,10 @@ function renderDonutChart(slices, options = {}) {
     let offset = 0;
     const arcs = visible.map(s => {
         const length = (s.value / total) * circumference;
-        const arc = `<circle cx="60" cy="60" r="${radius}" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-dasharray="${length.toFixed(3)} ${(circumference - length).toFixed(3)}" stroke-dashoffset="${(-offset).toFixed(3)}" transform="rotate(-90 60 60)" style="${chartToneStyle(s.tone)}"></circle>`;
+        // thin gap between neighbouring slices so they stay distinguishable when tones are close
+        const gap = visible.length > 1 ? Math.min(1.2, length * 0.2) : 0;
+        const drawn = length - gap;
+        const arc = `<circle cx="60" cy="60" r="${radius}" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-dasharray="${drawn.toFixed(3)} ${(circumference - drawn).toFixed(3)}" stroke-dashoffset="${(-offset).toFixed(3)}" transform="rotate(-90 60 60)" style="${chartToneStyle(s.tone)}"></circle>`;
         offset += length;
         return arc;
     }).join('');
@@ -6635,7 +6638,7 @@ function renderWaterfallChart(steps) {
         const tone = s.kind === 'total' ? 'ink' : 'accent';
         return `<div role="listitem" class="text-[11px]">
             <div class="flex justify-between gap-2 text-[var(--app-body)]"><span>${escapeHTML(s.label)}</span><b class="text-[var(--app-ink)]">${s.kind === 'minus' ? '−' : ''}${formatMoney(s.amount)}</b></div>
-            <div class="h-2 rounded-full bg-[var(--app-surface-strong)] relative overflow-hidden"><span class="absolute top-0 bottom-0 rounded-full" style="left:${left.toFixed(2)}%;width:${width.toFixed(2)}%;background:currentColor;${chartToneStyle(tone)}"></span></div>
+            <div class="h-2 rounded-full relative overflow-hidden" style="box-shadow: inset 0 0 0 1px var(--app-hairline)"><span class="absolute top-0 bottom-0 rounded-full" style="left:${left.toFixed(2)}%;width:${width.toFixed(2)}%;background:currentColor;${chartToneStyle(tone)}"></span></div>
         </div>`;
     }).join('')}</div>`;
 }
@@ -6669,9 +6672,9 @@ function renderLoanChartPanel(schedule) {
             ])}</div>
         </div>
         <div>
-            <div class="font-semibold text-[var(--app-muted)] mb-1">ยอดหนี้คงเหลือตลอดสัญญา</div>
+            <div class="font-semibold text-[var(--app-body)] mb-1">ยอดหนี้คงเหลือตลอดสัญญา</div>
             ${renderLineChart(data.points, { ariaLabel: `ยอดหนี้ลดจาก ${formatMoney(data.points[0].balance)} เหลือ ${formatMoney(last.balance)} บาท ใน ${last.month} งวด` })}
-            <div class="flex justify-between text-[10px] text-[var(--app-muted)] mt-0.5"><span>งวดที่ 0 · ${formatMoney(data.points[0].balance)}</span><span>งวดที่ ${last.month} · ${formatMoney(last.balance)}</span></div>
+            <div class="flex justify-between text-[10px] text-[var(--app-body)] mt-0.5"><span>งวดที่ 0 · ${formatMoney(data.points[0].balance)}</span><span>งวดที่ ${last.month} · ${formatMoney(last.balance)}</span></div>
         </div>
         ${renderLoanWhatIfSection(schedule)}`);
 }
@@ -6686,8 +6689,8 @@ function renderTaxChartPanel(calc, params) {
     return renderChartPanel('จากเงินได้ถึงเงินได้สุทธิ', `
         ${renderWaterfallChart(steps)}
         <div class="space-y-1">
-            <div class="font-semibold text-[var(--app-muted)]">ระยะห่างถึงฐานภาษีถัดไป</div>
-            <div class="h-2.5 rounded-full bg-[var(--app-surface-strong)] overflow-hidden" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(gauge.progress * 100)}" aria-label="${escapeHTML(gaugeText)}"><div class="h-full rounded-full" style="width:${(gauge.progress * 100).toFixed(1)}%;background:var(--app-accent)"></div></div>
+            <div class="font-semibold text-[var(--app-body)]">ระยะห่างถึงฐานภาษีถัดไป</div>
+            <div class="h-2.5 rounded-full overflow-hidden" style="box-shadow: inset 0 0 0 1px var(--app-hairline)" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(gauge.progress * 100)}" aria-label="${escapeHTML(gaugeText)}"><div class="h-full rounded-full" style="width:${(gauge.progress * 100).toFixed(1)}%;background:var(--app-accent)"></div></div>
             <div class="text-[var(--app-body)]">${escapeHTML(gaugeText)}</div>
         </div>
         ${params ? renderTaxInsightsSection(params) : ''}`);
@@ -6709,7 +6712,7 @@ function renderSalaryChartPanel(params) {
                 text: `${formatMoney(s.amount)} ฿`
             })))}</div>
         </div>
-        ${data.overAllocated ? `<div class="text-[var(--app-muted)]">สัดส่วนรวมเกิน 100% (${data.totalPct}%) กรุณาปรับให้ไม่เกินเงินเดือน</div>` : ''}
+        ${data.overAllocated ? `<div class="text-[var(--app-body)]">สัดส่วนรวมเกิน 100% (${data.totalPct}%) กรุณาปรับให้ไม่เกินเงินเดือน</div>` : ''}
         ${renderSalaryWhatIfSection(params)}`);
 }
 
@@ -6810,7 +6813,7 @@ function whatIfRow(label, outKey, initialText) {
 }
 
 function whatIfRange(id, label, min, max, step) {
-    return `<label for="${id}" class="flex justify-between gap-2 font-semibold text-[var(--app-muted)]"><span>${escapeHTML(label)}</span><span data-out="slider" class="text-[var(--app-ink)]">0</span></label>
+    return `<label for="${id}" class="flex justify-between gap-2 font-semibold text-[var(--app-body)]"><span>${escapeHTML(label)}</span><span data-out="slider" class="text-[var(--app-ink)]">0</span></label>
         <input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="0" class="w-full" style="accent-color: var(--app-accent)">`;
 }
 
@@ -6842,13 +6845,13 @@ function renderTaxInsightsSection(params) {
     if (!open.length) {
         return whatIfSection('tax-none', 'สิทธิ์ลดหย่อนที่เหลือ', `<div class="text-[var(--app-body)]">ใช้สิทธิ์ลดหย่อน SSF, RMF และ Thai ESG ครบตามเพดานแล้ว</div>`);
     }
-    const rows = insights.map(i => `<div class="flex justify-between gap-2"><span class="text-[var(--app-body)]">${i.label} เหลือสิทธิ์ ${formatMoney(i.remaining)} ฿</span><b class="text-[var(--app-accent)] whitespace-nowrap">คืนภาษี ~${formatMoney(i.cashBack)} ฿</b></div>`).join('');
+    const rows = insights.map(i => `<div class="flex justify-between gap-2"><span class="text-[var(--app-body)]">${i.label} เหลือสิทธิ์ ${formatMoney(i.remaining)} ฿</span><b class="text-[var(--app-ink)] whitespace-nowrap">คืนภาษี ~${formatMoney(i.cashBack)} ฿</b></div>`).join('');
     const first = open[0];
     const stepFor = r => (r >= 1000 ? 1000 : 1);
     const maxFor = r => (r >= 1000 ? Math.floor(r / 1000) * 1000 : r);
     return whatIfSection('tax', 'สิทธิ์ลดหย่อนที่เหลือ และลองซื้อเพิ่ม', `
         <div class="space-y-1">${rows}</div>
-        <label for="whatifTaxFund" class="font-semibold text-[var(--app-muted)] block">เลือกกองทุนที่จะลองซื้อเพิ่ม</label>
+        <label for="whatifTaxFund" class="font-semibold text-[var(--app-body)] block">เลือกกองทุนที่จะลองซื้อเพิ่ม</label>
         <select id="whatifTaxFund" class="airbnb-input w-full text-xs" data-whatif-fund>${open.map(i => `<option value="${i.key}">${i.label}</option>`).join('')}</select>
         ${whatIfRange('whatifTaxAmount', 'ซื้อเพิ่ม (บาท)', 0, maxFor(first.remaining), stepFor(first.remaining))}
         ${whatIfRow('ภาษีที่ประหยัดได้', 'taxSaved', '0.00 ฿')}
@@ -14332,11 +14335,11 @@ function renderTransferSplitComparison(rows) {
     return `
         <div class="transfer-split-compare themed-tool-card hidden lg:block p-4 space-y-2 text-xs" data-desktop-chart>
             <div class="font-bold text-[var(--app-ink)]">เปรียบเทียบผู้ซื้อ vs ผู้ขาย ทุกข้อตกลงแบ่งจ่าย</div>
-            <div class="text-[11px] text-[var(--app-muted)]">ยอดรวมค่าใช้จ่ายวันโอน ${formatMoney(rows[0].totalCost)} บาท เท่ากันทุกแบบ ต่างกันที่ใครเป็นผู้จ่าย · แถวที่ไฮไลต์คือข้อตกลงที่เลือกไว้</div>
+            <div class="text-[11px] text-[var(--app-body)]">ยอดรวมค่าใช้จ่ายวันโอน ${formatMoney(rows[0].totalCost)} บาท เท่ากันทุกแบบ ต่างกันที่ใครเป็นผู้จ่าย · แถวที่ไฮไลต์คือข้อตกลงที่เลือกไว้</div>
             <div class="overflow-x-auto thin-scroll">
                 <table class="w-full text-left border-collapse text-[11px]">
                     <thead>
-                        <tr class="text-[var(--app-muted)] border-b border-[var(--app-hairline)]">
+                        <tr class="text-[var(--app-body)] border-b border-[var(--app-hairline)]">
                             <th scope="col" class="py-1.5 px-1">ข้อตกลงแบ่งจ่าย</th>
                             <th scope="col" class="py-1.5 px-1 text-right">ผู้ซื้อจ่าย</th>
                             <th scope="col" class="py-1.5 px-1 text-right">ผู้ขายจ่าย</th>
@@ -14351,7 +14354,7 @@ function renderTransferSplitComparison(rows) {
                             <td class="py-2 px-1 text-right">${formatMoney(r.sellerCost)}</td>
                             <td class="py-2 px-1 min-w-[9rem]">
                                 <div class="flex items-center gap-1.5">
-                                    <div class="h-2 flex-1 rounded-full overflow-hidden flex" style="background:var(--app-ink);opacity:0.75" role="img" aria-label="ผู้ซื้อ ${formatNum(r.buyerSharePct, 0)}% ผู้ขาย ${formatNum(100 - r.buyerSharePct, 0)}%"><div class="h-full" style="width:${r.buyerSharePct.toFixed(1)}%;background:var(--app-accent)"></div></div>
+                                    <div class="h-2 flex-1 rounded-full overflow-hidden flex" style="box-shadow: inset 0 0 0 1px var(--app-hairline)" role="img" aria-label="ผู้ซื้อ ${formatNum(r.buyerSharePct, 0)}% ผู้ขาย ${formatNum(100 - r.buyerSharePct, 0)}%"><div class="h-full" style="width:${r.buyerSharePct.toFixed(1)}%;background:var(--app-accent)"></div></div>
                                     <span class="whitespace-nowrap">${formatNum(r.buyerSharePct, 0)} : ${formatNum(100 - r.buyerSharePct, 0)}</span>
                                 </div>
                             </td>
@@ -14820,11 +14823,11 @@ function renderApplianceRankingTable(ranking) {
     return `
         <div class="appliance-ranking themed-tool-card hidden lg:block p-4 space-y-2 text-xs" data-desktop-chart>
             <div class="font-bold text-[var(--app-ink)]">จัดอันดับเครื่องใช้ไฟฟ้าที่กินไฟมากที่สุด</div>
-            <div class="text-[11px] text-[var(--app-muted)]">${insight}</div>
+            <div class="text-[11px] text-[var(--app-body)]">${insight}</div>
             <div class="overflow-auto thin-scroll">
                 <table class="w-full text-left border-collapse text-[11px]">
                     <thead>
-                        <tr class="text-[var(--app-muted)] border-b border-[var(--app-hairline)]">
+                        <tr class="text-[var(--app-body)] border-b border-[var(--app-hairline)]">
                             <th scope="col" class="py-1.5 px-1">อันดับ</th>
                             <th scope="col" class="py-1.5 px-1">เครื่องใช้ไฟฟ้า</th>
                             <th scope="col" class="py-1.5 px-1 text-right">หน่วย/เดือน</th>
@@ -14840,7 +14843,7 @@ function renderApplianceRankingTable(ranking) {
                             <td class="py-1.5 px-1 text-right">${formatMoney(r.monthlyCost)}</td>
                             <td class="py-1.5 px-1 min-w-[6rem]">
                                 <div class="flex items-center gap-1.5">
-                                    <div class="h-2 flex-1 rounded-full bg-[var(--app-surface-strong)] overflow-hidden"><div class="h-full rounded-full" style="width:${r.sharePct.toFixed(1)}%;background:var(--app-accent)"></div></div>
+                                    <div class="h-2 flex-1 rounded-full overflow-hidden" style="box-shadow: inset 0 0 0 1px var(--app-hairline)"><div class="h-full rounded-full" style="width:${r.sharePct.toFixed(1)}%;background:var(--app-accent)"></div></div>
                                     <span class="w-10 text-right">${formatNum(r.sharePct, 1)}%</span>
                                 </div>
                             </td>
@@ -15670,11 +15673,11 @@ function renderCarLoanPayoffTable(rows, selectedMonth) {
     return `
         <div class="car-payoff-schedule themed-tool-card hidden lg:block p-4 space-y-2 text-xs" data-desktop-chart>
             <div class="font-bold text-[var(--app-ink)]">ตารางปิดบัญชีก่อนกำหนดทุกงวด (งวด 1 ถึง ${rows.length})</div>
-            <div class="text-[11px] text-[var(--app-muted)]">เทียบยอดปิดบัญชีกับการผ่อนต่อจนครบสัญญา · ประหยัดสูงสุด ${formatMoney(maxSaved)} บาท · แถวที่ไฮไลต์คืองวดที่เลือกไว้</div>
+            <div class="text-[11px] text-[var(--app-body)]">เทียบยอดปิดบัญชีกับการผ่อนต่อจนครบสัญญา · ประหยัดสูงสุด ${formatMoney(maxSaved)} บาท · แถวที่ไฮไลต์คืองวดที่เลือกไว้</div>
             <div class="overflow-auto thin-scroll max-h-[28rem]">
                 <table class="w-full text-left border-collapse text-[11px]">
                     <thead>
-                        <tr class="text-[var(--app-muted)]">
+                        <tr class="text-[var(--app-body)]">
                             <th scope="col" class="py-1.5 px-1 sticky top-0 bg-[var(--app-surface-strong)]">ปิดงวดที่</th>
                             <th scope="col" class="py-1.5 px-1 text-right sticky top-0 bg-[var(--app-surface-strong)]">เหลือ (งวด)</th>
                             <th scope="col" class="py-1.5 px-1 text-center sticky top-0 bg-[var(--app-surface-strong)]">ส่วนลด สคบ.</th>
@@ -15692,7 +15695,7 @@ function renderCarLoanPayoffTable(rows, selectedMonth) {
                             <td class="py-1 px-1 text-right">${formatMoney(r.unearnedInterest)}</td>
                             <td class="py-1 px-1 text-right">${formatMoney(r.fullRemaining)}</td>
                             <td class="py-1 px-1 text-right">${formatMoney(r.payoffAmount)}</td>
-                            <td class="py-1 px-1 text-right text-[var(--app-accent)]">${formatMoney(r.saved)}</td>
+                            <td class="py-1 px-1 text-right text-[var(--app-ink)]">${formatMoney(r.saved)}</td>
                         </tr>`).join('')}
                     </tbody>
                 </table>
@@ -15889,7 +15892,7 @@ function renderSocialSecurityInsight(rows) {
             <div class="overflow-x-auto thin-scroll">
                 <table class="w-full text-left border-collapse text-[11px]">
                     <thead>
-                        <tr class="text-[var(--app-muted)] border-b border-[var(--app-hairline)]">
+                        <tr class="text-[var(--app-body)] border-b border-[var(--app-hairline)]">
                             <th scope="col" class="py-1.5 px-1">เพิ่มอีก</th>
                             <th scope="col" class="py-1.5 px-1 text-right">รวมส่ง (ปี)</th>
                             <th scope="col" class="py-1.5 px-1 text-right">สิทธิที่ได้รับ</th>
@@ -15903,14 +15906,14 @@ function renderSocialSecurityInsight(rows) {
                             <td class="py-1.5 px-1">${r.extraYears === 0 ? 'ปัจจุบัน' : `+${r.extraYears} ปี`}</td>
                             <td class="py-1.5 px-1 text-right">${formatNum(r.years, 1)}</td>
                             <td class="py-1.5 px-1 text-right">${formatMoney(r.benefit)} ${unit(r)}</td>
-                            <td class="py-1.5 px-1 text-right text-[var(--app-accent)]">${deltaCell(r)}</td>
+                            <td class="py-1.5 px-1 text-right text-[var(--app-ink)]">${deltaCell(r)}</td>
                             <td class="py-1.5 px-1 text-right">${r.extraYears === 0 ? '-' : formatMoney(r.extraContributed)}</td>
                             <td class="py-1.5 px-1 text-right">${r.paybackMonths == null ? '-' : r.paybackMonths}</td>
                         </tr>`).join('')}
                     </tbody>
                 </table>
             </div>
-            <div class="text-[11px] text-[var(--app-muted)]">คำนวณด้วยสูตรเดียวกับผลลัพธ์ด้านบน เงินบำเหน็จรวมดอกผลเป็นค่าประมาณการ</div>
+            <div class="text-[11px] text-[var(--app-body)]">คำนวณด้วยสูตรเดียวกับผลลัพธ์ด้านบน เงินบำเหน็จรวมดอกผลเป็นค่าประมาณการ</div>
         </div>`;
 }
 

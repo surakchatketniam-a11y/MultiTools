@@ -700,11 +700,11 @@ function renderTransferSplitComparison(rows) {
     return `
         <div class="transfer-split-compare themed-tool-card hidden lg:block p-4 space-y-2 text-xs" data-desktop-chart>
             <div class="font-bold text-[var(--app-ink)]">เปรียบเทียบผู้ซื้อ vs ผู้ขาย ทุกข้อตกลงแบ่งจ่าย</div>
-            <div class="text-[11px] text-[var(--app-muted)]">ยอดรวมค่าใช้จ่ายวันโอน ${formatMoney(rows[0].totalCost)} บาท เท่ากันทุกแบบ ต่างกันที่ใครเป็นผู้จ่าย · แถวที่ไฮไลต์คือข้อตกลงที่เลือกไว้</div>
+            <div class="text-[11px] text-[var(--app-body)]">ยอดรวมค่าใช้จ่ายวันโอน ${formatMoney(rows[0].totalCost)} บาท เท่ากันทุกแบบ ต่างกันที่ใครเป็นผู้จ่าย · แถวที่ไฮไลต์คือข้อตกลงที่เลือกไว้</div>
             <div class="overflow-x-auto thin-scroll">
                 <table class="w-full text-left border-collapse text-[11px]">
                     <thead>
-                        <tr class="text-[var(--app-muted)] border-b border-[var(--app-hairline)]">
+                        <tr class="text-[var(--app-body)] border-b border-[var(--app-hairline)]">
                             <th scope="col" class="py-1.5 px-1">ข้อตกลงแบ่งจ่าย</th>
                             <th scope="col" class="py-1.5 px-1 text-right">ผู้ซื้อจ่าย</th>
                             <th scope="col" class="py-1.5 px-1 text-right">ผู้ขายจ่าย</th>
@@ -719,7 +719,7 @@ function renderTransferSplitComparison(rows) {
                             <td class="py-2 px-1 text-right">${formatMoney(r.sellerCost)}</td>
                             <td class="py-2 px-1 min-w-[9rem]">
                                 <div class="flex items-center gap-1.5">
-                                    <div class="h-2 flex-1 rounded-full overflow-hidden flex" style="background:var(--app-ink);opacity:0.75" role="img" aria-label="ผู้ซื้อ ${formatNum(r.buyerSharePct, 0)}% ผู้ขาย ${formatNum(100 - r.buyerSharePct, 0)}%"><div class="h-full" style="width:${r.buyerSharePct.toFixed(1)}%;background:var(--app-accent)"></div></div>
+                                    <div class="h-2 flex-1 rounded-full overflow-hidden flex" style="box-shadow: inset 0 0 0 1px var(--app-hairline)" role="img" aria-label="ผู้ซื้อ ${formatNum(r.buyerSharePct, 0)}% ผู้ขาย ${formatNum(100 - r.buyerSharePct, 0)}%"><div class="h-full" style="width:${r.buyerSharePct.toFixed(1)}%;background:var(--app-accent)"></div></div>
                                     <span class="whitespace-nowrap">${formatNum(r.buyerSharePct, 0)} : ${formatNum(100 - r.buyerSharePct, 0)}</span>
                                 </div>
                             </td>

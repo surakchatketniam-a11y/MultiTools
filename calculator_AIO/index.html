@@ -1166,6 +1166,12 @@
         /* Shared dark controls for Dark Luxe and Ferrari. */
         html:is([data-theme="dark"], [data-theme="ferrari"]) .sidebar-drawer,
         html:is([data-theme="dark"], [data-theme="ferrari"]) #dropdownMenu { background-color: var(--app-header-bg); color: var(--app-ink); border-color: var(--app-hairline); }
+        /* The drawer's tab pill and search box use the light canvas/surface tokens; keep them on the dark palette. */
+        html:is([data-theme="dark"], [data-theme="ferrari"]) .sidebar-drawer {
+            --color-canvas: var(--app-header-bg);
+            --color-surface-soft: var(--app-surface-soft);
+            --color-hairline-soft: var(--app-hairline);
+        }
         html:is([data-theme="dark"], [data-theme="ferrari"]) .sidebar-item,
         html:is([data-theme="dark"], [data-theme="ferrari"]) .sidebar-drawer .text-\[var\(--color-ink\)\] { color: var(--app-ink) !important; }
         html:is([data-theme="dark"], [data-theme="ferrari"]) .sidebar-item:hover,
@@ -1900,7 +1906,7 @@
     <div id="printFormalReceipt" class="hidden"></div>
 
     <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
-    <script src="src/bundle.js?v=51"></script>
+    <script src="src/bundle.js?v=53"></script>
 
     <script>
         function getSafeDateStr(offsetDays = 0) {

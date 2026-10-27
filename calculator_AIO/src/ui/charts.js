@@ -133,7 +133,10 @@ function renderDonutChart(slices, options = {}) {
     let offset = 0;
     const arcs = visible.map(s => {
         const length = (s.value / total) * circumference;
-        const arc = `<circle cx="60" cy="60" r="${radius}" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-dasharray="${length.toFixed(3)} ${(circumference - length).toFixed(3)}" stroke-dashoffset="${(-offset).toFixed(3)}" transform="rotate(-90 60 60)" style="${chartToneStyle(s.tone)}"></circle>`;
+        // thin gap between neighbouring slices so they stay distinguishable when tones are close
+        const gap = visible.length > 1 ? Math.min(1.2, length * 0.2) : 0;
+        const drawn = length - gap;
+        const arc = `<circle cx="60" cy="60" r="${radius}" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-dasharray="${drawn.toFixed(3)} ${(circumference - drawn).toFixed(3)}" stroke-dashoffset="${(-offset).toFixed(3)}" transform="rotate(-90 60 60)" style="${chartToneStyle(s.tone)}"></circle>`;
         offset += length;
         return arc;
     }).join('');
@@ -174,7 +177,7 @@ function renderWaterfallChart(steps) {
         const tone = s.kind === 'total' ? 'ink' : 'accent';
         return `<div role="listitem" class="text-[11px]">
             <div class="flex justify-between gap-2 text-[var(--app-body)]"><span>${escapeHTML(s.label)}</span><b class="text-[var(--app-ink)]">${s.kind === 'minus' ? '−' : ''}${formatMoney(s.amount)}</b></div>
-            <div class="h-2 rounded-full bg-[var(--app-surface-strong)] relative overflow-hidden"><span class="absolute top-0 bottom-0 rounded-full" style="left:${left.toFixed(2)}%;width:${width.toFixed(2)}%;background:currentColor;${chartToneStyle(tone)}"></span></div>
+            <div class="h-2 rounded-full relative overflow-hidden" style="box-shadow: inset 0 0 0 1px var(--app-hairline)"><span class="absolute top-0 bottom-0 rounded-full" style="left:${left.toFixed(2)}%;width:${width.toFixed(2)}%;background:currentColor;${chartToneStyle(tone)}"></span></div>
         </div>`;
     }).join('')}</div>`;
 }
@@ -208,9 +211,9 @@ function renderLoanChartPanel(schedule) {
             ])}</div>
         </div>
         <div>
-            <div class="font-semibold text-[var(--app-muted)] mb-1">ยอดหนี้คงเหลือตลอดสัญญา</div>
+            <div class="font-semibold text-[var(--app-body)] mb-1">ยอดหนี้คงเหลือตลอดสัญญา</div>
             ${renderLineChart(data.points, { ariaLabel: `ยอดหนี้ลดจาก ${formatMoney(data.points[0].balance)} เหลือ ${formatMoney(last.balance)} บาท ใน ${last.month} งวด` })}
-            <div class="flex justify-between text-[10px] text-[var(--app-muted)] mt-0.5"><span>งวดที่ 0 · ${formatMoney(data.points[0].balance)}</span><span>งวดที่ ${last.month} · ${formatMoney(last.balance)}</span></div>
+            <div class="flex justify-between text-[10px] text-[var(--app-body)] mt-0.5"><span>งวดที่ 0 · ${formatMoney(data.points[0].balance)}</span><span>งวดที่ ${last.month} · ${formatMoney(last.balance)}</span></div>
         </div>
         ${renderLoanWhatIfSection(schedule)}`);
 }
@@ -225,8 +228,8 @@ function renderTaxChartPanel(calc, params) {
     return renderChartPanel('จากเงินได้ถึงเงินได้สุทธิ', `
         ${renderWaterfallChart(steps)}
         <div class="space-y-1">
-            <div class="font-semibold text-[var(--app-muted)]">ระยะห่างถึงฐานภาษีถัดไป</div>
-            <div class="h-2.5 rounded-full bg-[var(--app-surface-strong)] overflow-hidden" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(gauge.progress * 100)}" aria-label="${escapeHTML(gaugeText)}"><div class="h-full rounded-full" style="width:${(gauge.progress * 100).toFixed(1)}%;background:var(--app-accent)"></div></div>
+            <div class="font-semibold text-[var(--app-body)]">ระยะห่างถึงฐานภาษีถัดไป</div>
+            <div class="h-2.5 rounded-full overflow-hidden" style="box-shadow: inset 0 0 0 1px var(--app-hairline)" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(gauge.progress * 100)}" aria-label="${escapeHTML(gaugeText)}"><div class="h-full rounded-full" style="width:${(gauge.progress * 100).toFixed(1)}%;background:var(--app-accent)"></div></div>
             <div class="text-[var(--app-body)]">${escapeHTML(gaugeText)}</div>
         </div>
         ${params ? renderTaxInsightsSection(params) : ''}`);
@@ -248,6 +251,6 @@ function renderSalaryChartPanel(params) {
                 text: `${formatMoney(s.amount)} ฿`
             })))}</div>
         </div>
-        ${data.overAllocated ? `<div class="text-[var(--app-muted)]">สัดส่วนรวมเกิน 100% (${data.totalPct}%) กรุณาปรับให้ไม่เกินเงินเดือน</div>` : ''}
+        ${data.overAllocated ? `<div class="text-[var(--app-body)]">สัดส่วนรวมเกิน 100% (${data.totalPct}%) กรุณาปรับให้ไม่เกินเงินเดือน</div>` : ''}
         ${renderSalaryWhatIfSection(params)}`);
 }

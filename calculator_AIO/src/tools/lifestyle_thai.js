@@ -240,11 +240,11 @@ function renderApplianceRankingTable(ranking) {
     return `
         <div class="appliance-ranking themed-tool-card hidden lg:block p-4 space-y-2 text-xs" data-desktop-chart>
             <div class="font-bold text-[var(--app-ink)]">จัดอันดับเครื่องใช้ไฟฟ้าที่กินไฟมากที่สุด</div>
-            <div class="text-[11px] text-[var(--app-muted)]">${insight}</div>
+            <div class="text-[11px] text-[var(--app-body)]">${insight}</div>
             <div class="overflow-auto thin-scroll">
                 <table class="w-full text-left border-collapse text-[11px]">
                     <thead>
-                        <tr class="text-[var(--app-muted)] border-b border-[var(--app-hairline)]">
+                        <tr class="text-[var(--app-body)] border-b border-[var(--app-hairline)]">
                             <th scope="col" class="py-1.5 px-1">อันดับ</th>
                             <th scope="col" class="py-1.5 px-1">เครื่องใช้ไฟฟ้า</th>
                             <th scope="col" class="py-1.5 px-1 text-right">หน่วย/เดือน</th>
@@ -260,7 +260,7 @@ function renderApplianceRankingTable(ranking) {
                             <td class="py-1.5 px-1 text-right">${formatMoney(r.monthlyCost)}</td>
                             <td class="py-1.5 px-1 min-w-[6rem]">
                                 <div class="flex items-center gap-1.5">
-                                    <div class="h-2 flex-1 rounded-full bg-[var(--app-surface-strong)] overflow-hidden"><div class="h-full rounded-full" style="width:${r.sharePct.toFixed(1)}%;background:var(--app-accent)"></div></div>
+                                    <div class="h-2 flex-1 rounded-full overflow-hidden" style="box-shadow: inset 0 0 0 1px var(--app-hairline)"><div class="h-full rounded-full" style="width:${r.sharePct.toFixed(1)}%;background:var(--app-accent)"></div></div>
                                     <span class="w-10 text-right">${formatNum(r.sharePct, 1)}%</span>
                                 </div>
                             </td>

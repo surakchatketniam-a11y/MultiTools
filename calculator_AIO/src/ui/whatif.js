@@ -92,7 +92,7 @@ function whatIfRow(label, outKey, initialText) {
 }
 
 function whatIfRange(id, label, min, max, step) {
-    return `<label for="${id}" class="flex justify-between gap-2 font-semibold text-[var(--app-muted)]"><span>${escapeHTML(label)}</span><span data-out="slider" class="text-[var(--app-ink)]">0</span></label>
+    return `<label for="${id}" class="flex justify-between gap-2 font-semibold text-[var(--app-body)]"><span>${escapeHTML(label)}</span><span data-out="slider" class="text-[var(--app-ink)]">0</span></label>
         <input id="${id}" type="range" min="${min}" max="${max}" step="${step}" value="0" class="w-full" style="accent-color: var(--app-accent)">`;
 }
 
@@ -124,13 +124,13 @@ function renderTaxInsightsSection(params) {
     if (!open.length) {
         return whatIfSection('tax-none', 'สิทธิ์ลดหย่อนที่เหลือ', `<div class="text-[var(--app-body)]">ใช้สิทธิ์ลดหย่อน SSF, RMF และ Thai ESG ครบตามเพดานแล้ว</div>`);
     }
-    const rows = insights.map(i => `<div class="flex justify-between gap-2"><span class="text-[var(--app-body)]">${i.label} เหลือสิทธิ์ ${formatMoney(i.remaining)} ฿</span><b class="text-[var(--app-accent)] whitespace-nowrap">คืนภาษี ~${formatMoney(i.cashBack)} ฿</b></div>`).join('');
+    const rows = insights.map(i => `<div class="flex justify-between gap-2"><span class="text-[var(--app-body)]">${i.label} เหลือสิทธิ์ ${formatMoney(i.remaining)} ฿</span><b class="text-[var(--app-ink)] whitespace-nowrap">คืนภาษี ~${formatMoney(i.cashBack)} ฿</b></div>`).join('');
     const first = open[0];
     const stepFor = r => (r >= 1000 ? 1000 : 1);
     const maxFor = r => (r >= 1000 ? Math.floor(r / 1000) * 1000 : r);
     return whatIfSection('tax', 'สิทธิ์ลดหย่อนที่เหลือ และลองซื้อเพิ่ม', `
         <div class="space-y-1">${rows}</div>
-        <label for="whatifTaxFund" class="font-semibold text-[var(--app-muted)] block">เลือกกองทุนที่จะลองซื้อเพิ่ม</label>
+        <label for="whatifTaxFund" class="font-semibold text-[var(--app-body)] block">เลือกกองทุนที่จะลองซื้อเพิ่ม</label>
         <select id="whatifTaxFund" class="airbnb-input w-full text-xs" data-whatif-fund>${open.map(i => `<option value="${i.key}">${i.label}</option>`).join('')}</select>
         ${whatIfRange('whatifTaxAmount', 'ซื้อเพิ่ม (บาท)', 0, maxFor(first.remaining), stepFor(first.remaining))}
         ${whatIfRow('ภาษีที่ประหยัดได้', 'taxSaved', '0.00 ฿')}

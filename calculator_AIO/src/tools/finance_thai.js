@@ -155,11 +155,11 @@ function renderCarLoanPayoffTable(rows, selectedMonth) {
     return `
         <div class="car-payoff-schedule themed-tool-card hidden lg:block p-4 space-y-2 text-xs" data-desktop-chart>
             <div class="font-bold text-[var(--app-ink)]">ตารางปิดบัญชีก่อนกำหนดทุกงวด (งวด 1 ถึง ${rows.length})</div>
-            <div class="text-[11px] text-[var(--app-muted)]">เทียบยอดปิดบัญชีกับการผ่อนต่อจนครบสัญญา · ประหยัดสูงสุด ${formatMoney(maxSaved)} บาท · แถวที่ไฮไลต์คืองวดที่เลือกไว้</div>
+            <div class="text-[11px] text-[var(--app-body)]">เทียบยอดปิดบัญชีกับการผ่อนต่อจนครบสัญญา · ประหยัดสูงสุด ${formatMoney(maxSaved)} บาท · แถวที่ไฮไลต์คืองวดที่เลือกไว้</div>
             <div class="overflow-auto thin-scroll max-h-[28rem]">
                 <table class="w-full text-left border-collapse text-[11px]">
                     <thead>
-                        <tr class="text-[var(--app-muted)]">
+                        <tr class="text-[var(--app-body)]">
                             <th scope="col" class="py-1.5 px-1 sticky top-0 bg-[var(--app-surface-strong)]">ปิดงวดที่</th>
                             <th scope="col" class="py-1.5 px-1 text-right sticky top-0 bg-[var(--app-surface-strong)]">เหลือ (งวด)</th>
                             <th scope="col" class="py-1.5 px-1 text-center sticky top-0 bg-[var(--app-surface-strong)]">ส่วนลด สคบ.</th>
@@ -177,7 +177,7 @@ function renderCarLoanPayoffTable(rows, selectedMonth) {
                             <td class="py-1 px-1 text-right">${formatMoney(r.unearnedInterest)}</td>
                             <td class="py-1 px-1 text-right">${formatMoney(r.fullRemaining)}</td>
                             <td class="py-1 px-1 text-right">${formatMoney(r.payoffAmount)}</td>
-                            <td class="py-1 px-1 text-right text-[var(--app-accent)]">${formatMoney(r.saved)}</td>
+                            <td class="py-1 px-1 text-right text-[var(--app-ink)]">${formatMoney(r.saved)}</td>
                         </tr>`).join('')}
                     </tbody>
                 </table>
@@ -374,7 +374,7 @@ function renderSocialSecurityInsight(rows) {
             <div class="overflow-x-auto thin-scroll">
                 <table class="w-full text-left border-collapse text-[11px]">
                     <thead>
-                        <tr class="text-[var(--app-muted)] border-b border-[var(--app-hairline)]">
+                        <tr class="text-[var(--app-body)] border-b border-[var(--app-hairline)]">
                             <th scope="col" class="py-1.5 px-1">เพิ่มอีก</th>
                             <th scope="col" class="py-1.5 px-1 text-right">รวมส่ง (ปี)</th>
                             <th scope="col" class="py-1.5 px-1 text-right">สิทธิที่ได้รับ</th>
@@ -388,14 +388,14 @@ function renderSocialSecurityInsight(rows) {
                             <td class="py-1.5 px-1">${r.extraYears === 0 ? 'ปัจจุบัน' : `+${r.extraYears} ปี`}</td>
                             <td class="py-1.5 px-1 text-right">${formatNum(r.years, 1)}</td>
                             <td class="py-1.5 px-1 text-right">${formatMoney(r.benefit)} ${unit(r)}</td>
-                            <td class="py-1.5 px-1 text-right text-[var(--app-accent)]">${deltaCell(r)}</td>
+                            <td class="py-1.5 px-1 text-right text-[var(--app-ink)]">${deltaCell(r)}</td>
                             <td class="py-1.5 px-1 text-right">${r.extraYears === 0 ? '-' : formatMoney(r.extraContributed)}</td>
                             <td class="py-1.5 px-1 text-right">${r.paybackMonths == null ? '-' : r.paybackMonths}</td>
                         </tr>`).join('')}
                     </tbody>
                 </table>
             </div>
-            <div class="text-[11px] text-[var(--app-muted)]">คำนวณด้วยสูตรเดียวกับผลลัพธ์ด้านบน เงินบำเหน็จรวมดอกผลเป็นค่าประมาณการ</div>
+            <div class="text-[11px] text-[var(--app-body)]">คำนวณด้วยสูตรเดียวกับผลลัพธ์ด้านบน เงินบำเหน็จรวมดอกผลเป็นค่าประมาณการ</div>
         </div>`;
 }
 
