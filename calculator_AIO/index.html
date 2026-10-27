@@ -582,6 +582,16 @@
                 grid-column: 2;
                 grid-row: 2;
             }
+            .app-shell .electricity-tool > .appliance-ranking {
+                grid-column: 2;
+                grid-row: 2;
+            }
+            .app-shell .transfer-split-compare {
+                grid-column: 1 / -1;
+            }
+            .app-shell .car-payoff-schedule {
+                grid-column: 1 / -1;
+            }
             /* Desktop chart panels (src/ui/charts.js) */
             .app-shell :is(.salary-tool, .personal-tax-tool) > .desktop-chart {
                 grid-column: 2;
@@ -1887,7 +1897,7 @@
     <div id="printFormalReceipt" class="hidden"></div>
 
     <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
-    <script src="src/bundle.js?v=47"></script>
+    <script src="src/bundle.js?v=50"></script>
 
     <script>
         function getSafeDateStr(offsetDays = 0) {

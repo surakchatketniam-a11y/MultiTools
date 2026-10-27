@@ -125,6 +125,67 @@ function calculateCarLoan(params) {
 }
 
 /* -----------------------------------------------------------
+ * PURE ENGINE: ตารางปิดบัญชีก่อนกำหนดทุกงวด (สคบ.) เทียบยอดผ่อนต่อจนครบสัญญา
+ * ใช้ calculateCarLoan ต่องวด จึงได้ตัวเลขตรงกับการ์ดจำลองการปิดบัญชีเสมอ
+ * ----------------------------------------------------------- */
+function buildCarLoanPayoffSchedule(params) {
+    const base = calculateCarLoan(params);
+    if (base.principal <= 0 || base.periodMonths < 1) return [];
+    const rows = [];
+    for (let month = 1; month <= base.periodMonths; month++) {
+        const calc = calculateCarLoan({ ...params, payoffMonth: month });
+        const fullRemaining = calc.monthlyPayment * calc.remainingMonths;
+        rows.push({
+            month,
+            remainingMonths: calc.remainingMonths,
+            discountTierPercent: calc.discountTierPercent,
+            unearnedInterest: calc.unearnedInterest,
+            fullRemaining,
+            payoffAmount: calc.totalPayoffAmount,
+            saved: Math.max(0, fullRemaining - calc.totalPayoffAmount)
+        });
+    }
+    return rows;
+}
+
+// ตารางเต็มงวด 1..n แสดงเฉพาะจอใหญ่ (hidden lg:block) เพื่อไม่กระทบมือถือ
+function renderCarLoanPayoffTable(rows, selectedMonth) {
+    if (!rows.length) return '';
+    const maxSaved = Math.max(...rows.map(r => r.saved));
+    return `
+        <div class="car-payoff-schedule themed-tool-card hidden lg:block p-4 space-y-2 text-xs" data-desktop-chart>
+            <div class="font-bold text-[var(--app-ink)]">ตารางปิดบัญชีก่อนกำหนดทุกงวด (งวด 1 ถึง ${rows.length})</div>
+            <div class="text-[11px] text-[var(--app-muted)]">เทียบยอดปิดบัญชีกับการผ่อนต่อจนครบสัญญา · ประหยัดสูงสุด ${formatMoney(maxSaved)} บาท · แถวที่ไฮไลต์คืองวดที่เลือกไว้</div>
+            <div class="overflow-auto thin-scroll max-h-[28rem]">
+                <table class="w-full text-left border-collapse text-[11px]">
+                    <thead>
+                        <tr class="text-[var(--app-muted)]">
+                            <th scope="col" class="py-1.5 px-1 sticky top-0 bg-[var(--app-surface-strong)]">ปิดงวดที่</th>
+                            <th scope="col" class="py-1.5 px-1 text-right sticky top-0 bg-[var(--app-surface-strong)]">เหลือ (งวด)</th>
+                            <th scope="col" class="py-1.5 px-1 text-center sticky top-0 bg-[var(--app-surface-strong)]">ส่วนลด สคบ.</th>
+                            <th scope="col" class="py-1.5 px-1 text-right sticky top-0 bg-[var(--app-surface-strong)]">ดอกเบี้ยที่ยังไม่ถึงกำหนด</th>
+                            <th scope="col" class="py-1.5 px-1 text-right sticky top-0 bg-[var(--app-surface-strong)]">ผ่อนต่อจนครบ</th>
+                            <th scope="col" class="py-1.5 px-1 text-right sticky top-0 bg-[var(--app-surface-strong)]">ยอดปิดบัญชี</th>
+                            <th scope="col" class="py-1.5 px-1 text-right sticky top-0 bg-[var(--app-surface-strong)]">ประหยัดได้</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows.map(r => `
+                        <tr class="border-b border-[var(--app-hairline)] ${r.month === selectedMonth ? 'bg-[var(--app-accent-soft)] font-bold text-[var(--app-ink)]' : 'text-[var(--app-body)]'}"${r.month === selectedMonth ? ' aria-current="true"' : ''}>
+                            <td class="py-1 px-1">${r.month}</td>
+                            <td class="py-1 px-1 text-right">${r.remainingMonths}</td>
+                            <td class="py-1 px-1 text-center">${r.discountTierPercent}%</td>
+                            <td class="py-1 px-1 text-right">${formatMoney(r.unearnedInterest)}</td>
+                            <td class="py-1 px-1 text-right">${formatMoney(r.fullRemaining)}</td>
+                            <td class="py-1 px-1 text-right">${formatMoney(r.payoffAmount)}</td>
+                            <td class="py-1 px-1 text-right text-[var(--app-accent)]">${formatMoney(r.saved)}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>`;
+}
+
+/* -----------------------------------------------------------
  * PURE ENGINE: ประกันสังคม & เงินบำนาญชราภาพ (Social Security Pension & Lump Sum)
  * ----------------------------------------------------------- */
 function calculateSocialSecurity(params) {
@@ -424,6 +485,8 @@ function renderCarLoanTool(container) {
                     </button>
                 </div>
             </div>
+
+            ${renderCarLoanPayoffTable(buildCarLoanPayoffSchedule(st), calc.payoffMonth)}
         </div>
     `;
 

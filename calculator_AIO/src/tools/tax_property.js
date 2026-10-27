@@ -664,6 +664,74 @@ function renderTaxPersonalTool(container) {
 }
 
 /* -----------------------------------------------------------
+ * PURE ENGINE: เทียบค่าใช้จ่ายวันโอนฝั่งผู้ซื้อ vs ผู้ขาย ครบทุกข้อตกลงแบ่งจ่าย
+ * ยอดรวมเท่ากันทุกแบบ ต่างกันที่ว่าใครเป็นคนจ่าย
+ * ----------------------------------------------------------- */
+const TRANSFER_SPLIT_MODES = [
+    { mode: 'custom', label: 'ธรรมเนียมทั่วไป (โอนคนละครึ่ง)' },
+    { mode: 'half', label: 'คนละครึ่งทุกรายการ' },
+    { mode: 'seller', label: 'ผู้ขายออกทั้งหมด' },
+    { mode: 'buyer', label: 'ผู้ซื้อออกทั้งหมด' }
+];
+
+function buildTransferSplitComparison(params) {
+    const p = params || {};
+    const selected = calculatePropertyTransfer({ ...p, splitMode: p.splitMode || 'custom' });
+    if (!(selected.appraisedValue > 0)) return [];
+    return TRANSFER_SPLIT_MODES.map(({ mode, label }) => {
+        const calc = calculatePropertyTransfer({ ...p, splitMode: mode });
+        return {
+            mode,
+            label,
+            isSelected: mode === selected.splitMode,
+            buyerCost: calc.buyerCost,
+            sellerCost: calc.sellerCost,
+            totalCost: calc.totalLandCost,
+            buyerSharePct: calc.totalLandCost > 0 ? (calc.buyerCost / calc.totalLandCost) * 100 : 0,
+            buyerDelta: calc.buyerCost - selected.buyerCost
+        };
+    });
+}
+
+// ตารางเทียบแบบเคียงข้างกัน แสดงเฉพาะจอใหญ่ (hidden lg:block) เพื่อไม่กระทบมือถือ
+function renderTransferSplitComparison(rows) {
+    if (!rows.length) return '';
+    const deltaText = d => (Math.abs(d) < 0.005 ? '-' : `${d > 0 ? '+' : '−'}${formatMoney(Math.abs(d))}`);
+    return `
+        <div class="transfer-split-compare themed-tool-card hidden lg:block p-4 space-y-2 text-xs" data-desktop-chart>
+            <div class="font-bold text-[var(--app-ink)]">เปรียบเทียบผู้ซื้อ vs ผู้ขาย ทุกข้อตกลงแบ่งจ่าย</div>
+            <div class="text-[11px] text-[var(--app-muted)]">ยอดรวมค่าใช้จ่ายวันโอน ${formatMoney(rows[0].totalCost)} บาท เท่ากันทุกแบบ ต่างกันที่ใครเป็นผู้จ่าย · แถวที่ไฮไลต์คือข้อตกลงที่เลือกไว้</div>
+            <div class="overflow-x-auto thin-scroll">
+                <table class="w-full text-left border-collapse text-[11px]">
+                    <thead>
+                        <tr class="text-[var(--app-muted)] border-b border-[var(--app-hairline)]">
+                            <th scope="col" class="py-1.5 px-1">ข้อตกลงแบ่งจ่าย</th>
+                            <th scope="col" class="py-1.5 px-1 text-right">ผู้ซื้อจ่าย</th>
+                            <th scope="col" class="py-1.5 px-1 text-right">ผู้ขายจ่าย</th>
+                            <th scope="col" class="py-1.5 px-1">สัดส่วนผู้ซื้อ : ผู้ขาย</th>
+                            <th scope="col" class="py-1.5 px-1 text-right">ผู้ซื้อต่างจากที่เลือก</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows.map(r => `
+                        <tr class="border-b border-[var(--app-hairline)] ${r.isSelected ? 'bg-[var(--app-accent-soft)] font-bold text-[var(--app-ink)]' : 'text-[var(--app-body)]'}"${r.isSelected ? ' aria-current="true"' : ''}>
+                            <td class="py-2 px-1">${escapeHTML(r.label)}</td>
+                            <td class="py-2 px-1 text-right">${formatMoney(r.buyerCost)}</td>
+                            <td class="py-2 px-1 text-right">${formatMoney(r.sellerCost)}</td>
+                            <td class="py-2 px-1 min-w-[9rem]">
+                                <div class="flex items-center gap-1.5">
+                                    <div class="h-2 flex-1 rounded-full overflow-hidden flex" style="background:var(--app-ink);opacity:0.75" role="img" aria-label="ผู้ซื้อ ${formatNum(r.buyerSharePct, 0)}% ผู้ขาย ${formatNum(100 - r.buyerSharePct, 0)}%"><div class="h-full" style="width:${r.buyerSharePct.toFixed(1)}%;background:var(--app-accent)"></div></div>
+                                    <span class="whitespace-nowrap">${formatNum(r.buyerSharePct, 0)} : ${formatNum(100 - r.buyerSharePct, 0)}</span>
+                                </div>
+                            </td>
+                            <td class="py-2 px-1 text-right">${deltaText(r.buyerDelta)}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>`;
+}
+
+/* -----------------------------------------------------------
  * UI RENDERER: ค่าธรรมเนียมโอนที่ดิน & ภาษีอสังหาฯ
  * ----------------------------------------------------------- */
 function renderPropertyTransferTool(container) {
@@ -811,6 +879,8 @@ function renderPropertyTransferTool(container) {
                     </button>
                 </div>
             </div>
+
+            ${renderTransferSplitComparison(buildTransferSplitComparison(st))}
         </div>
     `;
 

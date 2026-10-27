@@ -3286,3 +3286,133 @@ test('what-if: tax insights report remaining quota and refund, capped by shared 
     const html = ctx.renderTaxInsightsSection(params);
     assert.ok(html.includes('data-whatif="tax"') && html.includes('type="range"'));
 });
+
+test('car loan: full early-payoff schedule covers every installment and matches the single-month simulation', () => {
+    const ctx = context();
+    const params = { vehicleType: 'car', condition: 'new', price: '850000', downPaymentType: 'percent', downPaymentValue: '20', interestRate: '2.59', periodMonths: '60', payoffMonth: '30' };
+    const rows = ctx.buildCarLoanPayoffSchedule(params);
+    assert.equal(rows.length, 60, 'one row per installment, 1 through 60');
+    assert.equal(rows[0].month, 1);
+    assert.equal(rows[59].month, 60);
+
+    // Every row agrees with the existing single-month calculator
+    for (const r of [rows[0], rows[19], rows[29], rows[39], rows[58]]) {
+        const single = ctx.calculateCarLoan({ ...params, payoffMonth: String(r.month) });
+        assert.ok(Math.abs(single.totalPayoffAmount - r.payoffAmount) < 0.005, `payoff matches at month ${r.month}`);
+        assert.ok(Math.abs(single.totalSavedByEarlyPayoff - r.saved) < 0.01, `saving matches at month ${r.month}`);
+    }
+
+    // Tier boundaries for a 60-month contract: <20 -> 100%, 20..40 -> 70%, >40 -> 60%
+    assert.equal(rows[18].discountTierPercent, 100);
+    assert.equal(rows[19].discountTierPercent, 70);
+    assert.equal(rows[39].discountTierPercent, 70);
+    assert.equal(rows[40].discountTierPercent, 60);
+
+    // Final installment: nothing left to pay, nothing saved
+    assert.equal(rows[59].remainingMonths, 0);
+    assert.equal(rows[59].payoffAmount, 0);
+    assert.equal(rows[59].saved, 0);
+    assert.ok(rows.every(r => r.payoffAmount <= r.fullRemaining + 0.005 && r.saved >= 0));
+
+    // Used car adds VAT consistently
+    const used = ctx.buildCarLoanPayoffSchedule({ ...params, condition: 'used', interestRate: '4.5' });
+    assert.equal(used.length, 60);
+    assert.ok(used[29].fullRemaining > 0 && used[29].payoffAmount < used[29].fullRemaining);
+
+    // Short and invalid contracts
+    assert.equal(ctx.buildCarLoanPayoffSchedule({ ...params, periodMonths: '24' }).length, 24);
+    assert.deepEqual(Array.from(ctx.buildCarLoanPayoffSchedule({ ...params, price: '0' })), []);
+    assert.equal(ctx.renderCarLoanPayoffTable([], 1), '');
+
+    const html = ctx.renderCarLoanPayoffTable(rows, 30);
+    assert.ok(html.includes('hidden lg:block'), 'desktop-only');
+    assert.equal((html.match(/<tr /g) || []).length, 61, 'header plus 60 rows');
+    assert.equal((html.match(/aria-current="true"/g) || []).length, 1, 'only the selected month is highlighted');
+    assert.ok(!/#[0-9a-fA-F]{3,6}\b/.test(html), 'theme variables only');
+});
+
+test('electricity: appliance ranking sorts by consumption, shares add to 100, and renders desktop-only', () => {
+    const ctx = context();
+    const appCalc = ctx.calculateApplianceEnergy([
+        { id: 'fan', name: 'พัดลม', watts: 50, qty: 2, hoursPerDay: 8 },
+        { id: 'air', name: 'แอร์', watts: 900, qty: 1, hoursPerDay: 8 },
+        { id: 'fridge', name: 'ตู้เย็น', watts: 100, qty: 1, hoursPerDay: 24 },
+        { id: 'off', name: 'เครื่องปิด', watts: 500, qty: 1, hoursPerDay: 0 }
+    ], 4.5);
+    const ranking = ctx.buildApplianceRanking(appCalc);
+    assert.deepEqual(Array.from(ranking.map(r => r.name)), ['แอร์', 'ตู้เย็น', 'พัดลม', 'เครื่องปิด']);
+    assert.deepEqual(Array.from(ranking.map(r => r.rank)), [1, 2, 3, 4]);
+    assert.ok(Math.abs(ranking.reduce((s, r) => s + r.sharePct, 0) - 100) < 1e-9);
+    assert.ok(Math.abs(ranking[0].monthlyKwh - 900 * 8 * 30 / 1000) < 1e-9);
+    assert.equal(ranking[3].sharePct, 0);
+    assert.ok(Math.abs(ranking.reduce((s, r) => s + r.monthlyCost, 0) - appCalc.totalMonthlyCost) < 1e-6);
+
+    // Equal consumption keeps the user's original order
+    const ties = ctx.buildApplianceRanking(ctx.calculateApplianceEnergy([
+        { name: 'A', watts: 100, qty: 1, hoursPerDay: 5 },
+        { name: 'B', watts: 100, qty: 1, hoursPerDay: 5 }
+    ]));
+    assert.deepEqual(Array.from(ties.map(r => r.name)), ['A', 'B']);
+
+    // Empty list / all zero usage are safe
+    assert.deepEqual(Array.from(ctx.buildApplianceRanking(ctx.calculateApplianceEnergy([]))), []);
+    assert.deepEqual(Array.from(ctx.buildApplianceRanking(null)), []);
+    assert.equal(ctx.renderApplianceRankingTable([]), '');
+    const zero = ctx.buildApplianceRanking(ctx.calculateApplianceEnergy([{ name: 'Z', watts: 100, qty: 1, hoursPerDay: 0 }]));
+    assert.equal(zero[0].sharePct, 0);
+    assert.ok(ctx.renderApplianceRankingTable(zero).includes('ยังไม่มีเครื่องใช้ไฟฟ้า'));
+
+    const html = ctx.renderApplianceRankingTable(ranking);
+    assert.ok(html.includes('hidden lg:block'));
+    assert.equal((html.match(/<tr /g) || []).length, 5, 'header plus 4 rows');
+    assert.ok(html.includes('แอร์ กินไฟมากที่สุด'));
+    assert.ok(!/#[0-9a-fA-F]{3,6}\b/.test(html), 'theme variables only');
+
+    // Names are escaped
+    const xss = ctx.renderApplianceRankingTable(ctx.buildApplianceRanking(ctx.calculateApplianceEnergy([{ name: '<img onerror=x>', watts: 100, qty: 1, hoursPerDay: 1 }])));
+    assert.ok(!xss.includes('<img onerror'));
+});
+
+test('property transfer: split comparison keeps the total constant and agrees with each single-mode result', () => {
+    const ctx = context();
+    const params = { appraisedValue: '3000000', salePrice: '3200000', mortgageAmount: '2500000', holdingYears: '3', isGovMeasure: 'standard', exemptSBT: 'no', splitMode: 'half' };
+    const rows = ctx.buildTransferSplitComparison(params);
+    assert.deepEqual(Array.from(rows.map(r => r.mode)), ['custom', 'half', 'seller', 'buyer']);
+    assert.equal(rows.filter(r => r.isSelected).length, 1);
+    assert.equal(rows.find(r => r.isSelected).mode, 'half');
+
+    for (const r of rows) {
+        const single = ctx.calculatePropertyTransfer({ ...params, splitMode: r.mode });
+        assert.ok(Math.abs(r.buyerCost - single.buyerCost) < 0.005, `${r.mode} buyer matches`);
+        assert.ok(Math.abs(r.sellerCost - single.sellerCost) < 0.005, `${r.mode} seller matches`);
+        assert.ok(Math.abs(r.buyerCost + r.sellerCost - r.totalCost) < 0.01, `${r.mode} buyer + seller = total`);
+    }
+    assert.ok(rows.every(r => Math.abs(r.totalCost - rows[0].totalCost) < 0.01), 'total is the same under every split');
+
+    const seller = rows.find(r => r.mode === 'seller');
+    const buyer = rows.find(r => r.mode === 'buyer');
+    const mortgageFee = 2500000 * 0.01;
+    assert.ok(Math.abs(seller.buyerCost - mortgageFee) < 0.005, 'buyer still pays mortgage registration when seller covers the rest');
+    assert.equal(buyer.sellerCost, 0);
+    assert.ok(Math.abs(buyer.buyerSharePct - 100) < 1e-9);
+    assert.equal(rows.find(r => r.isSelected).buyerDelta, 0);
+    assert.ok(buyer.buyerDelta > 0 && seller.buyerDelta < 0);
+
+    // Cash purchase (no mortgage) and government reduced-fee measure
+    const cash = ctx.buildTransferSplitComparison({ ...params, mortgageAmount: '0' });
+    assert.equal(cash.find(r => r.mode === 'seller').buyerCost, 0);
+    const reduced = ctx.buildTransferSplitComparison({ ...params, isGovMeasure: 'reduced' });
+    assert.ok(reduced[0].totalCost < rows[0].totalCost);
+
+    // Missing appraisal -> no comparison; default split mode is custom
+    assert.deepEqual(Array.from(ctx.buildTransferSplitComparison({ appraisedValue: '' })), []);
+    assert.equal(ctx.renderTransferSplitComparison([]), '');
+    const dflt = ctx.buildTransferSplitComparison({ ...params, splitMode: undefined });
+    assert.equal(dflt.find(r => r.isSelected).mode, 'custom');
+
+    const html = ctx.renderTransferSplitComparison(rows);
+    assert.ok(html.includes('hidden lg:block'));
+    assert.equal((html.match(/<tr /g) || []).length, 5, 'header plus 4 scenarios');
+    assert.equal((html.match(/aria-current="true"/g) || []).length, 1);
+    assert.ok(!/#[0-9a-fA-F]{3,6}\b/.test(html), 'theme variables only');
+});
