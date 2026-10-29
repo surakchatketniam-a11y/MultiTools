@@ -817,12 +817,21 @@ function openUnitWheelDialog(options = {}) {
 
     const wheelEl = wrapper.querySelector('#unitWheelDialogWheel');
     const selEl = wrapper.querySelector('#unitWheelDialogSel');
+    // The highlighted band is an overlay (the selected row's own text is hidden), so keep it in step with the wheel.
+    const bandName = wrapper.querySelector('.unit-band-name');
+    const bandSym = wrapper.querySelector('.unit-band-sym');
+    const updateBand = (idx) => {
+        const split = splitUnitLabel(items[idx] || '');
+        if (bandName) bandName.textContent = split.title;
+        if (bandSym) bandSym.textContent = split.symbol;
+    };
     const ctrl = bindWheelColumn(wheelEl, {
         itemCount: items.length,
         initialIndex: selectedIndex,
         itemHeight,
         onSelect: (idx) => {
             if (selEl) selEl.value = String(idx);
+            updateBand(idx);
             onChange(idx);
         }
     });
@@ -830,6 +839,7 @@ function openUnitWheelDialog(options = {}) {
         const idx = parseInt(e.target.value, 10);
         if (Number.isInteger(idx) && idx >= 0 && idx < items.length) {
             ctrl.setIndex(idx, true);
+            updateBand(idx);
             onChange(idx);
         }
     });
