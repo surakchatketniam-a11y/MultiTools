@@ -825,105 +825,121 @@ function renderHexTool(container) {
 /* -----------------------------------------------------------
  * TOOL 1: เครื่องคิดเลข (Standard Calculator with History)
  * ----------------------------------------------------------- */
+// A bounded recursive-descent parser. It never executes the expression as code.
+function evaluateScientificExpression(expression, options = {}) {
+    const source = String(expression || '').replace(/,/g, '').replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-').replace(/π/g, 'pi');
+    if (!source || source.length > 500) throw new Error('กรุณากรอกสมการ');
+    const tokens = source.match(/(?:\d+(?:\.\d*)?|\.\d+)(?:E[+-]?\d+)?|[A-Za-z]+|[+\-*/^()%!]/g) || [];
+    if (tokens.join('') !== source.replace(/\s/g, '')) throw new Error('รูปแบบสมการไม่ถูกต้อง');
+    let i = 0, depth = 0;
+    const take = value => tokens[i] === value && (++i, true);
+    const check = value => { if (!Number.isFinite(value)) throw new Error('ผลลัพธ์ไม่อยู่ในขอบเขต'); return value; };
+    const angle = options.angle === 'rad' ? 1 : Math.PI / 180;
+    const functions = { sin: x => Math.sin(x * angle), cos: x => Math.cos(x * angle), tan: x => {
+        if (Math.abs(Math.cos(x * angle)) < 1e-12) throw new Error('ค่า tan ไม่กำหนด');
+        return Math.tan(x * angle);
+    }, asin: x => Math.asin(x) / angle, acos: x => Math.acos(x) / angle, atan: x => Math.atan(x) / angle,
+    sqrt: Math.sqrt, cbrt: Math.cbrt, ln: Math.log, log: Math.log10, exp: Math.exp };
+    function primary() {
+        if (++depth > 100) throw new Error('สมการซับซ้อนเกินไป');
+        const token = tokens[i++]; let value;
+        if (token === '(') { value = sum(); if (!take(')')) throw new Error('วงเล็บไม่ครบ'); }
+        else if (token === 'pi') value = Math.PI;
+        else if (token === 'e') value = Math.E;
+        else if (token === 'Ans') value = Number(options.ans ?? 0);
+        else if (Object.prototype.hasOwnProperty.call(functions, token)) {
+            if (!take('(')) throw new Error('กรุณาระบุวงเล็บของฟังก์ชัน');
+            const argument = sum(); if (!take(')')) throw new Error('วงเล็บไม่ครบ');
+            value = functions[token](argument);
+        } else if (token && /^(?:\d|\.)/.test(token)) value = Number(token);
+        else throw new Error('สมการไม่สมบูรณ์');
+        depth--; return check(value);
+    }
+    function postfix() {
+        let value = primary();
+        while (tokens[i] === '!' || tokens[i] === '%') {
+            if (take('%')) value /= 100;
+            else { i++; if (!Number.isInteger(value) || value < 0 || value > 170) throw new Error('แฟกทอเรียลใช้จำนวนเต็ม 0–170'); let n = 1; for (let j = 2; j <= value; j++) n *= j; value = n; }
+        }
+        return check(value);
+    }
+    function power() { let value = postfix(); if (take('^')) value = check(Math.pow(value, unary())); return value; }
+    function unary() { if (take('+')) return unary(); if (take('-')) return -unary(); return power(); }
+    function product() {
+        let value = unary();
+        while (i < tokens.length) {
+            if (take('*')) value = check(value * unary());
+            else if (take('/')) { const divisor = unary(); if (divisor === 0) throw new Error('หารด้วยศูนย์ไม่ได้'); value = check(value / divisor); }
+            else if (tokens[i] === '(' || /^(pi|e|Ans|sin|cos|tan|asin|acos|atan|sqrt|cbrt|ln|log|exp)$/.test(tokens[i] || '')) value = check(value * unary());
+            else break;
+        }
+        return value;
+    }
+    function sum() { let value = product(); while (i < tokens.length) { if (take('+')) value = check(value + product()); else if (take('-')) value = check(value - product()); else break; } return value; }
+    const result = sum(); if (i !== tokens.length) throw new Error('รูปแบบสมการไม่ถูกต้อง'); return check(result);
+}
+
+function formatScientificResult(value) {
+    if (!Number.isFinite(value)) return 'Error';
+    if (Object.is(value, -0)) value = 0;
+    return Number(value.toPrecision(12)).toString().replace('e+', 'E+').replace('e-', 'E-');
+}
+
 function renderStandardCalcTool(container) {
     const st = appState.calc;
+    const scientific = st.mode === 'scientific';
+    const second = !!st.second;
+    const angle = st.angle === 'rad' ? 'rad' : 'deg';
+    const functionKeys = [
+        ['2nd', '2nd'], [second ? 'sin⁻¹' : 'sin', second ? 'asin(' : 'sin('], [second ? 'cos⁻¹' : 'cos', second ? 'acos(' : 'cos('], [second ? 'tan⁻¹' : 'tan', second ? 'atan(' : 'tan('],
+        ['x²', '^2'], ['x³', '^3'], ['xʸ', '^'], ['√x', 'sqrt('],
+        ['³√x', 'cbrt('], ['ln', 'ln('], ['log', 'log('], ['10ˣ', '10^('],
+        ['1/x', 'reciprocal'], ['x!', '!'], ['π', 'pi'], ['e', 'e'],
+        ['Ans', 'Ans'], ['EE', 'E'], ['eˣ', 'exp('], ['+/−', 'negate']
+    ];
+    const standardKeys = [['C','C'],['( )','()'],['%','%'],['÷','÷'],['7','7'],['8','8'],['9','9'],['×','×'],['4','4'],['5','5'],['6','6'],['−','-'],['1','1'],['2','2'],['3','3'],['+','+'],['0','0'],['.','.'],['⌫','BS'],['=','=']];
+    const key = ([label, action]) => `<button type="button" class="key-btn ${['C','()','%','÷','×','-','+','BS'].includes(action) ? 'key-action' : ''} ${action === '=' ? 'key-primary-cta calc-equals' : ''}" data-std="${escapeHTML(action)}" ${action === 'BS' ? 'aria-label="ลบตัวอักษร"' : ''} ${action === '2nd' ? `aria-pressed="${second}"` : ''}>${label}</button>`;
     container.innerHTML = `
-        <div class="standard-calc flex flex-col h-full gap-2">
-            <div class="standard-calc-display themed-result-card p-3.5 flex flex-col justify-between">
-                <div class="text-xs text-[var(--app-muted)] flex justify-between items-center gap-2 border-b border-[var(--app-hairline)] pb-1.5">
-                    ${st.history[0]
-                        ? `<button id="restoreLatestCalcBtn" type="button" class="min-w-0 min-h-[44px] text-left break-all hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--app-accent)]" aria-label="นำการคำนวณล่าสุดกลับมาแก้ไข" title="แตะเพื่อนำกลับมาคำนวณใหม่">ล่าสุด: ${formatCalcExpr(st.history[0].expr)} = ${st.history[0].res}</button>`
-                        : '<span class="min-w-0">ล่าสุด: -</span>'}
-                    <button id="clearCalcHistBtn" class="shrink-0 min-h-[44px] text-[var(--app-accent)] font-semibold hover:underline">ล้างประวัติ</button>
-                </div>
-                <div class="standard-calc-expression text-right text-[var(--app-muted)] font-mono break-all min-h-[28px] mt-1">${formatCalcExpr(st.expr) || '0'}</div>
-                <div class="standard-calc-result text-right font-bold text-[var(--app-ink)] font-mono break-all">= ${st.result}</div>
+        <div class="standard-calc flex flex-col gap-2">
+            <div class="segment-group grid-cols-2" role="group" aria-label="โหมดเครื่องคิดเลข">
+                <button type="button" class="segment-btn ${!scientific ? 'active' : ''}" data-calc-mode="standard" aria-pressed="${!scientific}">ทั่วไป</button>
+                <button type="button" class="segment-btn ${scientific ? 'active' : ''}" data-calc-mode="scientific" aria-pressed="${scientific}">วิทยาศาสตร์</button>
             </div>
-
-            <div class="standard-calc-keypad grid grid-cols-4 grid-rows-5 gap-2">
-                <button class="key-btn key-action text-xl" data-std="C">C</button>
-                <button class="key-btn key-action text-xl" data-std="()">( )</button>
-                <button class="key-btn key-action text-xl" data-std="%">%</button>
-                <button class="key-btn key-action text-2xl" data-std="÷">÷</button>
-
-                <button class="key-btn" data-std="7">7</button>
-                <button class="key-btn" data-std="8">8</button>
-                <button class="key-btn" data-std="9">9</button>
-                <button class="key-btn key-action text-2xl" data-std="×">×</button>
-
-                <button class="key-btn" data-std="4">4</button>
-                <button class="key-btn" data-std="5">5</button>
-                <button class="key-btn" data-std="6">6</button>
-                <button class="key-btn key-action text-2xl" data-std="-">−</button>
-
-                <button class="key-btn" data-std="1">1</button>
-                <button class="key-btn" data-std="2">2</button>
-                <button class="key-btn" data-std="3">3</button>
-                <button class="key-btn key-action text-2xl" data-std="+">+</button>
-
-                <button class="key-btn" data-std="0">0</button>
-                <button class="key-btn" data-std=".">.</button>
-                <button class="key-btn key-action" data-std="BS" aria-label="ลบ">⌫</button>
-                <button class="key-btn key-primary-cta !bg-[var(--app-accent)] !text-white font-bold text-2xl" data-std="=">=</button>
+            <div class="themed-tool-card calc-display p-3.5">
+                <div class="calc-history">${st.history[0] ? `<button id="restoreLatestCalcBtn" type="button" class="tool-text-btn" aria-label="นำการคำนวณล่าสุดกลับมาแก้ไข">ล่าสุด: ${escapeHTML(st.history[0].expr)} = ${escapeHTML(String(st.history[0].res))}</button>` : '<span>ล่าสุด: -</span>'}<button type="button" id="clearCalcHistBtn" class="tool-text-btn">ล้างประวัติ</button></div>
+                <div class="calc-expression" aria-label="สมการ">${escapeHTML(st.expr || '0')}</div>
+                <div class="calc-result" aria-live="polite">= ${escapeHTML(String(st.result))}</div>
+                ${st.error ? `<div class="calc-error" role="alert">${escapeHTML(st.error)}</div>` : ''}
             </div>
-        </div>
-    `;
-
-    function evaluateStdExpr(raw) {
-        if (!raw) return '0';
-        try {
-            const sanitized = raw
-                .replace(/,/g, '')
-                .replace(/×/g, '*')
-                .replace(/÷/g, '/')
-                .replace(/%/g, '/100');
-            if (!/^[0-9+\-*/().\s]+$/.test(sanitized)) return st.result;
-            const val = Function('"use strict";return (' + sanitized + ')')();
-            return isFinite(val) ? formatNum(val, 6) : 'Error';
-        } catch {
-            return st.result;
-        }
+            ${scientific ? `<div class="calc-angle" role="group" aria-label="หน่วยมุม"><button type="button" class="tool-chip-btn" data-angle="deg" aria-pressed="${angle === 'deg'}">DEG</button><button type="button" class="tool-chip-btn" data-angle="rad" aria-pressed="${angle === 'rad'}">RAD</button></div><div class="calc-science-grid">${functionKeys.map(key).join('')}</div>` : ''}
+            <div class="calc-number-grid">${standardKeys.map(key).join('')}</div>
+        </div>`;
+    function evaluate(showError = false) {
+        try { const n = evaluateScientificExpression(st.expr, { angle: st.angle, ans: st.ans }); st.result = formatScientificResult(n); st.error = ''; return n; }
+        catch (error) { st.error = showError ? error.message : ''; return null; }
     }
-
-    container.querySelectorAll('[data-std]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const k = btn.getAttribute('data-std');
-            if (k === 'C') {
-                st.expr = '';
-                st.result = '0';
-            } else if (k === 'BS') {
-                st.expr = st.expr.slice(0, -1);
-                st.result = evaluateStdExpr(st.expr);
-            } else if (k === '()') {
-                const openCount = (st.expr.match(/\(/g) || []).length;
-                const closeCount = (st.expr.match(/\)/g) || []).length;
-                st.expr += openCount > closeCount ? ')' : '(';
-                st.result = evaluateStdExpr(st.expr);
-            } else if (k === '=') {
-                const finalRes = evaluateStdExpr(st.expr);
-                if (st.expr && finalRes !== 'Error') {
-                    st.history.unshift({ expr: st.expr, res: finalRes });
-                    st.expr = String(finalRes).replace(/,/g, '');
-                    st.result = finalRes;
-                }
-            } else {
-                st.expr += k;
-                st.result = evaluateStdExpr(st.expr);
-            }
-            renderActiveTool();
-        });
-    });
-
-    document.getElementById('clearCalcHistBtn')?.addEventListener('click', () => {
-        st.history = [];
+    container.querySelectorAll('[data-calc-mode]').forEach(button => button.addEventListener('click', event => { const restore = event.detail === 0 && document.activeElement === button; st.mode = button.dataset.calcMode; renderActiveTool(); if (restore) container.querySelector(`[data-calc-mode="${st.mode}"]`)?.focus(); }));
+    container.querySelectorAll('[data-angle]').forEach(button => button.addEventListener('click', event => { const restore = event.detail === 0 && document.activeElement === button; st.angle = button.dataset.angle; if (st.expr) evaluate(); renderActiveTool(); if (restore) container.querySelector(`[data-angle="${st.angle}"]`)?.focus(); }));
+    container.querySelectorAll('[data-std]').forEach(button => button.addEventListener('click', event => {
+        const k = button.dataset.std;
+        const restore = event.detail === 0 && document.activeElement === button;
+        if (k === '2nd') { st.second = !st.second; renderActiveTool(); if (restore) container.querySelector('[data-std="2nd"]')?.focus(); return; }
+        if (k === 'C') { st.expr = ''; st.result = '0'; st.error = ''; }
+        else if (k === 'BS') { st.expr = st.expr.slice(0, -1); if (st.expr) evaluate(); else { st.result = '0'; st.error = ''; } }
+        else if (k === '()') { const opens = (st.expr.match(/\(/g) || []).length; const closes = (st.expr.match(/\)/g) || []).length; st.expr += opens > closes ? ')' : '('; evaluate(); }
+        else if (k === '=') { const value = evaluate(true); if (st.expr && value !== null) { st.history.unshift({ expr: st.expr, res: st.result }); st.ans = value; st.expr = st.result; } }
+        else if (k === 'negate' || k === 'reciprocal') { if (st.expr) { st.expr = k === 'negate' ? `-(${st.expr})` : `1/(${st.expr})`; evaluate(); } }
+        else { st.expr += k; evaluate(); }
         renderActiveTool();
-    });
-
+        if (restore) container.querySelectorAll('[data-std]').forEach(item => { if (item.dataset.std === k) item.focus(); });
+    }));
+    container.querySelector('#clearCalcHistBtn')?.addEventListener('click', () => { st.history = []; renderActiveTool(); });
     container.querySelector('#restoreLatestCalcBtn')?.addEventListener('click', () => {
         const latest = st.history[0];
         if (!latest) return;
         st.expr = latest.expr;
         st.result = latest.res;
+        st.error = '';
         renderActiveTool();
     });
 }
@@ -938,7 +954,9 @@ function renderStandardCalcTool(container) {
         renderFuelEffTool,
         renderAreaCostTool,
         renderHexTool,
-        renderStandardCalcTool
+        renderStandardCalcTool,
+        evaluateScientificExpression,
+        formatScientificResult
     };
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = exportsObj;

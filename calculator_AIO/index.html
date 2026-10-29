@@ -1030,6 +1030,24 @@
         @container (max-width: 310px) { .salary-tool .salary-percent-grid { grid-template-columns: minmax(0, 1fr); } }
         @media (prefers-reduced-motion: reduce) { .salary-tool .segment-btn { transition: none; } .salary-tool .tool-action-btn:active { transform: none; } }
 
+        .standard-calc { color: var(--app-ink); }
+        .standard-calc .segment-btn { min-height: 44px; line-height: 1.4; }
+        .standard-calc .calc-display { display: flex; flex-direction: column; gap: 8px; }
+        .standard-calc .calc-history { display: flex; justify-content: space-between; gap: 8px; color: var(--app-muted); font-size: 12px; overflow-wrap: anywhere; }
+        .standard-calc .calc-history .tool-text-btn { flex-shrink: 0; }
+        .standard-calc .calc-expression, .standard-calc .calc-result { text-align: right; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+        .standard-calc .calc-expression { color: var(--app-body); font-size: 18px; }
+        .standard-calc .calc-result { color: var(--app-ink); font-size: 28px; font-weight: 700; }
+        .standard-calc .calc-error { color: var(--app-body); font-size: 12px; }
+        .standard-calc .calc-angle { display: flex; gap: 8px; }
+        .standard-calc .calc-angle [aria-pressed="true"] { background: var(--app-accent-soft); color: var(--app-ink); border-color: var(--app-accent); }
+        .standard-calc .calc-science-grid, .standard-calc .calc-number-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+        .standard-calc .key-btn { min-height: 48px; font-size: 18px; }
+        .standard-calc .calc-science-grid .key-btn { min-height: 44px; font-size: 14px; }
+        .standard-calc .calc-science-grid [aria-pressed="true"] { background: var(--app-accent-soft); border-color: var(--app-accent); }
+        .standard-calc .calc-equals { background: var(--app-accent); color: var(--app-on-accent, #fff); }
+        html[data-theme="dark"] .standard-calc .calc-equals { color: var(--app-shell-bg); }
+        .standard-calc button:focus-visible { outline: 2px solid var(--app-accent); outline-offset: 2px; }
         /* Guest Favorite / Rausch Pill Badge per DESIGN.md */
         .airbnb-badge {
             display: inline-flex;

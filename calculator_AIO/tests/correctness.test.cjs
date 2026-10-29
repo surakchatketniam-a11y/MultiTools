@@ -3752,3 +3752,18 @@ test('ot_calc renders the handoff button and it opens salary with a toast', () =
     assert.equal(appState.salary.baseSalary, '30000');
     assert.ok(toasts.some(t => t.includes('ส่งยอดฐานเงินเดือนและค่าล่วงเวลาไปคำนวณเงินได้สุทธิแล้ว')));
 });
+
+test('scientific calculator evaluates angles, precedence, powers and invalid domains safely', () => {
+    const ctx = context();
+    const calc = (expr, opts = {}) => ctx.evaluateScientificExpression(expr, opts);
+    assert.ok(Math.abs(calc('sin(90)', { angle: 'deg' }) - 1) < 1e-12);
+    assert.ok(Math.abs(calc('sin(pi/2)', { angle: 'rad' }) - 1) < 1e-12);
+    assert.ok(Math.abs(calc('asin(1)', { angle: 'deg' }) - 90) < 1e-12);
+    assert.equal(calc('-2^2'), -4);
+    assert.equal(calc('2^3^2'), 512);
+    assert.equal(calc('2(3+4)'), 14);
+    assert.equal(calc('5!+log(100)+sqrt(9)'), 125);
+    assert.equal(calc('1E3+Ans', { ans: 2 }), 1002);
+    assert.equal(ctx.formatScientificResult(calc('1E-13')), '1E-13');
+    for (const expr of ['1/0', 'sqrt(-1)', 'log(0)', '171!', 'sin(', 'globalThis']) assert.throws(() => calc(expr));
+});

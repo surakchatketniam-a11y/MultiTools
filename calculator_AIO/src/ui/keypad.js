@@ -239,6 +239,8 @@ function initKeypadListeners() {
                 if (e.key === "Escape") { e.preventDefault(); e.target.blur(); }
                 return;
             }
+            // Let Enter and Space activate the focused control normally.
+            if ((e.key === "Enter" || e.key === " ") && e.target?.closest?.('button, a, [role="button"]')) return;
             if (appState.activeToolId === "calc" && !["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement?.tagName)) {
                 const stdKey = e.key === "*" ? "×" : e.key === "/" ? "÷" : e.key === "Enter" ? "=" : e.key === "Backspace" ? "BS" : e.key === "Escape" ? "C" : e.key;
                 const stdButton = document.querySelector(`#toolTopPanel [data-std="${CSS.escape(stdKey)}"]`);
