@@ -4002,7 +4002,7 @@ test('unit wheel picker UI: 2-column & 1-column markup, accessibility attributes
     assert.equal(appState.unit.fromIdx, 1, 'ArrowDown moves source unit from Rai (0) to Ngan (1)');
     assert.equal(container.elements['#unitFromSel'].value, '1', 'Accessible select fallback stays synced');
     assert.equal(container.elements['#unitToBandValue'].textContent, '800', '2 Ngan = 800 Sq.m updated immediately');
-    assert.equal(container.suffixSpan.textContent, 'Ngan', 'Keypad field suffix updates to active source unit symbol');
+    assert.equal(container.suffixSpan.textContent, 'งาน', 'Keypad field suffix shows the Thai unit name');
     assert.equal(renderCalls, 0, 'Wheel selection updates in-place without full re-render');
 
     // 5. Mouse wheel on target wheel (3: Sq.m -> 2: Sq.Wa)

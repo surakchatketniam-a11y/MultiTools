@@ -8029,7 +8029,7 @@ function renderUnitConverterTool(container) {
                     </select>
                 </div>
 
-                ${createKeypadFieldHTML(0, 'ค่าที่ต้องการแปลง', st.val, fromSplit.symbol || fromSplit.title, 'ป้อนตัวเลข')}
+                ${createKeypadFieldHTML(0, 'ค่าที่ต้องการแปลง', st.val, (st.cat === 'temp' && fromSplit.symbol) ? fromSplit.symbol : fromSplit.title, 'ป้อนตัวเลข')}
             </div>
 
             <div class="themed-tool-card p-3 space-y-2">
@@ -8101,7 +8101,7 @@ function renderUnitConverterTool(container) {
             ? inputBox.querySelector('span.text-xs')
             : null;
         if (suffixSpan) {
-            suffixSpan.textContent = curFromSplit.symbol || curFromSplit.title;
+            suffixSpan.textContent = (st.cat === 'temp' && curFromSplit.symbol) ? curFromSplit.symbol : curFromSplit.title;
         }
 
         const rateEl = q('#unitRateSummary');
