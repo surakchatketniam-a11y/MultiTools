@@ -4044,7 +4044,7 @@ test('unit wheel picker UI: 2-column & 1-column markup, accessibility attributes
 });
 
 test('wheel ignores layout-driven scrolls but honours user scrolls', () => {
-    const ctx = context({});
+    const ctx = context({ setTimeout, clearTimeout });
     const listeners = {};
     const wheelEl = {
         id: 'w', scrollTop: 0,
@@ -4066,4 +4066,31 @@ test('wheel ignores layout-driven scrolls but honours user scrolls', () => {
     listeners.scroll();
     assert.deepEqual(selected, [5]);
     assert.equal(ctrl.getIndex(), 5);
+});
+
+test('wheel follows a gliding user scroll even when scroll events are sparse', async () => {
+    const ctx = context({ setTimeout, clearTimeout });
+    const listeners = {};
+    const wheelEl = {
+        id: 'w', scrollTop: 0,
+        querySelectorAll: () => [],
+        setAttribute() {},
+        addEventListener(type, fn) { listeners[type] = fn; }
+    };
+    const selected = [];
+    const ctrl = ctx.bindWheelColumn(wheelEl, { itemCount: 8, initialIndex: 5, itemHeight: 56, onSelect: (idx) => selected.push(idx) });
+    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    await wait(60);
+    listeners.touchstart();
+    // The finger is released and the list glides without any scroll event firing.
+    wheelEl.scrollTop = 4 * 56;
+    await wait(80);
+    wheelEl.scrollTop = 2 * 56;
+    await wait(80);
+    assert.deepEqual(selected, [4, 2], 'polling reports each index passed while gliding');
+    assert.equal(ctrl.getIndex(), 2);
+    // Once it has stopped, the wheel settles exactly on the selected row.
+    wheelEl.scrollTop = 2 * 56 + 10;
+    await wait(350);
+    assert.equal(wheelEl.scrollTop, 2 * 56);
 });

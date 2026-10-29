@@ -7684,7 +7684,6 @@ function bindWheelColumn(wheelEl, options = {}) {
     let lastProgrammaticTop = 0;
     let programmaticTimer = null;
     let mountTimer = null;
-    let settleTimer = null;
     let wheelDeltaAccum = 0;
     let lastWheelStepTime = 0;
     let dragState = null;
@@ -7692,7 +7691,45 @@ function bindWheelColumn(wheelEl, options = {}) {
     // Only scrolls that follow a real touch/mouse/key interaction may change the selection; layout-driven
     // scrolls (e.g. a re-render before layout settles) must not reset the chosen index.
     let userActiveUntil = 0;
-    const markUserActive = () => { userActiveUntil = Date.now() + 1500; };
+    const markUserActive = () => { userActiveUntil = Date.now() + 1500; startTracking(); };
+    const nextFrame = (fn) => {
+        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(fn);
+        else if (typeof setTimeout === 'function') setTimeout(fn, 16);
+    };
+
+    // iOS Safari delivers sparse scroll events while a flick is still gliding, so poll scrollTop each frame
+    // during a user scroll instead of relying on scroll events alone (and never snap back mid-glide).
+    let tracking = false;
+    function startTracking() {
+        if (tracking) return;
+        tracking = true;
+        let lastTop = wheelEl.scrollTop;
+        let stableSince = Date.now();
+        const step = () => {
+            if (!tracking) return;
+            const top = wheelEl.scrollTop;
+            const now = Date.now();
+            if (top !== lastTop) {
+                lastTop = top;
+                stableSince = now;
+                if (dragState || now <= userActiveUntil) {
+                    userActiveUntil = Math.max(userActiveUntil, now + 400);
+                    const idx = clampIdx(top / itemHeight);
+                    if (idx !== currentIndex) {
+                        currentIndex = idx;
+                        syncVisualClasses(idx);
+                        onSelect(idx, 'scroll');
+                    }
+                }
+            } else if (now - stableSince > 200 && !dragState) {
+                tracking = false;
+                if (Math.abs(top - currentIndex * itemHeight) > 1) applyScrollPosition(currentIndex);
+                return;
+            }
+            nextFrame(step);
+        };
+        nextFrame(step);
+    }
 
     function syncVisualClasses(idx) {
         const buttons = wheelEl.querySelectorAll ? wheelEl.querySelectorAll('[data-unit-index]') : [];
@@ -7782,12 +7819,7 @@ function bindWheelColumn(wheelEl, options = {}) {
                 syncVisualClasses(currentIndex);
                 onSelect(currentIndex, 'scroll');
             }
-            if (settleTimer && typeof clearTimeout === 'function') clearTimeout(settleTimer);
-            if (!dragState && typeof setTimeout === 'function') {
-                settleTimer = setTimeout(() => {
-                    applyScrollPosition(currentIndex);
-                }, 110);
-            }
+            startTracking();
         }, { passive: true });
 
         wheelEl.addEventListener('click', (e) => {
