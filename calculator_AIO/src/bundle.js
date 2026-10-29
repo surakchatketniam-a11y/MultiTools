@@ -7924,7 +7924,7 @@ function openUnitWheelDialog(options = {}) {
     function place() {
         const vw = document.documentElement.clientWidth;
         const vh = document.documentElement.clientHeight;
-        const width = Math.min(176, vw - 16);
+        const width = Math.min(124, vw - 16);
         wrapper.style.width = `${width}px`;
         const height = wrapper.offsetHeight;
         const rect = anchor && anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : null;
@@ -10322,11 +10322,7 @@ function renderFoodCostingTool(container) {
                                     </div>
                                     <div>
                                         <label for="foodIngPackUnit_${escapeHTML(ing.id)}" class="block mb-1" style="color: var(--app-muted);">หน่วยที่ซื้อ</label>
-                                        <select id="foodIngPackUnit_${escapeHTML(ing.id)}" class="airbnb-input w-full text-xs food-ing-pack-unit" data-ing-id="${escapeHTML(ing.id)}">
-                                            ${unitOptions.map(u => `
-                                                <option value="${u.key}" ${u.key === (ing.packUnit || 'g') ? 'selected' : ''}>${u.label}</option>
-                                            `).join('')}
-                                        </select>
+                                        <button type="button" id="foodIngPackUnit_${escapeHTML(ing.id)}" class="airbnb-input w-full text-xs food-ing-unit-btn food-ing-pack-unit" data-ing-id="${escapeHTML(ing.id)}" data-unit-field="packUnit" aria-haspopup="dialog">${escapeHTML((unitOptions.find(u => u.key === (ing.packUnit || 'g')) || unitOptions[0]).label)}</button>
                                     </div>
                                     <div>
                                         <label for="foodIngUseAmt_${escapeHTML(ing.id)}" class="block mb-1" style="color: var(--app-muted);">ปริมาณที่ใช้ในสูตร</label>
@@ -10334,11 +10330,7 @@ function renderFoodCostingTool(container) {
                                     </div>
                                     <div>
                                         <label for="foodIngUseUnit_${escapeHTML(ing.id)}" class="block mb-1" style="color: var(--app-muted);">หน่วยที่ใช้</label>
-                                        <select id="foodIngUseUnit_${escapeHTML(ing.id)}" class="airbnb-input w-full text-xs food-ing-use-unit" data-ing-id="${escapeHTML(ing.id)}">
-                                            ${unitOptions.map(u => `
-                                                <option value="${u.key}" ${u.key === (ing.useUnit || 'g') ? 'selected' : ''}>${u.label}</option>
-                                            `).join('')}
-                                        </select>
+                                        <button type="button" id="foodIngUseUnit_${escapeHTML(ing.id)}" class="airbnb-input w-full text-xs food-ing-unit-btn food-ing-use-unit" data-ing-id="${escapeHTML(ing.id)}" data-unit-field="useUnit" aria-haspopup="dialog">${escapeHTML((unitOptions.find(u => u.key === (ing.useUnit || 'g')) || unitOptions[0]).label)}</button>
                                     </div>
                                     <div>
                                         <label for="foodIngYield_${escapeHTML(ing.id)}" class="block mb-1" style="color: var(--app-muted);">Yield / ใช้ได้จริง (%)</label>
@@ -10708,15 +10700,6 @@ function renderFoodCostingTool(container) {
         });
     });
 
-    container.querySelectorAll('.food-ing-pack-unit').forEach(sel => {
-        sel.addEventListener('change', e => {
-            const ing = st.ingredients.find(i => i.id === e.target.dataset.ingId);
-            if (ing) ing.packUnit = e.target.value;
-            persistAppState();
-            updateFoodCostingLive();
-        });
-    });
-
     container.querySelectorAll('.food-ing-use-amount').forEach(inp => {
         inp.addEventListener('input', e => {
             const ing = st.ingredients.find(i => i.id === e.target.dataset.ingId);
@@ -10734,12 +10717,27 @@ function renderFoodCostingTool(container) {
         });
     });
 
-    container.querySelectorAll('.food-ing-use-unit').forEach(sel => {
-        sel.addEventListener('change', e => {
-            const ing = st.ingredients.find(i => i.id === e.target.dataset.ingId);
-            if (ing) ing.useUnit = e.target.value;
-            persistAppState();
-            updateFoodCostingLive();
+    // Unit pickers: compact wheel popover anchored to the button of the ingredient being edited
+    container.querySelectorAll('.food-ing-unit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (typeof openUnitWheelDialog !== 'function') return;
+            const ing = st.ingredients.find(i => i.id === btn.dataset.ingId);
+            const field = btn.dataset.unitField;
+            if (!ing || !field) return;
+            const isPack = field === 'packUnit';
+            openUnitWheelDialog({
+                title: `${isPack ? 'หน่วยที่ซื้อ' : 'หน่วยที่ใช้'}: ${ing.name || 'วัตถุดิบ'}`,
+                items: unitOptions.map(u => ({ name: u.label })),
+                selectedIndex: Math.max(0, unitOptions.findIndex(u => u.key === (ing[field] || 'g'))),
+                anchor: btn,
+                onChange: (idx) => {
+                    ing[field] = unitOptions[idx].key;
+                    btn.textContent = unitOptions[idx].label;
+                    persistAppState();
+                    updateFoodCostingLive();
+                },
+                onClose: () => { if (document.activeElement === document.body || !document.activeElement) btn.focus(); }
+            });
         });
     });
 

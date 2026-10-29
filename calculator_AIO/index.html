@@ -590,6 +590,9 @@
             height: 100%;
         }
         .unit-wheel-popover { position: fixed; z-index: 50; padding: 6px; border-radius: var(--app-card-radius); box-shadow: var(--airbnb-shadow, var(--app-elevation)); }
+        .food-costing-tool .food-ing-unit-btn { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; text-align: left; cursor: pointer; color: var(--app-ink); }
+        .food-costing-tool .food-ing-unit-btn::after { content: ''; flex-shrink: 0; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); color: var(--app-muted); }
+        .unit-wheel-popover .unit-wheel-item, .unit-wheel-popover .unit-band-cell { padding-left: 8px; padding-right: 8px; }
         .unit-select:focus-visible { box-shadow: inset 0 0 0 2px var(--app-accent); }
         html:is([data-theme="dark"], [data-theme="ferrari"]) .unit-select {
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6' viewBox='0 0 8 6'%3E%3Cpath fill='%23bbb' d='M0 0l4 5 4-5z'/%3E%3C/svg%3E");
@@ -1851,7 +1854,7 @@
     <div id="printFormalReceipt" class="hidden"></div>
 
     <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
-    <script src="src/bundle.js?v=61"></script>
+    <script src="src/bundle.js?v=63"></script>
 
     <script>
         function getSafeDateStr(offsetDays = 0) {

@@ -790,7 +790,7 @@ function openUnitWheelDialog(options = {}) {
     function place() {
         const vw = document.documentElement.clientWidth;
         const vh = document.documentElement.clientHeight;
-        const width = Math.min(176, vw - 16);
+        const width = Math.min(124, vw - 16);
         wrapper.style.width = `${width}px`;
         const height = wrapper.offsetHeight;
         const rect = anchor && anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : null;
