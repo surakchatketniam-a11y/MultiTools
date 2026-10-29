@@ -252,31 +252,31 @@ function renderUnitPriceTool(container) {
                 qtyCell.innerHTML = `
                     <div class="flex items-center w-full h-full relative">
                         <input id="numeric-field-${qtyFieldIdx}" data-shared-field="${qtyFieldIdx}" class="unit-quick-input unit-qty-input min-w-0 flex-1 h-full px-1.5 text-center bg-transparent focus:outline-none" type="text" inputmode="${qtyInputMode}" autocomplete="off" spellcheck="false" aria-label="จำนวน ${row.id}" placeholder="จำนวน" value="${escapeHTML(formatInputDisplay(row.qty))}" aria-describedby="numeric-error-${qtyFieldIdx}">
-                        <select class="unit-select" aria-label="หน่วย ${row.id}">
-                            <option value="unit"${rowUnit === 'unit' ? ' selected' : ''}>หน่วย</option>
-                            <optgroup label="นับชิ้น">
-                                <option value="pcs"${rowUnit === 'pcs' ? ' selected' : ''}>ชิ้น</option>
-                                <option value="doz"${rowUnit === 'doz' ? ' selected' : ''}>โหล</option>
-                            </optgroup>
-                            <optgroup label="น้ำหนัก">
-                                <option value="g"${rowUnit === 'g' ? ' selected' : ''}>g</option>
-                                <option value="kg"${rowUnit === 'kg' ? ' selected' : ''}>kg</option>
-                            </optgroup>
-                            <optgroup label="ปริมาตร">
-                                <option value="ml"${rowUnit === 'ml' ? ' selected' : ''}>ml</option>
-                                <option value="L"${rowUnit === 'L' ? ' selected' : ''}>L</option>
-                            </optgroup>
-                        </select>
+                        <button type="button" class="unit-select unit-wheel-trigger" aria-haspopup="dialog" aria-label="หน่วย ${row.id}: ${escapeHTML((defs[rowUnit] || defs.unit).label)} (เปิดวงล้อเลือกหน่วย)">${escapeHTML((defs[rowUnit] || defs.unit).label)}</button>
                     </div>
                     <span id="numeric-error-${qtyFieldIdx}" class="field-error text-[10px]" role="alert" hidden></span>
                 `;
                 const qtyInput = qtyCell.querySelector('.unit-qty-input');
-                const unitSelect = qtyCell.querySelector('.unit-select');
+                const unitTrigger = qtyCell.querySelector('.unit-wheel-trigger');
+                const unitKeys = Object.keys(defs);
 
-                unitSelect.addEventListener('click', (event) => event.stopPropagation());
-                unitSelect.addEventListener('change', (event) => {
-                    row.unit = event.target.value;
-                    refreshUnitPriceResults();
+                unitTrigger.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    const startIdx = Math.max(0, unitKeys.indexOf(row.unit || 'unit'));
+                    openUnitWheelDialog({
+                        title: `เลือกหน่วยของ ${row.id}`,
+                        anchor: unitTrigger,
+                        items: unitKeys.map(key => ({ name: UNIT_PRICE_WHEEL_NAMES[key] || defs[key].label })),
+                        selectedIndex: startIdx,
+                        onChange: (idx) => {
+                            row.unit = unitKeys[idx];
+                            const label = defs[row.unit].label;
+                            unitTrigger.textContent = label;
+                            unitTrigger.setAttribute('aria-label', `หน่วย ${row.id}: ${label} (เปิดวงล้อเลือกหน่วย)`);
+                            refreshUnitPriceResults();
+                        },
+                        onClose: () => { if (document.activeElement === document.body || !document.activeElement) unitTrigger.focus(); }
+                    });
                 });
 
                 qtyInput.addEventListener('focus', () => setActiveNumericField(qtyFieldIdx));
@@ -530,7 +530,7 @@ function createWheelPickerHTML(config = {}) {
         `;
     }).join('');
     return `
-        <div class="unit-wheel-columns ${singleClass}" style="--wheel-item-h:${WHEEL_ITEM_HEIGHT}px;--wheel-rows:${WHEEL_VISIBLE_ROWS}">
+        <div class="unit-wheel-columns ${singleClass}" style="--wheel-item-h:${Number(config.itemHeight) || WHEEL_ITEM_HEIGHT}px;--wheel-rows:${Number(config.rows) || WHEEL_VISIBLE_ROWS}">
             <div class="unit-wheel-band" aria-hidden="true">${cellsHTML}</div>
             ${columns.map(col => createWheelColumnHTML(col)).join('')}
         </div>
@@ -749,6 +749,108 @@ function bindWheelColumn(wheelEl, options = {}) {
         syncScrollPosition
     };
 }
+
+// Reusable one-column wheel in a small popover anchored to a compact unit button.
+// Closes on outside tap, Escape, Enter, or tapping the anchor again.
+let activeUnitWheelPopover = null;
+function openUnitWheelDialog(options = {}) {
+    const { title = 'เลือกหน่วย', items = [], selectedIndex = 0, anchor = null, onChange = () => {}, onClose = () => {} } = options;
+    if (typeof document === 'undefined' || !document.body || !items.length) return null;
+    if (activeUnitWheelPopover) {
+        const sameAnchor = anchor && activeUnitWheelPopover.anchor === anchor;
+        activeUnitWheelPopover.close();
+        if (sameAnchor) return null;
+    }
+
+    const rows = 3;
+    const itemHeight = 48;
+    const wrapper = document.createElement('div');
+    wrapper.id = 'unitWheelDialog';
+    wrapper.className = 'unit-wheel-popover themed-tool-card';
+    wrapper.setAttribute('role', 'dialog');
+    wrapper.setAttribute('aria-label', title);
+    wrapper.innerHTML = `
+        <div class="unit-converter-tool">
+            ${createWheelPickerHTML({
+                rows,
+                itemHeight,
+                columns: [{
+                    wheelId: 'unitWheelDialogWheel',
+                    selectId: 'unitWheelDialogSel',
+                    side: 'single',
+                    label: title,
+                    items,
+                    selectedIndex
+                }]
+            })}
+        </div>
+    `;
+    document.body.appendChild(wrapper);
+
+    function place() {
+        const vw = document.documentElement.clientWidth;
+        const vh = document.documentElement.clientHeight;
+        const width = Math.min(176, vw - 16);
+        wrapper.style.width = `${width}px`;
+        const height = wrapper.offsetHeight;
+        const rect = anchor && anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : null;
+        let left = rect ? rect.right - width : (vw - width) / 2;
+        let top = rect ? rect.bottom + 6 : (vh - height) / 2;
+        if (rect && top + height > vh - 8) top = Math.max(8, rect.top - height - 6);
+        left = Math.max(8, Math.min(left, vw - width - 8));
+        wrapper.style.left = `${left}px`;
+        wrapper.style.top = `${top}px`;
+    }
+    place();
+
+    const wheelEl = wrapper.querySelector('#unitWheelDialogWheel');
+    const selEl = wrapper.querySelector('#unitWheelDialogSel');
+    const ctrl = bindWheelColumn(wheelEl, {
+        itemCount: items.length,
+        initialIndex: selectedIndex,
+        itemHeight,
+        onSelect: (idx) => {
+            if (selEl) selEl.value = String(idx);
+            onChange(idx);
+        }
+    });
+    selEl?.addEventListener('change', (e) => {
+        const idx = parseInt(e.target.value, 10);
+        if (Number.isInteger(idx) && idx >= 0 && idx < items.length) {
+            ctrl.setIndex(idx, true);
+            onChange(idx);
+        }
+    });
+
+    const onKey = (e) => {
+        if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); close(); }
+    };
+    const onOutside = (e) => {
+        if (!wrapper.contains(e.target) && !(anchor && anchor.contains && anchor.contains(e.target))) close();
+    };
+    const onScroll = (e) => { if (!wrapper.contains(e.target)) close(); };
+    function close() {
+        document.removeEventListener('keydown', onKey);
+        document.removeEventListener('pointerdown', onOutside, true);
+        window.removeEventListener('resize', close);
+        window.removeEventListener('scroll', onScroll, true);
+        wrapper.remove();
+        if (activeUnitWheelPopover && activeUnitWheelPopover.wrapper === wrapper) activeUnitWheelPopover = null;
+        onClose();
+    }
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onOutside, true);
+    window.addEventListener('resize', close);
+    window.addEventListener('scroll', onScroll, true);
+    activeUnitWheelPopover = { wrapper, anchor, close };
+    wheelEl?.focus();
+    return { close };
+}
+
+const UNIT_PRICE_WHEEL_NAMES = {
+    unit: 'หน่วย', pcs: 'ชิ้น', doz: 'โหล (12 ชิ้น)',
+    g: 'กรัม (g)', kg: 'กิโลกรัม (kg)', ml: 'มิลลิลิตร (ml)', L: 'ลิตร (L)'
+};
 
 /* -----------------------------------------------------------
  * TOOL 3: หน่วย (Unit Converter including Rai-Ngan-Sq.Wa)
@@ -1791,6 +1893,7 @@ function renderConstructionTool(container) {
     const exportsObj = {
         UNIT_CATEGORIES,
         WHEEL_ITEM_HEIGHT,
+        openUnitWheelDialog,
         splitUnitLabel,
         convertUnitValue,
         calculateThaiAreaBreakdown,
