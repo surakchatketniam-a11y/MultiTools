@@ -555,6 +555,10 @@ function bindWheelColumn(wheelEl, options = {}) {
     let lastWheelStepTime = 0;
     let dragState = null;
     let suppressNextClick = false;
+    // Only scrolls that follow a real touch/mouse/key interaction may change the selection; layout-driven
+    // scrolls (e.g. a re-render before layout settles) must not reset the chosen index.
+    let userActiveUntil = 0;
+    const markUserActive = () => { userActiveUntil = Date.now() + 1500; };
 
     function syncVisualClasses(idx) {
         const buttons = wheelEl.querySelectorAll ? wheelEl.querySelectorAll('[data-unit-index]') : [];
@@ -631,6 +635,11 @@ function bindWheelColumn(wheelEl, options = {}) {
                 return;
             }
             if (isProgrammatic && !dragState && Math.abs(wheelEl.scrollTop - lastProgrammaticTop) < 2) return;
+            if (!dragState && Date.now() > userActiveUntil) {
+                if (Math.abs(wheelEl.scrollTop - currentIndex * itemHeight) > 1) applyScrollPosition(currentIndex);
+                return;
+            }
+            userActiveUntil = Math.max(userActiveUntil, Date.now() + 400);
             isProgrammatic = false;
             isMounting = false;
             const rawIdx = clampIdx(wheelEl.scrollTop / itemHeight);
@@ -692,6 +701,9 @@ function bindWheelColumn(wheelEl, options = {}) {
             setIndex(next, true, true, 'keyboard');
         });
 
+        wheelEl.addEventListener('touchstart', markUserActive, { passive: true });
+        wheelEl.addEventListener('touchmove', markUserActive, { passive: true });
+        wheelEl.addEventListener('pointerdown', markUserActive);
         wheelEl.addEventListener('pointerdown', (e) => {
             if (e.pointerType !== 'mouse' || e.button !== 0) return;
             dragState = {

@@ -7689,6 +7689,10 @@ function bindWheelColumn(wheelEl, options = {}) {
     let lastWheelStepTime = 0;
     let dragState = null;
     let suppressNextClick = false;
+    // Only scrolls that follow a real touch/mouse/key interaction may change the selection; layout-driven
+    // scrolls (e.g. a re-render before layout settles) must not reset the chosen index.
+    let userActiveUntil = 0;
+    const markUserActive = () => { userActiveUntil = Date.now() + 1500; };
 
     function syncVisualClasses(idx) {
         const buttons = wheelEl.querySelectorAll ? wheelEl.querySelectorAll('[data-unit-index]') : [];
@@ -7765,6 +7769,11 @@ function bindWheelColumn(wheelEl, options = {}) {
                 return;
             }
             if (isProgrammatic && !dragState && Math.abs(wheelEl.scrollTop - lastProgrammaticTop) < 2) return;
+            if (!dragState && Date.now() > userActiveUntil) {
+                if (Math.abs(wheelEl.scrollTop - currentIndex * itemHeight) > 1) applyScrollPosition(currentIndex);
+                return;
+            }
+            userActiveUntil = Math.max(userActiveUntil, Date.now() + 400);
             isProgrammatic = false;
             isMounting = false;
             const rawIdx = clampIdx(wheelEl.scrollTop / itemHeight);
@@ -7826,6 +7835,9 @@ function bindWheelColumn(wheelEl, options = {}) {
             setIndex(next, true, true, 'keyboard');
         });
 
+        wheelEl.addEventListener('touchstart', markUserActive, { passive: true });
+        wheelEl.addEventListener('touchmove', markUserActive, { passive: true });
+        wheelEl.addEventListener('pointerdown', markUserActive);
         wheelEl.addEventListener('pointerdown', (e) => {
             if (e.pointerType !== 'mouse' || e.button !== 0) return;
             dragState = {
@@ -10881,62 +10893,133 @@ async function loadFrankfurterRates(force = false) {
 function renderCurrencyTool(container) {
     const st = appState.currency;
     const currencies = [
-        { code: 'THB', name: 'THB - บาทไทย' },
-        { code: 'USD', name: 'USD - ดอลลาร์สหรัฐ' },
-        { code: 'EUR', name: 'EUR - ยูโร' },
-        { code: 'JPY', name: 'JPY - เยนญี่ปุ่น' },
-        { code: 'CNY', name: 'CNY - หยวนจีน' },
-        { code: 'GBP', name: 'GBP - ปอนด์อังกฤษ' },
-        { code: 'KRW', name: 'KRW - วอนเกาหลี' },
-        { code: 'SGD', name: 'SGD - ดอลลาร์สิงคโปร์' }
+        { code: 'THB', label: 'บาทไทย' },
+        { code: 'USD', label: 'ดอลลาร์สหรัฐ' },
+        { code: 'EUR', label: 'ยูโร' },
+        { code: 'JPY', label: 'เยนญี่ปุ่น' },
+        { code: 'CNY', label: 'หยวนจีน' },
+        { code: 'GBP', label: 'ปอนด์อังกฤษ' },
+        { code: 'KRW', label: 'วอนเกาหลี' },
+        { code: 'SGD', label: 'ดอลลาร์สิงคโปร์' }
     ];
+    const wheelItems = currencies.map(c => ({ name: `${c.label} (${c.code})` }));
+    const indexOfCode = (code) => Math.max(0, currencies.findIndex(c => c.code === code));
+    if (!currencies.some(c => c.code === st.from)) st.from = currencies[0].code;
+    if (!currencies.some(c => c.code === st.to)) st.to = currencies[0].code;
 
-    const amt = numberOrDefault(st.amount, 0);
-    const fromRate = st.ratesInTHB[st.from] || 1;
-    const toRate = st.ratesInTHB[st.to] || 1;
-    const customRate = parseNumericInput(st.customRateToTHB);
-    const effectiveRate = (!isNaN(customRate) && customRate > 0) ? customRate : (fromRate / toRate);
-    const converted = amt * effectiveRate;
-    const rateDateText = [...new Set([st.from, st.to].filter(code => code !== 'THB').map(code => st.rateDates?.[code]).filter(Boolean))].join(', ');
+    function currencyView() {
+        const amt = numberOrDefault(st.amount, 0);
+        const fromRate = st.ratesInTHB[st.from] || 1;
+        const toRate = st.ratesInTHB[st.to] || 1;
+        const customRate = parseNumericInput(st.customRateToTHB);
+        const effectiveRate = (!isNaN(customRate) && customRate > 0) ? customRate : (fromRate / toRate);
+        const rateDateText = [...new Set([st.from, st.to].filter(code => code !== 'THB').map(code => st.rateDates?.[code]).filter(Boolean))].join(', ');
+        return { amt, fromRate, toRate, effectiveRate, converted: amt * effectiveRate, rateDateText };
+    }
+    function rateMetaText(view) {
+        return `${st.rateSource}${view.rateDateText ? ` · วันที่เรท ${view.rateDateText}` : ([st.from, st.to].some(c => c !== 'THB') ? ' · ยังไม่มีวันที่เรท' : '')}${st.lastUpdated ? ` · ดึงข้อมูล ${new Date(st.lastUpdated).toLocaleString('th-TH')}` : ''}`;
+    }
+    function updateCurrencyBanner(view) {
+        if (view.amt <= 0) {
+            setStatusBanner('empty', 'กรุณาป้อนจำนวนเงินที่ต้องการแปลง');
+        } else {
+            setStatusBanner('success', `${formatNum(view.amt, 2)} ${st.from} = <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(view.converted)} ${st.to}</span>`);
+        }
+    }
+
+    const view = currencyView();
+    const { amt, fromRate, toRate, effectiveRate, converted } = view;
 
     container.innerHTML = `
         <div class="flex flex-col gap-1.5">
-            <div class="grid grid-cols-2 gap-1.5">
-                <div class="themed-subcard p-2">
-                    <label class="text-[11px] text-[var(--app-muted)] block">จากสกุลเงิน</label>
-                    <select id="currFromSel" class="w-full font-semibold text-sm bg-transparent outline-none mt-0.5 text-[var(--app-ink)]">
-                        ${currencies.map(c => `<option value="${c.code}" ${st.from === c.code ? 'selected' : ''}>${c.name}</option>`).join('')}
-                    </select>
-                </div>
-                <div class="themed-subcard p-2">
-                    <label class="text-[11px] text-[var(--app-muted)] block">เป็นสกุลเงิน</label>
-                    <select id="currToSel" class="w-full font-semibold text-sm bg-transparent outline-none mt-0.5 text-[var(--app-ink)]">
-                        ${currencies.map(c => `<option value="${c.code}" ${st.to === c.code ? 'selected' : ''}>${c.name}</option>`).join('')}
-                    </select>
-                </div>
+            <div class="unit-converter-tool">
+                ${createWheelPickerHTML({ columns: [
+                    { wheelId: 'currFromWheel', selectId: 'currFromSel', bandId: 'currFromBand', valueText: formatNum(amt, 2), side: 'from', label: 'จากสกุลเงิน', selectAriaLabel: 'เลือกสกุลเงินต้นทาง', items: wheelItems, selectedIndex: indexOfCode(st.from) },
+                    { wheelId: 'currToWheel', selectId: 'currToSel', bandId: 'currToBand', valueText: formatMoney(converted), side: 'to', label: 'เป็นสกุลเงิน', selectAriaLabel: 'เลือกสกุลเงินปลายทาง', items: wheelItems, selectedIndex: indexOfCode(st.to) }
+                ] })}
             </div>
 
             ${createKeypadFieldHTML(0, `จำนวนเงิน (${st.from})`, st.amount, st.from, 'ป้อนจำนวนเงิน')}
             ${createKeypadFieldHTML(1, `กำหนดเรทเอง (1 ${st.from} = ? ${st.to})`, st.customRateToTHB, st.to, `อัตโนมัติ (${formatNum(fromRate / toRate, 4)})`)}
 
             <div class="themed-subcard p-2.5 space-y-2 text-xs text-[var(--app-body)]">
-                <div class="flex items-center justify-between gap-2"><span>เรทที่ใช้: <b>1 ${st.from} = ${formatNum(effectiveRate, 4)} ${st.to}</b></span><button id="swapCurrBtn" class="px-3 py-1 bg-[var(--app-surface-soft)] border border-[var(--app-hairline)] rounded-full font-semibold text-[var(--app-accent)]">⇄ สลับ</button></div>
-                <div class="flex items-center justify-between gap-2 text-[11px] text-[var(--app-muted)]"><span>${escapeHTML(st.rateSource)}${rateDateText ? ` · วันที่เรท ${escapeHTML(rateDateText)}` : ([st.from, st.to].some(c => c !== 'THB') ? ' · ยังไม่มีวันที่เรท' : '')}${st.lastUpdated ? ` · ดึงข้อมูล ${new Date(st.lastUpdated).toLocaleString('th-TH')}` : ''}</span><button id="refreshRatesBtn" class="px-2.5 py-1 border border-[var(--app-hairline)] rounded-full font-semibold text-[var(--app-accent)]">↻ อัปเดตเรท</button></div>
+                <div class="flex items-center justify-between gap-2"><span id="currRateText">เรทที่ใช้: <b>1 ${st.from} = ${formatNum(effectiveRate, 4)} ${st.to}</b></span><button id="swapCurrBtn" class="px-3 py-1 bg-[var(--app-surface-soft)] border border-[var(--app-hairline)] rounded-full font-semibold text-[var(--app-accent)]">⇄ สลับ</button></div>
+                <div class="flex items-center justify-between gap-2 text-[11px] text-[var(--app-muted)]"><span id="currRateMeta">${escapeHTML(rateMetaText(view))}</span><button id="refreshRatesBtn" class="px-2.5 py-1 border border-[var(--app-hairline)] rounded-full font-semibold text-[var(--app-accent)]">↻ อัปเดตเรท</button></div>
             </div>
         </div>
     `;
 
     attachFieldClickListeners(container);
 
-    document.getElementById('currFromSel').addEventListener('change', (e) => {
-        st.from = e.target.value;
-        st.customRateToTHB = '';
-        renderActiveTool();
+    const q = (sel) => container.querySelector(sel);
+    const fromSelEl = q('#currFromSel');
+    const toSelEl = q('#currToSel');
+    let fromWheelCtrl = null;
+    let toWheelCtrl = null;
+
+    // Wheel changes update the page in place so the wheels keep their scroll position.
+    function refreshCurrencyUI() {
+        const v = currencyView();
+        const setText = (sel, text) => { const el = q(sel); if (el) el.textContent = text; };
+        const fromMeta = currencies[indexOfCode(st.from)];
+        const toMeta = currencies[indexOfCode(st.to)];
+        persistAppState();
+        if (fromSelEl) fromSelEl.value = String(indexOfCode(st.from));
+        if (toSelEl) toSelEl.value = String(indexOfCode(st.to));
+        setText('#currFromBandName', fromMeta.label);
+        setText('#currFromBandSym', fromMeta.code);
+        setText('#currFromBandValue', formatNum(v.amt, 2));
+        setText('#currToBandName', toMeta.label);
+        setText('#currToBandSym', toMeta.code);
+        setText('#currToBandValue', formatMoney(v.converted));
+
+        const amountBox = q('[data-field-index="0"]');
+        if (amountBox) {
+            const label = amountBox.querySelector('label');
+            const suffix = amountBox.querySelector('span.text-xs');
+            if (label) label.textContent = `จำนวนเงิน (${st.from})`;
+            if (suffix) suffix.textContent = st.from;
+        }
+        const rateBox = q('[data-field-index="1"]');
+        if (rateBox) {
+            const label = rateBox.querySelector('label');
+            const suffix = rateBox.querySelector('span.text-xs');
+            const input = rateBox.querySelector('input');
+            if (label) label.textContent = `กำหนดเรทเอง (1 ${st.from} = ? ${st.to})`;
+            if (suffix) suffix.textContent = st.to;
+            if (input) { input.value = ''; input.placeholder = `อัตโนมัติ (${formatNum(v.fromRate / v.toRate, 4)})`; }
+        }
+        const rateText = q('#currRateText');
+        if (rateText) rateText.innerHTML = `เรทที่ใช้: <b>1 ${st.from} = ${formatNum(v.effectiveRate, 4)} ${st.to}</b>`;
+        setText('#currRateMeta', rateMetaText(v));
+        updateCurrencyBanner(v);
+    }
+
+    fromWheelCtrl = bindWheelColumn(q('#currFromWheel'), {
+        itemCount: currencies.length,
+        initialIndex: indexOfCode(st.from),
+        itemHeight: WHEEL_ITEM_HEIGHT,
+        onSelect: (idx) => { st.from = currencies[idx].code; st.customRateToTHB = ''; refreshCurrencyUI(); }
     });
-    document.getElementById('currToSel').addEventListener('change', (e) => {
-        st.to = e.target.value;
-        st.customRateToTHB = '';
-        renderActiveTool();
+    toWheelCtrl = bindWheelColumn(q('#currToWheel'), {
+        itemCount: currencies.length,
+        initialIndex: indexOfCode(st.to),
+        itemHeight: WHEEL_ITEM_HEIGHT,
+        onSelect: (idx) => { st.to = currencies[idx].code; st.customRateToTHB = ''; refreshCurrencyUI(); }
+    });
+    fromSelEl?.addEventListener('change', (e) => {
+        const idx = parseInt(e.target.value, 10);
+        if (!(idx >= 0 && idx < currencies.length)) return;
+        st.from = currencies[idx].code; st.customRateToTHB = '';
+        fromWheelCtrl?.setIndex(idx, true);
+        refreshCurrencyUI();
+    });
+    toSelEl?.addEventListener('change', (e) => {
+        const idx = parseInt(e.target.value, 10);
+        if (!(idx >= 0 && idx < currencies.length)) return;
+        st.to = currencies[idx].code; st.customRateToTHB = '';
+        toWheelCtrl?.setIndex(idx, true);
+        refreshCurrencyUI();
     });
     document.getElementById('swapCurrBtn').addEventListener('click', () => {
         const tmp = st.from;
@@ -10950,11 +11033,7 @@ function renderCurrencyTool(container) {
     const stale = !st.lastUpdated || Date.now() - new Date(st.lastUpdated).getTime() > 30 * 60 * 1000;
     if (stale) loadFrankfurterRates();
 
-    if (amt <= 0) {
-        setStatusBanner('empty', 'กรุณาป้อนจำนวนเงินที่ต้องการแปลง');
-    } else {
-        setStatusBanner('success', `${formatNum(amt, 2)} ${st.from} = <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(converted)} ${st.to}</span>`);
-    }
+    updateCurrencyBanner(view);
 }
 
 /* -----------------------------------------------------------

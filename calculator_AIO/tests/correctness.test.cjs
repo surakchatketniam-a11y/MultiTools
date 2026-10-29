@@ -4042,3 +4042,28 @@ test('unit wheel picker UI: 2-column & 1-column markup, accessibility attributes
     assert.equal(appState.unit.targetIdx, 1);
     assert.equal(renderCalls, 1);
 });
+
+test('wheel ignores layout-driven scrolls but honours user scrolls', () => {
+    const ctx = context({});
+    const listeners = {};
+    const wheelEl = {
+        id: 'w', scrollTop: 0,
+        querySelectorAll: () => [],
+        setAttribute() {},
+        addEventListener(type, fn) { listeners[type] = fn; }
+    };
+    const selected = [];
+    const ctrl = ctx.bindWheelColumn(wheelEl, { itemCount: 8, initialIndex: 3, itemHeight: 56, onSelect: (idx) => selected.push(idx) });
+    assert.equal(ctrl.getIndex(), 3);
+    // A scroll to 0 with no touch/mouse interaction (e.g. layout not ready after a re-render) must not reset the index.
+    wheelEl.scrollTop = 0;
+    listeners.scroll();
+    assert.deepEqual(selected, [], 'stray scroll does not select');
+    assert.equal(ctrl.getIndex(), 3);
+    // After a real touch, scrolling selects normally.
+    listeners.touchstart();
+    wheelEl.scrollTop = 5 * 56;
+    listeners.scroll();
+    assert.deepEqual(selected, [5]);
+    assert.equal(ctrl.getIndex(), 5);
+});
