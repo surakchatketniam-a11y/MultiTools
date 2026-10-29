@@ -220,8 +220,8 @@ function initKeypadListeners() {
         const target = event.target;
         if (!target?.closest) return;
         if (target.closest(keypadControls)) return;
-        // Unit selects are native pickers; the in-app keypad must not open for them.
-        if (target.closest('select')) { updateKeypadCollapseUI(true); return; }
+        // Unit selects and wheel-popover buttons are pickers; the in-app keypad must not open for them.
+        if (target.closest('select, .unit-wheel-trigger, .unit-wheel-popover')) { updateKeypadCollapseUI(true); return; }
         const field = target.matches(sharedField) ? target : target.closest('#toolTopPanel [data-field-index]')?.querySelector('input[data-shared-field]:not(:disabled):not([readonly])');
         if (field) {
             updateKeypadCollapseUI(false);

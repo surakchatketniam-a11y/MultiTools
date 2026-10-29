@@ -6315,8 +6315,8 @@ function initKeypadListeners() {
         const target = event.target;
         if (!target?.closest) return;
         if (target.closest(keypadControls)) return;
-        // Unit selects are native pickers; the in-app keypad must not open for them.
-        if (target.closest('select')) { updateKeypadCollapseUI(true); return; }
+        // Unit selects and wheel-popover buttons are pickers; the in-app keypad must not open for them.
+        if (target.closest('select, .unit-wheel-trigger, .unit-wheel-popover')) { updateKeypadCollapseUI(true); return; }
         const field = target.matches(sharedField) ? target : target.closest('#toolTopPanel [data-field-index]')?.querySelector('input[data-shared-field]:not(:disabled):not([readonly])');
         if (field) {
             updateKeypadCollapseUI(false);
@@ -8016,11 +8016,21 @@ function openUnitWheelDialog(options = {}) {
     const onOutside = (e) => {
         if (!wrapper.contains(e.target) && !(anchor && anchor.contains && anchor.contains(e.target))) close();
     };
-    const onScroll = (e) => { if (!wrapper.contains(e.target)) close(); };
+    // Layout can move under the anchor (the shared keypad collapsing, page scroll): follow it, and only
+    // close when the anchor has left the screen.
+    function reposition() {
+        if (!wrapper.isConnected) return;
+        const rect = anchor && anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : null;
+        if (rect && (rect.bottom < 0 || rect.top > document.documentElement.clientHeight)) { close(); return; }
+        place();
+    }
+    const onScroll = (e) => { if (!wrapper.contains(e.target)) reposition(); };
+    const settleTimers = [120, 320, 650].map(ms => setTimeout(reposition, ms));
     function close() {
+        settleTimers.forEach(clearTimeout);
         document.removeEventListener('keydown', onKey);
         document.removeEventListener('pointerdown', onOutside, true);
-        window.removeEventListener('resize', close);
+        window.removeEventListener('resize', reposition);
         window.removeEventListener('scroll', onScroll, true);
         wrapper.remove();
         if (activeUnitWheelPopover && activeUnitWheelPopover.wrapper === wrapper) activeUnitWheelPopover = null;
@@ -8028,7 +8038,7 @@ function openUnitWheelDialog(options = {}) {
     }
     document.addEventListener('keydown', onKey);
     document.addEventListener('pointerdown', onOutside, true);
-    window.addEventListener('resize', close);
+    window.addEventListener('resize', reposition);
     window.addEventListener('scroll', onScroll, true);
     activeUnitWheelPopover = { wrapper, anchor, close };
     wheelEl?.focus();
