@@ -13054,6 +13054,24 @@ function formatScientificResult(value) {
     return Number(value.toPrecision(12)).toString().replace('e+', 'E+').replace('e-', 'E-');
 }
 
+function toggleCalculatorSign(expression) {
+    const expr = String(expression || '');
+    if (!expr) return '-';
+    if (expr === '-') return '';
+    if (/[+×÷^(\-]-$/.test(expr)) return expr.slice(0, -1);
+    if (/[+×÷^(\-]$/.test(expr)) return expr + '-';
+    const wrapped = expr.match(/\(-((?:\d+(?:\.\d*)?|\.\d+)(?:E[+-]?\d+)?)\)$/);
+    if (wrapped) return expr.slice(0, -wrapped[0].length) + wrapped[1];
+    const number = expr.match(/(?:\d+(?:\.\d*)?|\.\d+)(?:E[+-]?\d+)?$/);
+    if (number) {
+        const prefix = expr.slice(0, -number[0].length);
+        if (prefix === '-') return number[0];
+        if (/[+×÷^(\-]-$/.test(prefix)) return prefix.slice(0, -1) + number[0];
+        return prefix + (prefix ? `(-${number[0]})` : `-${number[0]}`);
+    }
+    return `-(${expr})`;
+}
+
 function renderStandardCalcTool(container) {
     const st = appState.calc;
     const scientific = st.mode === 'scientific';
@@ -13064,12 +13082,12 @@ function renderStandardCalcTool(container) {
         ['x²', '^2'], ['x³', '^3'], ['xʸ', '^'], ['√x', 'sqrt('],
         ['³√x', 'cbrt('], ['ln', 'ln('], ['log', 'log('], ['10ˣ', '10^('],
         ['1/x', 'reciprocal'], ['x!', '!'], ['π', 'pi'], ['e', 'e'],
-        ['Ans', 'Ans'], ['EE', 'E'], ['eˣ', 'exp('], ['+/−', 'negate']
+        ['Ans', 'Ans'], ['EE', 'E'], ['eˣ', 'exp(']
     ];
-    const standardKeys = [['C','C'],['( )','()'],['%','%'],['÷','÷'],['7','7'],['8','8'],['9','9'],['×','×'],['4','4'],['5','5'],['6','6'],['−','-'],['1','1'],['2','2'],['3','3'],['+','+'],['0','0'],['.','.'],['⌫','BS'],['=','=']];
+    const standardKeys = [['C','C'],['( )','()'],['%','%'],['÷','÷'],['7','7'],['8','8'],['9','9'],['×','×'],['4','4'],['5','5'],['6','6'],['−','-'],['1','1'],['2','2'],['3','3'],['+','+'],['+/−','negate'],['0','0'],['.','.'],['⌫','BS'],['=','=']];
     const key = ([label, action]) => `<button type="button" class="key-btn ${['C','()','%','÷','×','-','+','BS'].includes(action) ? 'key-action' : ''} ${action === '=' ? 'key-primary-cta calc-equals' : ''}" data-std="${escapeHTML(action)}" ${action === 'BS' ? 'aria-label="ลบตัวอักษร"' : ''} ${action === '2nd' ? `aria-pressed="${second}"` : ''}>${label}</button>`;
     container.innerHTML = `
-        <div class="standard-calc flex flex-col gap-2">
+        <div class="standard-calc ${scientific ? 'is-scientific' : 'is-standard'} flex flex-col gap-2">
             <div class="segment-group grid-cols-2" role="group" aria-label="โหมดเครื่องคิดเลข">
                 <button type="button" class="segment-btn ${!scientific ? 'active' : ''}" data-calc-mode="standard" aria-pressed="${!scientific}">ทั่วไป</button>
                 <button type="button" class="segment-btn ${scientific ? 'active' : ''}" data-calc-mode="scientific" aria-pressed="${scientific}">วิทยาศาสตร์</button>
@@ -13081,7 +13099,8 @@ function renderStandardCalcTool(container) {
                 ${st.error ? `<div class="calc-error" role="alert">${escapeHTML(st.error)}</div>` : ''}
             </div>
             ${scientific ? `<div class="calc-angle" role="group" aria-label="หน่วยมุม"><button type="button" class="tool-chip-btn" data-angle="deg" aria-pressed="${angle === 'deg'}">DEG</button><button type="button" class="tool-chip-btn" data-angle="rad" aria-pressed="${angle === 'rad'}">RAD</button></div><div class="calc-science-grid">${functionKeys.map(key).join('')}</div>` : ''}
-            <div class="calc-number-grid">${standardKeys.map(key).join('')}</div>
+            <div class="calc-number-grid">${standardKeys.slice(0, 16).map(key).join('')}</div>
+            <div class="calc-last-row">${standardKeys.slice(16).map(key).join('')}</div>
         </div>`;
     function evaluate(showError = false) {
         try { const n = evaluateScientificExpression(st.expr, { angle: st.angle, ans: st.ans }); st.result = formatScientificResult(n); st.error = ''; return n; }
@@ -13097,7 +13116,8 @@ function renderStandardCalcTool(container) {
         else if (k === 'BS') { st.expr = st.expr.slice(0, -1); if (st.expr) evaluate(); else { st.result = '0'; st.error = ''; } }
         else if (k === '()') { const opens = (st.expr.match(/\(/g) || []).length; const closes = (st.expr.match(/\)/g) || []).length; st.expr += opens > closes ? ')' : '('; evaluate(); }
         else if (k === '=') { const value = evaluate(true); if (st.expr && value !== null) { st.history.unshift({ expr: st.expr, res: st.result }); st.ans = value; st.expr = st.result; } }
-        else if (k === 'negate' || k === 'reciprocal') { if (st.expr) { st.expr = k === 'negate' ? `-(${st.expr})` : `1/(${st.expr})`; evaluate(); } }
+        else if (k === 'negate') { st.expr = toggleCalculatorSign(st.expr); if (st.expr) evaluate(); else { st.result = '0'; st.error = ''; } }
+        else if (k === 'reciprocal') { if (st.expr) { st.expr = `1/(${st.expr})`; evaluate(); } }
         else { st.expr += k; evaluate(); }
         renderActiveTool();
         if (restore) container.querySelectorAll('[data-std]').forEach(item => { if (item.dataset.std === k) item.focus(); });
@@ -13125,7 +13145,8 @@ function renderStandardCalcTool(container) {
         renderHexTool,
         renderStandardCalcTool,
         evaluateScientificExpression,
-        formatScientificResult
+        formatScientificResult,
+        toggleCalculatorSign
     };
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = exportsObj;

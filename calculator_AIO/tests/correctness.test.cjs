@@ -3767,3 +3767,20 @@ test('scientific calculator evaluates angles, precedence, powers and invalid dom
     assert.equal(ctx.formatScientificResult(calc('1E-13')), '1E-13');
     for (const expr of ['1/0', 'sqrt(-1)', 'log(0)', '171!', 'sin(', 'globalThis']) assert.throws(() => calc(expr));
 });
+
+
+test('calculator sign switch handles a negative starting value and the last operand', () => {
+    const ctx = context();
+    const toggle = ctx.toggleCalculatorSign;
+    assert.equal(toggle(''), '-');
+    assert.equal(toggle('-'), '');
+    assert.equal(toggle('5+'), '5+-');
+    assert.equal(toggle('5+-'), '5+');
+    assert.equal(toggle('5-'), '5--');
+    assert.equal(toggle('5--'), '5-');
+    assert.equal(ctx.evaluateScientificExpression('5--3'), 8);
+    assert.equal(toggle('5+3'), '5+(-3)');
+    assert.equal(toggle('5+(-3)'), '5+3');
+    assert.equal(ctx.evaluateScientificExpression(toggle('5+3')), 2);
+    assert.equal(toggle('-1E-13'), '1E-13');
+});
