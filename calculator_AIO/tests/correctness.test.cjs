@@ -3870,6 +3870,13 @@ test('unit wheel picker UI: 2-column & 1-column markup, accessibility attributes
     assert.ok(singleWheel.includes('role="option"'));
     assert.ok(singleWheel.includes('aria-selected="true"'));
     assert.ok(singleWheel.includes('id="testSingleSel"'), 'accessible select fallback is rendered');
+    assert.equal((singleWheel.match(/class="unit-wheel-band"/g) || []).length, 1, 'one shared highlight band');
+    const twoCol = ctx.createWheelPickerHTML({ columns: [
+        { wheelId: 'a', bandId: 'bandA', valueText: '12', items: [{ name: 'กรัม (g)' }], selectedIndex: 0 },
+        { wheelId: 'b', bandId: 'bandB', valueText: '0.012', items: [{ name: 'กิโลกรัม (kg)' }], selectedIndex: 0 }
+    ] });
+    assert.equal((twoCol.match(/class="unit-wheel-band"/g) || []).length, 1, 'two columns still share a single band');
+    assert.ok(twoCol.includes('id="bandAValue"') && twoCol.includes('>12<') && twoCol.includes('>0.012<'), 'band shows each column value');
 
     // 2. Build a lightweight DOM harness to test renderUnitConverterTool + bindWheelColumn interactions
     function createMockElement(tag, attrs = {}) {
@@ -3959,7 +3966,7 @@ test('unit wheel picker UI: 2-column & 1-column markup, accessibility attributes
         bySelector['#unitToActiveBadge'] = createMockElement('div', { id: 'unitToActiveBadge' });
         bySelector['#unitPairSummary'] = createMockElement('span', { id: 'unitPairSummary' });
         bySelector['#unitSourceSummary'] = createMockElement('div', { id: 'unitSourceSummary' });
-        bySelector['#unitPrimaryResultValue'] = createMockElement('span', { id: 'unitPrimaryResultValue' });
+        bySelector['#unitToBandValue'] = createMockElement('span', { id: 'unitToBandValue' });
         bySelector['#unitTargetName'] = createMockElement('span', { id: 'unitTargetName' });
         bySelector['#unitRateSummary'] = createMockElement('div', { id: 'unitRateSummary' });
         bySelector['#unitAreaSummary'] = createMockElement('div', { id: 'unitAreaSummary' });
@@ -3994,7 +4001,7 @@ test('unit wheel picker UI: 2-column & 1-column markup, accessibility attributes
     container.elements['#unitFromWheel'].dispatch('keydown', { key: 'ArrowDown' });
     assert.equal(appState.unit.fromIdx, 1, 'ArrowDown moves source unit from Rai (0) to Ngan (1)');
     assert.equal(container.elements['#unitFromSel'].value, '1', 'Accessible select fallback stays synced');
-    assert.equal(container.elements['#unitPrimaryResultValue'].textContent, '800', '2 Ngan = 800 Sq.m updated immediately');
+    assert.equal(container.elements['#unitToBandValue'].textContent, '800', '2 Ngan = 800 Sq.m updated immediately');
     assert.equal(container.suffixSpan.textContent, 'Ngan', 'Keypad field suffix updates to active source unit symbol');
     assert.equal(renderCalls, 0, 'Wheel selection updates in-place without full re-render');
 
@@ -4002,30 +4009,30 @@ test('unit wheel picker UI: 2-column & 1-column markup, accessibility attributes
     container.elements['#unitToWheel'].dispatch('wheel', { deltaY: -40 });
     assert.equal(appState.unit.targetIdx, 2, 'Negative wheel delta steps target unit up from Sq.m (3) to Sq.Wa (2)');
     assert.equal(container.elements['#unitToSel'].value, '2');
-    assert.equal(container.elements['#unitPrimaryResultValue'].textContent, '200', '2 Ngan = 200 Sq.Wa');
+    assert.equal(container.elements['#unitToBandValue'].textContent, '200', '2 Ngan = 200 Sq.Wa');
 
     // 6. Native accessible <select> fallback updates wheel and calculation
     container.elements['#unitFromSel'].value = '0';
     container.elements['#unitFromSel'].dispatch('change', { target: container.elements['#unitFromSel'] });
     assert.equal(appState.unit.fromIdx, 0);
-    assert.equal(container.elements['#unitPrimaryResultValue'].textContent, '800', '2 Rai = 800 Sq.Wa');
+    assert.equal(container.elements['#unitToBandValue'].textContent, '800', '2 Rai = 800 Sq.Wa');
 
     // 7. Tap/click on a wheel option item (target -> 3: Sq.m)
     container.elements['#unitToWheel'].dispatch('click', { target: container.toOpts[3] });
     assert.equal(appState.unit.targetIdx, 3);
-    assert.equal(container.elements['#unitPrimaryResultValue'].textContent, '3,200', '2 Rai = 3,200 Sq.m');
+    assert.equal(container.elements['#unitToBandValue'].textContent, '3,200', '2 Rai = 3,200 Sq.m');
 
     // 8. Swap button swaps source and target units in-place
     container.elements['#unitSwapBtn'].dispatch('click');
     assert.equal(appState.unit.fromIdx, 3);
     assert.equal(appState.unit.targetIdx, 0);
-    assert.equal(container.elements['#unitPrimaryResultValue'].textContent, '0.00125', '2 Sq.m = 0.00125 Rai');
+    assert.equal(container.elements['#unitToBandValue'].textContent, '0.00125', '2 Sq.m = 0.00125 Rai');
 
     // 9. Related unit row click selects target unit
     const relatedRow = createMockElement('button', { attributes: { 'data-related-unit-idx': '2' } });
     container.elements['#unitRelatedList'].dispatch('click', { target: relatedRow });
     assert.equal(appState.unit.targetIdx, 2);
-    assert.equal(container.elements['#unitPrimaryResultValue'].textContent, '0.5', '2 Sq.m = 0.5 Sq.Wa');
+    assert.equal(container.elements['#unitToBandValue'].textContent, '0.5', '2 Sq.m = 0.5 Sq.Wa');
 
     // 10. Category change resets default units for the selected category (temp: 0 -> 1) and triggers renderActiveTool
     container.elements['#unitCatSel'].value = 'temp';

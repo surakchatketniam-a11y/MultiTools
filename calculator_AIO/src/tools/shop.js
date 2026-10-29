@@ -389,7 +389,8 @@ function renderTipTool(container) {
 /* -----------------------------------------------------------
  * REUSABLE WHEEL PICKER & UNIT CONVERTER HELPERS
  * ----------------------------------------------------------- */
-const WHEEL_ITEM_HEIGHT = 44;
+const WHEEL_ITEM_HEIGHT = 56;
+const WHEEL_VISIBLE_ROWS = 5;
 
 function splitUnitLabel(unitOrName) {
     const raw = typeof unitOrName === 'string'
@@ -452,7 +453,6 @@ function createWheelColumnHTML(colConfig = {}) {
     const {
         wheelId = 'unitWheelCol',
         selectId = '',
-        badgeId = '',
         side = 'single',
         label = 'เลือกหน่วย',
         selectAriaLabel = '',
@@ -460,7 +460,6 @@ function createWheelColumnHTML(colConfig = {}) {
         selectedIndex = 0
     } = colConfig;
     const safeIdx = items.length ? Math.max(0, Math.min(items.length - 1, Number(selectedIndex) || 0)) : 0;
-    const selectedSplit = splitUnitLabel(items[safeIdx] || '');
     const labelId = `${wheelId}Label`;
 
     const optionsHTML = items.map((item, idx) => {
@@ -483,7 +482,7 @@ function createWheelColumnHTML(colConfig = {}) {
     }).join('');
 
     const selectHTML = selectId ? `
-        <select id="${selectId}" class="airbnb-input unit-native-select" aria-label="${escapeHTML(selectAriaLabel || label)}">
+        <select id="${selectId}" class="unit-native-select sr-only" aria-label="${escapeHTML(selectAriaLabel || label)}">
             ${items.map((item, idx) => {
                 const split = splitUnitLabel(item);
                 return `<option value="${idx}" ${idx === safeIdx ? 'selected' : ''}>${escapeHTML(split.full)}</option>`;
@@ -493,37 +492,46 @@ function createWheelColumnHTML(colConfig = {}) {
 
     return `
         <div class="unit-wheel-col" data-wheel-col="${escapeHTML(side)}">
-            <div class="unit-col-meta">
-                <label ${selectId ? `for="${selectId}"` : ''} id="${labelId}" class="unit-col-label">${escapeHTML(label)}</label>
-                <div ${badgeId ? `id="${badgeId}"` : ''} class="unit-active-pill" aria-live="polite">
-                    <span class="unit-active-pill-name">${escapeHTML(selectedSplit.title)}</span>
-                    <span class="unit-active-pill-sym">${escapeHTML(selectedSplit.symbol ? `(${selectedSplit.symbol})` : '')}</span>
-                </div>
-            </div>
-            <div class="unit-wheel-viewport">
-                <div class="unit-wheel-highlight" aria-hidden="true"></div>
-                <div id="${wheelId}"
-                    class="unit-wheel-scroller"
-                    role="listbox"
-                    tabindex="0"
-                    aria-labelledby="${labelId}"
-                    aria-activedescendant="${wheelId}-item-${safeIdx}"
-                    data-wheel-side="${escapeHTML(side)}">
-                    <div class="unit-wheel-spacer" aria-hidden="true"></div>
-                    ${optionsHTML}
-                    <div class="unit-wheel-spacer" aria-hidden="true"></div>
-                </div>
+            <span id="${labelId}" class="sr-only">${escapeHTML(label)}</span>
+            <div id="${wheelId}"
+                class="unit-wheel-scroller"
+                role="listbox"
+                tabindex="0"
+                aria-labelledby="${labelId}"
+                aria-activedescendant="${wheelId}-item-${safeIdx}"
+                data-wheel-side="${escapeHTML(side)}">
+                <div class="unit-wheel-spacer" aria-hidden="true"></div>
+                ${optionsHTML}
+                <div class="unit-wheel-spacer" aria-hidden="true"></div>
             </div>
             ${selectHTML}
         </div>
     `;
 }
 
+// One shared highlight band spans every column and shows the selected unit with its value (like the iOS unit picker).
 function createWheelPickerHTML(config = {}) {
     const columns = Array.isArray(config.columns) ? config.columns : [];
     const singleClass = columns.length === 1 ? 'is-single-col' : '';
+    const cellsHTML = columns.map(col => {
+        const items = col.items || [];
+        const idx = items.length ? Math.max(0, Math.min(items.length - 1, Number(col.selectedIndex) || 0)) : 0;
+        const split = splitUnitLabel(items[idx] || '');
+        const bandId = col.bandId || '';
+        const idAttr = (suffix) => (bandId ? `id="${bandId}${suffix}"` : '');
+        return `
+            <div class="unit-band-cell">
+                <span ${idAttr('Name')} class="unit-band-name">${escapeHTML(split.title)}</span>
+                <span class="unit-band-line">
+                    ${col.valueText !== undefined ? `<span ${idAttr('Value')} class="unit-band-value">${escapeHTML(String(col.valueText))}</span>` : ''}
+                    <span ${idAttr('Sym')} class="unit-band-sym">${escapeHTML(split.symbol)}</span>
+                </span>
+            </div>
+        `;
+    }).join('');
     return `
-        <div class="unit-wheel-columns ${singleClass}">
+        <div class="unit-wheel-columns ${singleClass}" style="--wheel-item-h:${WHEEL_ITEM_HEIGHT}px;--wheel-rows:${WHEEL_VISIBLE_ROWS}">
+            <div class="unit-wheel-band" aria-hidden="true">${cellsHTML}</div>
             ${columns.map(col => createWheelColumnHTML(col)).join('')}
         </div>
     `;
@@ -852,7 +860,8 @@ function renderUnitConverterTool(container) {
             {
                 wheelId: 'unitFromWheel',
                 selectId: 'unitFromSel',
-                badgeId: 'unitFromActiveBadge',
+                bandId: 'unitFromBand',
+                valueText: formatNum(inputVal, 4),
                 side: 'from',
                 label: 'หน่วยต้นทาง',
                 selectAriaLabel: 'เลือกหน่วยต้นทาง',
@@ -862,7 +871,8 @@ function renderUnitConverterTool(container) {
             {
                 wheelId: 'unitToWheel',
                 selectId: 'unitToSel',
-                badgeId: 'unitToActiveBadge',
+                bandId: 'unitToBand',
+                valueText: formatNum(convertedVal, 6),
                 side: 'to',
                 label: 'หน่วยปลายทาง',
                 selectAriaLabel: 'เลือกหน่วยปลายทาง',
@@ -875,42 +885,25 @@ function renderUnitConverterTool(container) {
     container.innerHTML = `
         <div class="unit-converter-tool flex flex-col gap-2">
             <div class="themed-tool-card p-3 space-y-2.5">
-                <div class="unit-top-controls">
-                    <div>
-                        <label for="unitCatSel" class="text-xs font-semibold text-[var(--app-body)] block mb-1">หมวดหมู่หน่วย</label>
-                        <select id="unitCatSel" class="airbnb-input w-full text-xs font-semibold">
-                            ${Object.entries(UNIT_CATEGORIES).map(([k, v]) => `<option value="${k}" ${st.cat === k ? 'selected' : ''}>${v.label}</option>`).join('')}
-                        </select>
+                <div>
+                    <span id="unitCatLabel" class="text-xs font-semibold text-[var(--app-body)] block mb-1">หมวดหมู่หน่วย</span>
+                    <div class="unit-cat-chips" role="group" aria-labelledby="unitCatLabel">
+                        ${Object.entries(UNIT_CATEGORIES).map(([k, v]) => `<button type="button" class="tool-chip-btn" data-unit-cat="${k}" aria-pressed="${st.cat === k}">${escapeHTML(String(v.label).split(' (')[0])}</button>`).join('')}
                     </div>
-                    <button type="button" id="unitSwapBtn" class="tool-action-btn unit-swap-btn text-xs" aria-label="สลับหน่วยต้นทางและหน่วยปลายทาง">
-                        สลับหน่วย
-                    </button>
+                    <select id="unitCatSel" class="sr-only" aria-label="หมวดหมู่หน่วย">
+                        ${Object.entries(UNIT_CATEGORIES).map(([k, v]) => `<option value="${k}" ${st.cat === k ? 'selected' : ''}>${v.label}</option>`).join('')}
+                    </select>
                 </div>
 
                 ${createKeypadFieldHTML(0, 'ค่าที่ต้องการแปลง', st.val, fromSplit.symbol || fromSplit.title, 'ป้อนตัวเลข')}
             </div>
 
             <div class="themed-tool-card p-3 space-y-2">
-                <div class="unit-wheel-header">
-                    <span class="text-xs font-semibold text-[var(--app-ink)]">วงล้อเลือกหน่วย (ต้นทาง - ปลายทาง)</span>
-                    <span class="text-[11px] text-[var(--app-muted)]">เลื่อนวงล้อ แตะรายการ หรือใช้ปุ่มลูกศร</span>
-                </div>
                 ${wheelPickerHTML}
-            </div>
-
-            <div class="themed-result-card unit-result-primary p-3 space-y-1.5" aria-live="polite">
-                <div class="flex items-center justify-between gap-2 flex-wrap">
-                    <span class="text-xs font-semibold text-[var(--app-body)]">ผลลัพธ์ปลายทาง</span>
-                    <span id="unitPairSummary" class="text-xs font-semibold text-[var(--app-ink)]">${escapeHTML(fromSplit.title)} → ${escapeHTML(targetSplit.title)}</span>
-                </div>
-                <div id="unitSourceSummary" class="text-xs text-[var(--app-body)]">
-                    ${formatNum(inputVal, 4)} ${escapeHTML(fromUnit.name)} เท่ากับ
-                </div>
-                <div class="flex flex-wrap items-baseline justify-between gap-2">
-                    <span id="unitPrimaryResultValue" class="themed-result-value text-2xl font-bold">${formatNum(convertedVal, 6)}</span>
-                    <span id="unitTargetName" class="text-xs font-semibold text-[var(--app-ink)]">${escapeHTML(targetUnit.name)}</span>
-                </div>
-                <div id="unitRateSummary" class="text-[11px] text-[var(--app-body)] pt-1 border-t border-[var(--app-hairline)]">
+                <button type="button" id="unitSwapBtn" class="tool-action-btn unit-swap-btn w-full text-xs" aria-label="สลับหน่วยต้นทางและหน่วยปลายทาง">
+                    สลับหน่วย
+                </button>
+                <div id="unitRateSummary" class="text-[11px] text-[var(--app-body)]">
                     ${escapeHTML(rateText)}
                 </div>
                 <div id="unitAreaSummary" class="text-[11px] font-semibold text-[var(--app-ink)] ${areaNoteText ? '' : 'hidden'}">
@@ -961,14 +954,13 @@ function renderUnitConverterTool(container) {
         if (fromWheelCtrl) fromWheelCtrl.setIndex(st.fromIdx, options.scrollFrom !== false);
         if (toWheelCtrl) toWheelCtrl.setIndex(st.targetIdx, options.scrollTo !== false);
 
-        const fromBadge = q('#unitFromActiveBadge');
-        if (fromBadge) {
-            fromBadge.innerHTML = `<span class="unit-active-pill-name">${escapeHTML(curFromSplit.title)}</span><span class="unit-active-pill-sym">${escapeHTML(curFromSplit.symbol ? `(${curFromSplit.symbol})` : '')}</span>`;
-        }
-        const toBadge = q('#unitToActiveBadge');
-        if (toBadge) {
-            toBadge.innerHTML = `<span class="unit-active-pill-name">${escapeHTML(curTargetSplit.title)}</span><span class="unit-active-pill-sym">${escapeHTML(curTargetSplit.symbol ? `(${curTargetSplit.symbol})` : '')}</span>`;
-        }
+        const setText = (sel, text) => { const el = q(sel); if (el) el.textContent = text; };
+        setText('#unitFromBandName', curFromSplit.title);
+        setText('#unitFromBandSym', curFromSplit.symbol);
+        setText('#unitFromBandValue', formatNum(inputVal, 4));
+        setText('#unitToBandName', curTargetSplit.title);
+        setText('#unitToBandSym', curTargetSplit.symbol);
+        setText('#unitToBandValue', formatNum(convertedVal, 6));
 
         const inputBox = q('[data-field-index="0"]');
         const suffixSpan = inputBox && typeof inputBox.querySelector === 'function'
@@ -977,18 +969,6 @@ function renderUnitConverterTool(container) {
         if (suffixSpan) {
             suffixSpan.textContent = curFromSplit.symbol || curFromSplit.title;
         }
-
-        const pairEl = q('#unitPairSummary');
-        if (pairEl) pairEl.textContent = `${curFromSplit.title} → ${curTargetSplit.title}`;
-
-        const srcSumEl = q('#unitSourceSummary');
-        if (srcSumEl) srcSumEl.textContent = `${formatNum(inputVal, 4)} ${fromUnit.name} เท่ากับ`;
-
-        const resValEl = q('#unitPrimaryResultValue');
-        if (resValEl) resValEl.textContent = formatNum(convertedVal, 6);
-
-        const targetNameEl = q('#unitTargetName');
-        if (targetNameEl) targetNameEl.textContent = targetUnit.name;
 
         const rateEl = q('#unitRateSummary');
         if (rateEl) rateEl.textContent = buildRateText(fromUnit, targetUnit);
@@ -1027,13 +1007,18 @@ function renderUnitConverterTool(container) {
         }
     });
 
-    catSelEl?.addEventListener('change', (e) => {
-        st.cat = e.target.value;
+    function changeUnitCategory(key) {
+        if (!UNIT_CATEGORIES[key]) return;
+        st.cat = key;
         const nextCat = UNIT_CATEGORIES[st.cat] || UNIT_CATEGORIES.area;
         st.fromIdx = 0;
         st.targetIdx = nextCat.units.length > 1 ? 1 : 0;
         renderActiveTool();
-    });
+    }
+    catSelEl?.addEventListener('change', (e) => changeUnitCategory(e.target.value));
+    if (container && typeof container.querySelectorAll === 'function') {
+        container.querySelectorAll('[data-unit-cat]').forEach(btn => btn.addEventListener('click', () => changeUnitCategory(btn.getAttribute('data-unit-cat'))));
+    }
 
     fromSelEl?.addEventListener('change', (e) => {
         const parsed = parseInt(e.target.value, 10);
