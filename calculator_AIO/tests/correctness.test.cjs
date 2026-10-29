@@ -3765,6 +3765,16 @@ test('scientific calculator evaluates angles, precedence, powers and invalid dom
     assert.equal(calc('5!+log(100)+sqrt(9)'), 125);
     assert.equal(calc('1E3+Ans', { ans: 2 }), 1002);
     assert.equal(ctx.formatScientificResult(calc('1E-13')), '1E-13');
+    assert.equal(calc('sin(180)', { angle: 'deg' }), 0);
+    assert.equal(calc('cos(90)', { angle: 'deg' }), 0);
+    assert.equal(calc('sin(pi)', { angle: 'rad' }), 0);
+    assert.equal(calc('pi×e'), Math.PI * Math.E);
+    assert.equal(calc('200+10%'), 220);
+    assert.equal(calc('200-10%'), 180);
+    assert.equal(calc('200×10%'), 20);
+    assert.equal(calc('50%'), 0.5);
+    assert.equal(calc('(2)3'), 6);
+    assert.equal(calc('(1+1)(3)4'), 24);
     for (const expr of ['1/0', 'sqrt(-1)', 'log(0)', '171!', 'sin(', 'globalThis']) assert.throws(() => calc(expr));
 });
 
@@ -3783,4 +3793,245 @@ test('calculator sign switch handles a negative starting value and the last oper
     assert.equal(toggle('5+(-3)'), '5+3');
     assert.equal(ctx.evaluateScientificExpression(toggle('5+3')), 2);
     assert.equal(toggle('-1E-13'), '1E-13');
+});
+
+test('unit converter engine: area, length, weight, volume, temperature formulas, Thai land breakdown, and label parsing', () => {
+    const ctx = context();
+
+    // 1. splitUnitLabel extracts title and parenthetical symbol
+    assert.deepEqual({ ...ctx.splitUnitLabel('ตารางเมตร (ตร.ม.)') }, { title: 'ตารางเมตร', symbol: 'ตร.ม.', full: 'ตารางเมตร (ตร.ม.)' });
+    assert.deepEqual({ ...ctx.splitUnitLabel({ name: 'เซลเซียส (°C)', code: 'C' }) }, { title: 'เซลเซียส', symbol: '°C', full: 'เซลเซียส (°C)' });
+    assert.deepEqual({ ...ctx.splitUnitLabel('ไร่') }, { title: 'ไร่', symbol: '', full: 'ไร่' });
+
+    // 2. Area conversions (0: Rai, 1: Ngan, 2: Sq.Wa, 3: Sq.m) & Thai land breakdown
+    assert.equal(ctx.convertUnitValue('area', 1, 0, 1), 4);
+    assert.equal(ctx.convertUnitValue('area', 1, 0, 2), 400);
+    assert.equal(ctx.convertUnitValue('area', 1, 0, 3), 1600);
+    assert.ok(Math.abs(ctx.convertUnitValue('area', 1600, 3, 0) - 1) < 1e-9);
+
+    const breakdown = ctx.calculateThaiAreaBreakdown(2150, ctx.UNIT_CATEGORIES.area.units[3]);
+    assert.equal(breakdown.totalSqm, 2150);
+    assert.equal(breakdown.rai, 1);
+    assert.equal(breakdown.ngan, 1);
+    assert.ok(Math.abs(breakdown.sqWa - 37.5) < 1e-9);
+    assert.deepEqual({ ...ctx.calculateThaiAreaBreakdown(0, ctx.UNIT_CATEGORIES.area.units[3]) }, { totalSqm: 0, rai: 0, ngan: 0, sqWa: 0 });
+    assert.deepEqual({ ...ctx.calculateThaiAreaBreakdown(-10, ctx.UNIT_CATEGORIES.area.units[3]) }, { totalSqm: 0, rai: 0, ngan: 0, sqWa: 0 });
+
+    // 3. Length (0: km, 1: m, 2: cm), weight (0: kg, 1: g, 5: baht gold 15.244g), and volume (0: L, 1: mL)
+    assert.equal(ctx.convertUnitValue('length', 2.5, 0, 1), 2500);
+    assert.equal(ctx.convertUnitValue('length', 1.5, 1, 2), 150);
+    assert.ok(Math.abs(ctx.convertUnitValue('weight', 1, 5, 1) - 15.244) < 1e-9);
+    assert.ok(Math.abs(ctx.convertUnitValue('weight', 2, 0, 1) - 2000) < 1e-9);
+    assert.equal(ctx.convertUnitValue('volume', 1.5, 0, 1), 1500);
+
+    // 4. Special temperature formulas (0: C, 1: F, 2: K) including negative and zero values
+    assert.ok(Math.abs(ctx.convertUnitValue('temp', 0, 0, 1) - 32) < 1e-9);
+    assert.ok(Math.abs(ctx.convertUnitValue('temp', 100, 0, 1) - 212) < 1e-9);
+    assert.ok(Math.abs(ctx.convertUnitValue('temp', -40, 0, 1) - (-40)) < 1e-9);
+    assert.ok(Math.abs(ctx.convertUnitValue('temp', 0, 0, 2) - 273.15) < 1e-9);
+    assert.ok(Math.abs(ctx.convertUnitValue('temp', 273.15, 2, 0) - 0) < 1e-9);
+    assert.ok(Math.abs(ctx.convertUnitValue('temp', 32, 1, 2) - 273.15) < 1e-9);
+    assert.ok(Math.abs(ctx.convertUnitValue('temp', 373.15, 2, 1) - 212) < 1e-9);
+    assert.equal(ctx.convertUnitValue('temp', 37, 0, 0), 37);
+
+    // 5. Invalid numeric input returns NaN safely
+    assert.ok(Number.isNaN(ctx.convertUnitValue('area', NaN, 0, 3)));
+});
+
+test('unit wheel picker UI: 2-column & 1-column markup, accessibility attributes, theme compliance, and interactions', () => {
+    const appState = {
+        activeToolId: 'unit',
+        activeFieldIndex: 0,
+        unit: { cat: 'area', val: '2', fromIdx: 0, targetIdx: 3 }
+    };
+    const banners = [];
+    let renderCalls = 0;
+    const ctx = context({
+        window: { matchMedia: () => ({ matches: false }) },
+        appState,
+        setStatusBanner(type, msg) { banners.push({ type, msg }); },
+        renderActiveTool() { renderCalls++; },
+        attachFieldClickListeners() {}
+    });
+
+    // 1. Verify reusable 1-column and 2-column wheel generator functions
+    const singleWheel = ctx.createWheelPickerHTML({
+        columns: [{
+            wheelId: 'testSingleWheel',
+            selectId: 'testSingleSel',
+            badgeId: 'testSingleBadge',
+            label: 'หน่วยทดสอบ',
+            items: [{ name: 'กิโลกรัม (kg)' }, { name: 'กรัม (g)' }],
+            selectedIndex: 0
+        }]
+    });
+    assert.ok(singleWheel.includes('is-single-col'), '1-column mode uses is-single-col class');
+    assert.ok(singleWheel.includes('role="listbox"'));
+    assert.ok(singleWheel.includes('role="option"'));
+    assert.ok(singleWheel.includes('aria-selected="true"'));
+    assert.ok(singleWheel.includes('id="testSingleSel"'), 'accessible select fallback is rendered');
+
+    // 2. Build a lightweight DOM harness to test renderUnitConverterTool + bindWheelColumn interactions
+    function createMockElement(tag, attrs = {}) {
+        const listeners = {};
+        const classes = new Set((attrs.className || '').split(/\s+/).filter(Boolean));
+        const attributes = { ...(attrs.attributes || {}) };
+        const el = {
+            tagName: tag.toUpperCase(),
+            id: attrs.id || '',
+            value: attrs.value !== undefined ? String(attrs.value) : '',
+            textContent: attrs.textContent || '',
+            innerHTML: '',
+            scrollTop: 0,
+            attributes,
+            classList: {
+                add(...names) { names.forEach(n => classes.add(n)); },
+                remove(...names) { names.forEach(n => classes.delete(n)); },
+                toggle(name, force) {
+                    if (force === undefined) {
+                        if (classes.has(name)) { classes.delete(name); return false; }
+                        classes.add(name); return true;
+                    }
+                    if (force) classes.add(name); else classes.delete(name);
+                    return Boolean(force);
+                },
+                contains(name) { return classes.has(name); }
+            },
+            setAttribute(k, v) { this.attributes[k] = String(v); },
+            getAttribute(k) { return this.attributes[k]; },
+            addEventListener(type, fn) {
+                if (!listeners[type]) listeners[type] = [];
+                listeners[type].push(fn);
+            },
+            dispatch(type, eventInit = {}) {
+                const ev = {
+                    type,
+                    target: this,
+                    currentTarget: this,
+                    preventDefault() { this.defaultPrevented = true; },
+                    ...eventInit
+                };
+                for (const fn of (listeners[type] || [])) fn(ev);
+                return ev;
+            },
+            closest(sel) {
+                if (sel === '[data-unit-index]' && this.attributes['data-unit-index'] !== undefined) return this;
+                if (sel === '[data-related-unit-idx]' && this.attributes['data-related-unit-idx'] !== undefined) return this;
+                return null;
+            },
+            querySelector() { return null; },
+            querySelectorAll() { return []; }
+        };
+        return el;
+    }
+
+    function createHarnessContainer() {
+        const bySelector = {};
+        const units = ctx.UNIT_CATEGORIES[appState.unit.cat].units;
+        const makeWheelOptionList = (wheelId) => units.map((_, idx) => createMockElement('button', {
+            id: wheelId + '-item-' + idx,
+            attributes: {
+                'data-unit-index': String(idx),
+                'aria-selected': idx === 0 ? 'true' : 'false'
+            }
+        }));
+
+        const fromOpts = makeWheelOptionList('unitFromWheel');
+        const toOpts = makeWheelOptionList('unitToWheel');
+
+        const fromWheel = createMockElement('div', { id: 'unitFromWheel' });
+        fromWheel.querySelectorAll = (sel) => sel === '[data-unit-index]' ? fromOpts : [];
+        const toWheel = createMockElement('div', { id: 'unitToWheel' });
+        toWheel.querySelectorAll = (sel) => sel === '[data-unit-index]' ? toOpts : [];
+
+        const suffixSpan = createMockElement('span', { className: 'text-xs' });
+        const inputBox = createMockElement('div');
+        inputBox.querySelector = (sel) => sel === 'span.text-xs' ? suffixSpan : null;
+
+        bySelector['[data-field-index="0"]'] = inputBox;
+        bySelector['#unitCatSel'] = createMockElement('select', { id: 'unitCatSel', value: appState.unit.cat });
+        bySelector['#unitSwapBtn'] = createMockElement('button', { id: 'unitSwapBtn' });
+        bySelector['#unitFromWheel'] = fromWheel;
+        bySelector['#unitToWheel'] = toWheel;
+        bySelector['#unitFromSel'] = createMockElement('select', { id: 'unitFromSel', value: appState.unit.fromIdx });
+        bySelector['#unitToSel'] = createMockElement('select', { id: 'unitToSel', value: appState.unit.targetIdx });
+        bySelector['#unitFromActiveBadge'] = createMockElement('div', { id: 'unitFromActiveBadge' });
+        bySelector['#unitToActiveBadge'] = createMockElement('div', { id: 'unitToActiveBadge' });
+        bySelector['#unitPairSummary'] = createMockElement('span', { id: 'unitPairSummary' });
+        bySelector['#unitSourceSummary'] = createMockElement('div', { id: 'unitSourceSummary' });
+        bySelector['#unitPrimaryResultValue'] = createMockElement('span', { id: 'unitPrimaryResultValue' });
+        bySelector['#unitTargetName'] = createMockElement('span', { id: 'unitTargetName' });
+        bySelector['#unitRateSummary'] = createMockElement('div', { id: 'unitRateSummary' });
+        bySelector['#unitAreaSummary'] = createMockElement('div', { id: 'unitAreaSummary' });
+        bySelector['#unitRelatedList'] = createMockElement('div', { id: 'unitRelatedList' });
+
+        return {
+            innerHTML: '',
+            querySelector(sel) { return bySelector[sel] || null; },
+            querySelectorAll() { return []; },
+            elements: bySelector,
+            fromOpts,
+            toOpts,
+            suffixSpan
+        };
+    }
+
+    const container = createHarnessContainer();
+    ctx.renderUnitConverterTool(container);
+
+    // 3. Theme & design system check: no hardcoded hex/rgb colors or banned classes in generated markup
+    assert.ok(container.innerHTML.includes('unit-converter-tool'));
+    assert.ok(container.innerHTML.includes('id="unitFromWheel"'));
+    assert.ok(container.innerHTML.includes('id="unitToWheel"'));
+    assert.ok(container.innerHTML.includes('id="unitFromSel"'));
+    assert.ok(container.innerHTML.includes('id="unitToSel"'));
+    assert.ok(container.innerHTML.includes('id="numeric-field-0"'));
+    assert.ok(container.innerHTML.includes('3,200'), '2 rai = 3,200 sq.m. rendered initially');
+    assert.ok(!/#[0-9a-fA-F]{3,8}\b/.test(container.innerHTML), 'No hardcoded HEX colors in unit converter markup');
+    assert.ok(!/\b(bg-white|text-gray-|border-gray-|dark:)\b/.test(container.innerHTML), 'No banned Tailwind color classes');
+
+    // 4. Keyboard navigation on source wheel (0: Rai -> 1: Ngan via ArrowDown)
+    container.elements['#unitFromWheel'].dispatch('keydown', { key: 'ArrowDown' });
+    assert.equal(appState.unit.fromIdx, 1, 'ArrowDown moves source unit from Rai (0) to Ngan (1)');
+    assert.equal(container.elements['#unitFromSel'].value, '1', 'Accessible select fallback stays synced');
+    assert.equal(container.elements['#unitPrimaryResultValue'].textContent, '800', '2 Ngan = 800 Sq.m updated immediately');
+    assert.equal(container.suffixSpan.textContent, 'Ngan', 'Keypad field suffix updates to active source unit symbol');
+    assert.equal(renderCalls, 0, 'Wheel selection updates in-place without full re-render');
+
+    // 5. Mouse wheel on target wheel (3: Sq.m -> 2: Sq.Wa)
+    container.elements['#unitToWheel'].dispatch('wheel', { deltaY: -40 });
+    assert.equal(appState.unit.targetIdx, 2, 'Negative wheel delta steps target unit up from Sq.m (3) to Sq.Wa (2)');
+    assert.equal(container.elements['#unitToSel'].value, '2');
+    assert.equal(container.elements['#unitPrimaryResultValue'].textContent, '200', '2 Ngan = 200 Sq.Wa');
+
+    // 6. Native accessible <select> fallback updates wheel and calculation
+    container.elements['#unitFromSel'].value = '0';
+    container.elements['#unitFromSel'].dispatch('change', { target: container.elements['#unitFromSel'] });
+    assert.equal(appState.unit.fromIdx, 0);
+    assert.equal(container.elements['#unitPrimaryResultValue'].textContent, '800', '2 Rai = 800 Sq.Wa');
+
+    // 7. Tap/click on a wheel option item (target -> 3: Sq.m)
+    container.elements['#unitToWheel'].dispatch('click', { target: container.toOpts[3] });
+    assert.equal(appState.unit.targetIdx, 3);
+    assert.equal(container.elements['#unitPrimaryResultValue'].textContent, '3,200', '2 Rai = 3,200 Sq.m');
+
+    // 8. Swap button swaps source and target units in-place
+    container.elements['#unitSwapBtn'].dispatch('click');
+    assert.equal(appState.unit.fromIdx, 3);
+    assert.equal(appState.unit.targetIdx, 0);
+    assert.equal(container.elements['#unitPrimaryResultValue'].textContent, '0.00125', '2 Sq.m = 0.00125 Rai');
+
+    // 9. Related unit row click selects target unit
+    const relatedRow = createMockElement('button', { attributes: { 'data-related-unit-idx': '2' } });
+    container.elements['#unitRelatedList'].dispatch('click', { target: relatedRow });
+    assert.equal(appState.unit.targetIdx, 2);
+    assert.equal(container.elements['#unitPrimaryResultValue'].textContent, '0.5', '2 Sq.m = 0.5 Sq.Wa');
+
+    // 10. Category change resets default units for the selected category (temp: 0 -> 1) and triggers renderActiveTool
+    container.elements['#unitCatSel'].value = 'temp';
+    container.elements['#unitCatSel'].dispatch('change', { target: container.elements['#unitCatSel'] });
+    assert.equal(appState.unit.cat, 'temp');
+    assert.equal(appState.unit.fromIdx, 0);
+    assert.equal(appState.unit.targetIdx, 1);
+    assert.equal(renderCalls, 1);
 });

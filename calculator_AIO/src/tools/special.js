@@ -835,7 +835,8 @@ function evaluateScientificExpression(expression, options = {}) {
     const take = value => tokens[i] === value && (++i, true);
     const check = value => { if (!Number.isFinite(value)) throw new Error('ผลลัพธ์ไม่อยู่ในขอบเขต'); return value; };
     const angle = options.angle === 'rad' ? 1 : Math.PI / 180;
-    const functions = { sin: x => Math.sin(x * angle), cos: x => Math.cos(x * angle), tan: x => {
+    const clean = v => Math.abs(v) < 1e-15 ? 0 : v;
+    const functions = { sin: x => clean(Math.sin(x * angle)), cos: x => clean(Math.cos(x * angle)), tan: x => {
         if (Math.abs(Math.cos(x * angle)) < 1e-12) throw new Error('ค่า tan ไม่กำหนด');
         return Math.tan(x * angle);
     }, asin: x => Math.asin(x) / angle, acos: x => Math.acos(x) / angle, atan: x => Math.atan(x) / angle,
@@ -870,12 +871,18 @@ function evaluateScientificExpression(expression, options = {}) {
         while (i < tokens.length) {
             if (take('*')) value = check(value * unary());
             else if (take('/')) { const divisor = unary(); if (divisor === 0) throw new Error('หารด้วยศูนย์ไม่ได้'); value = check(value / divisor); }
+            else if (/^(?:\d|\.)/.test(tokens[i] || '') && /^(?:\)|pi|e|Ans)$/.test(tokens[i - 1] || '')) value = check(value * unary());
             else if (tokens[i] === '(' || /^(pi|e|Ans|sin|cos|tan|asin|acos|atan|sqrt|cbrt|ln|log|exp)$/.test(tokens[i] || '')) value = check(value * unary());
             else break;
         }
         return value;
     }
-    function sum() { let value = product(); while (i < tokens.length) { if (take('+')) value = check(value + product()); else if (take('-')) value = check(value - product()); else break; } return value; }
+    // "a+b%" / "a-b%" mean b percent of a (like a handheld calculator); elsewhere % just divides by 100
+    function term(base) {
+        const start = i, value = product();
+        return (i - start === 2 && tokens[i - 1] === '%' && /^(?:\d|\.)/.test(tokens[start])) ? check(base * value) : value;
+    }
+    function sum() { let value = product(); while (i < tokens.length) { if (take('+')) value = check(value + term(value)); else if (take('-')) value = check(value - term(value)); else break; } return value; }
     const result = sum(); if (i !== tokens.length) throw new Error('รูปแบบสมการไม่ถูกต้อง'); return check(result);
 }
 
@@ -935,7 +942,7 @@ function renderStandardCalcTool(container) {
         </div>`;
     function evaluate(showError = false) {
         try { const n = evaluateScientificExpression(st.expr, { angle: st.angle, ans: st.ans }); st.result = formatScientificResult(n); st.error = ''; return n; }
-        catch (error) { st.error = showError ? error.message : ''; return null; }
+        catch (error) { st.error = showError ? error.message : ''; if (!showError && st.expr) st.result = '…'; return null; }
     }
     container.querySelectorAll('[data-calc-mode]').forEach(button => button.addEventListener('click', event => { const restore = event.detail === 0 && document.activeElement === button; st.mode = button.dataset.calcMode; renderActiveTool(); if (restore) container.querySelector(`[data-calc-mode="${st.mode}"]`)?.focus(); }));
     container.querySelectorAll('[data-angle]').forEach(button => button.addEventListener('click', event => { const restore = event.detail === 0 && document.activeElement === button; st.angle = button.dataset.angle; if (st.expr) evaluate(); renderActiveTool(); if (restore) container.querySelector(`[data-angle="${st.angle}"]`)?.focus(); }));
@@ -943,13 +950,22 @@ function renderStandardCalcTool(container) {
         const k = button.dataset.std;
         const restore = event.detail === 0 && document.activeElement === button;
         if (k === '2nd') { st.second = !st.second; renderActiveTool(); if (restore) container.querySelector('[data-std="2nd"]')?.focus(); return; }
+        // after "=", operators continue from the result; digits, constants, functions and "(" start a new calculation
+        const continuesResult = /^[+×÷%!E^-]/.test(k) || ['negate', 'reciprocal', 'BS', 'C', '='].includes(k);
+        if (st.fresh && !continuesResult) { st.expr = ''; st.result = '0'; st.error = ''; }
+        st.fresh = false;
         if (k === 'C') { st.expr = ''; st.result = '0'; st.error = ''; }
         else if (k === 'BS') { st.expr = st.expr.slice(0, -1); if (st.expr) evaluate(); else { st.result = '0'; st.error = ''; } }
         else if (k === '()') { const opens = (st.expr.match(/\(/g) || []).length; const closes = (st.expr.match(/\)/g) || []).length; st.expr += opens > closes ? ')' : '('; evaluate(); }
-        else if (k === '=') { const value = evaluate(true); if (st.expr && value !== null) { st.history.unshift({ expr: st.expr, res: st.result }); st.ans = value; st.expr = st.result; } }
+        else if (k === '=') { const value = evaluate(true); if (st.expr && value !== null) { st.history.unshift({ expr: st.expr, res: st.result }); st.ans = value; st.expr = st.result; st.fresh = true; } }
         else if (k === 'negate') { st.expr = toggleCalculatorSign(st.expr); if (st.expr) evaluate(); else { st.result = '0'; st.error = ''; } }
         else if (k === 'reciprocal') { if (st.expr) { st.expr = `1/(${st.expr})`; evaluate(); } }
-        else { st.expr += k; evaluate(); }
+        else {
+            // 10ˣ must not glue onto a number being typed; constants must not glue onto letters (pi+e -> "pie")
+            if (k === '10^(' && /[\d.]$/.test(st.expr)) st.expr += '×';
+            else if (/^(pi|e|Ans)$/.test(k) && /[A-Za-z]$/.test(st.expr)) st.expr += '×';
+            st.expr += k; evaluate();
+        }
         renderActiveTool();
         if (restore) container.querySelectorAll('[data-std]').forEach(item => { if (item.dataset.std === k) item.focus(); });
     }));
@@ -958,6 +974,7 @@ function renderStandardCalcTool(container) {
         const latest = st.history[0];
         if (!latest) return;
         st.expr = latest.expr;
+        st.fresh = false;
         st.result = latest.res;
         st.error = '';
         renderActiveTool();

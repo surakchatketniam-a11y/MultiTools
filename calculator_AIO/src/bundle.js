@@ -7521,121 +7521,688 @@ function renderTipTool(container) {
 }
 
 /* -----------------------------------------------------------
+ * REUSABLE WHEEL PICKER & UNIT CONVERTER HELPERS
+ * ----------------------------------------------------------- */
+const WHEEL_ITEM_HEIGHT = 44;
+
+function splitUnitLabel(unitOrName) {
+    const raw = typeof unitOrName === 'string'
+        ? unitOrName
+        : String(unitOrName?.name || unitOrName?.label || '');
+    const match = raw.match(/^(.+?)\s*\((.+)\)$/);
+    if (match) {
+        return {
+            full: raw,
+            title: match[1].trim(),
+            symbol: match[2].trim()
+        };
+    }
+    return {
+        full: raw,
+        title: raw.trim(),
+        symbol: typeof unitOrName === 'object' && unitOrName ? String(unitOrName.symbol || unitOrName.code || '') : ''
+    };
+}
+
+function convertUnitValue(catKey, value, sourceUnitOrIdx, targetUnitOrIdx, categories = UNIT_CATEGORIES) {
+    const catObj = categories?.[catKey] || categories?.area;
+    if (!catObj || !Array.isArray(catObj.units) || !catObj.units.length) return NaN;
+    const source = typeof sourceUnitOrIdx === 'number'
+        ? (catObj.units[sourceUnitOrIdx] || catObj.units[0])
+        : (sourceUnitOrIdx || catObj.units[0]);
+    const target = typeof targetUnitOrIdx === 'number'
+        ? (catObj.units[targetUnitOrIdx] || catObj.units[0])
+        : (targetUnitOrIdx || catObj.units[0]);
+    const num = typeof value === 'number' ? value : numberOrDefault(value, 0);
+    if (!Number.isFinite(num)) return NaN;
+
+    if (catKey === 'temp' || source.code || target.code) {
+        let celsius = num;
+        if (source.code === 'F') celsius = (num - 32) * 5 / 9;
+        else if (source.code === 'K') celsius = num - 273.15;
+        if (target.code === 'C') return celsius;
+        if (target.code === 'F') return (celsius * 9 / 5) + 32;
+        if (target.code === 'K') return celsius + 273.15;
+        return celsius;
+    }
+    return (num * source.factor) / target.factor;
+}
+
+function calculateThaiAreaBreakdown(value, sourceUnit) {
+    const num = typeof value === 'number' ? value : numberOrDefault(value, 0);
+    const factor = Number(sourceUnit?.factor) || 1;
+    const totalSqm = num * factor;
+    if (!Number.isFinite(totalSqm) || totalSqm <= 0) {
+        return { totalSqm: 0, rai: 0, ngan: 0, sqWa: 0 };
+    }
+    const rai = Math.floor(totalSqm / 1600);
+    const remAfterRai = totalSqm % 1600;
+    const ngan = Math.floor(remAfterRai / 400);
+    const sqWa = (remAfterRai % 400) / 4;
+    return { totalSqm, rai, ngan, sqWa };
+}
+
+function createWheelColumnHTML(colConfig = {}) {
+    const {
+        wheelId = 'unitWheelCol',
+        selectId = '',
+        badgeId = '',
+        side = 'single',
+        label = 'เลือกหน่วย',
+        selectAriaLabel = '',
+        items = [],
+        selectedIndex = 0
+    } = colConfig;
+    const safeIdx = items.length ? Math.max(0, Math.min(items.length - 1, Number(selectedIndex) || 0)) : 0;
+    const selectedSplit = splitUnitLabel(items[safeIdx] || '');
+    const labelId = `${wheelId}Label`;
+
+    const optionsHTML = items.map((item, idx) => {
+        const split = splitUnitLabel(item);
+        const dist = Math.abs(idx - safeIdx);
+        const stateClass = idx === safeIdx ? 'is-selected' : (dist === 1 ? 'is-near' : 'is-far');
+        return `
+            <button type="button"
+                id="${wheelId}-item-${idx}"
+                role="option"
+                tabindex="-1"
+                aria-selected="${idx === safeIdx}"
+                data-wheel-side="${escapeHTML(side)}"
+                data-unit-index="${idx}"
+                class="unit-wheel-item ${stateClass}">
+                <span class="unit-wheel-item-name">${escapeHTML(split.title)}</span>
+                ${split.symbol ? `<span class="unit-wheel-item-symbol">${escapeHTML(split.symbol)}</span>` : ''}
+            </button>
+        `;
+    }).join('');
+
+    const selectHTML = selectId ? `
+        <select id="${selectId}" class="airbnb-input unit-native-select" aria-label="${escapeHTML(selectAriaLabel || label)}">
+            ${items.map((item, idx) => {
+                const split = splitUnitLabel(item);
+                return `<option value="${idx}" ${idx === safeIdx ? 'selected' : ''}>${escapeHTML(split.full)}</option>`;
+            }).join('')}
+        </select>
+    ` : '';
+
+    return `
+        <div class="unit-wheel-col" data-wheel-col="${escapeHTML(side)}">
+            <div class="unit-col-meta">
+                <label ${selectId ? `for="${selectId}"` : ''} id="${labelId}" class="unit-col-label">${escapeHTML(label)}</label>
+                <div ${badgeId ? `id="${badgeId}"` : ''} class="unit-active-pill" aria-live="polite">
+                    <span class="unit-active-pill-name">${escapeHTML(selectedSplit.title)}</span>
+                    <span class="unit-active-pill-sym">${escapeHTML(selectedSplit.symbol ? `(${selectedSplit.symbol})` : '')}</span>
+                </div>
+            </div>
+            <div class="unit-wheel-viewport">
+                <div class="unit-wheel-highlight" aria-hidden="true"></div>
+                <div id="${wheelId}"
+                    class="unit-wheel-scroller"
+                    role="listbox"
+                    tabindex="0"
+                    aria-labelledby="${labelId}"
+                    aria-activedescendant="${wheelId}-item-${safeIdx}"
+                    data-wheel-side="${escapeHTML(side)}">
+                    <div class="unit-wheel-spacer" aria-hidden="true"></div>
+                    ${optionsHTML}
+                    <div class="unit-wheel-spacer" aria-hidden="true"></div>
+                </div>
+            </div>
+            ${selectHTML}
+        </div>
+    `;
+}
+
+function createWheelPickerHTML(config = {}) {
+    const columns = Array.isArray(config.columns) ? config.columns : [];
+    const singleClass = columns.length === 1 ? 'is-single-col' : '';
+    return `
+        <div class="unit-wheel-columns ${singleClass}">
+            ${columns.map(col => createWheelColumnHTML(col)).join('')}
+        </div>
+    `;
+}
+
+function bindWheelColumn(wheelEl, options = {}) {
+    if (!wheelEl) return null;
+    const itemHeight = Number(options.itemHeight) || WHEEL_ITEM_HEIGHT;
+    const itemCount = Math.max(1, Number(options.itemCount) || 1);
+    const onSelect = typeof options.onSelect === 'function' ? options.onSelect : () => {};
+    const clampIdx = (idx) => Math.max(0, Math.min(itemCount - 1, Math.round(Number(idx) || 0)));
+
+    let currentIndex = clampIdx(options.initialIndex);
+    let isProgrammatic = false;
+    let isMounting = false;
+    let lastProgrammaticTop = 0;
+    let programmaticTimer = null;
+    let mountTimer = null;
+    let settleTimer = null;
+    let wheelDeltaAccum = 0;
+    let lastWheelStepTime = 0;
+    let dragState = null;
+    let suppressNextClick = false;
+
+    function syncVisualClasses(idx) {
+        const buttons = wheelEl.querySelectorAll ? wheelEl.querySelectorAll('[data-unit-index]') : [];
+        buttons.forEach(btn => {
+            const itemIdx = Number(btn.getAttribute('data-unit-index'));
+            const dist = Math.abs(itemIdx - idx);
+            btn.classList.toggle('is-selected', itemIdx === idx);
+            btn.classList.toggle('is-near', dist === 1);
+            btn.classList.toggle('is-far', dist > 1);
+            btn.setAttribute('aria-selected', String(itemIdx === idx));
+        });
+        if (wheelEl.id && typeof wheelEl.setAttribute === 'function') {
+            wheelEl.setAttribute('aria-activedescendant', `${wheelEl.id}-item-${idx}`);
+        }
+    }
+
+    function applyScrollPosition(idx) {
+        const targetTop = clampIdx(idx) * itemHeight;
+        isProgrammatic = true;
+        lastProgrammaticTop = targetTop;
+        wheelEl.scrollTop = targetTop;
+        if (programmaticTimer && typeof clearTimeout === 'function') clearTimeout(programmaticTimer);
+        if (typeof setTimeout === 'function') {
+            programmaticTimer = setTimeout(() => {
+                isProgrammatic = false;
+            }, 90);
+        } else {
+            isProgrammatic = false;
+        }
+    }
+
+    function syncScrollPosition() {
+        isMounting = true;
+        applyScrollPosition(currentIndex);
+        if (typeof queueMicrotask === 'function') {
+            queueMicrotask(() => applyScrollPosition(currentIndex));
+        }
+        if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(() => {
+                applyScrollPosition(currentIndex);
+            });
+        }
+        if (mountTimer && typeof clearTimeout === 'function') clearTimeout(mountTimer);
+        if (typeof setTimeout === 'function') {
+            mountTimer = setTimeout(() => {
+                isMounting = false;
+            }, 35);
+        } else {
+            isMounting = false;
+        }
+    }
+
+    function setIndex(nextIdx, shouldScroll = true, notify = false, source = 'api') {
+        const clamped = clampIdx(nextIdx);
+        const changed = clamped !== currentIndex;
+        currentIndex = clamped;
+        syncVisualClasses(currentIndex);
+        if (shouldScroll) {
+            applyScrollPosition(currentIndex);
+        }
+        if (notify && changed) {
+            onSelect(currentIndex, source);
+        }
+        return currentIndex;
+    }
+
+    syncVisualClasses(currentIndex);
+    syncScrollPosition();
+
+    if (typeof wheelEl.addEventListener === 'function') {
+        wheelEl.addEventListener('scroll', () => {
+            if (isMounting && wheelEl.scrollTop === 0 && currentIndex !== 0) {
+                applyScrollPosition(currentIndex);
+                return;
+            }
+            if (isProgrammatic && !dragState && Math.abs(wheelEl.scrollTop - lastProgrammaticTop) < 2) return;
+            isProgrammatic = false;
+            isMounting = false;
+            const rawIdx = clampIdx(wheelEl.scrollTop / itemHeight);
+            if (rawIdx !== currentIndex) {
+                currentIndex = rawIdx;
+                syncVisualClasses(currentIndex);
+                onSelect(currentIndex, 'scroll');
+            }
+            if (settleTimer && typeof clearTimeout === 'function') clearTimeout(settleTimer);
+            if (!dragState && typeof setTimeout === 'function') {
+                settleTimer = setTimeout(() => {
+                    applyScrollPosition(currentIndex);
+                }, 110);
+            }
+        }, { passive: true });
+
+        wheelEl.addEventListener('click', (e) => {
+            if (suppressNextClick) {
+                suppressNextClick = false;
+                return;
+            }
+            const btn = e.target?.closest ? e.target.closest('[data-unit-index]') : null;
+            if (!btn) return;
+            const idx = clampIdx(btn.getAttribute('data-unit-index'));
+            const changed = idx !== currentIndex;
+            currentIndex = idx;
+            syncVisualClasses(currentIndex);
+            applyScrollPosition(currentIndex);
+            if (changed) {
+                onSelect(currentIndex, 'tap');
+            }
+        });
+
+        wheelEl.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const now = Date.now();
+            if (now - lastWheelStepTime > 220) {
+                wheelDeltaAccum = 0;
+            }
+            wheelDeltaAccum += Number(e.deltaY) || 0;
+            if (Math.abs(wheelDeltaAccum) < 16) return;
+            if (now - lastWheelStepTime < 45) return;
+            const step = wheelDeltaAccum > 0 ? 1 : -1;
+            wheelDeltaAccum = 0;
+            lastWheelStepTime = now;
+            setIndex(currentIndex + step, true, true, 'wheel');
+        }, { passive: false });
+
+        wheelEl.addEventListener('keydown', (e) => {
+            let next = currentIndex;
+            if (e.key === 'ArrowDown') next = currentIndex + 1;
+            else if (e.key === 'ArrowUp') next = currentIndex - 1;
+            else if (e.key === 'PageDown') next = currentIndex + 3;
+            else if (e.key === 'PageUp') next = currentIndex - 3;
+            else if (e.key === 'Home') next = 0;
+            else if (e.key === 'End') next = itemCount - 1;
+            else return;
+            e.preventDefault();
+            setIndex(next, true, true, 'keyboard');
+        });
+
+        wheelEl.addEventListener('pointerdown', (e) => {
+            if (e.pointerType !== 'mouse' || e.button !== 0) return;
+            dragState = {
+                pointerId: e.pointerId,
+                startY: e.clientY,
+                startScrollTop: wheelEl.scrollTop,
+                moved: false
+            };
+        });
+
+        wheelEl.addEventListener('pointermove', (e) => {
+            if (!dragState || e.pointerId !== dragState.pointerId) return;
+            const dy = e.clientY - dragState.startY;
+            if (!dragState.moved && Math.abs(dy) > 5) {
+                dragState.moved = true;
+                if (typeof wheelEl.setPointerCapture === 'function') {
+                    try { wheelEl.setPointerCapture(e.pointerId); } catch (_) {}
+                }
+            }
+            if (dragState.moved) {
+                e.preventDefault();
+                isProgrammatic = false;
+                const maxScroll = Math.max(0, (itemCount - 1) * itemHeight);
+                wheelEl.scrollTop = Math.max(0, Math.min(maxScroll, dragState.startScrollTop - dy));
+                const nextIdx = clampIdx(wheelEl.scrollTop / itemHeight);
+                if (nextIdx !== currentIndex) {
+                    currentIndex = nextIdx;
+                    syncVisualClasses(currentIndex);
+                    onSelect(currentIndex, 'drag');
+                }
+            }
+        });
+
+        const finishPointerDrag = (e) => {
+            if (!dragState || (e && e.pointerId !== undefined && e.pointerId !== dragState.pointerId)) return;
+            const wasMoved = dragState.moved;
+            dragState = null;
+            if (wasMoved) {
+                suppressNextClick = true;
+                if (typeof setTimeout === 'function') {
+                    setTimeout(() => { suppressNextClick = false; }, 80);
+                } else {
+                    suppressNextClick = false;
+                }
+                applyScrollPosition(currentIndex);
+            }
+        };
+        wheelEl.addEventListener('pointerup', finishPointerDrag);
+        wheelEl.addEventListener('pointercancel', finishPointerDrag);
+    }
+
+    return {
+        getIndex: () => currentIndex,
+        setIndex: (idx, shouldScroll = true) => setIndex(idx, shouldScroll, false, 'api'),
+        syncScrollPosition
+    };
+}
+
+/* -----------------------------------------------------------
  * TOOL 3: หน่วย (Unit Converter including Rai-Ngan-Sq.Wa)
  * ----------------------------------------------------------- */
 function renderUnitConverterTool(container) {
     const st = appState.unit;
+    if (!UNIT_CATEGORIES[st.cat]) st.cat = 'area';
     const catObj = UNIT_CATEGORIES[st.cat];
-    if (st.fromIdx >= catObj.units.length) st.fromIdx = 0;
-    if (st.targetIdx >= catObj.units.length || st.targetIdx === st.fromIdx || st.targetIdx === undefined) st.targetIdx = catObj.units.length > 1 ? (st.fromIdx === 0 ? 1 : 0) : 0;
-
-    const inputVal = numberOrDefault(st.val, 0);
-    const fromUnit = catObj.units[st.fromIdx];
-    const targetUnit = catObj.units[st.targetIdx];
-
-    function convertValue(value, source, target) {
-        if (st.cat === 'temp') {
-            let celsius = value;
-            if (source.code === 'F') celsius = (value - 32) * 5 / 9;
-            if (source.code === 'K') celsius = value - 273.15;
-            if (target.code === 'C') return celsius;
-            if (target.code === 'F') return (celsius * 9 / 5) + 32;
-            return celsius + 273.15;
-        }
-        return (value * source.factor) / target.factor;
+    if (!Number.isInteger(st.fromIdx) || st.fromIdx < 0 || st.fromIdx >= catObj.units.length) {
+        st.fromIdx = 0;
+    }
+    if (!Number.isInteger(st.targetIdx) || st.targetIdx < 0 || st.targetIdx >= catObj.units.length) {
+        st.targetIdx = catObj.units.length > 1 ? (st.fromIdx === 0 ? 1 : 0) : 0;
     }
 
-    // Show only units that are useful for the current conversion.
-    // The list is selected from the current value and both selected units,
-    // so it does not fall back to a fixed km/m/cm set.
-    const relatedIndices = new Set([st.fromIdx, st.targetIdx]);
-    const rankedUnits = catObj.units
-        .map((unit, index) => {
-            const converted = Math.abs(convertValue(inputVal, fromUnit, unit));
-            const scale = converted > 0 ? Math.abs(Math.log10(converted) - 1) : Math.abs(Math.log10(Math.max(unit.factor || 1, 1e-12) / Math.max(fromUnit.factor || 1, 1e-12)));
-            return { index, scale };
-        })
-        .sort((a, b) => a.scale - b.scale);
-    rankedUnits.slice(0, Math.min(6, rankedUnits.length)).forEach(item => relatedIndices.add(item.index));
+    const inputVal = numberOrDefault(st.val, 0);
+    let fromUnit = catObj.units[st.fromIdx];
+    let targetUnit = catObj.units[st.targetIdx];
 
-    const resultsHTML = [...relatedIndices].sort((a, b) => a - b).map(idx => {
-        const u = catObj.units[idx];
-        let res = 0;
-        res = convertValue(inputVal, fromUnit, u);
-        const isSelected = idx === st.fromIdx;
-        const isTarget = idx === st.targetIdx;
-        return `
-            <div class="flex justify-between items-center py-1.5 px-3 border-b border-[var(--app-hairline)] last:border-none ${isSelected ? 'bg-[var(--app-accent-soft)] font-bold text-[var(--app-accent)]' : ''} ${isTarget ? 'ring-1 ring-inset ring-[var(--app-accent)]' : ''}">
-                <span class="text-xs text-[var(--app-ink)]">${u.name}</span>
-                <span class="text-sm font-mono">${formatNum(res, 4)}</span>
-            </div>
-        `;
-    }).join('');
+    function convertValue(value, source, target) {
+        return convertUnitValue(st.cat, value, source, target);
+    }
+
+    let convertedVal = convertValue(inputVal, fromUnit, targetUnit);
+
+    function computeRelatedIndices(curFromIdx, curTargetIdx, curFromUnit) {
+        const relatedIndices = new Set([curFromIdx, curTargetIdx]);
+        const rankedUnits = catObj.units
+            .map((unit, index) => {
+                const converted = Math.abs(convertValue(inputVal, curFromUnit, unit));
+                const scale = converted > 0
+                    ? Math.abs(Math.log10(converted) - 1)
+                    : Math.abs(Math.log10(Math.max(unit.factor || 1, 1e-12) / Math.max(curFromUnit.factor || 1, 1e-12)));
+                return { index, scale };
+            })
+            .sort((a, b) => a.scale - b.scale);
+        rankedUnits.slice(0, Math.min(6, rankedUnits.length)).forEach(item => relatedIndices.add(item.index));
+        return [...relatedIndices].sort((a, b) => a - b);
+    }
+
+    function buildRelatedListHTML(curFromIdx, curTargetIdx) {
+        const curFromUnit = catObj.units[curFromIdx];
+        const indices = computeRelatedIndices(curFromIdx, curTargetIdx, curFromUnit);
+        return indices.map(idx => {
+            const u = catObj.units[idx];
+            const res = convertValue(inputVal, curFromUnit, u);
+            const isSource = idx === curFromIdx;
+            const isTarget = idx === curTargetIdx;
+            const roleBadges = [
+                isSource ? `<span class="unit-role-tag">ต้นทาง</span>` : '',
+                isTarget ? `<span class="unit-role-tag is-target-tag">ปลายทาง</span>` : ''
+            ].filter(Boolean).join(' ');
+            return `
+                <button type="button"
+                    data-related-unit-idx="${idx}"
+                    aria-pressed="${isTarget}"
+                    class="unit-related-row ${isSource ? 'is-source' : ''} ${isTarget ? 'is-target' : ''}">
+                    <span class="flex items-center gap-1.5 flex-wrap min-w-0">
+                        <span class="text-xs text-[var(--app-ink)]">${escapeHTML(u.name)}</span>
+                        ${roleBadges}
+                    </span>
+                    <span class="text-sm font-mono text-[var(--app-ink)] shrink-0">${formatNum(res, 4)}</span>
+                </button>
+            `;
+        }).join('');
+    }
+
+    function buildRateText(curFromUnit, curTargetUnit) {
+        if (st.cat === 'temp') {
+            if (curFromUnit.code === curTargetUnit.code) {
+                return `หน่วยอุณหภูมิเดียวกัน (${curFromUnit.name})`;
+            }
+            const zeroConv = formatNum(convertValue(0, curFromUnit, curTargetUnit), 2);
+            return `อ้างอิง: 0 ${curFromUnit.name.split(' ')[0]} = ${zeroConv} ${curTargetUnit.name.split(' ')[0]}`;
+        }
+        const oneRate = convertValue(1, curFromUnit, curTargetUnit);
+        return `อัตราส่วน: 1 ${curFromUnit.name.split(' ')[0]} = ${formatNum(oneRate, 6)} ${curTargetUnit.name.split(' ')[0]}`;
+    }
+
+    function buildAreaNoteText(curFromUnit) {
+        if (st.cat !== 'area' || !(inputVal > 0)) return '';
+        const area = calculateThaiAreaBreakdown(inputVal, curFromUnit);
+        return `ที่ดินไทย: ${area.rai} ไร่ ${area.ngan} งาน ${formatNum(area.sqWa, 2)} ตารางวา (${formatNum(area.totalSqm, 2)} ตร.ม.)`;
+    }
+
+    function updateUnitStatusBanner(curFromUnit, curTargetUnit, curConverted) {
+        if (st.cat === 'area' && inputVal > 0) {
+            const area = calculateThaiAreaBreakdown(inputVal, curFromUnit);
+            setStatusBanner(
+                'success',
+                `เท่ากับ <b>${area.rai} ไร่ ${area.ngan} งาน ${formatNum(area.sqWa, 2)} ตารางวา</b> (${formatNum(area.totalSqm, 2)} ตร.ม.)<span class="text-xs font-medium block text-[var(--app-body)]">${formatNum(inputVal, 4)} ${escapeHTML(curFromUnit.name)} = ${formatNum(curConverted, 6)} ${escapeHTML(curTargetUnit.name)}</span>`
+            );
+        } else {
+            setStatusBanner(
+                'info',
+                `แปลงค่าจาก <b>${formatNum(inputVal, 4)} ${escapeHTML(curFromUnit.name)}</b> = <b>${formatNum(curConverted, 6)} ${escapeHTML(curTargetUnit.name)}</b>`
+            );
+        }
+    }
+
+    const fromSplit = splitUnitLabel(fromUnit);
+    const targetSplit = splitUnitLabel(targetUnit);
+    const resultsHTML = buildRelatedListHTML(st.fromIdx, st.targetIdx);
+    const rateText = buildRateText(fromUnit, targetUnit);
+    const areaNoteText = buildAreaNoteText(fromUnit);
+
+    const wheelPickerHTML = createWheelPickerHTML({
+        columns: [
+            {
+                wheelId: 'unitFromWheel',
+                selectId: 'unitFromSel',
+                badgeId: 'unitFromActiveBadge',
+                side: 'from',
+                label: 'หน่วยต้นทาง',
+                selectAriaLabel: 'เลือกหน่วยต้นทาง',
+                items: catObj.units,
+                selectedIndex: st.fromIdx
+            },
+            {
+                wheelId: 'unitToWheel',
+                selectId: 'unitToSel',
+                badgeId: 'unitToActiveBadge',
+                side: 'to',
+                label: 'หน่วยปลายทาง',
+                selectAriaLabel: 'เลือกหน่วยปลายทาง',
+                items: catObj.units,
+                selectedIndex: st.targetIdx
+            }
+        ]
+    });
 
     container.innerHTML = `
-        <div class="flex flex-col gap-1.5">
-            <div class="grid grid-cols-3 gap-1.5">
-                <div class="themed-subcard p-1.5">
-                    <label class="text-[10px] text-[var(--app-muted)] block">หมวดหมู่หน่วย</label>
-                    <select id="unitCatSel" class="w-full font-semibold text-xs bg-transparent outline-none text-[var(--app-ink)]">
-                        ${Object.entries(UNIT_CATEGORIES).map(([k, v]) => `<option value="${k}" ${st.cat === k ? 'selected' : ''}>${v.label}</option>`).join('')}
-                    </select>
+        <div class="unit-converter-tool flex flex-col gap-2">
+            <div class="themed-tool-card p-3 space-y-2.5">
+                <div class="unit-top-controls">
+                    <div>
+                        <label for="unitCatSel" class="text-xs font-semibold text-[var(--app-body)] block mb-1">หมวดหมู่หน่วย</label>
+                        <select id="unitCatSel" class="airbnb-input w-full text-xs font-semibold">
+                            ${Object.entries(UNIT_CATEGORIES).map(([k, v]) => `<option value="${k}" ${st.cat === k ? 'selected' : ''}>${v.label}</option>`).join('')}
+                        </select>
+                    </div>
+                    <button type="button" id="unitSwapBtn" class="tool-action-btn unit-swap-btn text-xs" aria-label="สลับหน่วยต้นทางและหน่วยปลายทาง">
+                        สลับหน่วย
+                    </button>
                 </div>
-                <div class="themed-subcard p-1.5">
-                    <label class="text-[10px] text-[var(--app-muted)] block">หน่วยตั้งต้น</label>
-                    <select id="unitFromSel" class="w-full font-semibold text-xs bg-transparent outline-none text-[var(--app-ink)]">
-                        ${catObj.units.map((u, i) => `<option value="${i}" ${st.fromIdx === i ? 'selected' : ''}>${u.name}</option>`).join('')}
-                    </select>
+
+                ${createKeypadFieldHTML(0, 'ค่าที่ต้องการแปลง', st.val, fromSplit.symbol || fromSplit.title, 'ป้อนตัวเลข')}
+            </div>
+
+            <div class="themed-tool-card p-3 space-y-2">
+                <div class="unit-wheel-header">
+                    <span class="text-xs font-semibold text-[var(--app-ink)]">วงล้อเลือกหน่วย (ต้นทาง - ปลายทาง)</span>
+                    <span class="text-[11px] text-[var(--app-muted)]">เลื่อนวงล้อ แตะรายการ หรือใช้ปุ่มลูกศร</span>
                 </div>
-                <div class="themed-subcard p-1.5">
-                    <label class="text-[10px] text-[var(--app-muted)] block">หน่วยปลายทาง</label>
-                    <select id="unitToSel" class="w-full font-semibold text-xs bg-transparent outline-none text-[var(--app-ink)]">
-                        ${catObj.units.map((u, i) => `<option value="${i}" ${st.targetIdx === i ? 'selected' : ''}>${u.name}</option>`).join('')}
-                    </select>
+                ${wheelPickerHTML}
+            </div>
+
+            <div class="themed-result-card unit-result-primary p-3 space-y-1.5" aria-live="polite">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                    <span class="text-xs font-semibold text-[var(--app-body)]">ผลลัพธ์ปลายทาง</span>
+                    <span id="unitPairSummary" class="text-xs font-semibold text-[var(--app-ink)]">${escapeHTML(fromSplit.title)} → ${escapeHTML(targetSplit.title)}</span>
+                </div>
+                <div id="unitSourceSummary" class="text-xs text-[var(--app-body)]">
+                    ${formatNum(inputVal, 4)} ${escapeHTML(fromUnit.name)} เท่ากับ
+                </div>
+                <div class="flex flex-wrap items-baseline justify-between gap-2">
+                    <span id="unitPrimaryResultValue" class="themed-result-value text-2xl font-bold">${formatNum(convertedVal, 6)}</span>
+                    <span id="unitTargetName" class="text-xs font-semibold text-[var(--app-ink)]">${escapeHTML(targetUnit.name)}</span>
+                </div>
+                <div id="unitRateSummary" class="text-[11px] text-[var(--app-body)] pt-1 border-t border-[var(--app-hairline)]">
+                    ${escapeHTML(rateText)}
+                </div>
+                <div id="unitAreaSummary" class="text-[11px] font-semibold text-[var(--app-ink)] ${areaNoteText ? '' : 'hidden'}">
+                    ${escapeHTML(areaNoteText)}
                 </div>
             </div>
 
-            ${createKeypadFieldHTML(0, `ค่าที่ต้องการแปลง`, st.val, fromUnit.name.split(' ')[0], 'ป้อนตัวเลข')}
-
-            <div class="bg-[var(--color-canvas)] border-2 border-[var(--app-accent)] rounded-[var(--app-btn-radius)] p-3 flex justify-between items-center">
-                <span class="text-xs font-semibold">ผลลัพธ์ปลายทาง<br><span class="font-normal text-[var(--app-muted)]">${targetUnit.name}</span></span>
-                <span class="text-xl font-bold text-[var(--app-accent)]">${formatNum(convertValue(inputVal, fromUnit, targetUnit), 6)}</span>
-            </div>
-
-            <div class="themed-subcard overflow-y-auto max-h-[180px] thin-scroll">
-                ${resultsHTML}
+            <div class="themed-result-card p-3 space-y-1.5">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                    <span class="text-xs font-semibold text-[var(--app-ink)]">ตารางเทียบหน่วยในหมวดนี้</span>
+                    <span class="text-[11px] text-[var(--app-muted)]">แตะแถวเพื่อเลือกเป็นหน่วยปลายทาง</span>
+                </div>
+                <div id="unitRelatedList" class="themed-subcard overflow-y-auto max-h-[180px] thin-scroll">
+                    ${resultsHTML}
+                </div>
             </div>
         </div>
     `;
 
     attachFieldClickListeners(container);
 
-    document.getElementById('unitCatSel').addEventListener('change', (e) => {
+    const q = (sel) => (container && typeof container.querySelector === 'function' ? container.querySelector(sel) : null)
+        || (typeof document !== 'undefined' && typeof document.querySelector === 'function' ? document.querySelector(sel) : null);
+
+    const catSelEl = q('#unitCatSel');
+    const fromSelEl = q('#unitFromSel');
+    const toSelEl = q('#unitToSel');
+    const swapBtnEl = q('#unitSwapBtn');
+    const fromWheelEl = q('#unitFromWheel');
+    const toWheelEl = q('#unitToWheel');
+    const relatedListEl = q('#unitRelatedList');
+
+    let fromWheelCtrl = null;
+    let toWheelCtrl = null;
+
+    function refreshUnitSelectionUI(options = {}) {
+        fromUnit = catObj.units[st.fromIdx];
+        targetUnit = catObj.units[st.targetIdx];
+        convertedVal = convertValue(inputVal, fromUnit, targetUnit);
+        const curFromSplit = splitUnitLabel(fromUnit);
+        const curTargetSplit = splitUnitLabel(targetUnit);
+
+        if (typeof persistAppState === 'function') persistAppState();
+
+        if (fromSelEl) fromSelEl.value = String(st.fromIdx);
+        if (toSelEl) toSelEl.value = String(st.targetIdx);
+
+        if (fromWheelCtrl) fromWheelCtrl.setIndex(st.fromIdx, options.scrollFrom !== false);
+        if (toWheelCtrl) toWheelCtrl.setIndex(st.targetIdx, options.scrollTo !== false);
+
+        const fromBadge = q('#unitFromActiveBadge');
+        if (fromBadge) {
+            fromBadge.innerHTML = `<span class="unit-active-pill-name">${escapeHTML(curFromSplit.title)}</span><span class="unit-active-pill-sym">${escapeHTML(curFromSplit.symbol ? `(${curFromSplit.symbol})` : '')}</span>`;
+        }
+        const toBadge = q('#unitToActiveBadge');
+        if (toBadge) {
+            toBadge.innerHTML = `<span class="unit-active-pill-name">${escapeHTML(curTargetSplit.title)}</span><span class="unit-active-pill-sym">${escapeHTML(curTargetSplit.symbol ? `(${curTargetSplit.symbol})` : '')}</span>`;
+        }
+
+        const inputBox = q('[data-field-index="0"]');
+        const suffixSpan = inputBox && typeof inputBox.querySelector === 'function'
+            ? inputBox.querySelector('span.text-xs')
+            : null;
+        if (suffixSpan) {
+            suffixSpan.textContent = curFromSplit.symbol || curFromSplit.title;
+        }
+
+        const pairEl = q('#unitPairSummary');
+        if (pairEl) pairEl.textContent = `${curFromSplit.title} → ${curTargetSplit.title}`;
+
+        const srcSumEl = q('#unitSourceSummary');
+        if (srcSumEl) srcSumEl.textContent = `${formatNum(inputVal, 4)} ${fromUnit.name} เท่ากับ`;
+
+        const resValEl = q('#unitPrimaryResultValue');
+        if (resValEl) resValEl.textContent = formatNum(convertedVal, 6);
+
+        const targetNameEl = q('#unitTargetName');
+        if (targetNameEl) targetNameEl.textContent = targetUnit.name;
+
+        const rateEl = q('#unitRateSummary');
+        if (rateEl) rateEl.textContent = buildRateText(fromUnit, targetUnit);
+
+        const areaEl = q('#unitAreaSummary');
+        if (areaEl) {
+            const note = buildAreaNoteText(fromUnit);
+            areaEl.textContent = note;
+            areaEl.classList.toggle('hidden', !note);
+        }
+
+        if (relatedListEl) {
+            relatedListEl.innerHTML = buildRelatedListHTML(st.fromIdx, st.targetIdx);
+        }
+
+        updateUnitStatusBanner(fromUnit, targetUnit, convertedVal);
+    }
+
+    fromWheelCtrl = bindWheelColumn(fromWheelEl, {
+        itemCount: catObj.units.length,
+        initialIndex: st.fromIdx,
+        itemHeight: WHEEL_ITEM_HEIGHT,
+        onSelect: (newIdx, source) => {
+            st.fromIdx = newIdx;
+            refreshUnitSelectionUI({ scrollFrom: source !== 'scroll' && source !== 'drag', scrollTo: false });
+        }
+    });
+
+    toWheelCtrl = bindWheelColumn(toWheelEl, {
+        itemCount: catObj.units.length,
+        initialIndex: st.targetIdx,
+        itemHeight: WHEEL_ITEM_HEIGHT,
+        onSelect: (newIdx, source) => {
+            st.targetIdx = newIdx;
+            refreshUnitSelectionUI({ scrollFrom: false, scrollTo: source !== 'scroll' && source !== 'drag' });
+        }
+    });
+
+    catSelEl?.addEventListener('change', (e) => {
         st.cat = e.target.value;
+        const nextCat = UNIT_CATEGORIES[st.cat] || UNIT_CATEGORIES.area;
         st.fromIdx = 0;
-        st.targetIdx = 1;
-        renderActiveTool();
-    });
-    document.getElementById('unitFromSel').addEventListener('change', (e) => {
-        st.fromIdx = parseInt(e.target.value, 10);
-        if (st.targetIdx === st.fromIdx) st.targetIdx = st.fromIdx === 0 ? 1 : 0;
-        renderActiveTool();
-    });
-    document.getElementById('unitToSel').addEventListener('change', (e) => {
-        st.targetIdx = parseInt(e.target.value, 10);
+        st.targetIdx = nextCat.units.length > 1 ? 1 : 0;
         renderActiveTool();
     });
 
-    if (st.cat === 'area' && inputVal > 0) {
-        const totalSqm = inputVal * fromUnit.factor;
-        const rai = Math.floor(totalSqm / 1600);
-        const remAfterRai = totalSqm % 1600;
-        const ngan = Math.floor(remAfterRai / 400);
-        const sqWa = (remAfterRai % 400) / 4;
-        setStatusBanner('success', `เท่ากับ <b>${rai} ไร่ ${ngan} งาน ${formatNum(sqWa, 2)} ตารางวา</b> (${formatNum(totalSqm, 2)} ตร.ม.)`);
-    } else {
-        setStatusBanner('info', `แปลงค่าจาก <b>${formatNum(inputVal, 4)} ${fromUnit.name}</b>`);
-    }
+    fromSelEl?.addEventListener('change', (e) => {
+        const parsed = parseInt(e.target.value, 10);
+        if (Number.isInteger(parsed) && parsed >= 0 && parsed < catObj.units.length) {
+            st.fromIdx = parsed;
+            refreshUnitSelectionUI({ scrollFrom: true, scrollTo: false });
+        }
+    });
+
+    toSelEl?.addEventListener('change', (e) => {
+        const parsed = parseInt(e.target.value, 10);
+        if (Number.isInteger(parsed) && parsed >= 0 && parsed < catObj.units.length) {
+            st.targetIdx = parsed;
+            refreshUnitSelectionUI({ scrollFrom: false, scrollTo: true });
+        }
+    });
+
+    swapBtnEl?.addEventListener('click', () => {
+        const prevFrom = st.fromIdx;
+        st.fromIdx = st.targetIdx;
+        st.targetIdx = prevFrom;
+        refreshUnitSelectionUI({ scrollFrom: true, scrollTo: true });
+    });
+
+    relatedListEl?.addEventListener('click', (e) => {
+        const rowBtn = e.target?.closest ? e.target.closest('[data-related-unit-idx]') : null;
+        if (!rowBtn) return;
+        const idx = parseInt(rowBtn.getAttribute('data-related-unit-idx'), 10);
+        if (Number.isInteger(idx) && idx >= 0 && idx < catObj.units.length) {
+            st.targetIdx = idx;
+            refreshUnitSelectionUI({ scrollFrom: false, scrollTo: true });
+        }
+    });
+
+    updateUnitStatusBanner(fromUnit, targetUnit, convertedVal);
 }
 
 /* -----------------------------------------------------------
@@ -8372,6 +8939,13 @@ function renderConstructionTool(container) {
 (function(root) {
     const exportsObj = {
         UNIT_CATEGORIES,
+        WHEEL_ITEM_HEIGHT,
+        splitUnitLabel,
+        convertUnitValue,
+        calculateThaiAreaBreakdown,
+        createWheelColumnHTML,
+        createWheelPickerHTML,
+        bindWheelColumn,
         renderUnitPriceTool,
         renderDiscountTool,
         renderTipTool,
@@ -13004,7 +13578,8 @@ function evaluateScientificExpression(expression, options = {}) {
     const take = value => tokens[i] === value && (++i, true);
     const check = value => { if (!Number.isFinite(value)) throw new Error('ผลลัพธ์ไม่อยู่ในขอบเขต'); return value; };
     const angle = options.angle === 'rad' ? 1 : Math.PI / 180;
-    const functions = { sin: x => Math.sin(x * angle), cos: x => Math.cos(x * angle), tan: x => {
+    const clean = v => Math.abs(v) < 1e-15 ? 0 : v;
+    const functions = { sin: x => clean(Math.sin(x * angle)), cos: x => clean(Math.cos(x * angle)), tan: x => {
         if (Math.abs(Math.cos(x * angle)) < 1e-12) throw new Error('ค่า tan ไม่กำหนด');
         return Math.tan(x * angle);
     }, asin: x => Math.asin(x) / angle, acos: x => Math.acos(x) / angle, atan: x => Math.atan(x) / angle,
@@ -13039,12 +13614,18 @@ function evaluateScientificExpression(expression, options = {}) {
         while (i < tokens.length) {
             if (take('*')) value = check(value * unary());
             else if (take('/')) { const divisor = unary(); if (divisor === 0) throw new Error('หารด้วยศูนย์ไม่ได้'); value = check(value / divisor); }
+            else if (/^(?:\d|\.)/.test(tokens[i] || '') && /^(?:\)|pi|e|Ans)$/.test(tokens[i - 1] || '')) value = check(value * unary());
             else if (tokens[i] === '(' || /^(pi|e|Ans|sin|cos|tan|asin|acos|atan|sqrt|cbrt|ln|log|exp)$/.test(tokens[i] || '')) value = check(value * unary());
             else break;
         }
         return value;
     }
-    function sum() { let value = product(); while (i < tokens.length) { if (take('+')) value = check(value + product()); else if (take('-')) value = check(value - product()); else break; } return value; }
+    // "a+b%" / "a-b%" mean b percent of a (like a handheld calculator); elsewhere % just divides by 100
+    function term(base) {
+        const start = i, value = product();
+        return (i - start === 2 && tokens[i - 1] === '%' && /^(?:\d|\.)/.test(tokens[start])) ? check(base * value) : value;
+    }
+    function sum() { let value = product(); while (i < tokens.length) { if (take('+')) value = check(value + term(value)); else if (take('-')) value = check(value - term(value)); else break; } return value; }
     const result = sum(); if (i !== tokens.length) throw new Error('รูปแบบสมการไม่ถูกต้อง'); return check(result);
 }
 
@@ -13104,7 +13685,7 @@ function renderStandardCalcTool(container) {
         </div>`;
     function evaluate(showError = false) {
         try { const n = evaluateScientificExpression(st.expr, { angle: st.angle, ans: st.ans }); st.result = formatScientificResult(n); st.error = ''; return n; }
-        catch (error) { st.error = showError ? error.message : ''; return null; }
+        catch (error) { st.error = showError ? error.message : ''; if (!showError && st.expr) st.result = '…'; return null; }
     }
     container.querySelectorAll('[data-calc-mode]').forEach(button => button.addEventListener('click', event => { const restore = event.detail === 0 && document.activeElement === button; st.mode = button.dataset.calcMode; renderActiveTool(); if (restore) container.querySelector(`[data-calc-mode="${st.mode}"]`)?.focus(); }));
     container.querySelectorAll('[data-angle]').forEach(button => button.addEventListener('click', event => { const restore = event.detail === 0 && document.activeElement === button; st.angle = button.dataset.angle; if (st.expr) evaluate(); renderActiveTool(); if (restore) container.querySelector(`[data-angle="${st.angle}"]`)?.focus(); }));
@@ -13112,13 +13693,22 @@ function renderStandardCalcTool(container) {
         const k = button.dataset.std;
         const restore = event.detail === 0 && document.activeElement === button;
         if (k === '2nd') { st.second = !st.second; renderActiveTool(); if (restore) container.querySelector('[data-std="2nd"]')?.focus(); return; }
+        // after "=", operators continue from the result; digits, constants, functions and "(" start a new calculation
+        const continuesResult = /^[+×÷%!E^-]/.test(k) || ['negate', 'reciprocal', 'BS', 'C', '='].includes(k);
+        if (st.fresh && !continuesResult) { st.expr = ''; st.result = '0'; st.error = ''; }
+        st.fresh = false;
         if (k === 'C') { st.expr = ''; st.result = '0'; st.error = ''; }
         else if (k === 'BS') { st.expr = st.expr.slice(0, -1); if (st.expr) evaluate(); else { st.result = '0'; st.error = ''; } }
         else if (k === '()') { const opens = (st.expr.match(/\(/g) || []).length; const closes = (st.expr.match(/\)/g) || []).length; st.expr += opens > closes ? ')' : '('; evaluate(); }
-        else if (k === '=') { const value = evaluate(true); if (st.expr && value !== null) { st.history.unshift({ expr: st.expr, res: st.result }); st.ans = value; st.expr = st.result; } }
+        else if (k === '=') { const value = evaluate(true); if (st.expr && value !== null) { st.history.unshift({ expr: st.expr, res: st.result }); st.ans = value; st.expr = st.result; st.fresh = true; } }
         else if (k === 'negate') { st.expr = toggleCalculatorSign(st.expr); if (st.expr) evaluate(); else { st.result = '0'; st.error = ''; } }
         else if (k === 'reciprocal') { if (st.expr) { st.expr = `1/(${st.expr})`; evaluate(); } }
-        else { st.expr += k; evaluate(); }
+        else {
+            // 10ˣ must not glue onto a number being typed; constants must not glue onto letters (pi+e -> "pie")
+            if (k === '10^(' && /[\d.]$/.test(st.expr)) st.expr += '×';
+            else if (/^(pi|e|Ans)$/.test(k) && /[A-Za-z]$/.test(st.expr)) st.expr += '×';
+            st.expr += k; evaluate();
+        }
         renderActiveTool();
         if (restore) container.querySelectorAll('[data-std]').forEach(item => { if (item.dataset.std === k) item.focus(); });
     }));
@@ -13127,6 +13717,7 @@ function renderStandardCalcTool(container) {
         const latest = st.history[0];
         if (!latest) return;
         st.expr = latest.expr;
+        st.fresh = false;
         st.result = latest.res;
         st.error = '';
         renderActiveTool();
