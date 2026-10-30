@@ -138,6 +138,11 @@ function getToolFieldBindings(toolId) {
             const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
             return shapeFieldKeys(s().shape).map(field);
         }
+        case 'wire_breaker': {
+            const s = () => appState.wire_breaker;
+            const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
+            return ['watts', 'voltage', 'powerFactor', 'wireLengthM'].map(field);
+        }
         case 'btu_calc':
             return [
                 { get: () => appState.btu_calc.width, set: (v) => { appState.btu_calc.width = v; } },

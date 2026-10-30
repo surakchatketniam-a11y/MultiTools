@@ -117,6 +117,10 @@ function hasInvalidNumericInput(toolId, stateObj) {
         const st = state.shape_calc || {};
         return shapeFieldKeys(st.shape).some(key => invalid(st[key]));
     }
+    if (curToolId === 'wire_breaker') {
+        const st = state.wire_breaker || {};
+        return ['watts', 'voltage', 'powerFactor', 'wireLengthM'].some(key => invalid(st[key]));
+    }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
     return (fields[curToolId] || []).some(key => invalid(state[curToolId][key]));

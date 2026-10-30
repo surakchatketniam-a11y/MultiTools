@@ -287,11 +287,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 44 tools classified into 6 valid groups with search keywords', () => {
+test('catalog contains exactly 45 tools classified into 6 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 6);
-    assert.equal(TOOLS_CATALOG.length, 44);
+    assert.equal(TOOLS_CATALOG.length, 45);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -451,7 +451,7 @@ test('all 36 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 44);
+    assert.equal(ctx.TOOLS_CATALOG.length, 45);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -1214,7 +1214,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('คุ้มค่าที่สุด'));
 });
 
-test('all 44 tool renderers are modularized and exported across the 6 tool groups', () => {
+test('all 45 tool renderers are modularized and exported across the 6 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -1260,10 +1260,11 @@ test('all 44 tool renderers are modularized and exported across the 6 tool group
         contractor_payment: 'renderContractorPaymentTool',
         plumbing_pump: 'renderPlumbingTool',
         inch_fraction: 'renderInchFractionTool',
-        shape_calc: 'renderShapeTool'
+        shape_calc: 'renderShapeTool',
+        wire_breaker: 'renderWireBreakerTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 44);
+    assert.equal(Object.keys(rendererMap).length, 45);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -3657,6 +3658,54 @@ test('shape_calc: areas, perimeters, volumes, Heron triangles and Thai land spli
     assert.equal(ctx.hasInvalidNumericInput('shape_calc', { shape_calc: base }), false);
     assert.equal(ctx.hasInvalidNumericInput('shape_calc', { shape_calc: { ...base, width: '5m' } }), true);
     assert.equal(ctx.hasInvalidNumericInput('shape_calc', { shape_calc: { ...base, shape: 'circle', width: '5m' } }), false);
+});
+
+test('wire_breaker UI wiring: catalog, summary warnings, keypad fields and invalid-input detection', () => {
+    const { TOOLS_CATALOG } = require('../src/catalog.js');
+    assert.equal(TOOLS_CATALOG.find(t => t.id === 'wire_breaker').group, 'engineering');
+
+    const ctx = context();
+    const ok = { watts: '3500', voltage: '230', powerFactor: '1', wireLengthM: '15', installMethod: 'conduit', isContinuous: false };
+
+    // The summary always carries the unverified-data caution and the engine result
+    const summary = ctx.getToolSummaryText('wire_breaker', { wire_breaker: ok });
+    assert.ok(summary.includes('เบรกเกอร์ 16 A สาย 2.5 ตร.มม.'));
+    assert.ok(summary.includes('ยังไม่ได้ตรวจกับหนังสือ วสท.'));
+    assert.ok(summary.includes('IEC 01'));
+
+    // No numbers are offered when the engine has no safe answer
+    const tooBig = ctx.getToolSummaryText('wire_breaker', { wire_breaker: { ...ok, watts: '30000' } });
+    assert.ok(tooBig.includes('ไม่มีคำตอบจากตาราง'));
+    assert.ok(!tooBig.includes('ตร.มม.'));
+    assert.ok(tooBig.includes('ยังไม่ได้ตรวจกับหนังสือ วสท.'));
+    const noWire = ctx.getToolSummaryText('wire_breaker', { wire_breaker: { ...ok, watts: '14000', installMethod: 'surface' } });
+    assert.ok(noWire.includes('ไม่มีคำตอบจากตาราง'));
+    assert.ok(noWire.includes('เบรกเกอร์ที่คำนวณได้ 63 A'));
+
+    // Empty input still shows the caution
+    const empty = ctx.getToolSummaryText('wire_breaker', { wire_breaker: { ...ok, watts: '' } });
+    assert.ok(empty.includes('ยังไม่ได้ตรวจกับหนังสือ วสท.'));
+
+    // Voltage-drop wording in the summary
+    const far = ctx.getToolSummaryText('wire_breaker', { wire_breaker: { ...ok, watts: '3450', wireLengthM: '500' } });
+    assert.ok(far.includes('เกินเกณฑ์ 3%'));
+    const upgraded = ctx.getToolSummaryText('wire_breaker', { wire_breaker: { ...ok, watts: '3450', wireLengthM: '60' } });
+    assert.ok(upgraded.includes('ขยายสายเพื่อลดแรงดันตก'));
+
+    // Invalid-input detection covers all four keypad fields
+    assert.equal(ctx.hasInvalidNumericInput('wire_breaker', { wire_breaker: ok }), false);
+    for (const key of ['watts', 'voltage', 'powerFactor', 'wireLengthM']) {
+        assert.equal(ctx.hasInvalidNumericInput('wire_breaker', { wire_breaker: { ...ok, [key]: '1x' } }), true, key);
+    }
+
+    // Presets carry watts, power factor and continuous-load flags that the engine accepts
+    for (const p of ctx.WIRE_APPLIANCE_PRESETS) {
+        const res = ctx.calculateWireBreaker({ watts: String(p.watts), powerFactor: String(p.powerFactor), voltage: '230', wireLengthM: '10', isContinuous: p.continuous });
+        assert.equal(res.valid, true, p.key);
+        assert.equal(res.selectionStatus, 'ok', p.key);
+        assert.equal(res.voltageDropDataUnverified, true, p.key);
+    }
+    assert.equal(ctx.WIRE_VD_LIMIT_PCT, 3);
 });
 
 test('construction_calc: tiles, paint, and concrete calculations', () => {

@@ -1796,8 +1796,156 @@ function renderShapeTool(container) {
     }
 }
 
+/* -----------------------------------------------------------
+ * UI: ขนาดสายไฟ เบรกเกอร์ & แรงดันตก (wire_breaker)
+ * engine และตารางอยู่ด้านบน (calculateWireBreaker) ตารางพิกัดกระแสยังไม่ได้ตรวจกับต้นฉบับ วสท.
+ * UI จึงแสดงคำเตือนทุกครั้ง และไม่แสดงตัวเลขเมื่อ engine ไม่มีคำตอบที่ปลอดภัย
+ * ----------------------------------------------------------- */
+
+var WIRE_VD_LIMIT_PCT = 3;
+
+function renderWireBreakerTool(container) {
+    if (!appState.wire_breaker) {
+        appState.wire_breaker = { watts: '3500', voltage: '230', powerFactor: '1', wireLengthM: '15', installMethod: 'conduit', isContinuous: false, preset: 'water_3500' };
+    }
+    const st = appState.wire_breaker;
+    const calc = calculateWireBreaker(st);
+    const method = st.installMethod === 'surface' ? 'surface' : 'conduit';
+    const currentWatts = parseNumericInput(st.watts);
+    const row = (label, value) => `<div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">${label}</span><span class="font-semibold font-mono text-right">${value}</span></div>`;
+
+    const presetChips = WIRE_APPLIANCE_PRESETS.map(p => {
+        const active = st.preset === p.key && currentWatts === p.watts;
+        return `<button type="button" class="tool-chip-btn wire-preset-chip ${active ? 'active font-bold' : ''}" aria-pressed="${active}" data-wire-preset="${p.key}" style="min-height: 44px;">${p.label} · ${formatNum(p.watts, 0)} W</button>`;
+    }).join('');
+    const methodBtn = (key, label) => `<button type="button" class="segment-btn ${method === key ? 'active' : ''}" aria-pressed="${method === key}" data-wire-method="${key}" style="min-height: 44px;">${label}</button>`;
+
+    const warnings = ['ตารางพิกัดกระแสและค่าแรงดันตกยังไม่ได้ตรวจกับหนังสือ วสท. ไม่ควรใช้เป็นข้อมูลสำหรับติดตั้งจริง ต้องให้วิศวกรไฟฟ้าหรือช่างไฟที่มีใบอนุญาตตรวจก่อนเสมอ'];
+    let resultHTML = '';
+    let statusType = 'empty';
+    let statusHTML = 'ป้อนกำลังไฟฟ้าของอุปกรณ์เพื่อคำนวณขนาดสายไฟและเบรกเกอร์';
+
+    if (calc.valid && calc.selectionStatus === 'breaker_out_of_range') {
+        const maxBreaker = STANDARD_BREAKER_RATINGS[STANDARD_BREAKER_RATINGS.length - 1];
+        resultHTML = `
+            <div class="themed-result-card p-4 space-y-3" role="alert">
+                <div class="text-xs text-[var(--app-muted)] font-medium">ไม่มีคำตอบจากตาราง</div>
+                <div class="themed-result-value text-xl font-bold break-words">กระแสออกแบบ ${formatNum(calc.designCurrent, 2)} A เกินเบรกเกอร์ ${maxBreaker} A ที่ตารางมี</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${row('กระแสโหลด', `${formatNum(calc.loadCurrent, 2)} A`)}
+                    ${row('กระแสออกแบบ', `${formatNum(calc.designCurrent, 2)} A`)}
+                </div>
+                <div class="text-xs">โหลดขนาดนี้ต้องให้วิศวกรไฟฟ้าออกแบบ (เช่น แยกเป็นหลายวงจร หรือใช้ระบบ 3 เฟส ซึ่งเครื่องมือนี้ยังไม่รองรับ)</div>
+            </div>`;
+        statusType = 'error';
+        statusHTML = `กระแสออกแบบ ${formatNum(calc.designCurrent, 2)} A เกินพิกัดเบรกเกอร์ที่ตารางมี ต้องให้วิศวกรออกแบบ`;
+    } else if (calc.valid && calc.selectionStatus === 'no_suitable_wire') {
+        resultHTML = `
+            <div class="themed-result-card p-4 space-y-3" role="alert">
+                <div class="text-xs text-[var(--app-muted)] font-medium">ไม่มีสายในตารางสำหรับวิธีเดินสายนี้</div>
+                <div class="themed-result-value text-xl font-bold break-words">เบรกเกอร์ ${calc.recommendedBreaker} A แต่ไม่มีสาย ${calc.wireType} ที่รองรับ</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${row('กระแสโหลด', `${formatNum(calc.loadCurrent, 2)} A`)}
+                    ${row('กระแสออกแบบ', `${formatNum(calc.designCurrent, 2)} A`)}
+                    ${row('เบรกเกอร์ที่คำนวณได้', `${calc.recommendedBreaker} A`)}
+                </div>
+                <div class="text-xs">ลองเปลี่ยนวิธีเดินสายเป็นร้อยท่อ หรือให้วิศวกรไฟฟ้าเลือกสายให้</div>
+            </div>`;
+        statusType = 'error';
+        statusHTML = `ไม่มีสายในตารางที่รองรับเบรกเกอร์ ${calc.recommendedBreaker} A ในวิธีเดินสายนี้ ให้เปลี่ยนวิธีหรือปรึกษาวิศวกร`;
+    } else if (calc.valid) {
+        const lengthAssumed = String(st.wireLengthM ?? '').trim() === '';
+        if (calc.isVdExceeded) warnings.push(`แรงดันตก ${formatNum(calc.vdPct, 2)}% เกินเกณฑ์ ${WIRE_VD_LIMIT_PCT}% แม้ใช้สายใหญ่สุดที่ตารางมีให้แล้ว ลดระยะสายหรือให้วิศวกรตรวจ`);
+        else if (calc.upgradedForVoltageDrop) warnings.push('ขยายขนาดสายจากเกณฑ์กระแสเพื่อให้แรงดันตกไม่เกิน 3%');
+        if (calc.ampacityUnverified) warnings.push('ขนาดสายที่เลือกอยู่ในแถวที่ไม่มีแหล่งอ้างอิงยืนยันพิกัดกระแสเลย (25 หรือ 35 ตร.มม.)');
+        if (lengthAssumed) warnings.push(`ไม่ได้ป้อนระยะสาย จึงใช้ ${formatNum(calc.wireLengthM, 0)} ม. ตามค่าเริ่มต้น`);
+        resultHTML = `
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">ผลการคำนวณ (ยังไม่ยืนยันกับ วสท.)</div>
+                <div class="themed-result-value text-2xl font-bold font-mono break-words">เบรกเกอร์ ${calc.recommendedBreaker} A · สาย ${formatNum(calc.wireSizeSqmm, 1)} ตร.มม.</div>
+                <div class="text-xs text-[var(--app-muted)]">${calc.wireType} · ${calc.method === 'surface' ? 'เดินเกาะผนัง (ตีกิ๊บ)' : 'ร้อยท่อ'}</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${row('กระแสโหลด', `${formatNum(calc.loadCurrent, 2)} A`)}
+                    ${row(calc.isContinuous ? 'กระแสออกแบบ (x1.25 โหลดต่อเนื่อง)' : 'กระแสออกแบบ', `${formatNum(calc.designCurrent, 2)} A`)}
+                    ${row('พิกัดกระแสของสายในตาราง', `${formatNum(calc.wireAmpacity, 0)} A`)}
+                    ${row('แรงดันตก', `${formatNum(calc.vdVolts, 2)} V (${formatNum(calc.vdPct, 2)}%)`)}
+                    ${row('เกณฑ์แรงดันตกวงจรย่อย', `ไม่เกิน ${WIRE_VD_LIMIT_PCT}%`)}
+                    ${row('ใช้ระยะสาย / แรงดัน / PF', `${formatNum(calc.wireLengthM, 1)} ม. / ${formatNum(calc.voltage, 0)} V / ${formatNum(calc.powerFactor, 2)}`)}
+                </div>
+            </div>`;
+        const vdBad = calc.isVdExceeded;
+        // ไม่ใช้สถานะ success เพราะจะบันทึกผลลงประวัติอัตโนมัติ ทั้งที่ตารางยังไม่ได้ยืนยันกับ วสท.
+        statusType = 'warning';
+        statusHTML = `${vdBad ? 'แรงดันตกเกินเกณฑ์ · ' : ''}เบรกเกอร์ <span class="text-lg text-[var(--app-accent)] underline">${calc.recommendedBreaker} A</span> สาย ${formatNum(calc.wireSizeSqmm, 1)} ตร.มม.<span class="text-xs font-normal opacity-80 block mt-1">ยังไม่ยืนยันกับ วสท. ต้องให้ช่างไฟตรวจ</span>`;
+    }
+
+    container.innerHTML = `
+        <div class="wire-breaker-tool flex flex-col gap-3 p-1">
+            <div class="themed-subcard p-3 text-xs font-semibold space-y-1" role="note">
+                ${warnings.map(w => `<div>${w}</div>`).join('')}
+            </div>
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">อุปกรณ์ยอดนิยม</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${presetChips}</div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'กำลังไฟฟ้าของโหลด', st.watts, 'วัตต์', 'เช่น 3,500')}
+                ${createKeypadFieldHTML(1, 'แรงดันไฟฟ้า (1 เฟส)', st.voltage, 'โวลต์', 'เช่น 230')}
+                ${createKeypadFieldHTML(2, 'ตัวประกอบกำลัง (PF)', st.powerFactor, '', 'เช่น 0.95')}
+                ${createKeypadFieldHTML(3, 'ระยะสายจากตู้ถึงโหลด', st.wireLengthM, 'เมตร', 'เช่น 15')}
+            </div>
+            <div class="segment-group grid-cols-2" role="group" aria-label="วิธีเดินสาย">
+                ${methodBtn('conduit', 'ร้อยท่อ (IEC 01 / THW)')}
+                ${methodBtn('surface', 'ตีกิ๊บเกาะผนัง (VAF)')}
+            </div>
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <button type="button" class="tool-chip-btn wire-continuous-chip ${st.isContinuous ? 'active font-bold' : ''}" aria-pressed="${Boolean(st.isContinuous)}" id="btnWireContinuous" style="min-height: 44px;">โหลดต่อเนื่อง (แอร์ / EV Charger) คิดเผื่อ 125%</button>
+            </div>
+            ${resultHTML}
+            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
+                <div>รองรับเฉพาะระบบ 1 เฟส สายทองแดงหุ้ม PVC 70 องศา ไม่รวมตัวคูณลดพิกัดตามอุณหภูมิหรือจำนวนวงจรที่เดินรวมกัน และไม่รวมการเลือกชนิดเบรกเกอร์ (MCB, RCBO) หรือสายดิน</div>
+                <div>วิธีคิด: เบรกเกอร์ต้องไม่เล็กกว่ากระแสออกแบบ สายต้องรับกระแสได้ไม่น้อยกว่าเบรกเกอร์ และแรงดันตกวงจรย่อยไม่เกิน 3% ถ้าเกินจะขยับขนาดสายขึ้น</div>
+            </div>
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    container.querySelectorAll('.wire-preset-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const preset = WIRE_APPLIANCE_PRESETS.find(p => p.key === btn.dataset.wirePreset);
+            if (!preset) return;
+            st.preset = preset.key;
+            st.watts = String(preset.watts);
+            st.powerFactor = String(preset.powerFactor);
+            st.isContinuous = Boolean(preset.continuous);
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('[data-wire-method]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.installMethod = btn.dataset.wireMethod;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    const continuousBtn = document.getElementById('btnWireContinuous');
+    if (continuousBtn) {
+        continuousBtn.addEventListener('click', () => {
+            st.isContinuous = !st.isContinuous;
+            persistAppState();
+            renderActiveTool();
+        });
+    }
+
+    setStatusBanner(statusType, statusHTML);
+}
+
 (function(root) {
     const exportsObj = {
+        WIRE_VD_LIMIT_PCT,
+        renderWireBreakerTool,
         SHAPE_DEFINITIONS,
         shapeFieldKeys,
         splitRaiNganWa,

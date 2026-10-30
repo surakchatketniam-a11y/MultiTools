@@ -1854,7 +1854,7 @@
     <div id="printFormalReceipt" class="hidden"></div>
 
     <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
-    <script src="src/bundle.js?v=77"></script>
+    <script src="src/bundle.js?v=78"></script>
 
     <script>
         function getSafeDateStr(offsetDays = 0) {
@@ -2327,6 +2327,17 @@
                 depth: ''
             },
 
+            // Engineering: wire size, breaker & voltage drop
+            wire_breaker: {
+                watts: '3500',
+                voltage: '230',
+                powerFactor: '1',
+                wireLengthM: '15',
+                installMethod: 'conduit',
+                isContinuous: false,
+                preset: 'water_3500'
+            },
+
             // 24. Car Hire Purchase Loan
             car_loan: {
                 vehicleType: 'car',
@@ -2550,6 +2561,7 @@
                 case 'food_costing':     renderFoodCostingTool(topPanel); break;
                 case 'construction_calc': renderConstructionTool(topPanel); break;
                 case 'btu_calc':         renderBtuTool(topPanel); break;
+                case 'wire_breaker': renderWireBreakerTool(topPanel); break;
                 case 'shape_calc': renderShapeTool(topPanel); break;
                 case 'inch_fraction': renderInchFractionTool(topPanel); break;
                 case 'plumbing_pump': renderPlumbingTool(topPanel); break;

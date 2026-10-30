@@ -650,6 +650,16 @@ function getToolSummaryText(toolId, stateObj) {
             const volume = calc.volumeM3 !== undefined ? `\nปริมาตร: ${formatNum(calc.volumeM3, 3)} ลบ.ม.` : '';
             return `สรุปพื้นที่ & ปริมาตรรูปทรง: ${def ? def.label : ''}\n${divider}\n• พื้นที่: ${formatNum(calc.areaSqm, 3)} ตร.ม. (${formatNum(calc.areaWa, 3)} ตร.ว.)${extra}\n----------------------------------${volume || '\nพื้นที่: ' + formatNum(calc.areaSqm, 3) + ' ตร.ม.'}\n(ค่าตามรูปทรงอุดมคติ ไม่รวมเผื่อสูญเสีย)\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'wire_breaker': {
+            const calc = (typeof calculateWireBreaker === 'function') ? calculateWireBreaker(state.wire_breaker || {}) : { valid: false };
+            const caution = 'คำเตือน: ตารางพิกัดกระแสและแรงดันตกยังไม่ได้ตรวจกับหนังสือ วสท. ห้ามใช้เป็นข้อมูลติดตั้งจริง ต้องให้วิศวกรไฟฟ้าหรือช่างไฟที่มีใบอนุญาตตรวจก่อน';
+            if (!calc.valid) return `สรุปสายไฟ เบรกเกอร์ & แรงดันตก\n${divider}\nยังไม่ได้ป้อนกำลังไฟฟ้าที่คำนวณได้\n${caution}\n(คำนวณโดย Multitools Calculator)`;
+            const inputLines = `• โหลด ${formatNum(calc.watts, 0)} W ที่ ${formatNum(calc.voltage, 0)} V PF ${formatNum(calc.powerFactor, 2)}\n• ระยะสาย ${formatNum(calc.wireLengthM, 1)} ม. (${calc.method === 'surface' ? 'ตีกิ๊บเกาะผนัง VAF' : 'ร้อยท่อ IEC 01/THW'})\n• กระแสโหลด ${formatNum(calc.loadCurrent, 2)} A กระแสออกแบบ ${formatNum(calc.designCurrent, 2)} A${calc.isContinuous ? ' (โหลดต่อเนื่อง x1.25)' : ''}`;
+            if (calc.selectionStatus === 'breaker_out_of_range') return `สรุปสายไฟ เบรกเกอร์ & แรงดันตก\n${divider}\n${inputLines}\n----------------------------------\nไม่มีคำตอบจากตาราง: กระแสออกแบบเกินพิกัดเบรกเกอร์ที่ตารางมี ต้องให้วิศวกรออกแบบ\n${caution}\n(คำนวณโดย Multitools Calculator)`;
+            if (calc.selectionStatus === 'no_suitable_wire') return `สรุปสายไฟ เบรกเกอร์ & แรงดันตก\n${divider}\n${inputLines}\n• เบรกเกอร์ที่คำนวณได้ ${calc.recommendedBreaker} A\n----------------------------------\nไม่มีคำตอบจากตาราง: ไม่มีสายที่รองรับในวิธีเดินสายนี้\n${caution}\n(คำนวณโดย Multitools Calculator)`;
+            const vdLine = `• แรงดันตก ${formatNum(calc.vdVolts, 2)} V (${formatNum(calc.vdPct, 2)}%)${calc.isVdExceeded ? ' เกินเกณฑ์ 3%' : ''}${calc.upgradedForVoltageDrop && !calc.isVdExceeded ? ' (ขยายสายเพื่อลดแรงดันตก)' : ''}`;
+            return `สรุปสายไฟ เบรกเกอร์ & แรงดันตก\n${divider}\n${inputLines}\n• พิกัดกระแสสายในตาราง ${formatNum(calc.wireAmpacity, 0)} A\n${vdLine}\n----------------------------------\nเบรกเกอร์ ${calc.recommendedBreaker} A สาย ${formatNum(calc.wireSizeSqmm, 1)} ตร.มม. (${calc.wireType})\n${caution}\n(คำนวณโดย Multitools Calculator)`;
+        }
         case 'btu_calc': {
             const calc = (typeof calculateBtu === 'function') ? calculateBtu(state.btu_calc || {}) : { valid: false };
             if (!calc.valid) return `สรุปขนาดแอร์ BTU\n${divider}\nยังไม่ได้ป้อนขนาดห้อง\n(คำนวณโดย Multitools Calculator)`;
