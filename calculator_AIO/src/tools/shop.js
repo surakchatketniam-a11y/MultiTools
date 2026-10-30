@@ -1571,13 +1571,13 @@ function renderConstructionTool(container) {
                     </button>
                 </div>
                 <div class="grid grid-cols-2 gap-2 pt-2 border-t border-[var(--app-hairline)]">
-                    <div>
+                    <div class="min-w-0">
                         <label for="constTileLaborInput" class="text-[var(--app-muted)] text-[11px] block">ค่าแรงปูต่อ ตร.ม. (บาท)</label>
-                        <input id="constTileLaborInput" type="text" inputmode="decimal" class="airbnb-input text-right text-xs" style="min-height: 44px;" value="${escapeHTML(st.tileLaborPerSqm || '')}" placeholder="เช่น 250">
+                        <input id="constTileLaborInput" type="text" inputmode="decimal" class="airbnb-input text-right text-xs w-full min-w-0" style="min-height: 44px;" value="${escapeHTML(st.tileLaborPerSqm || '')}" placeholder="เช่น 250">
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <label for="constTileAdhesiveInput" class="text-[var(--app-muted)] text-[11px] block">ราคาปูนกาว (บ./ถุง 20กก.)</label>
-                        <input id="constTileAdhesiveInput" type="text" inputmode="decimal" class="airbnb-input text-right text-xs" style="min-height: 44px;" value="${escapeHTML(st.adhesivePricePerBag || '160')}" placeholder="160">
+                        <input id="constTileAdhesiveInput" type="text" inputmode="decimal" class="airbnb-input text-right text-xs w-full min-w-0" style="min-height: 44px;" value="${escapeHTML(st.adhesivePricePerBag || '160')}" placeholder="160">
                     </div>
                 </div>
             </div>
@@ -1655,13 +1655,13 @@ function renderConstructionTool(container) {
                     </button>
                 </div>
                 <div class="grid grid-cols-2 gap-2 pt-2 border-t border-[var(--app-hairline)]">
-                    <div>
+                    <div class="min-w-0">
                         <label for="constPaintLaborInput" class="text-[var(--app-muted)] text-[11px] block">ค่าแรงทาสีต่อ ตร.ม. (บาท)</label>
-                        <input id="constPaintLaborInput" type="text" inputmode="decimal" class="airbnb-input text-right text-xs" style="min-height: 44px;" value="${escapeHTML(st.paintLaborPerSqm || '')}" placeholder="เช่น 70">
+                        <input id="constPaintLaborInput" type="text" inputmode="decimal" class="airbnb-input text-right text-xs w-full min-w-0" style="min-height: 44px;" value="${escapeHTML(st.paintLaborPerSqm || '')}" placeholder="เช่น 70">
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <label for="constPaintTopcoatPriceInput" class="text-[var(--app-muted)] text-[11px] block">สีทับหน้า (บ./ถัง 5GL)</label>
-                        <input id="constPaintTopcoatPriceInput" type="text" inputmode="decimal" class="airbnb-input text-right text-xs" style="min-height: 44px;" value="${escapeHTML(st.paintTopcoatPrice5Gal || '2400')}" placeholder="2400">
+                        <input id="constPaintTopcoatPriceInput" type="text" inputmode="decimal" class="airbnb-input text-right text-xs w-full min-w-0" style="min-height: 44px;" value="${escapeHTML(st.paintTopcoatPrice5Gal || '2400')}" placeholder="2400">
                     </div>
                 </div>
             </div>
@@ -1735,13 +1735,13 @@ function renderConstructionTool(container) {
                     </button>
                 </div>
                 <div class="grid grid-cols-2 gap-2 pt-2 border-t border-[var(--app-hairline)]">
-                    <div>
+                    <div class="min-w-0">
                         <label for="constConcretePriceInput" class="text-[var(--app-muted)] text-[11px] block">ราคาคอนกรีตผสมเสร็จ (บ./คิว)</label>
-                        <input id="constConcretePriceInput" type="text" inputmode="decimal" class="airbnb-input text-right text-xs" style="min-height: 44px;" value="${escapeHTML(st.concretePricePerCubic || '2000')}" placeholder="2000">
+                        <input id="constConcretePriceInput" type="text" inputmode="decimal" class="airbnb-input text-right text-xs w-full min-w-0" style="min-height: 44px;" value="${escapeHTML(st.concretePricePerCubic || '2000')}" placeholder="2000">
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <label for="constConcreteLaborInput" class="text-[var(--app-muted)] text-[11px] block">ค่าแรงเทปรับระดับ (บ./ตร.ม.)</label>
-                        <input id="constConcreteLaborInput" type="text" inputmode="decimal" class="airbnb-input text-right text-xs" style="min-height: 44px;" value="${escapeHTML(st.concreteLaborPerSqm || '')}" placeholder="เช่น 150">
+                        <input id="constConcreteLaborInput" type="text" inputmode="decimal" class="airbnb-input text-right text-xs w-full min-w-0" style="min-height: 44px;" value="${escapeHTML(st.concreteLaborPerSqm || '')}" placeholder="เช่น 150">
                     </div>
                 </div>
             </div>
