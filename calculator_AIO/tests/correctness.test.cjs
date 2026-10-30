@@ -3715,7 +3715,7 @@ test('wire_breaker UI wiring: catalog, summary warnings, keypad fields and inval
 
     // Presets carry watts, power factor and continuous-load flags that the engine accepts
     for (const p of ctx.WIRE_APPLIANCE_PRESETS) {
-        const res = ctx.calculateWireBreaker({ watts: String(p.watts), powerFactor: String(p.powerFactor), voltage: '230', wireLengthM: '10', isContinuous: p.continuous });
+        const res = ctx.calculateWireBreaker({ watts: String(p.watts), powerFactor: String(p.powerFactor), phases: String(p.phases || 1), voltage: p.phases === 3 ? '400' : '230', wireLengthM: '10', isContinuous: p.continuous });
         assert.equal(res.valid, true, p.key);
         assert.equal(res.selectionStatus, 'ok', p.key);
         assert.equal(res.voltageDropDataUnverified, false, p.key);
@@ -3972,6 +3972,106 @@ test('conduit_fill: fill limits, max conductors per conduit (manual appendix C1)
     assert.equal(ctx.hasInvalidNumericInput('conduit_fill', { conduit_fill: { mode: 'size', rows: [{ id: '1', size: '2.5', count: '6' }] } }), false);
     assert.equal(ctx.hasInvalidNumericInput('conduit_fill', { conduit_fill: { mode: 'size', rows: [{ id: '1', size: '2.5', count: '6x' }] } }), true);
     assert.equal(ctx.hasInvalidNumericInput('conduit_fill', { conduit_fill: { mode: 'count', rows: [{ id: '1', size: '2.5', count: '6x' }] } }), false);
+});
+
+test('wire_breaker: three-phase (400 V) conduit wiring, table columns, limits and summary', () => {
+    const ctx = context();
+    const near = (a, b, eps = 0.01) => assert.ok(Math.abs(a - b) < eps, `${a} vs ${b}`);
+    const base = { phases: '3', voltage: '400', powerFactor: '1', wireLengthM: '20', installMethod: 'conduit', isContinuous: false };
+    const calc = extra => ctx.calculateWireBreaker({ ...base, ...extra });
+
+    // Table columns as printed: in-conduit ampacity with 3 loaded conductors (Yazaki B1 and table 5-20 group 2, single-core)
+    // and 3-phase mV/A/m for single-core 70C cable, group 1-2
+    assert.deepEqual(Array.from(ctx.WIRE_SPEC_TABLE, w => w.conduitAmp3), [0, 13, 18, 24, 31, 44, 59, 77, 96]);
+    assert.deepEqual(Array.from(ctx.WIRE_SPEC_TABLE, w => w.mVPerAmpMeter3), [38, 25, 15, 9.5, 6.4, 3.8, 2.4, 1.52, 1.13]);
+    // Sanity against the single-phase columns: 3 conductors carry less, and 3-phase mV/A/m is about 0.83-0.88 of single-phase
+    for (const w of ctx.WIRE_SPEC_TABLE.filter(w => w.conduitAmp > 0)) {
+        assert.ok(w.conduitAmp3 < w.conduitAmp, `${w.sizeSqmm} ampacity`);
+        const ratio = w.mVPerAmpMeter3 / w.mVPerAmpMeter;
+        assert.ok(ratio > 0.83 && ratio < 0.88, `${w.sizeSqmm} mV ratio ${ratio}`);
+    }
+
+    // 22 kW EV charger, 400 V, PF 1, continuous: I = P / (sqrt(3) x V) = 31.75 A, design x1.25 = 39.69 A -> 40 A breaker
+    const ev22 = calc({ watts: '22000', isContinuous: true });
+    assert.equal(ev22.selectionStatus, 'ok');
+    assert.equal(ev22.phases, 3);
+    near(ev22.loadCurrent, 22000 / (Math.sqrt(3) * 400));
+    assert.equal(ev22.designCurrent, 39.69);
+    assert.equal(ev22.recommendedBreaker, 40);
+    assert.equal(ev22.wireSizeSqmm, 10);
+    assert.equal(ev22.wireAmpacity, 44);
+    // Voltage drop is the line-to-line drop: mV/A/m x I x L / 1000 over 400 V
+    near(ev22.vdVolts, 3.8 * (22000 / (Math.sqrt(3) * 400)) * 20 / 1000);
+    near(ev22.vdPct, ev22.vdVolts / 400 * 100);
+    near(ev22.maxLengthM, 400 * 0.03 * 1000 / (3.8 * (22000 / (Math.sqrt(3) * 400))));
+
+    // 11 kW EV charger: 15.88 A x1.25 = 19.85 A -> 20 A breaker, 2.5 sq.mm. carries only 18 A with 3 conductors -> 4 sq.mm.
+    const ev11 = calc({ watts: '11000', isContinuous: true });
+    assert.equal(ev11.recommendedBreaker, 20);
+    assert.equal(ev11.wireSizeSqmm, 4);
+    // The same 20 A breaker in single phase is served by 2.5 sq.mm. (21 A)
+    const single = ctx.calculateWireBreaker({ phases: '1', watts: '4500', voltage: '230', powerFactor: '1', wireLengthM: '5', installMethod: 'conduit' });
+    assert.equal(single.recommendedBreaker, 20);
+    assert.equal(single.wireSizeSqmm, 2.5);
+
+    // Blank voltage means 400 V for three phase and 230 V for single phase; unknown phase values mean single phase
+    const defaultVoltage = ctx.calculateWireBreaker({ phases: '3', watts: '11000', powerFactor: '1', wireLengthM: '5' });
+    assert.equal(defaultVoltage.voltage, 400);
+    assert.equal(ctx.calculateWireBreaker({ watts: '3500', powerFactor: '1', wireLengthM: '5' }).voltage, 230);
+    for (const odd of ['2', '', undefined, 'abc']) {
+        const res = ctx.calculateWireBreaker({ phases: odd, watts: '3500', voltage: '230', powerFactor: '1', wireLengthM: '5' });
+        assert.equal(res.phases, 1);
+        assert.equal(res.recommendedBreaker, 16);
+    }
+
+    // Surface (VAF) wiring does not exist for three phase: the breaker is reported, no wire
+    const vaf3 = calc({ watts: '7000', installMethod: 'surface' });
+    assert.equal(vaf3.selectionStatus, 'three_phase_surface_unsupported');
+    assert.equal(vaf3.recommendedBreaker, 16);
+    assert.equal(vaf3.wireSizeSqmm, null);
+    assert.equal(vaf3.maxLengthM, null);
+
+    // Three-phase conduit tops out at 96 A (35 sq.mm.): 55 kW needs an 80 A breaker and 35 sq.mm., 60 kW (100 A) has no wire
+    const kw55 = calc({ watts: '55000' });
+    assert.equal(kw55.recommendedBreaker, 80);
+    assert.equal(kw55.wireSizeSqmm, 35);
+    assert.equal(kw55.wireAmpacity, 96);
+    const kw60 = calc({ watts: '60000' });
+    assert.equal(kw60.selectionStatus, 'no_suitable_wire');
+    assert.equal(kw60.recommendedBreaker, 100);
+    // Above 100 A there is no breaker in the table
+    assert.equal(calc({ watts: '80000' }).selectionStatus, 'breaker_out_of_range');
+
+    // Derating works the same way: 22 kW at 45 C with 2 circuits needs 40 / 0.728 = 54.95 A -> 16 sq.mm. (59 A)
+    const hot = calc({ watts: '22000', isContinuous: true, ambientC: '45', circuits: '2' });
+    assert.equal(hot.requiredAmpacity, 54.95);
+    assert.equal(hot.wireSizeSqmm, 16);
+
+    // Long run is upsized for voltage drop: 11 kW over 100 m, 4 sq.mm. drops 3.77% -> 6 sq.mm. (2.54%)
+    const far = calc({ watts: '11000', isContinuous: true, wireLengthM: '100' });
+    assert.equal(far.upgradedForVoltageDrop, true);
+    assert.equal(far.wireSizeSqmm, 6);
+    assert.ok(far.vdPct <= 3);
+    // Exactly at the maximum length the drop is the 3% limit
+    const atLimit = calc({ watts: '22000', isContinuous: true, wireLengthM: String(Math.floor(ev22.maxLengthM * 10) / 10) });
+    assert.equal(atLimit.wireSizeSqmm, 10);
+    near(atLimit.vdPct, 3);
+
+    // Appliance presets are split by phase and every three-phase preset works with the three-phase engine
+    const threePhasePresets = ctx.WIRE_APPLIANCE_PRESETS.filter(p => p.phases === 3);
+    assert.deepEqual(Array.from(threePhasePresets, p => p.key), ['ev_11kw', 'ev_22kw']);
+    assert.ok(ctx.WIRE_APPLIANCE_PRESETS.filter(p => !p.phases).length >= 8);
+
+    // Summary text names the system and handles the unsupported VAF case
+    const summary = ctx.getToolSummaryText('wire_breaker', { wire_breaker: { ...base, watts: '22000', isContinuous: true } });
+    assert.ok(summary.includes('ระบบ 3 เฟส'));
+    assert.ok(summary.includes('เบรกเกอร์ 40 A สาย 10 ตร.มม.'));
+    const vafSummary = ctx.getToolSummaryText('wire_breaker', { wire_breaker: { ...base, watts: '7000', installMethod: 'surface' } });
+    assert.ok(vafSummary.includes('ใช้กับ 1 เฟสเท่านั้น'));
+    assert.ok(vafSummary.includes('ไม่มีคำตอบจากตาราง'));
+    assert.ok(!vafSummary.includes('ตร.มม.'));
+    // Single-phase summary reads "1 เฟส" too
+    assert.ok(ctx.getToolSummaryText('wire_breaker', { wire_breaker: { watts: '3500', voltage: '230', powerFactor: '1', wireLengthM: '15' } }).includes('ระบบ 1 เฟส'));
 });
 
 test('construction_calc: tiles, paint, and concrete calculations', () => {
