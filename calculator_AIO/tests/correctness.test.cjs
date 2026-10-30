@@ -287,11 +287,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 48 tools classified into 6 valid groups with search keywords', () => {
+test('catalog contains exactly 49 tools classified into 6 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 6);
-    assert.equal(TOOLS_CATALOG.length, 48);
+    assert.equal(TOOLS_CATALOG.length, 49);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -451,7 +451,7 @@ test('all 36 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 48);
+    assert.equal(ctx.TOOLS_CATALOG.length, 49);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -1214,7 +1214,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('คุ้มค่าที่สุด'));
 });
 
-test('all 48 tool renderers are modularized and exported across the 6 tool groups', () => {
+test('all 49 tool renderers are modularized and exported across the 6 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -1264,10 +1264,11 @@ test('all 48 tool renderers are modularized and exported across the 6 tool group
         wire_breaker: 'renderWireBreakerTool',
         conduit_fill: 'renderConduitFillTool',
         wire_data: 'renderWireDataTool',
-        solar_rooftop: 'renderSolarRooftopTool'
+        solar_rooftop: 'renderSolarRooftopTool',
+        slope_stair: 'renderSlopeStairTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 48);
+    assert.equal(Object.keys(rendererMap).length, 49);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -4373,6 +4374,101 @@ test('solar_rooftop: sizing, self-consumption split, payback, warnings and flags
     assert.ok(summary.includes('1.1 kWp'));
     assert.ok(summary.includes('2 แผง'));
     assert.ok(summary.includes('ยังไม่ยืนยัน'));
+});
+
+test('slope_stair: stair steps by Ministerial Regulation 55 limits, comfort rule, flights and pipe slope', () => {
+    const ctx = context();
+    const near = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} vs ${b}`);
+
+    // Limits read from the regulation text (articles 23 and 24)
+    const house = ctx.SLOPE_STAIR_RULES.house;
+    const other = ctx.SLOPE_STAIR_RULES.other;
+    assert.deepEqual([house.maxRiserCm, house.minTreadCm, house.minWidthCm, house.maxFlightM, house.headroomM], [20, 22, 80, 3, 1.9]);
+    assert.deepEqual([other.maxRiserCm, other.minTreadCm, other.minWidthCm, other.maxFlightM, other.headroomM], [18, 25, 120, 4, 2.1]);
+    assert.equal(ctx.SLOPE_PIPE_DATA_VERIFIED, false);
+
+    const base = { mode: 'stair', buildingClass: 'house', floorHeightCm: '300', clearWidthCm: '', pipeLengthM: '10', pipeRatio: '100' };
+    const a = ctx.calculateStair(base);
+    assert.equal(a.valid, true);
+    // 300 cm / 20 cm = 15 risers exactly at the legal limit, tread stays at the 22 cm minimum, 2R+T = 62
+    assert.equal(a.primary.steps, 15);
+    near(a.primary.riserCm, 20);
+    assert.equal(a.primary.treadCm, 22);
+    near(a.primary.comfortCm, 62);
+    assert.equal(a.primary.comfortOk, true);
+    assert.equal(a.primary.treads, 14);
+    near(a.primary.runCm, 14 * 22);
+    assert.equal(a.flights, 1);
+    assert.equal(a.landings, 0);
+    assert.equal(a.widthOk, null);
+
+    // Every option respects the limits and riser x steps recovers the floor height
+    for (const h of [180, 250, 275.5, 300, 301, 320, 450, 600]) {
+        for (const cls of ['house', 'other']) {
+            const r = ctx.calculateStair({ ...base, buildingClass: cls, floorHeightCm: String(h) });
+            const rules = ctx.SLOPE_STAIR_RULES[cls];
+            for (const o of r.options) {
+                assert.ok(o.riserCm <= rules.maxRiserCm + 1e-9, `${cls} ${h} riser`);
+                assert.ok(o.treadCm >= rules.minTreadCm, `${cls} ${h} tread`);
+                near(o.riserCm * o.steps, h, 1e-9);
+            }
+            assert.equal(r.primary.steps, r.options.find(o => o.comfortOk) ? r.options.find(o => o.comfortOk).steps : r.options[0].steps);
+            assert.equal(r.flights, Math.ceil(h / (rules.maxFlightM * 100) - 1e-9));
+        }
+    }
+
+    // A floor height just over 3 m needs a landing for houses (flights are at most 3 m high)
+    const tall = ctx.calculateStair({ ...base, floorHeightCm: '301' });
+    assert.equal(tall.primary.steps, 16);
+    assert.equal(tall.flights, 2);
+    assert.equal(tall.landings, 1);
+    // Buildings of article 24 use riser <= 18 and tread >= 25
+    const b = ctx.calculateStair({ ...base, buildingClass: 'other' });
+    assert.equal(b.primary.steps, 17);
+    assert.ok(b.primary.treadCm >= 25);
+    assert.equal(b.flights, 1);
+    // Unknown building class falls back to a house
+    assert.equal(ctx.calculateStair({ ...base, buildingClass: 'x' }).rules.key, 'house');
+
+    // Clear width check
+    assert.equal(ctx.calculateStair({ ...base, clearWidthCm: '80' }).widthOk, true);
+    assert.equal(ctx.calculateStair({ ...base, clearWidthCm: '79' }).widthOk, false);
+    assert.equal(ctx.calculateStair({ ...base, buildingClass: 'other', clearWidthCm: '100' }).widthOk, false);
+    assert.equal(ctx.calculateStair({ ...base, buildingClass: 'other', clearWidthCm: '120' }).widthOk, true);
+
+    // Invalid input
+    assert.equal(ctx.calculateStair({ ...base, floorHeightCm: '' }).reason, 'invalid_height');
+    assert.equal(ctx.calculateStair({ ...base, floorHeightCm: '0' }).reason, 'invalid_height');
+    assert.equal(ctx.calculateStair({ ...base, floorHeightCm: '2000' }).reason, 'invalid_height');
+    assert.equal(ctx.calculateStair({ ...base, clearWidthCm: 'x' }).reason, 'invalid_width');
+
+    // Pipe slope: drop = length / ratio
+    const p = ctx.calculatePipeSlope(base);
+    assert.equal(p.valid, true);
+    near(p.dropCm, 10);
+    near(p.percent, 1);
+    near(p.dropPerMeterCm, 1);
+    near(p.angleDeg, Math.atan(0.01) * 180 / Math.PI);
+    near(ctx.calculatePipeSlope({ ...base, pipeRatio: '50' }).dropCm, 20);
+    near(ctx.calculatePipeSlope({ ...base, pipeRatio: '200', pipeLengthM: '25' }).dropCm, 12.5);
+    assert.equal(ctx.calculatePipeSlope({ ...base, pipeLengthM: '' }).reason, 'invalid_length');
+    assert.equal(ctx.calculatePipeSlope({ ...base, pipeRatio: '0' }).reason, 'invalid_ratio');
+    assert.deepEqual(Array.from(ctx.SLOPE_PIPE_PRESETS, x => x.ratio), [50, 100, 200]);
+
+    // Keypad fields follow the mode and invalid input is detected per visible field
+    assert.deepEqual(Array.from(ctx.slopeStairFieldKeys('stair')), ['floorHeightCm', 'clearWidthCm']);
+    assert.deepEqual(Array.from(ctx.slopeStairFieldKeys('pipe')), ['pipeLengthM', 'pipeRatio']);
+    assert.equal(ctx.hasInvalidNumericInput('slope_stair', { slope_stair: { ...base, floorHeightCm: '3m' } }), true);
+    assert.equal(ctx.hasInvalidNumericInput('slope_stair', { slope_stair: { ...base, pipeLengthM: '3m' } }), false);
+    assert.equal(ctx.hasInvalidNumericInput('slope_stair', { slope_stair: { ...base, mode: 'pipe', pipeLengthM: '3m' } }), true);
+
+    // Summary text
+    const stairSummary = ctx.getToolSummaryText('slope_stair', { slope_stair: base });
+    assert.ok(stairSummary.includes('15 ขั้น'));
+    assert.ok(stairSummary.includes('กฎกระทรวง ฉบับที่ 55'));
+    const pipeSummary = ctx.getToolSummaryText('slope_stair', { slope_stair: { ...base, mode: 'pipe' } });
+    assert.ok(pipeSummary.includes('10 ซม.'));
+    assert.ok(pipeSummary.includes('ยังไม่ยืนยัน'));
 });
 
 test('construction_calc: tiles, paint, and concrete calculations', () => {

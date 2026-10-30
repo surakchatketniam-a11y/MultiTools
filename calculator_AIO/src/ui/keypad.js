@@ -158,6 +158,11 @@ function getToolFieldBindings(toolId) {
                 { get: () => s().exportRate, set: (v) => { s().exportRate = v; } }
             ];
         }
+        case 'slope_stair': {
+            const s = () => appState.slope_stair;
+            const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
+            return slopeStairFieldKeys(s().mode).map(field);
+        }
         case 'btu_calc':
             return [
                 { get: () => appState.btu_calc.width, set: (v) => { appState.btu_calc.width = v; } },

@@ -2886,8 +2886,230 @@ function renderSolarRooftopTool(container) {
     }
 }
 
+/* -----------------------------------------------------------
+ * slope_stair: บันไดตามกฎกระทรวง ฉบับที่ 55 (พ.ศ. 2543) และความลาดเอียงท่อ
+ * ค่าบันไดอ่านจากข้อความกฎกระทรวง (ข้อ 23, 24, 26) ส่วนค่าความลาดท่อเป็นแนวปฏิบัติ ยังไม่ยืนยัน
+ * ----------------------------------------------------------- */
+const SLOPE_STAIR_RULES = {
+    house: { key: 'house', label: 'บ้านพักอาศัย (ข้อ 23)', maxRiserCm: 20, minTreadCm: 22, minWidthCm: 80, maxFlightM: 3, headroomM: 1.9 },
+    other: { key: 'other', label: 'อาคารอยู่อาศัยรวม หอพัก สำนักงาน อาคารพาณิชย์ (ข้อ 24)', maxRiserCm: 18, minTreadCm: 25, minWidthCm: 120, maxFlightM: 4, headroomM: 2.1 }
+};
+const STAIR_COMFORT_MIN_CM = 60;   // 2R + T แนวปฏิบัติความสบาย ไม่ใช่ข้อบังคับ
+const STAIR_COMFORT_MAX_CM = 63;
+const STAIR_COMFORT_TARGET_CM = 61.5;
+const SLOPE_PIPE_PRESETS = [
+    { ratio: 50, label: '1 : 50 ท่อโสโครก 4 นิ้ว (เร็ว)' },
+    { ratio: 100, label: '1 : 100 ท่อโสโครก/น้ำทิ้ง' },
+    { ratio: 200, label: '1 : 200 ท่อน้ำทิ้ง/น้ำฝน (ช้า)' }
+];
+const SLOPE_PIPE_DATA_VERIFIED = false;
+
+function slopeStairFieldKeys(mode) {
+    return mode === 'pipe' ? ['pipeLengthM', 'pipeRatio'] : ['floorHeightCm', 'clearWidthCm'];
+}
+
+function calculateStair(st) {
+    const rules = SLOPE_STAIR_RULES[st.buildingClass] || SLOPE_STAIR_RULES.house;
+    const heightCm = numberOrDefault(st.floorHeightCm, NaN);
+    if (!Number.isFinite(heightCm) || heightCm <= 0 || heightCm > 1500) return { valid: false, reason: 'invalid_height' };
+    const widthRaw = String(st.clearWidthCm ?? '').trim();
+    let widthCm = null;
+    if (widthRaw !== '') {
+        widthCm = parseNumericInput(widthRaw);
+        if (!Number.isFinite(widthCm) || widthCm <= 0) return { valid: false, reason: 'invalid_width' };
+    }
+    const minSteps = Math.max(1, Math.ceil(heightCm / rules.maxRiserCm - 1e-9));
+    const options = [];
+    for (let n = minSteps; n <= minSteps + 2; n++) {
+        const riserCm = heightCm / n;
+        const treadCm = Math.max(rules.minTreadCm, Math.round((STAIR_COMFORT_TARGET_CM - 2 * riserCm) * 2) / 2);
+        const comfortCm = 2 * riserCm + treadCm;
+        options.push({
+            steps: n, treads: n - 1, riserCm, treadCm, comfortCm,
+            comfortOk: comfortCm >= STAIR_COMFORT_MIN_CM - 1e-9 && comfortCm <= STAIR_COMFORT_MAX_CM + 1e-9,
+            runCm: (n - 1) * treadCm,
+            angleDeg: Math.atan(riserCm / treadCm) * 180 / Math.PI
+        });
+    }
+    const primary = options.find(o => o.comfortOk) || options[0];
+    const flights = Math.max(1, Math.ceil(heightCm / (rules.maxFlightM * 100) - 1e-9));
+    return {
+        valid: true, rules, heightCm, options, primary,
+        flights, landings: flights - 1,
+        widthCm, widthOk: widthCm === null ? null : widthCm >= rules.minWidthCm
+    };
+}
+
+function calculatePipeSlope(st) {
+    const lengthM = numberOrDefault(st.pipeLengthM, NaN);
+    const ratio = numberOrDefault(st.pipeRatio, NaN);
+    if (!Number.isFinite(lengthM) || lengthM <= 0) return { valid: false, reason: 'invalid_length' };
+    if (!Number.isFinite(ratio) || ratio <= 0) return { valid: false, reason: 'invalid_ratio' };
+    return {
+        valid: true, lengthM, ratio,
+        dropCm: lengthM * 100 / ratio,
+        percent: 100 / ratio,
+        angleDeg: Math.atan(1 / ratio) * 180 / Math.PI,
+        dropPerMeterCm: 100 / ratio
+    };
+}
+
+function renderSlopeStairTool(container) {
+    if (!appState.slope_stair) {
+        appState.slope_stair = { mode: 'stair', buildingClass: 'house', floorHeightCm: '300', clearWidthCm: '', pipeLengthM: '10', pipeRatio: '100' };
+    }
+    const st = appState.slope_stair;
+    const mode = st.mode === 'pipe' ? 'pipe' : 'stair';
+    const row = (label, value) => `<div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">${label}</span><span class="font-semibold font-mono text-right">${value}</span></div>`;
+    const modeBtn = (key, label) => `<button type="button" class="segment-btn ${mode === key ? 'active' : ''}" aria-pressed="${mode === key}" data-slope-mode="${key}" style="min-height: 44px;">${label}</button>`;
+    let bodyHTML = '';
+    let banner;
+
+    if (mode === 'stair') {
+        const calc = calculateStair(st);
+        const classBtn = key => {
+            const on = (SLOPE_STAIR_RULES[st.buildingClass] ? st.buildingClass : 'house') === key;
+            return `<button type="button" class="tool-chip-btn slope-class-chip ${on ? 'active font-bold' : ''}" aria-pressed="${on}" data-slope-class="${key}" style="min-height: 44px;">${SLOPE_STAIR_RULES[key].label}</button>`;
+        };
+        let resultHTML = '';
+        if (calc.valid) {
+            const p = calc.primary;
+            const r = calc.rules;
+            const optionRows = calc.options.map(o => `<div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">${formatNum(o.steps, 0)} ขั้น</span><span class="font-mono text-right">ลูกตั้ง ${formatNum(o.riserCm, 1)} · ลูกนอน ${formatNum(o.treadCm, 1)} ซม.${o.comfortOk ? '' : ' (นอกช่วงสบาย)'}</span></div>`).join('');
+            const widthLine = calc.widthOk === null ? '' : row(`ความกว้างสุทธิ ${formatNum(calc.widthCm, 0)} ซม.`, calc.widthOk ? `ผ่าน (ขั้นต่ำ ${r.minWidthCm})` : `ไม่ผ่าน ต้องไม่น้อยกว่า ${r.minWidthCm} ซม.`);
+            resultHTML = `
+                <div class="themed-result-card p-4 space-y-3">
+                    <div class="text-xs text-[var(--app-muted)] font-medium">จำนวนขั้นบันไดที่แนะนำ (${r.label})</div>
+                    <div class="themed-result-value text-2xl font-bold font-mono break-words">${formatNum(p.steps, 0)} ขั้น</div>
+                    <div class="text-xs text-[var(--app-muted)]">ลูกตั้ง ${formatNum(p.riserCm, 1)} ซม. · ลูกนอน ${formatNum(p.treadCm, 1)} ซม. · 2R + T = ${formatNum(p.comfortCm, 1)} ซม.</div>
+                    <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                        ${row('ความสูงระหว่างชั้น', `${formatNum(calc.heightCm, 1)} ซม.`)}
+                        ${row('ระยะแนวราบรวม (ไม่รวมชานพัก)', `${formatNum(p.runCm, 0)} ซม.`)}
+                        ${row('มุมลาดของบันได', `${formatNum(p.angleDeg, 1)}°`)}
+                        ${row('จำนวนช่วงบันได', `${formatNum(calc.flights, 0)} ช่วง (ชานพัก ${formatNum(calc.landings, 0)} แห่ง)`)}
+                        ${widthLine}
+                    </div>
+                    <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                        <div class="font-semibold text-[var(--app-ink)]">ทางเลือกจำนวนขั้น</div>
+                        ${optionRows}
+                    </div>
+                    <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1 text-xs text-[var(--app-muted)]">
+                        <div>เกณฑ์ตามกฎกระทรวง: ลูกตั้งไม่เกิน ${r.maxRiserCm} ซม. ลูกนอน (หักส่วนเหลื่อม) ไม่น้อยกว่า ${r.minTreadCm} ซม. ความกว้างสุทธิไม่น้อยกว่า ${r.minWidthCm} ซม.</div>
+                        <div>ช่วงบันไดสูงไม่เกิน ${r.maxFlightM} ม. ถ้าสูงกว่านี้ต้องมีชานพักทุก ${r.maxFlightM} ม. ระยะดิ่งใต้ท้องบันไดไม่น้อยกว่า ${formatNum(r.headroomM, 2)} ม.</div>
+                    </div>
+                </div>`;
+            banner = `บันได <span class="text-lg text-[var(--app-accent)] underline">${formatNum(p.steps, 0)} ขั้น</span><span class="text-xs font-normal opacity-80 block mt-1">ลูกตั้ง ${formatNum(p.riserCm, 1)} ซม. · ลูกนอน ${formatNum(p.treadCm, 1)} ซม.</span>`;
+        } else {
+            resultHTML = `<div class="themed-subcard p-3 text-xs font-semibold" role="alert">${calc.reason === 'invalid_width' ? 'ความกว้างบันไดต้องเป็นตัวเลขมากกว่า 0 หรือเว้นว่างไว้' : 'ความสูงระหว่างชั้นต้องเป็นตัวเลขมากกว่า 0 (ซม.)'}</div>`;
+        }
+        bodyHTML = `
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ประเภทอาคาร</div>
+                <div class="grid grid-cols-1 gap-2">${classBtn('house')}${classBtn('other')}</div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'ความสูงระหว่างชั้น (พื้นถึงพื้น)', st.floorHeightCm, 'ซม.', 'เช่น 300')}
+                ${createKeypadFieldHTML(1, 'ความกว้างสุทธิของบันได (ไม่บังคับ)', st.clearWidthCm, 'ซม.', 'เช่น 90')}
+            </div>
+            ${resultHTML}
+            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1" role="note">
+                <div>เกณฑ์บันไดอ่านจากข้อความกฎกระทรวง ฉบับที่ 55 (พ.ศ. 2543) ข้อ 23 - 26 ข้อ 24 กรณีพื้นที่ชั้นเหนือขึ้นไปรวมกันเกิน 300 ตร.ม. ต้องกว้างไม่น้อยกว่า 150 ซม. หรือมีสองบันได และอาคารชุมนุมคนมีเกณฑ์เพิ่ม ต้องตรวจกับข้อความฉบับเต็ม</div>
+                <div>2R + T อยู่ระหว่าง ${STAIR_COMFORT_MIN_CM} - ${STAIR_COMFORT_MAX_CM} ซม. เป็นแนวปฏิบัติด้านความสบายในการก้าวเดิน ไม่ใช่ข้อบังคับ บันไดโค้งเกิน 90 องศา ลูกนอนเฉลี่ยต้องไม่น้อยกว่าเกณฑ์เดิมและอาจไม่ต้องมีชานพัก (ข้อ 26) ราวบันไดและเกณฑ์อื่นไม่ได้คำนวณ ต้องให้ผู้ออกแบบตรวจ</div>
+            </div>`;
+    } else {
+        const calc = calculatePipeSlope(st);
+        const presetChips = SLOPE_PIPE_PRESETS.map(p => `<button type="button" class="tool-chip-btn slope-pipe-chip ${Number(st.pipeRatio) === p.ratio ? 'active font-bold' : ''}" aria-pressed="${Number(st.pipeRatio) === p.ratio}" data-slope-ratio="${p.ratio}" style="min-height: 44px;">${p.label}</button>`).join('');
+        let resultHTML;
+        if (calc.valid) {
+            resultHTML = `
+                <div class="themed-result-card p-4 space-y-3">
+                    <div class="text-xs text-[var(--app-muted)] font-medium">ระดับท้ายท่อต้องต่ำกว่าหัวท่อ</div>
+                    <div class="themed-result-value text-2xl font-bold font-mono break-words">${formatNum(calc.dropCm, 1)} ซม.</div>
+                    <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                        ${row('ความยาวท่อ', `${formatNum(calc.lengthM, 2)} ม.`)}
+                        ${row('ความลาดเอียง', `1 : ${formatNum(calc.ratio, 0)} (${formatNum(calc.percent, 2)}%)`)}
+                        ${row('ระดับลดต่อท่อ 1 เมตร', `${formatNum(calc.dropPerMeterCm, 2)} ซม.`)}
+                        ${row('มุมเอียง', `${formatNum(calc.angleDeg, 2)}°`)}
+                    </div>
+                </div>`;
+            banner = `ท่อยาว ${formatNum(calc.lengthM, 2)} ม. ลดระดับ <span class="text-lg text-[var(--app-accent)] underline">${formatNum(calc.dropCm, 1)} ซม.</span><span class="text-xs font-normal opacity-80 block mt-1">ความลาด 1 : ${formatNum(calc.ratio, 0)}</span>`;
+        } else {
+            resultHTML = `<div class="themed-subcard p-3 text-xs font-semibold" role="alert">${calc.reason === 'invalid_ratio' ? 'อัตราส่วนความลาด (1 : N) ต้องเป็นตัวเลขมากกว่า 0' : 'ความยาวท่อต้องเป็นตัวเลขมากกว่า 0'}</div>`;
+        }
+        bodyHTML = `
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'ความยาวท่อ', st.pipeLengthM, 'เมตร', 'เช่น 10')}
+            </div>
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ความลาดเอียงที่ใช้บ่อย</div>
+                <div class="grid grid-cols-1 gap-2">${presetChips}</div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(1, 'ความลาดเอียง 1 : N (N =)', st.pipeRatio, '', 'เช่น 100')}
+            </div>
+            ${resultHTML}
+            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1" role="note">
+                <div class="font-semibold text-[var(--app-ink)]">ค่าความลาดยังไม่ยืนยัน</div>
+                <div>อัตรา 1 : 50, 1 : 100 และ 1 : 200 เป็นแนวปฏิบัติของงานท่อระบายน้ำที่พบทั่วไป ยังไม่ได้ตรวจกับข้อกำหนดทางกฎหมายหรือมาตรฐานท่อ ขนาดท่อและโครงการเฉพาะอาจกำหนดต่างกัน ให้ตรวจกับผู้ออกแบบหรือหน่วยงานที่เกี่ยวข้อง</div>
+                <div>สูตรคำนวณคือความยาวท่อ x (1 / N) เป็นเรขาคณิตล้วน</div>
+            </div>`;
+    }
+
+    container.innerHTML = `
+        <div class="slope-stair-tool flex flex-col gap-3 p-1">
+            <div class="segment-group grid-cols-2" role="group" aria-label="โหมด">
+                ${modeBtn('stair', 'บันได')}
+                ${modeBtn('pipe', 'ความลาดท่อ')}
+            </div>
+            ${bodyHTML}
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    container.querySelectorAll('[data-slope-mode]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const next = btn.dataset.slopeMode === 'pipe' ? 'pipe' : 'stair';
+            if (next === mode) return;
+            st.mode = next;
+            appState.activeFieldIndex = 0;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('[data-slope-class]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.buildingClass = btn.dataset.slopeClass === 'other' ? 'other' : 'house';
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('[data-slope-ratio]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.pipeRatio = btn.dataset.slopeRatio;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    if (banner) {
+        setStatusBanner(mode === 'pipe' ? 'warning' : 'success', banner);
+    } else {
+        setStatusBanner('empty', mode === 'pipe' ? 'กรอกความยาวท่อและความลาดเอียง' : 'กรอกความสูงระหว่างชั้น');
+    }
+}
+
 (function(root) {
     const exportsObj = {
+        SLOPE_STAIR_RULES,
+        STAIR_COMFORT_MIN_CM,
+        STAIR_COMFORT_MAX_CM,
+        SLOPE_PIPE_PRESETS,
+        SLOPE_PIPE_DATA_VERIFIED,
+        slopeStairFieldKeys,
+        calculateStair,
+        calculatePipeSlope,
+        renderSlopeStairTool,
         SOLAR_PSH,
         SOLAR_PR,
         SOLAR_PANEL_WATT,

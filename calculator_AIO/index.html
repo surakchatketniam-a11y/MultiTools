@@ -1854,7 +1854,7 @@
     <div id="printFormalReceipt" class="hidden"></div>
 
     <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
-    <script src="src/bundle.js?v=86"></script>
+    <script src="src/bundle.js?v=87"></script>
 
     <script>
         function getSafeDateStr(offsetDays = 0) {
@@ -2370,6 +2370,16 @@
                 contractYears: '10'
             },
 
+            // Engineering: stair & pipe slope
+            slope_stair: {
+                mode: 'stair',
+                buildingClass: 'house',
+                floorHeightCm: '300',
+                clearWidthCm: '',
+                pipeLengthM: '10',
+                pipeRatio: '100'
+            },
+
             // 24. Car Hire Purchase Loan
             car_loan: {
                 vehicleType: 'car',
@@ -2593,6 +2603,7 @@
                 case 'food_costing':     renderFoodCostingTool(topPanel); break;
                 case 'construction_calc': renderConstructionTool(topPanel); break;
                 case 'btu_calc':         renderBtuTool(topPanel); break;
+                case 'slope_stair': renderSlopeStairTool(topPanel); break;
                 case 'solar_rooftop': renderSolarRooftopTool(topPanel); break;
                 case 'wire_data': renderWireDataTool(topPanel); break;
                 case 'conduit_fill': renderConduitFillTool(topPanel); break;

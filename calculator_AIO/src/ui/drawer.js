@@ -692,6 +692,19 @@ function getToolSummaryText(toolId, stateObj) {
             const payback = calc.paybackYears === null ? 'ไม่คืนทุนใน 25 ปี' : `${formatNum(calc.paybackYears, 1)} ปี`;
             return `สรุปโซลาร์เซลล์หลังคาบ้าน\n${divider}\n• ใช้ไฟ ${formatNum(calc.daytimeKwh / ((Number(state.solar_rooftop.daytimePct) || 1) / 100), 0)} หน่วย/เดือน ค่าไฟเฉลี่ย ${formatNum(calc.unitPrice, 2)} บาท/หน่วย\n• ขนาดระบบแนะนำ: ${formatNum(calc.sizeKwp, 2)} kWp (${formatNum(calc.panels, 0)} แผง) พื้นที่หลังคาประมาณ ${formatNum(calc.roofAreaSqm, 1)} ตร.ม.\n• ผลิตไฟประมาณ ${formatNum(calc.monthlyProductionKwh, 0)} หน่วย/เดือน (ใช้เอง ${formatNum(calc.selfKwh, 0)} ขายคืน ${formatNum(calc.exportKwh, 0)})\n• ประหยัด+ขายไฟ ${formatNum(calc.monthlySaving, 0)} บาท/เดือน (${formatNum(calc.yearlySaving, 0)} บาท/ปี)\n• ค่าติดตั้งประมาณ ${formatNum(calc.systemCost, 0)} บาท คืนทุน ${payback}\n• กำไรสะสม 25 ปี ${formatNum(calc.lifetimeProfit, 0)} บาท\n(ค่าประมาณ นโยบายรับซื้อไฟและราคาติดตั้งยังไม่ยืนยัน ตรวจกับ กฟน./กฟภ. และผู้ติดตั้งก่อนตัดสินใจ)\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'slope_stair': {
+            const st = state.slope_stair || {};
+            if (st.mode === 'pipe') {
+                const calc = (typeof calculatePipeSlope === 'function') ? calculatePipeSlope(st) : { valid: false };
+                if (!calc.valid) return `สรุปความลาดเอียงท่อ\n${divider}\nกรอกความยาวท่อและความลาดเอียงให้ถูกต้อง\n(คำนวณโดย Multitools Calculator)`;
+                return `สรุปความลาดเอียงท่อ\n${divider}\n• ความยาวท่อ ${formatNum(calc.lengthM, 2)} ม. ความลาด 1 : ${formatNum(calc.ratio, 0)} (${formatNum(calc.percent, 2)}%)\n• ระดับท้ายท่อต้องต่ำกว่าหัวท่อ ${formatNum(calc.dropCm, 1)} ซม. (${formatNum(calc.dropPerMeterCm, 2)} ซม./เมตร)\n(ค่าความลาดเป็นแนวปฏิบัติ ยังไม่ยืนยัน ตรวจกับผู้ออกแบบ)\n(คำนวณโดย Multitools Calculator)`;
+            }
+            const calc = (typeof calculateStair === 'function') ? calculateStair(st) : { valid: false };
+            if (!calc.valid) return `สรุปบันได\n${divider}\nกรอกความสูงระหว่างชั้นให้ถูกต้อง\n(คำนวณโดย Multitools Calculator)`;
+            const p = calc.primary;
+            const widthLine = calc.widthOk === null ? '' : `\n• ความกว้างสุทธิ ${formatNum(calc.widthCm, 0)} ซม. ${calc.widthOk ? 'ผ่าน' : 'ไม่ผ่าน'} (ขั้นต่ำ ${formatNum(calc.rules.minWidthCm, 0)} ซม.)`;
+            return `สรุปบันได ${calc.rules.label}\n${divider}\n• ความสูงระหว่างชั้น ${formatNum(calc.heightCm, 1)} ซม.\n• จำนวนขั้น ${formatNum(p.steps, 0)} ขั้น ลูกตั้ง ${formatNum(p.riserCm, 1)} ซม. ลูกนอน ${formatNum(p.treadCm, 1)} ซม. (2R+T = ${formatNum(p.comfortCm, 1)})\n• ระยะแนวราบรวม ${formatNum(p.runCm, 0)} ซม. มุมลาด ${formatNum(p.angleDeg, 1)}°\n• ${formatNum(calc.flights, 0)} ช่วงบันได ชานพัก ${formatNum(calc.landings, 0)} แห่ง${widthLine}\n(อ้างอิงกฎกระทรวง ฉบับที่ 55 (พ.ศ. 2543) ให้ผู้ออกแบบตรวจก่อนก่อสร้างจริง)\n(คำนวณโดย Multitools Calculator)`;
+        }
         case 'btu_calc': {
             const calc = (typeof calculateBtu === 'function') ? calculateBtu(state.btu_calc || {}) : { valid: false };
             if (!calc.valid) return `สรุปขนาดแอร์ BTU\n${divider}\nยังไม่ได้ป้อนขนาดห้อง\n(คำนวณโดย Multitools Calculator)`;
