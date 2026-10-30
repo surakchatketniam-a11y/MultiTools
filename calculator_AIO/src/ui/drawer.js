@@ -665,11 +665,12 @@ function getToolSummaryText(toolId, stateObj) {
         }
         case 'conduit_fill': {
             const calc = (typeof calculateConduitFill === 'function') ? calculateConduitFill(state.conduit_fill || {}) : { valid: false };
-            const note = '(ค่าประมาณ พื้นที่ท่อคิดจากขนาดเรียก เฉพาะสาย IEC 01 ควรให้ช่างตรวจ)';
+            const cableName = calc.cableType === 'nyy' ? 'NYY แกนเดียว' : 'IEC 01';
+            const note = `(ค่าประมาณ พื้นที่ท่อคิดจากขนาดเรียก เฉพาะสาย ${cableName} ควรให้ช่างตรวจ)`;
             if (!calc.valid) return `สรุปขนาดท่อร้อยสาย\n${divider}\nยังไม่ได้ป้อนรายการสายที่คำนวณได้\n(คำนวณโดย Multitools Calculator)`;
             if (calc.mode === 'count') {
                 const perConduit = calc.perConduit.map(c => `• ท่อ ${c.mm} มม. (${c.inch} นิ้ว): ${c.maxCount > 0 ? c.maxCount + ' เส้น' : 'ใส่ไม่ได้'}`).join('\n');
-                return `สรุปจำนวนสายในท่อ\n${divider}\n• สาย IEC 01 ขนาด ${formatNum(calc.wireSizeSqmm, 1)} ตร.มม. (เส้นผ่านศูนย์กลางนอก ${formatNum(calc.wireOuterMm, 1)} มม.)\n${perConduit}\n----------------------------------\nท่อ ${calc.conduitMm} มม. ร้อยได้สูงสุด ${calc.maxCount > 0 ? calc.maxCount + ' เส้น' : 'ใส่ไม่ได้'}\n${note}\n(คำนวณโดย Multitools Calculator)`;
+                return `สรุปจำนวนสายในท่อ\n${divider}\n• สาย ${cableName} ขนาด ${formatNum(calc.wireSizeSqmm, 1)} ตร.มม. (เส้นผ่านศูนย์กลางนอก ${formatNum(calc.wireOuterMm, 1)} มม.)\n${perConduit}\n----------------------------------\nท่อ ${calc.conduitMm} มม. ร้อยได้สูงสุด ${calc.maxCount > 0 ? calc.maxCount + ' เส้น' : 'ใส่ไม่ได้'}\n${note}\n(คำนวณโดย Multitools Calculator)`;
             }
             const itemLines = calc.items.map(i => `• สาย ${formatNum(i.sizeSqmm, 1)} ตร.มม. x ${i.count} เส้น (${formatNum(i.areaMm2, 1)} ตร.มม.)`).join('\n');
             const result = calc.recommended ? `ท่อที่เล็กที่สุดที่ร้อยได้: ท่อ ${calc.recommended.mm} มม. (${calc.recommended.inch} นิ้ว) ใช้พื้นที่ท่อ ${formatNum(calc.recommended.fillPct, 1)}% จากเกณฑ์ ${formatNum(calc.limitPct, 0)}%` : 'สายมากเกินกว่าท่อที่มีในตาราง (เกินท่อ 150 มม.)';

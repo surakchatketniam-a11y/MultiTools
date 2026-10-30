@@ -2265,6 +2265,39 @@ var CONDUIT_SIZES = [
 ];
 var CONDUIT_MAX_CONDUCTORS = 400;
 
+// เส้นผ่านศูนย์กลางนอกสูงสุด (มม.) ของสาย NYY 450/750 V แกนเดียว เปลือกสองชั้น จากแค็ตตาล็อก Yazaki หน้า B29 (ขนาด 1 - 4 ตร.มม. ใช้ค่าของสายตีเกลียว)
+// ข้อความในไฟล์ PDF คอลัมน์ปนกัน ค่านี้เรียงตามลำดับขนาดแล้วตรวจย้อนกับตาราง C2 ของคู่มือ พ.ศ. 2564 ได้ตรงกัน 153 จาก 156 ช่อง
+// (อีก 3 ช่องคู่มือให้มากกว่า 1 เส้น) ตาราง C3 (XLPE) ยังไม่ได้ทำ เพราะค่าจากแค็ตตาล็อกสาย CV ตรงเพียง 100 จาก 138 ช่อง (ดู ENGINEERING_REFERENCE_STANDARDS.md ข้อ 3.4)
+var CONDUIT_NYY_DIAMETERS = [
+    { sizeSqmm: 1,   outerMm: 8.8 },
+    { sizeSqmm: 1.5, outerMm: 9.2 },
+    { sizeSqmm: 2.5, outerMm: 9.8 },
+    { sizeSqmm: 4,   outerMm: 10.5 },
+    { sizeSqmm: 6,   outerMm: 11.0 },
+    { sizeSqmm: 10,  outerMm: 12.0 },
+    { sizeSqmm: 16,  outerMm: 13.0 },
+    { sizeSqmm: 25,  outerMm: 14.5 },
+    { sizeSqmm: 35,  outerMm: 16.0 },
+    { sizeSqmm: 50,  outerMm: 17.0 },
+    { sizeSqmm: 70,  outerMm: 19.0 },
+    { sizeSqmm: 95,  outerMm: 21.5 },
+    { sizeSqmm: 120, outerMm: 23.0 },
+    { sizeSqmm: 150, outerMm: 26.0 },
+    { sizeSqmm: 185, outerMm: 28.0 },
+    { sizeSqmm: 240, outerMm: 31.5 },
+    { sizeSqmm: 300, outerMm: 35.0 },
+    { sizeSqmm: 400, outerMm: 38.5 },
+    { sizeSqmm: 500, outerMm: 43.0 }
+];
+var CONDUIT_CABLE_TYPES = {
+    thw: { key: 'thw', label: 'IEC 01 (THW)', diameters: CONDUIT_WIRE_DIAMETERS },
+    nyy: { key: 'nyy', label: 'NYY แกนเดียว', diameters: CONDUIT_NYY_DIAMETERS }
+};
+
+function conduitCableType(type) {
+    return CONDUIT_CABLE_TYPES[type] || CONDUIT_CABLE_TYPES.thw;
+}
+
 // สัดส่วนพื้นที่สายต่อพื้นที่ท่อสูงสุด: 1 เส้น 53%, 2 เส้น 31%, ตั้งแต่ 3 เส้นขึ้นไป 40% (ตาราง C5 ของคู่มือ พ.ศ. 2564)
 function conduitFillLimit(conductorCount) {
     if (conductorCount === 1) return 0.53;
@@ -2276,14 +2309,14 @@ function conduitAreaMm2(tradeMm) {
     return Math.PI / 4 * tradeMm * tradeMm;
 }
 
-function conduitWireAreaMm2(sizeSqmm) {
-    const wire = CONDUIT_WIRE_DIAMETERS.find(w => w.sizeSqmm === sizeSqmm);
+function conduitWireAreaMm2(sizeSqmm, type) {
+    const wire = conduitCableType(type).diameters.find(w => w.sizeSqmm === sizeSqmm);
     return wire ? Math.PI / 4 * wire.outerMm * wire.outerMm : null;
 }
 
 // จำนวนสายขนาดเดียวกันมากที่สุดที่ร้อยในท่อได้ (0 = ใส่ไม่ได้แม้เส้นเดียว)
-function conduitMaxConductors(sizeSqmm, conduitMm) {
-    const wireArea = conduitWireAreaMm2(sizeSqmm);
+function conduitMaxConductors(sizeSqmm, conduitMm, type) {
+    const wireArea = conduitWireAreaMm2(sizeSqmm, type);
     if (wireArea === null || !(conduitMm > 0)) return 0;
     const area = conduitAreaMm2(conduitMm);
     let best = 0;
@@ -2295,20 +2328,22 @@ function conduitMaxConductors(sizeSqmm, conduitMm) {
 
 function calculateConduitFill(st) {
     const mode = st.mode === 'count' ? 'count' : 'size';
+    const cable = conduitCableType(st.cableType);
 
     if (mode === 'count') {
         const wireSize = Number(st.wireSize);
         const conduitMm = Number(st.conduit);
-        if (conduitWireAreaMm2(wireSize) === null || !CONDUIT_SIZES.some(c => c.mm === conduitMm)) return { valid: false, mode };
-        const perConduit = CONDUIT_SIZES.map(c => ({ mm: c.mm, inch: c.inch, maxCount: conduitMaxConductors(wireSize, c.mm) }));
+        if (conduitWireAreaMm2(wireSize, cable.key) === null || !CONDUIT_SIZES.some(c => c.mm === conduitMm)) return { valid: false, mode };
+        const perConduit = CONDUIT_SIZES.map(c => ({ mm: c.mm, inch: c.inch, maxCount: conduitMaxConductors(wireSize, c.mm, cable.key) }));
         return {
             valid: true,
             mode,
+            cableType: cable.key,
             wireSizeSqmm: wireSize,
-            wireOuterMm: CONDUIT_WIRE_DIAMETERS.find(w => w.sizeSqmm === wireSize).outerMm,
+            wireOuterMm: cable.diameters.find(w => w.sizeSqmm === wireSize).outerMm,
             conduitMm,
             conduitInch: CONDUIT_SIZES.find(c => c.mm === conduitMm).inch,
-            maxCount: conduitMaxConductors(wireSize, conduitMm),
+            maxCount: conduitMaxConductors(wireSize, conduitMm, cable.key),
             perConduit
         };
     }
@@ -2322,7 +2357,7 @@ function calculateConduitFill(st) {
         if (countRaw === '') continue;
         const size = Number(row.size);
         const count = parseNumericInput(countRaw);
-        const wireArea = conduitWireAreaMm2(size);
+        const wireArea = conduitWireAreaMm2(size, cable.key);
         if (wireArea === null || !Number.isInteger(count) || count < 1) return { valid: false, mode, reason: 'invalid_row' };
         totalCount += count;
         if (totalCount > CONDUIT_MAX_CONDUCTORS) return { valid: false, mode, reason: 'too_many' };
@@ -2341,6 +2376,7 @@ function calculateConduitFill(st) {
     return {
         valid: true,
         mode,
+        cableType: cable.key,
         items,
         totalCount,
         totalAreaMm2,
@@ -2359,9 +2395,11 @@ function renderConduitFillTool(container) {
     }
     const st = appState.conduit_fill;
     const mode = st.mode === 'count' ? 'count' : 'size';
+    const cable = conduitCableType(st.cableType);
     const calc = calculateConduitFill(st);
     const row = (label, value) => `<div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">${label}</span><span class="font-semibold font-mono text-right">${value}</span></div>`;
-    const sizeOptions = selected => CONDUIT_WIRE_DIAMETERS.map(w => `<option value="${w.sizeSqmm}" ${String(w.sizeSqmm) === String(selected) ? 'selected' : ''}>${w.sizeSqmm} ตร.มม.</option>`).join('');
+    const cableBtn = c => `<button type="button" class="segment-btn ${cable.key === c.key ? 'active' : ''}" aria-pressed="${cable.key === c.key}" data-conduit-cable="${c.key}" style="min-height: 44px;">${c.label}</button>`;
+    const sizeOptions = selected => cable.diameters.map(w => `<option value="${w.sizeSqmm}" ${String(w.sizeSqmm) === String(selected) ? 'selected' : ''}>${w.sizeSqmm} ตร.มม.</option>`).join('');
     const segBtn = (key, label) => `<button type="button" class="segment-btn ${mode === key ? 'active' : ''}" aria-pressed="${mode === key}" data-conduit-mode="${key}" style="min-height: 44px;">${label}</button>`;
     let body = '';
 
@@ -2414,7 +2452,7 @@ function renderConduitFillTool(container) {
         const conduitChips = CONDUIT_SIZES.map(c => `<button type="button" class="tool-chip-btn conduit-size-chip ${Number(st.conduit) === c.mm ? 'active font-bold' : ''}" aria-pressed="${Number(st.conduit) === c.mm}" data-conduit-size="${c.mm}" style="min-height: 44px;">${c.mm} มม. (${c.inch})</button>`).join('');
         body = `
             <div class="themed-tool-card p-3 space-y-2 text-xs">
-                <label for="conduitWireSize" class="font-semibold text-[var(--app-ink)] block">ขนาดสาย IEC 01 (THW)</label>
+                <label for="conduitWireSize" class="font-semibold text-[var(--app-ink)] block">ขนาดสาย ${cable.label}</label>
                 <select id="conduitWireSize" class="airbnb-input text-xs w-full min-w-0" style="min-height: 44px;">${sizeOptions(st.wireSize)}</select>
             </div>
             <div class="themed-tool-card p-3 space-y-2 text-xs">
@@ -2438,6 +2476,10 @@ function renderConduitFillTool(container) {
 
     container.innerHTML = `
         <div class="conduit-fill-tool flex flex-col gap-3 p-1">
+            <div class="segment-group grid-cols-2" role="group" aria-label="ชนิดสาย">
+                ${cableBtn(CONDUIT_CABLE_TYPES.thw)}
+                ${cableBtn(CONDUIT_CABLE_TYPES.nyy)}
+            </div>
             <div class="segment-group grid-cols-2" role="group" aria-label="โหมดคำนวณ">
                 ${segBtn('size', 'หาขนาดท่อ')}
                 ${segBtn('count', 'ร้อยสายได้กี่เส้น')}
@@ -2445,12 +2487,30 @@ function renderConduitFillTool(container) {
             ${body}
             <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
                 <div>สัดส่วนพื้นที่สายรวมต่อพื้นที่ท่อไม่เกิน 53% (1 เส้น), 31% (2 เส้น), 40% (3 เส้นขึ้นไป) ตามตาราง C5 ของคู่มือ พ.ศ. 2564 พื้นที่ท่อคิดจากขนาดเรียก (มม.) ไม่ใช่เส้นผ่านศูนย์กลางภายในจริง ซึ่งต่างกันตามชนิดท่อ (EMT, IMC, RSC, PVC) ควรตรวจกับข้อมูลท่อรุ่นที่ใช้</div>
-                <div>เฉพาะสายเดี่ยว 60227 IEC 01 (THW) ใช้เส้นผ่านศูนย์กลางนอกสูงสุดจากแค็ตตาล็อก Yazaki ผลคำนวณตรงกับตาราง C1 ของคู่มือ 126 จาก 131 ช่อง ส่วนที่ต่างกัน 5 ช่อง คู่มือให้มากกว่า 1 เส้น เครื่องมือนี้จึงระมัดระวังกว่า</div>
+                <div>รองรับสายเดี่ยว 60227 IEC 01 (THW) และ NYY แกนเดียว ใช้เส้นผ่านศูนย์กลางนอกสูงสุดจากแค็ตตาล็อก Yazaki ผลคำนวณ THW ตรงกับตาราง C1 ของคู่มือ 126 จาก 131 ช่อง และ NYY ตรงกับตาราง C2 153 จาก 156 ช่อง ส่วนที่ต่างกัน คู่มือให้มากกว่าที่คำนวณได้ 1 เส้น เครื่องมือนี้จึงระมัดระวังกว่า สายชนิดอื่น (เช่น XLPE ตาราง C3) ยังไม่รองรับ</div>
                 <div>ค่าประมาณเพื่อประกอบการตัดสินใจ ไม่รวมการดัดท่อ ระยะดึงสาย และข้อกำหนดเฉพาะของผู้ผลิตท่อ ควรให้ช่างหรือวิศวกรตรวจ</div>
             </div>
         </div>
     `;
 
+    container.querySelectorAll('[data-conduit-cable]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const next = conduitCableType(btn.dataset.conduitCable);
+            if (next.key === cable.key) return;
+            st.cableType = next.key;
+            // ขนาดที่ไม่มีในสายชนิดใหม่ ใช้ขนาดที่ใกล้ที่สุดที่มี
+            const nearest = size => {
+                const wanted = Number(size);
+                return String(next.diameters.reduce((best, d) => (Math.abs(d.sizeSqmm - wanted) < Math.abs(best - wanted) ? d.sizeSqmm : best), next.diameters[0].sizeSqmm));
+            };
+            if (!next.diameters.some(d => String(d.sizeSqmm) === String(st.wireSize))) st.wireSize = nearest(st.wireSize);
+            (st.rows || []).forEach(r => {
+                if (!next.diameters.some(d => String(d.sizeSqmm) === String(r.size))) r.size = nearest(r.size);
+            });
+            persistAppState();
+            renderActiveTool();
+        });
+    });
     container.querySelectorAll('[data-conduit-mode]').forEach(btn => {
         btn.addEventListener('click', () => {
             st.mode = btn.dataset.conduitMode;
@@ -3130,6 +3190,9 @@ function renderSlopeStairTool(container) {
         calculateWireData,
         renderWireDataTool,
         CONDUIT_WIRE_DIAMETERS,
+        CONDUIT_NYY_DIAMETERS,
+        CONDUIT_CABLE_TYPES,
+        conduitCableType,
         CONDUIT_SIZES,
         conduitFillLimit,
         conduitAreaMm2,

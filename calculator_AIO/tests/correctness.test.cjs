@@ -4471,6 +4471,66 @@ test('slope_stair: stair steps by Ministerial Regulation 55 limits, comfort rule
     assert.ok(pipeSummary.includes('ยังไม่ยืนยัน'));
 });
 
+test('conduit_fill: NYY single-core cable matches manual table C2, THW stays default, XLPE (C3) unsupported', () => {
+    const ctx = context();
+    const NYY_C2 = {1:'1 1 3 5 8 12 21 - - - - -',1.5:'1 1 2 4 7 11 19 30 - - - -',2.5:'1 1 2 4 7 10 17 26 - - - -',4:'1 1 1 3 6 9 15 23 29 - - -',6:'- 1 1 3 5 8 13 21 26 - - -',10:'- 1 1 2 4 6 11 17 22 27 - -',16:'- 1 1 1 3 5 10 15 19 23 - -',25:'- 1 1 1 3 4 8 12 15 19 29 -',35:'- - 1 1 1 3 6 10 12 15 24 -',50:'- - 1 1 1 3 5 8 11 13 21 31',70:'- - - 1 1 2 4 7 8 11 17 24',95:'- - - 1 1 1 3 5 7 8 13 19',120:'- - - 1 1 1 3 4 6 7 11 17',150:'- - - - 1 1 1 3 4 5 9 13',185:'- - - - 1 1 1 3 4 5 7 11',240:'- - - - - 1 1 2 3 4 6 9',300:'- - - - - 1 1 1 2 3 5 7',400:'- - - - - - 1 1 1 2 4 6',500:'- - - - - - 1 1 1 1 3 4'};
+    const conduits = [15, 20, 25, 32, 40, 50, 65, 80, 90, 100, 125, 150];
+    assert.equal(ctx.CONDUIT_NYY_DIAMETERS.length, 19);
+    assert.deepEqual(Array.from(ctx.CONDUIT_NYY_DIAMETERS, d => d.sizeSqmm), Object.keys(NYY_C2).map(Number).sort((x, y) => x - y));
+    // Diameters grow with size
+    for (let i = 1; i < ctx.CONDUIT_NYY_DIAMETERS.length; i++) assert.ok(ctx.CONDUIT_NYY_DIAMETERS[i].outerMm > ctx.CONDUIT_NYY_DIAMETERS[i - 1].outerMm);
+
+    // Every numeric cell of manual table C2 (NYY, 2564 manual) compared with the engine: 153 of 156 equal, the other 3 allow one more wire in the manual
+    let equal = 0;
+    let total = 0;
+    const differences = [];
+    for (const [size, line] of Object.entries(NYY_C2)) {
+        const cells = line.split(' ');
+        assert.equal(cells.length, 12);
+        cells.forEach((cell, i) => {
+            if (cell === '-') return;
+            total++;
+            const mine = ctx.conduitMaxConductors(Number(size), conduits[i], 'nyy');
+            if (mine === Number(cell)) equal++;
+            else differences.push(size + '@' + conduits[i] + ':' + mine + ' vs ' + cell);
+        });
+    }
+    assert.equal(total, 156);
+    assert.equal(equal, 153);
+    assert.deepEqual(differences.sort(), ['2.5@40:6 vs 7', '240@80:1 vs 2', '4@40:5 vs 6']);
+
+    // Default cable type is THW and unchanged by the new option
+    assert.equal(ctx.conduitMaxConductors(2.5, 20), ctx.conduitMaxConductors(2.5, 20, 'thw'));
+    assert.equal(ctx.conduitCableType('xlpe').key, 'thw');
+    assert.equal(ctx.conduitCableType(undefined).key, 'thw');
+    assert.equal(ctx.conduitWireAreaMm2(1, 'thw'), null);
+    assert.ok(ctx.conduitWireAreaMm2(1, 'nyy') > 0);
+    assert.equal(ctx.conduitWireAreaMm2(500, 'thw'), null);
+    assert.ok(ctx.conduitWireAreaMm2(500, 'nyy') > 0);
+    // NYY is bigger than THW at the same size, so fewer fit
+    assert.ok(ctx.conduitMaxConductors(2.5, 25, 'nyy') < ctx.conduitMaxConductors(2.5, 25, 'thw'));
+
+    // Engine: sizing and counting with the NYY type
+    const size = ctx.calculateConduitFill({ mode: 'size', cableType: 'nyy', rows: [{ id: '1', size: '2.5', count: '3' }] });
+    assert.equal(size.valid, true);
+    assert.equal(size.cableType, 'nyy');
+    assert.equal(size.recommended.mm, 32);   // table C2: 2.5 sq.mm. fits 2 wires in a 25 mm conduit and 4 in 32 mm
+    const thwSize = ctx.calculateConduitFill({ mode: 'size', rows: [{ id: '1', size: '2.5', count: '3' }] });
+    assert.equal(thwSize.cableType, 'thw');
+    const count = ctx.calculateConduitFill({ mode: 'count', cableType: 'nyy', wireSize: '16', conduit: '32' });
+    assert.equal(count.maxCount, 1);
+    assert.equal(count.wireOuterMm, 13);
+    // Sizes belong to one type: 1 sq.mm. is NYY only and 500 sq.mm. is NYY only
+    assert.equal(ctx.calculateConduitFill({ mode: 'size', cableType: 'nyy', rows: [{ id: '1', size: '500', count: '1' }] }).valid, true);
+    assert.equal(ctx.calculateConduitFill({ mode: 'size', cableType: 'thw', rows: [{ id: '1', size: '500', count: '1' }] }).reason, 'invalid_row');
+    assert.equal(ctx.calculateConduitFill({ mode: 'count', cableType: 'thw', wireSize: '1', conduit: '20' }).valid, false);
+
+    // Summary names the cable
+    const summary = ctx.getToolSummaryText('conduit_fill', { conduit_fill: { mode: 'count', cableType: 'nyy', wireSize: '16', conduit: '32' } });
+    assert.ok(summary.includes('สาย NYY แกนเดียว ขนาด 16 ตร.มม.'));
+    assert.ok(summary.includes('เฉพาะสาย NYY แกนเดียว'));
+});
+
 test('construction_calc: tiles, paint, and concrete calculations', () => {
     const ctx = context();
 
