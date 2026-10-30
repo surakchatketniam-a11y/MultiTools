@@ -92,6 +92,12 @@ function getToolFieldBindings(toolId) {
                 { get: () => appState.tip.tipPct, set: (v) => { appState.tip.tipPct = v; } },
                 { get: () => appState.tip.people, set: (v) => { appState.tip.people = v; } }
             ];
+        case 'land_fill_calc': {
+            const s = () => appState.land_fill_calc;
+            const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
+            const tail = ['heightCm', 'shrinkPct', 'truck6Cap', 'truck10Cap', 'pricePerM3', 'spreadPerM3'].map(field);
+            return (s().mode === 'dim' ? [field('width'), field('length')] : [field('rai'), field('ngan'), field('wa')]).concat(tail);
+        }
         case 'btu_calc':
             return [
                 { get: () => appState.btu_calc.width, set: (v) => { appState.btu_calc.width = v; } },

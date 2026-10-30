@@ -325,8 +325,180 @@ function calculateWireBreaker(st) {
     };
 }
 
+/* -----------------------------------------------------------
+ * TOOL: ดินถมที่ & จำนวนเที่ยวรถดั๊มพ์ (land_fill_calc)
+ * ----------------------------------------------------------- */
+
+// ค่ากลางของช่วงอัตรายุบตัวใน ENGINEERING_REFERENCE_STANDARDS.md (ยังไม่ยืนยัน ผู้ใช้ปรับได้)
+var LAND_FILL_SOIL_PRESETS = [
+    { key: 'general',  label: 'ดินถมทั่วไป / ดินเหนียว / ดินดาน', shrinkPct: 25 },
+    { key: 'laterite', label: 'ดินลูกรัง',                          shrinkPct: 30 },
+    { key: 'sand',     label: 'ทรายถม',                            shrinkPct: 32.5 }
+];
+var LAND_FILL_SQM_PER_RAI = 1600;
+var LAND_FILL_SQM_PER_NGAN = 400;
+var LAND_FILL_SQM_PER_WA = 4;
+
+function calculateLandFill(st) {
+    const mode = st.mode === 'dim' ? 'dim' : 'land';
+    let areaSqm;
+    if (mode === 'land') {
+        const rai = numberOrDefault(st.rai, 0);
+        const ngan = numberOrDefault(st.ngan, 0);
+        const wa = numberOrDefault(st.wa, 0);
+        areaSqm = rai * LAND_FILL_SQM_PER_RAI + ngan * LAND_FILL_SQM_PER_NGAN + wa * LAND_FILL_SQM_PER_WA;
+        if (![rai, ngan, wa].every(v => Number.isFinite(v) && v >= 0)) return { valid: false };
+    } else {
+        const width = parseNumericInput(st.width);
+        const length = parseNumericInput(st.length);
+        areaSqm = width * length;
+    }
+    const heightCm = parseNumericInput(st.heightCm);
+    const shrinkPct = numberOrDefault(st.shrinkPct, 25);
+    const truck6Cap = numberOrDefault(st.truck6Cap, 5.5);
+    const truck10Cap = numberOrDefault(st.truck10Cap, 11);
+    const pricePerM3 = numberOrDefault(st.pricePerM3, 0);
+    const spreadPerM3 = numberOrDefault(st.spreadPerM3, 0);
+
+    if (![areaSqm, heightCm, shrinkPct, truck6Cap, truck10Cap, pricePerM3, spreadPerM3].every(Number.isFinite)
+        || areaSqm <= 0 || heightCm <= 0 || shrinkPct < 0 || shrinkPct >= 90
+        || truck6Cap <= 0 || truck10Cap <= 0 || pricePerM3 < 0 || spreadPerM3 < 0) {
+        return { valid: false };
+    }
+
+    const compactedM3 = areaSqm * (heightCm / 100);
+    // ตัวคูณเผื่อยุบ = 1 / (1 - อัตรายุบ) : ดินหลวม 1 คิว บดอัดแล้วเหลือ (1 - อัตรายุบ) คิว
+    const multiplier = 1 / (1 - shrinkPct / 100);
+    const looseM3 = compactedM3 * multiplier;
+    const tripsFor = capacity => Math.ceil(looseM3 / capacity - 1e-9);
+    const soilCost = looseM3 * pricePerM3;
+    const spreadCost = compactedM3 * spreadPerM3;
+
+    return {
+        valid: true,
+        mode,
+        areaSqm,
+        areaWa: areaSqm / LAND_FILL_SQM_PER_WA,
+        heightCm,
+        shrinkPct,
+        multiplier,
+        compactedM3,
+        looseM3,
+        truck6: { capacity: truck6Cap, trips: tripsFor(truck6Cap) },
+        truck10: { capacity: truck10Cap, trips: tripsFor(truck10Cap) },
+        soilCost,
+        spreadCost,
+        totalCost: soilCost + spreadCost
+    };
+}
+
+function renderLandFillTool(container) {
+    if (!appState.land_fill_calc) {
+        appState.land_fill_calc = {
+            mode: 'land', rai: '1', ngan: '0', wa: '0', width: '', length: '', heightCm: '50',
+            soil: 'general', shrinkPct: '25', truck6Cap: '5.5', truck10Cap: '11', pricePerM3: '', spreadPerM3: ''
+        };
+    }
+    const st = appState.land_fill_calc;
+    const mode = st.mode === 'dim' ? 'dim' : 'land';
+    const calc = calculateLandFill(st);
+    const currentShrink = parseNumericInput(st.shrinkPct);
+
+    const areaFields = mode === 'land'
+        ? `${createKeypadFieldHTML(0, 'พื้นที่ (ไร่)', st.rai, 'ไร่', 'เช่น 1')}
+           ${createKeypadFieldHTML(1, 'พื้นที่ (งาน)', st.ngan, 'งาน', 'เช่น 2')}
+           ${createKeypadFieldHTML(2, 'พื้นที่ (ตารางวา)', st.wa, 'ตร.ว.', 'เช่น 50')}`
+        : `${createKeypadFieldHTML(0, 'ความกว้างพื้นที่ถม', st.width, 'เมตร', 'เช่น 20')}
+           ${createKeypadFieldHTML(1, 'ความยาวพื้นที่ถม', st.length, 'เมตร', 'เช่น 40')}`;
+    const base = mode === 'land' ? 3 : 2;
+
+    const soilChips = LAND_FILL_SOIL_PRESETS.map(p => {
+        const active = currentShrink === p.shrinkPct;
+        return `<button type="button" class="tool-chip-btn land-soil-chip ${active ? 'active font-bold' : ''}" aria-pressed="${active}" data-soil="${p.key}" style="min-height: 44px;">${p.label} · ยุบ ${formatNum(p.shrinkPct, 1)}%</button>`;
+    }).join('');
+
+    let resultHTML = '';
+    if (calc.valid) {
+        const truckRow = (label, t) => `<div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">${label} (${formatNum(t.capacity, 1)} คิว/เที่ยว)</span><span class="font-semibold font-mono">${formatNum(t.trips, 0)} เที่ยว</span></div>`;
+        resultHTML = `
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">ปริมาตรดินที่ต้องสั่งซื้อ (คิวหลวม)</div>
+                <div class="themed-result-value text-2xl font-bold font-mono break-words">${formatNum(calc.looseM3, 2)} คิว</div>
+                <div class="text-xs text-[var(--app-muted)]">ปริมาตรหลังบดอัด (คิวแน่น) ${formatNum(calc.compactedM3, 2)} คิว · ตัวคูณเผื่อยุบ x${formatNum(calc.multiplier, 3)} · พื้นที่ ${formatNum(calc.areaSqm, 2)} ตร.ม. (${formatNum(calc.areaWa, 2)} ตร.ว.)</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${truckRow('รถ 6 ล้อ', calc.truck6)}
+                    ${truckRow('รถ 10 ล้อ', calc.truck10)}
+                </div>
+                ${calc.totalCost > 0 ? `
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    <div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">ค่าดิน (คิวหลวม)</span><span class="font-semibold font-mono">${formatMoney(calc.soilCost)} บาท</span></div>
+                    <div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">ค่าเกลี่ยและบดอัด (คิวแน่น)</span><span class="font-semibold font-mono">${formatMoney(calc.spreadCost)} บาท</span></div>
+                    <div class="flex justify-between gap-2 font-bold"><span>รวมประมาณการ</span><span class="font-mono">${formatMoney(calc.totalCost)} บาท</span></div>
+                </div>` : ''}
+            </div>`;
+    }
+
+    container.innerHTML = `
+        <div class="land-fill-tool flex flex-col gap-3 p-1">
+            <div class="segment-group grid-cols-2" role="group" aria-label="วิธีป้อนพื้นที่">
+                <button type="button" class="segment-btn ${mode === 'land' ? 'active' : ''}" aria-pressed="${mode === 'land'}" data-land-mode="land" style="min-height: 44px;">ไร่ - งาน - ตารางวา</button>
+                <button type="button" class="segment-btn ${mode === 'dim' ? 'active' : ''}" aria-pressed="${mode === 'dim'}" data-land-mode="dim" style="min-height: 44px;">กว้าง x ยาว (เมตร)</button>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                ${areaFields}
+                ${createKeypadFieldHTML(base, 'ความสูงที่ต้องการถม (เฉลี่ย)', st.heightCm, 'ซม.', 'เช่น 50')}
+                ${createKeypadFieldHTML(base + 1, 'อัตราการยุบตัวหลังบดอัด', st.shrinkPct, '%', 'เช่น 25')}
+            </div>
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ชนิดวัสดุถม (ค่ากลางของช่วงที่ยังไม่ยืนยัน)</div>
+                <div class="grid grid-cols-1 gap-2">${soilChips}</div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(base + 2, 'ความจุรถ 6 ล้อ', st.truck6Cap, 'คิว/เที่ยว', 'เช่น 5.5')}
+                ${createKeypadFieldHTML(base + 3, 'ความจุรถ 10 ล้อ', st.truck10Cap, 'คิว/เที่ยว', 'เช่น 11')}
+                ${createKeypadFieldHTML(base + 4, 'ราคาดิน (ไม่บังคับ)', st.pricePerM3, 'บาท/คิวหลวม', 'เช่น 150')}
+                ${createKeypadFieldHTML(base + 5, 'ค่าเกลี่ยและบดอัด (ไม่บังคับ)', st.spreadPerM3, 'บาท/คิวแน่น', 'เช่น 40')}
+            </div>
+            ${resultHTML}
+            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
+                <div>ตัวคูณเผื่อยุบ = 1 / (1 - อัตรายุบ) เช่น ยุบ 25% ต้องสั่ง x1.33</div>
+                <div>ยังไม่ยืนยัน: อัตรายุบตัวของวัสดุแต่ละชนิดและความจุรถต่อเที่ยวเป็นค่าตั้งต้นจากเอกสารรวบรวม ควรถามผู้ขายดินหรือผู้รับเหมา และข้อมูลนี้เป็นค่าประมาณเพื่อประกอบการตัดสินใจ</div>
+            </div>
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    container.querySelectorAll('[data-land-mode]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.mode = btn.dataset.landMode;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('.land-soil-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const preset = LAND_FILL_SOIL_PRESETS.find(p => p.key === btn.dataset.soil);
+            if (!preset) return;
+            st.soil = preset.key;
+            st.shrinkPct = String(preset.shrinkPct);
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    if (!calc.valid) {
+        setStatusBanner('empty', 'ป้อนพื้นที่และความสูงที่ต้องการถมเพื่อคำนวณปริมาตรดิน');
+    } else {
+        setStatusBanner('success', `สั่งดิน <span class="text-lg text-[var(--app-accent)] underline">${formatNum(calc.looseM3, 2)} คิว</span><span class="text-xs font-normal opacity-80 block mt-1">รถ 6 ล้อ ${calc.truck6.trips} เที่ยว · รถ 10 ล้อ ${calc.truck10.trips} เที่ยว</span>`);
+    }
+}
+
 (function(root) {
     const exportsObj = {
+        LAND_FILL_SOIL_PRESETS,
+        calculateLandFill,
+        renderLandFillTool,
         BTU_ROOM_PRESETS,
         BTU_STANDARD_SIZES,
         BTU_BASE_CEILING_M,

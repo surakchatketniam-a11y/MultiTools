@@ -32,6 +32,7 @@ var TOOLS_CATALOG = [
     // หมวดหมู่ช่าง & ก่อสร้าง
     { id: 'construction_calc', group: 'engineering', category: 'fav', menuTitle: 'คำนวณวัสดุก่อสร้าง', headerTitle: 'คำนวณวัสดุก่อสร้าง & ปรับปรุงบ้าน (กระเบื้อง/สี/ปูน)', usesSharedKeypad: true, keywords: 'construction calc วัสดุก่อสร้าง ปรับปรุงบ้าน ซ่อมบ้าน กระเบื้อง ปูกระเบื้อง สีทาบ้าน ทาสี ปูน คอนกรีต เทพื้น ปูนกาว ยาแนว ไวร์เมช อิฐ ตารางเมตร คิว boq ช่างปูน ค่าแรง' },
     { id: 'btu_calc', group: 'engineering', category: 'fav', menuTitle: 'ขนาดแอร์ BTU & ค่าไฟ', headerTitle: 'คำนวณขนาดแอร์ BTU & เปรียบเทียบค่าไฟ Fixed Speed vs Inverter', usesSharedKeypad: true, keywords: 'btu calc ขนาดแอร์ btu บีทียู เลือกแอร์ ซื้อแอร์ ห้องนอน แอร์ inverter อินเวอร์เตอร์ fixed speed seer เบอร์ 5 ค่าไฟแอร์ ช่างแอร์ ติดแอร์ กั้นห้อง' },
+    { id: 'land_fill_calc', group: 'engineering', category: 'fav', menuTitle: 'ดินถมที่ & รถดั๊มพ์', headerTitle: 'คำนวณดินถมที่ (คิวแน่น/คิวหลวม) & จำนวนเที่ยวรถดั๊มพ์', usesSharedKeypad: true, keywords: 'land fill ดินถม ถมที่ ถมดิน คิวดิน ลูกรัง ทรายถม รถดั๊มพ์ รถ6ล้อ รถ10ล้อ บดอัด ไร่ งาน ตารางวา เกลี่ยดิน ปรับพื้นที่ ที่ดิน' },
 
     // หมวดหมู่ที่ 2: ธุรกิจ & ค้าขาย
     { id: 'vat',        group: 'biz', category: 'fav', menuTitle: 'ภาษีมูลค่าเพิ่ม (VAT)', headerTitle: 'เครื่องคำนวณภาษีมูลค่าเพิ่ม', usesSharedKeypad: true, keywords: 'vat ภาษี 7% มูลค่าเพิ่ม ถอด vat รวม vat' },

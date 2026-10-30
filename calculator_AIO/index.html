@@ -1854,7 +1854,7 @@
     <div id="printFormalReceipt" class="hidden"></div>
 
     <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
-    <script src="src/bundle.js?v=69"></script>
+    <script src="src/bundle.js?v=70"></script>
 
     <script>
         function getSafeDateStr(offsetDays = 0) {
@@ -2206,6 +2206,23 @@
                 inverterSeer: '20'
             },
 
+            // Engineering: land fill & dump truck trips
+            land_fill_calc: {
+                mode: 'land',
+                rai: '1',
+                ngan: '0',
+                wa: '0',
+                width: '',
+                length: '',
+                heightCm: '50',
+                soil: 'general',
+                shrinkPct: '25',
+                truck6Cap: '5.5',
+                truck10Cap: '11',
+                pricePerM3: '',
+                spreadPerM3: ''
+            },
+
             // 24. Car Hire Purchase Loan
             car_loan: {
                 vehicleType: 'car',
@@ -2429,6 +2446,7 @@
                 case 'food_costing':     renderFoodCostingTool(topPanel); break;
                 case 'construction_calc': renderConstructionTool(topPanel); break;
                 case 'btu_calc':         renderBtuTool(topPanel); break;
+                case 'land_fill_calc': renderLandFillTool(topPanel); break;
             }
             if (typeof arrangeDesktopColumns === 'function') arrangeDesktopColumns(topPanel);
             if (editing) {

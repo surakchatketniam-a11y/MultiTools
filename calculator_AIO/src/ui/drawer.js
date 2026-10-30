@@ -585,6 +585,12 @@ function getToolSummaryText(toolId, stateObj) {
             }
             return `สรุปแผนปลดหนี้หลายบัญชี (${stratName})\n${divider}\n• ยอดหนี้รวมเริ่มต้น: ${formatMoney(calc.initialTotalDebt)} บาท\n• เงินโปะเพิ่มต่อเดือน: +${formatMoney(calc.extraMonthly || 0)} บาท\n• ระยะเวลาปลดหนี้: ${calc.summary.months} เดือน (${calc.summary.years} ปี)\n• ดอกเบี้ยรวมที่ต้องจ่าย: ${formatMoney(calc.summary.totalInterest)} บาท\n• ยอดชำระรวมทั้งสิ้น: ${formatMoney(calc.summary.totalPaid)} บาท\n${calc.summary.interestSavedVsOther > 0 ? `• ประหยัดดอกเบี้ยได้มากกว่าอีกวิธี: ${formatMoney(calc.summary.interestSavedVsOther)} บาท\n` : ''}${divider}\nปลดหนี้หมดสำเร็จใน ${calc.summary.months} เดือน\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'land_fill_calc': {
+            const calc = (typeof calculateLandFill === 'function') ? calculateLandFill(state.land_fill_calc || {}) : { valid: false };
+            if (!calc.valid) return `สรุปดินถมที่ & รถดั๊มพ์\n${divider}\nยังไม่ได้ป้อนพื้นที่และความสูง\n(คำนวณโดย Multitools Calculator)`;
+            const costLine = calc.totalCost > 0 ? `\n• ค่าดิน ${formatMoney(calc.soilCost)} บาท + ค่าเกลี่ยบดอัด ${formatMoney(calc.spreadCost)} บาท = ${formatMoney(calc.totalCost)} บาท` : '';
+            return `สรุปดินถมที่ & รถดั๊มพ์\n${divider}\n• พื้นที่: ${formatNum(calc.areaSqm, 2)} ตร.ม. (${formatNum(calc.areaWa, 2)} ตร.ว.) ถมสูง ${formatNum(calc.heightCm, 0)} ซม.\n• ปริมาตรหลังบดอัด (คิวแน่น): ${formatNum(calc.compactedM3, 2)} คิว\n• อัตรายุบ ${formatNum(calc.shrinkPct, 1)}% ตัวคูณเผื่อยุบ x${formatNum(calc.multiplier, 3)}\n• รถ 6 ล้อ: ${calc.truck6.trips} เที่ยว (${formatNum(calc.truck6.capacity, 1)} คิว/เที่ยว)\n• รถ 10 ล้อ: ${calc.truck10.trips} เที่ยว (${formatNum(calc.truck10.capacity, 1)} คิว/เที่ยว)${costLine}\n----------------------------------\nปริมาตรดินที่ต้องสั่งซื้อ (คิวหลวม): ${formatNum(calc.looseM3, 2)} คิว\n(ค่าประมาณ อัตรายุบและความจุรถยังไม่ยืนยัน)\n(คำนวณโดย Multitools Calculator)`;
+        }
         case 'btu_calc': {
             const calc = (typeof calculateBtu === 'function') ? calculateBtu(state.btu_calc || {}) : { valid: false };
             if (!calc.valid) return `สรุปขนาดแอร์ BTU\n${divider}\nยังไม่ได้ป้อนขนาดห้อง\n(คำนวณโดย Multitools Calculator)`;

@@ -76,6 +76,11 @@ function hasInvalidNumericInput(toolId, stateObj) {
             return invalid(st.slabWidth) || invalid(st.slabLength) || invalid(st.slabThickness) || invalid(st.concretePricePerCubic) || invalid(st.concreteLaborPerSqm);
         }
     }
+    if (curToolId === 'land_fill_calc') {
+        const st = state.land_fill_calc || {};
+        const areaKeys = st.mode === 'dim' ? ['width', 'length'] : ['rai', 'ngan', 'wa'];
+        return areaKeys.concat(['heightCm', 'shrinkPct', 'truck6Cap', 'truck10Cap', 'pricePerM3', 'spreadPerM3']).some(key => invalid(st[key]));
+    }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
     return (fields[curToolId] || []).some(key => invalid(state[curToolId][key]));

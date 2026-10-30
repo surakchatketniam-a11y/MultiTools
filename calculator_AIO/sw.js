@@ -1,11 +1,11 @@
-const CACHE_NAME = 'multitools-calculator-v77';
+const CACHE_NAME = 'multitools-calculator-v78';
 const STATIC_ASSETS = [
     './',
     './index.html',
     './manifest.json',
     './favicon.svg',
     './favicon.ico',
-    './src/bundle.js?v=69'
+    './src/bundle.js?v=70'
 ];
 
 function isLiveApiRequest(urlString) {

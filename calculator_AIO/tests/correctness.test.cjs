@@ -287,11 +287,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 37 tools classified into 6 valid groups with search keywords', () => {
+test('catalog contains exactly 38 tools classified into 6 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 6);
-    assert.equal(TOOLS_CATALOG.length, 37);
+    assert.equal(TOOLS_CATALOG.length, 38);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -451,7 +451,7 @@ test('all 36 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 37);
+    assert.equal(ctx.TOOLS_CATALOG.length, 38);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -1214,7 +1214,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('คุ้มค่าที่สุด'));
 });
 
-test('all 37 tool renderers are modularized and exported across the 6 tool groups', () => {
+test('all 38 tool renderers are modularized and exported across the 6 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -1253,10 +1253,11 @@ test('all 37 tool renderers are modularized and exported across the 6 tool group
         ecommerce_profit:  'renderEcommerceProfitTool',
         debt_payoff:       'renderDebtPayoffTool',
         food_costing:      'renderFoodCostingTool',
-        btu_calc:          'renderBtuTool'
+        btu_calc:          'renderBtuTool',
+        land_fill_calc: 'renderLandFillTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 37);
+    assert.equal(Object.keys(rendererMap).length, 38);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -3187,6 +3188,61 @@ test('btu_calc: catalog entry, keypad fields and invalid-input detection are wir
     assert.equal(ctx.hasInvalidNumericInput('btu_calc', state), false);
     assert.equal(ctx.hasInvalidNumericInput('btu_calc', { btu_calc: { ...state.btu_calc, width: '4x' } }), true);
     assert.equal(ctx.hasInvalidNumericInput('btu_calc', { btu_calc: { ...state.btu_calc, inverterSeer: 'abc' } }), true);
+});
+
+test('land_fill_calc: Thai land units, compaction multiplier, truck trips and costs', () => {
+    const ctx = context();
+    const base = { mode: 'land', rai: '1', ngan: '0', wa: '0', heightCm: '50', shrinkPct: '25', truck6Cap: '5.5', truck10Cap: '11', pricePerM3: '', spreadPerM3: '' };
+
+    // 1 rai = 1,600 sqm x 0.5 m = 800 m3 compacted; multiplier 1/(1-0.25) = 4/3 -> 1,066.67 m3 loose
+    const rai = ctx.calculateLandFill(base);
+    assert.equal(rai.valid, true);
+    assert.equal(rai.areaSqm, 1600);
+    assert.equal(rai.areaWa, 400);
+    assert.equal(rai.compactedM3, 800);
+    assert.ok(Math.abs(rai.multiplier - 4 / 3) < 1e-12);
+    assert.ok(Math.abs(rai.looseM3 - 800 * 4 / 3) < 1e-9);
+    assert.equal(rai.truck6.trips, Math.ceil(800 * 4 / 3 / 5.5));
+    assert.equal(rai.truck10.trips, Math.ceil(800 * 4 / 3 / 11));
+
+    // rai + ngan + wa: 2 rai 1 ngan 50 wa = 3,200 + 400 + 200 = 3,800 sqm
+    assert.equal(ctx.calculateLandFill({ ...base, rai: '2', ngan: '1', wa: '50' }).areaSqm, 3800);
+    // Blank rai/ngan/wa count as zero as long as one part is given
+    assert.equal(ctx.calculateLandFill({ ...base, rai: '', ngan: '', wa: '100' }).areaSqm, 400);
+
+    // Width x length mode ignores the rai fields
+    const dim = ctx.calculateLandFill({ ...base, mode: 'dim', width: '20', length: '40', rai: '99' });
+    assert.equal(dim.areaSqm, 800);
+    assert.equal(dim.compactedM3, 400);
+
+    // Exact multiples of truck capacity do not add a phantom trip: 16 m3 loose / 8 = 2 trips
+    const exact = ctx.calculateLandFill({ ...base, mode: 'dim', width: '4', length: '4', heightCm: '100', shrinkPct: '0', truck10Cap: '8' });
+    assert.equal(exact.looseM3, 16);
+    assert.equal(exact.truck10.trips, 2);
+
+    // Costs: soil on loose volume, spreading on compacted volume
+    const cost = ctx.calculateLandFill({ ...base, mode: 'dim', width: '10', length: '10', heightCm: '100', shrinkPct: '20', pricePerM3: '150', spreadPerM3: '40' });
+    assert.ok(Math.abs(cost.looseM3 - 125) < 1e-9);
+    assert.ok(Math.abs(cost.soilCost - 125 * 150) < 1e-6);
+    assert.ok(Math.abs(cost.spreadCost - 100 * 40) < 1e-6);
+    assert.ok(Math.abs(cost.totalCost - (18750 + 4000)) < 1e-6);
+
+    // Invalid input
+    assert.equal(ctx.calculateLandFill({ ...base, heightCm: '' }).valid, false);
+    assert.equal(ctx.calculateLandFill({ ...base, rai: '0', ngan: '0', wa: '0' }).valid, false);
+    assert.equal(ctx.calculateLandFill({ ...base, shrinkPct: '90' }).valid, false);
+    assert.equal(ctx.calculateLandFill({ ...base, shrinkPct: '-5' }).valid, false);
+    assert.equal(ctx.calculateLandFill({ ...base, truck6Cap: '0' }).valid, false);
+    assert.equal(ctx.calculateLandFill({ ...base, rai: 'abc' }).valid, false);
+    assert.equal(ctx.calculateLandFill({ mode: 'dim', width: '', length: '5', heightCm: '50' }).valid, false);
+
+    // Presets use the documented mid-range values and stay below the 90% limit
+    assert.deepEqual(Array.from(ctx.LAND_FILL_SOIL_PRESETS, p => p.shrinkPct), [25, 30, 32.5]);
+
+    // Invalid-input detection follows the active mode only
+    const st = { mode: 'dim', width: '4x', length: '5', rai: '1', heightCm: '50', shrinkPct: '25', truck6Cap: '5.5', truck10Cap: '11', pricePerM3: '', spreadPerM3: '' };
+    assert.equal(ctx.hasInvalidNumericInput('land_fill_calc', { land_fill_calc: st }), true);
+    assert.equal(ctx.hasInvalidNumericInput('land_fill_calc', { land_fill_calc: { ...st, width: '4', rai: 'bad' } }), false);
 });
 
 test('construction_calc: tiles, paint, and concrete calculations', () => {
