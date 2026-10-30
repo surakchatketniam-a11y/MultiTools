@@ -2501,8 +2501,207 @@ function renderConduitFillTool(container) {
     }
 }
 
+/* -----------------------------------------------------------
+ * TOOL: ข้อมูลสายไฟ IEC 01 (THW) / VAF & จำนวนม้วน (wire_data)
+ * ----------------------------------------------------------- */
+
+// ข้อมูลสายจากแค็ตตาล็อก Thai-Yazaki หน้า B1 (60227 IEC 01 THW 450/750 V 70°C ตามมาตรฐาน มอก.11 เล่ม 3-2553) และ B28 (VAF 300/500 V 70°C
+// ตาม มอก.11 เล่ม 101-2559) ค่าเป็นของผู้ผลิตรายเดียว (น้ำหนักเป็นค่าประมาณ ขนาดมีพิกัดความคลาดเคลื่อน) แต่กระแสในท่อ/ในอากาศ
+// ตรงกับตาราง 5-20 / 5-21 ที่ใช้ใน wire_breaker และความต้านทานสอดคล้องกับค่า mV/A/m (ดูเทสต์)
+// conductor: solid = ตัวนำเดี่ยว, stranded = ตีเกลียว (non-compacted), compacted = ตีเกลียวอัดแน่น
+// pack: C = ม้วน (coil), D = ดรัม (drum) lengthM = ความยาวมาตรฐานต่อม้วนหรือดรัม
+var WIRE_DATA_THW = [
+    { sizeSqmm: 1.5, conductor: 'solid',     insulationMm: 0.7, dMinMm: 2.6,  dMaxMm: 3.2,  r20: 12.1,   airA: 21,  conduitA: 15,  conduit3A: 13,  weightKgKm: 21,   lengthM: 100,  pack: 'C' },
+    { sizeSqmm: 1.5, conductor: 'stranded',  insulationMm: 0.7, dMinMm: 2.7,  dMaxMm: 3.3,  r20: 12.1,   airA: 21,  conduitA: 15,  conduit3A: 13,  weightKgKm: 22,   lengthM: 100,  pack: 'C' },
+    { sizeSqmm: 2.5, conductor: 'solid',     insulationMm: 0.8, dMinMm: 3.2,  dMaxMm: 3.9,  r20: 7.41,   airA: 28,  conduitA: 21,  conduit3A: 18,  weightKgKm: 32,   lengthM: 100,  pack: 'C' },
+    { sizeSqmm: 2.5, conductor: 'stranded',  insulationMm: 0.8, dMinMm: 3.3,  dMaxMm: 4.0,  r20: 7.41,   airA: 28,  conduitA: 21,  conduit3A: 18,  weightKgKm: 35,   lengthM: 100,  pack: 'C' },
+    { sizeSqmm: 4,   conductor: 'solid',     insulationMm: 0.8, dMinMm: 3.6,  dMaxMm: 4.4,  r20: 4.61,   airA: 37,  conduitA: 28,  conduit3A: 24,  weightKgKm: 47,   lengthM: 100,  pack: 'C' },
+    { sizeSqmm: 4,   conductor: 'stranded',  insulationMm: 0.8, dMinMm: 3.8,  dMaxMm: 4.6,  r20: 4.61,   airA: 37,  conduitA: 28,  conduit3A: 24,  weightKgKm: 50,   lengthM: 100,  pack: 'C' },
+    { sizeSqmm: 6,   conductor: 'stranded',  insulationMm: 0.8, dMinMm: 4.3,  dMaxMm: 5.2,  r20: 3.08,   airA: 49,  conduitA: 36,  conduit3A: 31,  weightKgKm: 70,   lengthM: 100,  pack: 'C' },
+    { sizeSqmm: 10,  conductor: 'stranded',  insulationMm: 1.0, dMinMm: 5.6,  dMaxMm: 6.7,  r20: 1.83,   airA: 68,  conduitA: 50,  conduit3A: 44,  weightKgKm: 120,  lengthM: 100,  pack: 'C' },
+    { sizeSqmm: 16,  conductor: 'compacted', insulationMm: 1.0, dMinMm: 6.4,  dMaxMm: 7.8,  r20: 1.15,   airA: 91,  conduitA: 66,  conduit3A: 59,  weightKgKm: 180,  lengthM: 100,  pack: 'C' },
+    { sizeSqmm: 25,  conductor: 'compacted', insulationMm: 1.2, dMinMm: 8.1,  dMaxMm: 9.7,  r20: 0.727,  airA: 122, conduitA: 88,  conduit3A: 77,  weightKgKm: 280,  lengthM: 100,  pack: 'C' },
+    { sizeSqmm: 35,  conductor: 'compacted', insulationMm: 1.2, dMinMm: 9.0,  dMaxMm: 10.9, r20: 0.524,  airA: 151, conduitA: 109, conduit3A: 96,  weightKgKm: 370,  lengthM: 100,  pack: 'C' },
+    { sizeSqmm: 50,  conductor: 'compacted', insulationMm: 1.4, dMinMm: 10.6, dMaxMm: 12.8, r20: 0.387,  airA: 184, conduitA: 131, conduit3A: 117, weightKgKm: 500,  lengthM: 1000, pack: 'D' },
+    { sizeSqmm: 70,  conductor: 'compacted', insulationMm: 1.4, dMinMm: 12.1, dMaxMm: 14.6, r20: 0.268,  airA: 234, conduitA: 167, conduit3A: 149, weightKgKm: 700,  lengthM: 1000, pack: 'D' },
+    { sizeSqmm: 95,  conductor: 'compacted', insulationMm: 1.6, dMinMm: 14.1, dMaxMm: 17.1, r20: 0.193,  airA: 292, conduitA: 202, conduit3A: 180, weightKgKm: 1000, lengthM: 1000, pack: 'D' },
+    { sizeSqmm: 120, conductor: 'compacted', insulationMm: 1.6, dMinMm: 15.6, dMaxMm: 18.8, r20: 0.153,  airA: 341, conduitA: 234, conduit3A: 208, weightKgKm: 1200, lengthM: 1000, pack: 'D' },
+    { sizeSqmm: 150, conductor: 'compacted', insulationMm: 1.8, dMinMm: 17.3, dMaxMm: 20.9, r20: 0.124,  airA: 391, conduitA: 261, conduit3A: 228, weightKgKm: 1500, lengthM: 1000, pack: 'D' },
+    { sizeSqmm: 185, conductor: 'compacted', insulationMm: 2.0, dMinMm: 19.3, dMaxMm: 23.3, r20: 0.0991, airA: 454, conduitA: 297, conduit3A: 258, weightKgKm: 1900, lengthM: 1000, pack: 'D' },
+    { sizeSqmm: 240, conductor: 'compacted', insulationMm: 2.2, dMinMm: 22.0, dMaxMm: 26.6, r20: 0.0754, airA: 543, conduitA: 348, conduit3A: 301, weightKgKm: 2500, lengthM: 1000, pack: 'D' },
+    { sizeSqmm: 300, conductor: 'stranded',  insulationMm: 2.4, dMinMm: 24.5, dMaxMm: 29.6, r20: 0.0601, airA: 628, conduitA: 398, conduit3A: 343, weightKgKm: 3100, lengthM: 500,  pack: 'D' },
+    { sizeSqmm: 400, conductor: 'stranded',  insulationMm: 2.6, dMinMm: 27.5, dMaxMm: 33.2, r20: 0.047,  airA: 736, conduitA: 475, conduit3A: 406, weightKgKm: 3900, lengthM: 500,  pack: 'D' }
+];
+// VAF 2 แกนแบน: ขนาดรวม กว้าง x สูง (มม.) ต่ำสุดและสูงสุด ตัวนำ 1.0-1.5 ตร.มม. เป็นสายเดี่ยว (Solid) ที่เหลือ Standard
+var WIRE_DATA_VAF = [
+    { sizeSqmm: 1.0, conductor: 'solid',    insulationMm: 0.6, sheathMm: 0.9, wMinMm: 4.0, hMinMm: 6.2,  wMaxMm: 4.7,  hMaxMm: 7.4,  r20: 18.1, airA: 14, weightKgKm: 50,  lengthM: 100, pack: 'C' },
+    { sizeSqmm: 1.5, conductor: 'solid',    insulationMm: 0.7, sheathMm: 0.9, wMinMm: 4.4, hMinMm: 7.0,  wMaxMm: 5.4,  hMaxMm: 8.4,  r20: 12.1, airA: 17, weightKgKm: 70,  lengthM: 100, pack: 'C' },
+    { sizeSqmm: 2.5, conductor: 'solid',    insulationMm: 0.8, sheathMm: 1.0, wMinMm: 5.2, hMinMm: 8.4,  wMaxMm: 6.2,  hMaxMm: 9.8,  r20: 7.41, airA: 23, weightKgKm: 100, lengthM: 100, pack: 'C' },
+    { sizeSqmm: 4,   conductor: 'stranded', insulationMm: 0.8, sheathMm: 1.1, wMinMm: 5.6, hMinMm: 9.6,  wMaxMm: 7.2,  hMaxMm: 11.5, r20: 4.61, airA: 32, weightKgKm: 150, lengthM: 100, pack: 'C' },
+    { sizeSqmm: 6,   conductor: 'stranded', insulationMm: 0.8, sheathMm: 1.1, wMinMm: 6.4, hMinMm: 10.5, wMaxMm: 8.0,  hMaxMm: 13.0, r20: 3.08, airA: 41, weightKgKm: 200, lengthM: 100, pack: 'C' },
+    { sizeSqmm: 10,  conductor: 'stranded', insulationMm: 1.0, sheathMm: 1.2, wMinMm: 7.8, hMinMm: 13.0, wMaxMm: 9.6,  hMaxMm: 16.0, r20: 1.83, airA: 56, weightKgKm: 310, lengthM: 100, pack: 'C' },
+    { sizeSqmm: 16,  conductor: 'stranded', insulationMm: 1.0, sheathMm: 1.3, wMinMm: 9.0, hMinMm: 15.5, wMaxMm: 11.0, hMaxMm: 18.5, r20: 1.15, airA: 74, weightKgKm: 450, lengthM: 100, pack: 'C' }
+];
+var WIRE_DATA_CONDUCTOR_LABELS = { solid: 'ตัวนำเดี่ยว (Solid)', stranded: 'ตีเกลียว (Stranded)', compacted: 'ตีเกลียวอัดแน่น (Compacted)' };
+var WIRE_DATA_PACK_LABELS = { C: 'ม้วน', D: 'ดรัม' };
+
+function wireDataRows(type) {
+    return type === 'vaf' ? WIRE_DATA_VAF : WIRE_DATA_THW;
+}
+
+function calculateWireData(st) {
+    const type = st.type === 'vaf' ? 'vaf' : 'thw';
+    const size = Number(st.size);
+    const rows = wireDataRows(type).filter(r => r.sizeSqmm === size);
+    if (rows.length === 0) return { valid: false };
+    // ขนาดที่มีทั้งสายเดี่ยวและสายตีเกลียว (1.5-4 ตร.มม.) ใช้ตัวนำที่เลือก ถ้าไม่ตรงใช้แบบตีเกลียว
+    const row = rows.find(r => r.conductor === st.conductor) || rows.find(r => r.conductor === 'stranded') || rows[0];
+    const lengthRaw = String(st.lengthM ?? '').trim();
+    const result = { valid: true, type, row, variants: rows.map(r => r.conductor), hasLength: false };
+    if (lengthRaw !== '') {
+        const lengthM = parseNumericInput(lengthRaw);
+        if (!Number.isFinite(lengthM) || lengthM <= 0) return { valid: false, reason: 'invalid_length' };
+        const packs = Math.ceil(lengthM / row.lengthM - 1e-9);
+        result.hasLength = true;
+        result.lengthM = lengthM;
+        result.totalWeightKg = row.weightKgKm * lengthM / 1000;
+        result.resistanceOhm = row.r20 * lengthM / 1000;
+        result.packs = packs;
+        result.packedLengthM = packs * row.lengthM;
+        result.leftoverM = packs * row.lengthM - lengthM;
+    }
+    return result;
+}
+
+function renderWireDataTool(container) {
+    if (!appState.wire_data) {
+        appState.wire_data = { type: 'thw', size: '2.5', conductor: 'stranded', lengthM: '100' };
+    }
+    const st = appState.wire_data;
+    const type = st.type === 'vaf' ? 'vaf' : 'thw';
+    const calc = calculateWireData(st);
+    const row = (label, value) => `<div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">${label}</span><span class="font-semibold font-mono text-right">${value}</span></div>`;
+    const sizes = [...new Set(wireDataRows(type).map(r => r.sizeSqmm))];
+    const sizeOptions = sizes.map(sz => `<option value="${sz}" ${String(sz) === String(st.size) ? 'selected' : ''}>${sz} ตร.มม.</option>`).join('');
+    const typeBtn = (key, label) => `<button type="button" class="segment-btn ${type === key ? 'active' : ''}" aria-pressed="${type === key}" data-wire-data-type="${key}" style="min-height: 44px;">${label}</button>`;
+
+    let conductorChips = '';
+    let resultHTML = '';
+    if (calc.valid) {
+        const r = calc.row;
+        if (calc.variants.length > 1) {
+            conductorChips = `
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ชนิดตัวนำ</div>
+                <div class="grid grid-cols-1 gap-2">${calc.variants.map(v => `<button type="button" class="tool-chip-btn wire-data-conductor-chip ${r.conductor === v ? 'active font-bold' : ''}" aria-pressed="${r.conductor === v}" data-wire-data-conductor="${v}" style="min-height: 44px;">${WIRE_DATA_CONDUCTOR_LABELS[v]}</button>`).join('')}</div>
+            </div>`;
+        }
+        const dims = type === 'vaf'
+            ? row('ขนาดรวมกว้าง x สูง (ต่ำสุด - สูงสุด)', `${formatNum(r.wMinMm, 1)} x ${formatNum(r.hMinMm, 1)} - ${formatNum(r.wMaxMm, 1)} x ${formatNum(r.hMaxMm, 1)} มม.`)
+            : row('เส้นผ่านศูนย์กลางนอก (ต่ำสุด - สูงสุด)', `${formatNum(r.dMinMm, 1)} - ${formatNum(r.dMaxMm, 1)} มม.`);
+        const currents = type === 'vaf'
+            ? row('กระแสในอากาศ 40°C', `${formatNum(r.airA, 0)} A`)
+            : row('กระแสในอากาศ 40°C', `${formatNum(r.airA, 0)} A`)
+                + row('กระแสร้อยท่อ 1 เฟส', `${formatNum(r.conduitA, 0)} A`)
+                + row('กระแสร้อยท่อ 3 เฟส', `${formatNum(r.conduit3A, 0)} A`);
+        const order = calc.hasLength ? `
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    <div class="font-semibold text-[var(--app-ink)]">สั่งซื้อ ${formatNum(calc.lengthM, 1)} เมตร</div>
+                    ${row('น้ำหนักประมาณ', `${formatNum(calc.totalWeightKg, 1)} กก.`)}
+                    ${row('ความต้านทานรวมที่ 20°C', `${formatNum(calc.resistanceOhm, 3)} โอห์ม`)}
+                    ${row(`จำนวน${WIRE_DATA_PACK_LABELS[r.pack]}มาตรฐาน (${formatNum(r.lengthM, 0)} ม./${WIRE_DATA_PACK_LABELS[r.pack]})`, `${formatNum(calc.packs, 0)} ${WIRE_DATA_PACK_LABELS[r.pack]}`)}
+                    ${row('ความยาวรวมถ้าซื้อเต็มหน่วย', `${formatNum(calc.packedLengthM, 0)} ม. (เหลือ ${formatNum(calc.leftoverM, 1)} ม.)`)}
+                </div>` : '';
+        resultHTML = `
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">${type === 'vaf' ? 'สาย VAF 2 แกน 300/500 V' : 'สาย IEC 01 (THW) 450/750 V'} ${formatNum(r.sizeSqmm, 1)} ตร.มม.</div>
+                <div class="themed-result-value text-2xl font-bold font-mono break-words">${formatNum(r.weightKgKm, 0)} กก./กม.</div>
+                <div class="text-xs text-[var(--app-muted)]">${WIRE_DATA_CONDUCTOR_LABELS[r.conductor]} · ฉนวน PVC หนา ${formatNum(r.insulationMm, 1)} มม.${type === 'vaf' ? ` · เปลือกนอกหนา ${formatNum(r.sheathMm, 1)} มม.` : ''}</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${dims}
+                    ${row('ความต้านทานตัวนำที่ 20°C', `${formatNum(r.r20, 4)} โอห์ม/กม.`)}
+                    ${currents}
+                    ${row('ความยาวมาตรฐาน', `${formatNum(r.lengthM, 0)} ม./${WIRE_DATA_PACK_LABELS[r.pack]}`)}
+                </div>
+                ${order}
+            </div>`;
+    } else if (calc.reason === 'invalid_length') {
+        resultHTML = '<div class="themed-subcard p-3 text-xs font-semibold" role="alert">ความยาวต้องเป็นตัวเลขมากกว่า 0 หรือเว้นว่างไว้</div>';
+    }
+
+    container.innerHTML = `
+        <div class="wire-data-tool flex flex-col gap-3 p-1">
+            <div class="segment-group grid-cols-2" role="group" aria-label="ชนิดสาย">
+                ${typeBtn('thw', 'IEC 01 (THW)')}
+                ${typeBtn('vaf', 'VAF 2 แกน')}
+            </div>
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <label for="wireDataSize" class="font-semibold text-[var(--app-ink)] block">ขนาดสาย</label>
+                <select id="wireDataSize" class="airbnb-input text-xs w-full min-w-0" style="min-height: 44px;">${sizeOptions}</select>
+            </div>
+            ${conductorChips}
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'ความยาวที่ต้องการสั่ง (ไม่บังคับ)', st.lengthM, 'เมตร', 'เช่น 100')}
+            </div>
+            ${resultHTML}
+            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
+                <div>ข้อมูลจากแค็ตตาล็อก Thai-Yazaki (สาย 60227 IEC 01 THW ตาม มอก.11 เล่ม 3-2553 และสาย VAF ตาม มอก.11 เล่ม 101-2559) น้ำหนักเป็นค่าประมาณ ขนาดมีพิกัดความคลาดเคลื่อน ผู้ผลิตรายอื่นต่างกันเล็กน้อย</div>
+                <div>กระแสในอากาศและในท่อเป็นของสายนี้ที่ 40°C ตรงกับตารางใน wire_breaker ยังไม่รวมตัวคูณลดพิกัด ต้องให้ช่างไฟตรวจก่อนติดตั้งจริง</div>
+                <div>ถ้าซื้อสายขนาด 50 ตร.มม. ขึ้นไปที่ขายเป็นดรัม ผู้ขายมักตัดขายตามเมตร ให้ตรวจกับร้านก่อน</div>
+            </div>
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    container.querySelectorAll('[data-wire-data-type]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const next = btn.dataset.wireDataType === 'vaf' ? 'vaf' : 'thw';
+            if (next === type) return;
+            st.type = next;
+            // เก็บขนาดเดิมถ้ามีในชนิดใหม่ ไม่งั้นใช้ขนาดแรกที่ใกล้ที่สุดที่มี
+            const available = wireDataRows(next).map(r => r.sizeSqmm);
+            if (!available.includes(Number(st.size))) {
+                const wanted = Number(st.size);
+                st.size = String(available.reduce((best, s) => (Math.abs(s - wanted) < Math.abs(best - wanted) ? s : best), available[0]));
+            }
+            st.conductor = 'stranded';
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    const sizeSelect = document.getElementById('wireDataSize');
+    if (sizeSelect) {
+        sizeSelect.addEventListener('change', () => {
+            st.size = sizeSelect.value;
+            st.conductor = 'stranded';
+            persistAppState();
+            renderActiveTool();
+        });
+    }
+    container.querySelectorAll('.wire-data-conductor-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.conductor = btn.dataset.wireDataConductor;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    if (calc.valid) {
+        const r = calc.row;
+        setStatusBanner('success', `สาย ${type === 'vaf' ? 'VAF' : 'IEC 01'} ${formatNum(r.sizeSqmm, 1)} ตร.มม. หนัก <span class="text-lg text-[var(--app-accent)] underline">${formatNum(r.weightKgKm, 0)} กก./กม.</span>${calc.hasLength ? `<span class="text-xs font-normal opacity-80 block mt-1">${formatNum(calc.lengthM, 1)} ม. หนัก ${formatNum(calc.totalWeightKg, 1)} กก. · ${formatNum(calc.packs, 0)} ${WIRE_DATA_PACK_LABELS[r.pack]}</span>` : ''}`);
+    } else {
+        setStatusBanner('empty', calc.reason === 'invalid_length' ? 'ความยาวต้องเป็นตัวเลขมากกว่า 0' : 'เลือกชนิดและขนาดสาย');
+    }
+}
+
 (function(root) {
     const exportsObj = {
+        WIRE_DATA_THW,
+        WIRE_DATA_VAF,
+        wireDataRows,
+        calculateWireData,
+        renderWireDataTool,
         CONDUIT_WIRE_DIAMETERS,
         CONDUIT_SIZES,
         conduitFillLimit,

@@ -127,6 +127,10 @@ function hasInvalidNumericInput(toolId, stateObj) {
         const rows = Array.isArray(st.rows) ? st.rows : [];
         return rows.some(r => invalid(r.count));
     }
+    if (curToolId === 'wire_data') {
+        const st = state.wire_data || {};
+        return invalid(st.lengthM);
+    }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
     return (fields[curToolId] || []).some(key => invalid(state[curToolId][key]));

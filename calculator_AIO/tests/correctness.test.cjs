@@ -287,11 +287,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 46 tools classified into 6 valid groups with search keywords', () => {
+test('catalog contains exactly 47 tools classified into 6 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 6);
-    assert.equal(TOOLS_CATALOG.length, 46);
+    assert.equal(TOOLS_CATALOG.length, 47);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -451,7 +451,7 @@ test('all 36 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 46);
+    assert.equal(ctx.TOOLS_CATALOG.length, 47);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -1214,7 +1214,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('คุ้มค่าที่สุด'));
 });
 
-test('all 46 tool renderers are modularized and exported across the 6 tool groups', () => {
+test('all 47 tool renderers are modularized and exported across the 6 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -1262,10 +1262,11 @@ test('all 46 tool renderers are modularized and exported across the 6 tool group
         inch_fraction: 'renderInchFractionTool',
         shape_calc: 'renderShapeTool',
         wire_breaker: 'renderWireBreakerTool',
-        conduit_fill: 'renderConduitFillTool'
+        conduit_fill: 'renderConduitFillTool',
+        wire_data: 'renderWireDataTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 46);
+    assert.equal(Object.keys(rendererMap).length, 47);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -4165,6 +4166,132 @@ test('btu_calc to wire_breaker: air-conditioner rated current table (manual appe
     const ctx4 = context({ appState: { wire_breaker: untouched } });
     assert.equal(ctx4.applyBtuToWireHandoff({ ...room, width: '' }), false);
     assert.equal(untouched.watts, '99');
+});
+
+test('wire_data: IEC 01 and VAF catalog rows agree with the wire_breaker and conduit_fill tables, and ordering maths', () => {
+    const ctx = context();
+    const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} vs ${b}`);
+    assert.equal(ctx.WIRE_DATA_THW.length, 20);
+    assert.equal(ctx.WIRE_DATA_VAF.length, 7);
+
+    // Ampacity columns of the product table match the tables used by wire_breaker (conduit 1 and 3 phase, VAF in air)
+    for (const w of ctx.WIRE_SPEC_TABLE.filter(w => w.conduitAmp > 0)) {
+        const rows = ctx.WIRE_DATA_THW.filter(r => r.sizeSqmm === w.sizeSqmm);
+        assert.ok(rows.length >= 1, `THW ${w.sizeSqmm}`);
+        for (const r of rows) {
+            assert.equal(r.conduitA, w.conduitAmp, `conduit ${w.sizeSqmm}`);
+            assert.equal(r.conduit3A, w.conduitAmp3, `conduit 3-phase ${w.sizeSqmm}`);
+        }
+    }
+    for (const w of ctx.WIRE_SPEC_TABLE.filter(w => w.surfaceAmp > 0)) {
+        const rows = ctx.WIRE_DATA_VAF.filter(r => r.sizeSqmm === w.sizeSqmm);
+        assert.equal(rows.length, 1, `VAF ${w.sizeSqmm}`);
+        assert.equal(rows[0].airA, w.surfaceAmp, `VAF ${w.sizeSqmm}`);
+    }
+    // Every VAF size has a wire_breaker row and vice versa (1.0-16 sq.mm.)
+    assert.deepEqual(Array.from(ctx.WIRE_DATA_VAF, r => r.sizeSqmm), Array.from(ctx.WIRE_SPEC_TABLE.filter(w => w.surfaceAmp > 0), w => w.sizeSqmm));
+
+    // The maximum overall diameter of the stranded / compacted row equals the diameter used by conduit_fill
+    for (const d of ctx.CONDUIT_WIRE_DIAMETERS) {
+        const rows = ctx.WIRE_DATA_THW.filter(r => r.sizeSqmm === d.sizeSqmm);
+        const used = rows.find(r => r.conductor !== 'solid');
+        assert.equal(used.dMaxMm, d.outerMm, `diameter ${d.sizeSqmm}`);
+    }
+
+    // Resistance is consistent with the voltage drop columns: mV/A/m is about 2 x R70 (single phase) and sqrt(3) x R70 (three phase)
+    // with R70 = R20 x (1 + 0.00393 x 50); within 3% for the sizes up to 16 sq.mm. where reactance is negligible
+    for (const w of ctx.WIRE_SPEC_TABLE.filter(w => w.sizeSqmm >= 1.5 && w.sizeSqmm <= 16)) {
+        const r20 = ctx.WIRE_DATA_THW.find(r => r.sizeSqmm === w.sizeSqmm && r.conductor !== 'solid').r20;
+        const r70 = r20 * (1 + 0.00393 * 50);
+        assert.ok(Math.abs(2 * r70 - w.mVPerAmpMeter) / w.mVPerAmpMeter < 0.03, `1-phase ${w.sizeSqmm}`);
+        assert.ok(Math.abs(Math.sqrt(3) * r70 - w.mVPerAmpMeter3) / w.mVPerAmpMeter3 < 0.03, `3-phase ${w.sizeSqmm}`);
+    }
+    // VAF and THW share the same conductor resistance at the same size
+    for (const v of ctx.WIRE_DATA_VAF.filter(v => v.sizeSqmm >= 1.5)) {
+        assert.equal(v.r20, ctx.WIRE_DATA_THW.find(r => r.sizeSqmm === v.sizeSqmm && r.conductor !== 'solid').r20, `R20 ${v.sizeSqmm}`);
+    }
+
+    // Weight sanity: never below the copper alone (8.89 kg/km per sq.mm.), and bounded above (VAF has two cores)
+    for (const r of ctx.WIRE_DATA_THW) {
+        const copper = r.sizeSqmm * 8.89;
+        assert.ok(r.weightKgKm >= copper && r.weightKgKm <= copper * 1.7, `THW ${r.sizeSqmm} ${r.conductor}`);
+    }
+    for (const r of ctx.WIRE_DATA_VAF) {
+        const copper = 2 * r.sizeSqmm * 8.89;
+        assert.ok(r.weightKgKm >= copper && r.weightKgKm <= copper * 3, `VAF ${r.sizeSqmm}`);
+        assert.ok(r.wMaxMm > r.wMinMm && r.hMaxMm > r.hMinMm);
+    }
+    // Insulation is thicker for bigger cables, overall diameter grows with the size
+    const strandedOrOnly = ctx.WIRE_DATA_THW.filter(r => r.conductor !== 'solid');
+    for (let i = 1; i < strandedOrOnly.length; i++) {
+        assert.ok(strandedOrOnly[i].dMaxMm > strandedOrOnly[i - 1].dMaxMm);
+        assert.ok(strandedOrOnly[i].insulationMm >= strandedOrOnly[i - 1].insulationMm);
+        assert.ok(strandedOrOnly[i].weightKgKm > strandedOrOnly[i - 1].weightKgKm);
+    }
+    // Standard packs: coils of 100 m up to 35 sq.mm., drums above (1,000 m up to 240, 500 m for 300 and 400)
+    for (const r of ctx.WIRE_DATA_THW) {
+        if (r.sizeSqmm <= 35) assert.deepEqual([r.pack, r.lengthM], ['C', 100]);
+        else if (r.sizeSqmm <= 240) assert.deepEqual([r.pack, r.lengthM], ['D', 1000]);
+        else assert.deepEqual([r.pack, r.lengthM], ['D', 500]);
+    }
+
+    // Lookup and ordering maths
+    const base = { type: 'thw', size: '2.5', conductor: 'stranded', lengthM: '100' };
+    const a = ctx.calculateWireData(base);
+    assert.equal(a.valid, true);
+    assert.equal(a.row.weightKgKm, 35);
+    near(a.totalWeightKg, 3.5);
+    near(a.resistanceOhm, 0.741);
+    assert.equal(a.packs, 1);
+    assert.equal(a.leftoverM, 0);
+    const b = ctx.calculateWireData({ ...base, lengthM: '250' });
+    assert.equal(b.packs, 3);
+    assert.equal(b.packedLengthM, 300);
+    assert.equal(b.leftoverM, 50);
+    near(b.totalWeightKg, 8.75);
+    const drum = ctx.calculateWireData({ ...base, size: '50', lengthM: '2300' });
+    assert.equal(drum.row.pack, 'D');
+    assert.equal(drum.packs, 3);
+    assert.equal(drum.leftoverM, 700);
+    assert.equal(ctx.calculateWireData({ ...base, size: '300', lengthM: '1200' }).packs, 3);
+    // No length means a plain lookup
+    const lookup = ctx.calculateWireData({ ...base, lengthM: '' });
+    assert.equal(lookup.valid, true);
+    assert.equal(lookup.hasLength, false);
+
+    // Conductor variants: solid/stranded exist for 1.5-4 sq.mm. only; an unknown or missing variant falls back to stranded
+    assert.deepEqual(Array.from(ctx.calculateWireData({ ...base, size: '2.5' }).variants), ['solid', 'stranded']);
+    assert.equal(ctx.calculateWireData({ ...base, conductor: 'solid' }).row.weightKgKm, 32);
+    assert.equal(ctx.calculateWireData({ ...base, size: '6', conductor: 'solid' }).row.conductor, 'stranded');
+    assert.equal(ctx.calculateWireData({ ...base, size: '16', conductor: 'solid' }).row.conductor, 'compacted');
+    assert.equal(ctx.calculateWireData({ ...base, conductor: 'nope' }).row.conductor, 'stranded');
+
+    // VAF and type/size mismatches
+    const vaf = ctx.calculateWireData({ type: 'vaf', size: '16', conductor: 'stranded', lengthM: '100' });
+    assert.equal(vaf.row.airA, 74);
+    assert.equal(vaf.row.wMaxMm, 11);
+    near(vaf.totalWeightKg, 45);
+    assert.equal(ctx.calculateWireData({ type: 'thw', size: '1', lengthM: '' }).valid, false);
+    assert.equal(ctx.calculateWireData({ type: 'vaf', size: '25', lengthM: '' }).valid, false);
+    assert.equal(ctx.calculateWireData({ type: 'vaf', size: '1', conductor: 'solid', lengthM: '' }).valid, true);
+
+    // Invalid length
+    assert.equal(ctx.calculateWireData({ ...base, lengthM: 'x' }).reason, 'invalid_length');
+    assert.equal(ctx.calculateWireData({ ...base, lengthM: '0' }).reason, 'invalid_length');
+    assert.equal(ctx.calculateWireData({ ...base, lengthM: '-5' }).reason, 'invalid_length');
+    assert.equal(ctx.hasInvalidNumericInput('wire_data', { wire_data: { ...base, lengthM: '10m' } }), true);
+    assert.equal(ctx.hasInvalidNumericInput('wire_data', { wire_data: { ...base, lengthM: '' } }), false);
+
+    // Summary text
+    const summary = ctx.getToolSummaryText('wire_data', { wire_data: { ...base, lengthM: '250' } });
+    assert.ok(summary.includes('IEC 01 (THW)'));
+    assert.ok(summary.includes('ร้อยท่อ 1 เฟส 21 A 3 เฟส 18 A'));
+    assert.ok(summary.includes('หนักประมาณ 8.8 กก.') || summary.includes('หนักประมาณ 8.7 กก.'));
+    assert.ok(summary.includes('3 ม้วน'));
+    const vafSummary = ctx.getToolSummaryText('wire_data', { wire_data: { type: 'vaf', size: '2.5', conductor: 'solid', lengthM: '' } });
+    assert.ok(vafSummary.includes('VAF 2 แกน'));
+    assert.ok(vafSummary.includes('กระแสในอากาศ 40°C 23 A'));
+    assert.ok(!vafSummary.includes('สั่งซื้อ'));
 });
 
 test('construction_calc: tiles, paint, and concrete calculations', () => {

@@ -145,6 +145,10 @@ function getToolFieldBindings(toolId) {
         }
         case 'conduit_fill':
             return [];
+        case 'wire_data': {
+            const s = () => appState.wire_data;
+            return [{ get: () => s().lengthM, set: (v) => { s().lengthM = v; } }];
+        }
         case 'btu_calc':
             return [
                 { get: () => appState.btu_calc.width, set: (v) => { appState.btu_calc.width = v; } },

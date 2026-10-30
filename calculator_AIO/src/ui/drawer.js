@@ -675,6 +675,17 @@ function getToolSummaryText(toolId, stateObj) {
             const result = calc.recommended ? `ท่อที่เล็กที่สุดที่ร้อยได้: ท่อ ${calc.recommended.mm} มม. (${calc.recommended.inch} นิ้ว) ใช้พื้นที่ท่อ ${formatNum(calc.recommended.fillPct, 1)}% จากเกณฑ์ ${formatNum(calc.limitPct, 0)}%` : 'สายมากเกินกว่าท่อที่มีในตาราง (เกินท่อ 150 มม.)';
             return `สรุปขนาดท่อร้อยสาย\n${divider}\n${itemLines}\n• สายรวม ${calc.totalCount} เส้น พื้นที่ ${formatNum(calc.totalAreaMm2, 1)} ตร.มม. สัดส่วนสูงสุด ${formatNum(calc.limitPct, 0)}%\n----------------------------------\n${result}\n${note}\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'wire_data': {
+            const calc = (typeof calculateWireData === 'function') ? calculateWireData(state.wire_data || {}) : { valid: false };
+            if (!calc.valid) return `สรุปข้อมูลสายไฟ\n${divider}\nยังไม่ได้เลือกสายหรือความยาวไม่ถูกต้อง\n(คำนวณโดย Multitools Calculator)`;
+            const r = calc.row;
+            const typeName = calc.type === 'vaf' ? 'VAF 2 แกน 300/500 V' : 'IEC 01 (THW) 450/750 V';
+            const dims = calc.type === 'vaf' ? `${formatNum(r.wMinMm, 1)} x ${formatNum(r.hMinMm, 1)} - ${formatNum(r.wMaxMm, 1)} x ${formatNum(r.hMaxMm, 1)} มม.` : `${formatNum(r.dMinMm, 1)} - ${formatNum(r.dMaxMm, 1)} มม.`;
+            const currents = calc.type === 'vaf' ? `กระแสในอากาศ 40°C ${formatNum(r.airA, 0)} A` : `กระแสในอากาศ ${formatNum(r.airA, 0)} A ร้อยท่อ 1 เฟส ${formatNum(r.conduitA, 0)} A 3 เฟส ${formatNum(r.conduit3A, 0)} A`;
+            const packName = r.pack === 'C' ? 'ม้วน' : 'ดรัม';
+            const order = calc.hasLength ? `\n----------------------------------\nสั่งซื้อ ${formatNum(calc.lengthM, 1)} ม.: หนักประมาณ ${formatNum(calc.totalWeightKg, 1)} กก. ความต้านทานรวม ${formatNum(calc.resistanceOhm, 3)} โอห์ม (20°C)\nจำนวน${packName}มาตรฐาน (${formatNum(r.lengthM, 0)} ม./${packName}): ${formatNum(calc.packs, 0)} ${packName} (ความยาวรวม ${formatNum(calc.packedLengthM, 0)} ม. เหลือ ${formatNum(calc.leftoverM, 1)} ม.)` : '';
+            return `สรุปข้อมูลสายไฟ ${typeName} ${formatNum(r.sizeSqmm, 1)} ตร.มม.\n${divider}\n• ตัวนำ: ${WIRE_DATA_CONDUCTOR_LABELS[r.conductor]} ฉนวนหนา ${formatNum(r.insulationMm, 1)} มม.\n• ขนาดรวม: ${dims}\n• ความต้านทานที่ 20°C: ${formatNum(r.r20, 4)} โอห์ม/กม.\n• ${currents}\n• น้ำหนักประมาณ: ${formatNum(r.weightKgKm, 0)} กก./กม.${order}\n(ข้อมูลจากแค็ตตาล็อก Thai-Yazaki ค่าประมาณ ควรให้ช่างไฟตรวจ)\n(คำนวณโดย Multitools Calculator)`;
+        }
         case 'btu_calc': {
             const calc = (typeof calculateBtu === 'function') ? calculateBtu(state.btu_calc || {}) : { valid: false };
             if (!calc.valid) return `สรุปขนาดแอร์ BTU\n${divider}\nยังไม่ได้ป้อนขนาดห้อง\n(คำนวณโดย Multitools Calculator)`;
