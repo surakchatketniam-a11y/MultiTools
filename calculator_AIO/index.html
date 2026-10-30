@@ -1854,7 +1854,7 @@
     <div id="printFormalReceipt" class="hidden"></div>
 
     <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
-    <script src="src/bundle.js?v=71"></script>
+    <script src="src/bundle.js?v=72"></script>
 
     <script>
         function getSafeDateStr(offsetDays = 0) {
@@ -2246,6 +2246,36 @@
                 ceilingLaborPerSqm: ''
             },
 
+            // Engineering: roof, steel cutting, rebar & concrete
+            roof_steel_calc: {
+                tab: 'roof',
+                roofRun: '4',
+                roofLength: '6',
+                roofAngle: '15',
+                roofOverhang: '0.5',
+                roofSides: '1',
+                sheetWidth: '0.76',
+                purlinSpacing: '1',
+                screwsPerSqm: '5',
+                roofPricePerSqm: '',
+                stockLen: '6',
+                kerfMm: '0',
+                pieces: [
+                    { id: '1', length: '2.4', qty: '4' },
+                    { id: '2', length: '1.2', qty: '6' }
+                ],
+                rebarType: 'DB12',
+                rebarBars: '10',
+                rebarLength: '6',
+                rebarPricePerKg: '',
+                conWidth: '0.2',
+                conDepth: '0.3',
+                conLength: '4',
+                conQty: '4',
+                conWastePct: '5',
+                conPricePerM3: ''
+            },
+
             // 24. Car Hire Purchase Loan
             car_loan: {
                 vehicleType: 'car',
@@ -2469,6 +2499,7 @@
                 case 'food_costing':     renderFoodCostingTool(topPanel); break;
                 case 'construction_calc': renderConstructionTool(topPanel); break;
                 case 'btu_calc':         renderBtuTool(topPanel); break;
+                case 'roof_steel_calc': renderRoofSteelTool(topPanel); break;
                 case 'wall_ceiling_calc': renderWallCeilingTool(topPanel); break;
                 case 'land_fill_calc': renderLandFillTool(topPanel); break;
             }

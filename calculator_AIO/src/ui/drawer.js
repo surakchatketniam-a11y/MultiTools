@@ -602,6 +602,25 @@ function getToolSummaryText(toolId, stateObj) {
             if (!calc.valid) return `สรุปก่ออิฐ & ฉาบปูน\n${divider}\nยังไม่ได้ป้อนขนาดผนัง\n(คำนวณโดย Multitools Calculator)`;
             return `สรุปคำนวณก่ออิฐ & ฉาบปูน\n${divider}\n• พื้นที่ผนังสุทธิ: ${formatNum(calc.netAreaSqm, 2)} ตร.ม.\n• พื้นที่ฉาบ: ${formatNum(calc.plasterAreaSqm, 2)} ตร.ม. (${calc.sides} ด้าน)\n• ปูนฉาบ: ${formatNum(calc.plasterBags, 0)} ถุง${calc.totalCost > 0 ? `\n• ประมาณการงบประมาณ: ${formatMoney(calc.totalCost)} บาท` : ''}\n----------------------------------\nจำนวนอิฐที่ต้องสั่งซื้อ (เผื่อ ${formatNum(calc.wastePct, 1)}%): ${formatNum(calc.bricks, 0)} ก้อน\n(ค่าประมาณ จำนวนก้อนอิฐมอญและความครอบคลุมปูนฉาบยังไม่ยืนยัน)\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'roof_steel_calc': {
+            const st = state.roof_steel_calc || {};
+            if (st.tab === 'cut') {
+                const calc = (typeof calculateCutting === 'function') ? calculateCutting(st) : { valid: false };
+                if (!calc.valid) return `สรุปแผนตัดเหล็ก\n${divider}\nยังไม่มีรายการท่อนที่คำนวณได้\n(คำนวณโดย Multitools Calculator)`;
+                return `สรุปแผนตัดท่อนเหล็ก\n${divider}\n• ความยาวเหล็กเต็มเส้น: ${formatNum(calc.stockM, 2)} ม.\n• ท่อนที่ต้องตัด: ${formatNum(calc.pieceCount, 0)} ท่อน (รวม ${formatNum(calc.pieceTotalM, 2)} ม.)\n• เศษเหล็กรวม: ${formatNum(calc.wasteM, 2)} ม. (${formatNum(calc.wastePct, 1)}%)\n----------------------------------\nเหล็กเต็มเส้นที่ต้องซื้อ: ${formatNum(calc.barCount, 0)} เส้น\n(วางแผนแบบ First-Fit Decreasing ค่าประมาณ ไม่รับประกันเศษน้อยที่สุด)\n(คำนวณโดย Multitools Calculator)`;
+            }
+            if (st.tab === 'rebar') {
+                const rebar = (typeof calculateRebar === 'function') ? calculateRebar(st) : { valid: false };
+                const con = (typeof calculateConcreteVolume === 'function') ? calculateConcreteVolume(st) : { valid: false };
+                if (!rebar.valid && !con.valid) return `สรุปเหล็กเส้น & คอนกรีต\n${divider}\nยังไม่ได้ป้อนข้อมูล\n(คำนวณโดย Multitools Calculator)`;
+                const rebarLines = rebar.valid ? `\n• เหล็ก ${rebar.type.key}: ${formatNum(rebar.totalLengthM, 2)} ม. หนัก ${formatNum(rebar.weightKg, 2)} กก. (เหล็กเต็มเส้น ${formatNum(rebar.stockBars, 0)} เส้น)` : '';
+                const conLines = con.valid ? `\n• คอนกรีต: ปริมาตรสุทธิ ${formatNum(con.netM3, 3)} คิว สั่งจริง ${formatNum(con.orderM3, 2)} คิว (เผื่อ ${formatNum(con.wastePct, 1)}%)` : '';
+                return `สรุปเหล็กเส้น & คอนกรีตโครงสร้าง\n${divider}${rebarLines}${conLines}\n----------------------------------\n(ไม่รวมระยะทาบ ระยะงอ เหล็กปลอก ค่าประมาณ ไม่ใช่การออกแบบโครงสร้าง)\n(คำนวณโดย Multitools Calculator)`;
+            }
+            const calc = (typeof calculateRoof === 'function') ? calculateRoof(st) : { valid: false };
+            if (!calc.valid) return `สรุปหลังคา\n${divider}\nยังไม่ได้ป้อนขนาดหลังคา\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปคำนวณหลังคา & เหล็กแป\n${divider}\n• ความลาดชัน: ${formatNum(calc.angle, 1)} องศา ยก ${formatNum(calc.riseM, 2)} ม.\n• ความยาวจันทัน: ${formatNum(calc.rafterM, 2)} ม. (รวมชายคา ${formatNum(calc.slopeLengthM, 2)} ม.)\n• พื้นที่หลังคา: ${formatNum(calc.areaSqm, 2)} ตร.ม. (${calc.sides} ด้าน)\n• แถวแป: ${formatNum(calc.purlinRows, 0)} แถว ใช้เหล็กแป ${formatNum(calc.purlinStock, 0)} ท่อน\n• สกรู: ${formatNum(calc.screws, 0)} ตัว${calc.totalCost > 0 ? `\n• ค่าแผ่นหลังคาโดยประมาณ: ${formatMoney(calc.totalCost)} บาท` : ''}\n----------------------------------\nแผ่นหลังคาที่ต้องสั่งตัด: ${formatNum(calc.sheets, 0)} แผ่น ยาว ${formatNum(calc.sheetOrderLengthM, 2)} ม.\n(ค่าประมาณ หน้ากว้างแผ่น ระยะแป และสกรูยังไม่ยืนยัน ควรให้ช่างตรวจ)\n(คำนวณโดย Multitools Calculator)`;
+        }
         case 'btu_calc': {
             const calc = (typeof calculateBtu === 'function') ? calculateBtu(state.btu_calc || {}) : { valid: false };
             if (!calc.valid) return `สรุปขนาดแอร์ BTU\n${divider}\nยังไม่ได้ป้อนขนาดห้อง\n(คำนวณโดย Multitools Calculator)`;

@@ -88,6 +88,17 @@ function hasInvalidNumericInput(toolId, stateObj) {
             : ['wallLength', 'wallHeight', 'deductArea', 'bricksPerSqm', 'masonryWastePct', 'plasterCoverage', 'brickPrice', 'plasterBagPrice', 'masonryLaborPerSqm', 'plasterLaborPerSqm'];
         return keys.some(key => invalid(st[key]));
     }
+    if (curToolId === 'roof_steel_calc') {
+        const st = state.roof_steel_calc || {};
+        if (st.tab === 'cut') {
+            const pieces = Array.isArray(st.pieces) ? st.pieces : [];
+            return invalid(st.stockLen) || invalid(st.kerfMm) || pieces.some(p => invalid(p.length) || invalid(p.qty));
+        }
+        const keys = st.tab === 'rebar'
+            ? ['rebarBars', 'rebarLength', 'rebarPricePerKg', 'conWidth', 'conDepth', 'conLength', 'conQty', 'conWastePct', 'conPricePerM3']
+            : ['roofRun', 'roofLength', 'roofAngle', 'roofOverhang', 'sheetWidth', 'purlinSpacing', 'screwsPerSqm', 'roofPricePerSqm'];
+        return keys.some(key => invalid(st[key]));
+    }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
     return (fields[curToolId] || []).some(key => invalid(state[curToolId][key]));

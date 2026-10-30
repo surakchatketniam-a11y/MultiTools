@@ -740,8 +740,407 @@ function renderWallCeilingTool(container) {
     }
 }
 
+/* -----------------------------------------------------------
+ * TOOL: หลังคา ตัดเหล็ก & เหล็กเส้น/คอนกรีตโครงสร้าง (roof_steel_calc)
+ * ----------------------------------------------------------- */
+
+// น้ำหนักเหล็กเส้น มอก. (กก./ม.) จาก ENGINEERING_REFERENCE_STANDARDS.md ข้อ 2.1 ตรวจสอบกับสูตร d^2/162 แล้ว
+var REBAR_TABLE = [
+    { key: 'RB6',  label: 'RB6 เหล็กเส้นกลม 6 มม.',   diameterMm: 6,  kgPerM: 0.222 },
+    { key: 'RB9',  label: 'RB9 เหล็กเส้นกลม 9 มม.',   diameterMm: 9,  kgPerM: 0.499 },
+    { key: 'RB12', label: 'RB12 เหล็กเส้นกลม 12 มม.', diameterMm: 12, kgPerM: 0.888 },
+    { key: 'DB12', label: 'DB12 เหล็กข้ออ้อย 12 มม.', diameterMm: 12, kgPerM: 0.888 },
+    { key: 'DB16', label: 'DB16 เหล็กข้ออ้อย 16 มม.', diameterMm: 16, kgPerM: 1.578 },
+    { key: 'DB20', label: 'DB20 เหล็กข้ออ้อย 20 มม.', diameterMm: 20, kgPerM: 2.466 },
+    { key: 'DB25', label: 'DB25 เหล็กข้ออ้อย 25 มม.', diameterMm: 25, kgPerM: 3.853 }
+];
+var REBAR_STOCK_LENGTH_M = 10;
+var ROOF_STEEL_STOCK_M = 6;
+var CUTTING_MAX_PIECES = 2000;
+var ROOF_MAX_ANGLE_DEG = 75;
+
+function calculateRoof(st) {
+    const run = parseNumericInput(st.roofRun);
+    const length = parseNumericInput(st.roofLength);
+    const angle = parseNumericInput(st.roofAngle);
+    const overhang = numberOrDefault(st.roofOverhang, 0);
+    const sheetWidth = numberOrDefault(st.sheetWidth, 0.76);
+    const spacing = numberOrDefault(st.purlinSpacing, 1);
+    const screwsPerSqm = numberOrDefault(st.screwsPerSqm, 5);
+    const pricePerSqm = numberOrDefault(st.roofPricePerSqm, 0);
+    const sides = Number(st.roofSides) === 2 ? 2 : 1;
+
+    if (![run, length, angle, overhang, sheetWidth, spacing, screwsPerSqm, pricePerSqm].every(Number.isFinite)
+        || run <= 0 || length <= 0 || angle < 0 || angle > ROOF_MAX_ANGLE_DEG || overhang < 0
+        || sheetWidth <= 0 || spacing <= 0 || screwsPerSqm < 0 || pricePerSqm < 0) {
+        return { valid: false };
+    }
+
+    const rad = angle * Math.PI / 180;
+    const riseM = run * Math.tan(rad);
+    const rafterM = run / Math.cos(rad);
+    const slopeLengthM = rafterM + overhang;
+    const areaSqm = slopeLengthM * length * sides;
+    const sheetsPerSide = Math.ceil(length / sheetWidth - 1e-9);
+    const purlinRowsPerSide = Math.ceil(slopeLengthM / spacing - 1e-9) + 1;
+    const purlinTotalM = purlinRowsPerSide * sides * length;
+    return {
+        valid: true,
+        sides,
+        angle,
+        riseM,
+        rafterM,
+        slopeLengthM,
+        areaSqm,
+        sheetsPerSide,
+        sheets: sheetsPerSide * sides,
+        sheetOrderLengthM: slopeLengthM,
+        purlinRows: purlinRowsPerSide * sides,
+        purlinTotalM,
+        purlinStock: Math.ceil(purlinTotalM / ROOF_STEEL_STOCK_M - 1e-9),
+        screws: Math.ceil(areaSqm * screwsPerSqm - 1e-9),
+        totalCost: areaSqm * pricePerSqm
+    };
+}
+
+// วางแผนตัดท่อนเหล็กแบบ First-Fit Decreasing (ไม่ใช่คำตอบที่ดีที่สุดทางคณิตศาสตร์เสมอไป) คำนวณเป็นมิลลิเมตรเพื่อเลี่ยงเศษทศนิยม
+function calculateCutting(st) {
+    const stockM = parseNumericInput(st.stockLen);
+    const kerfMm = numberOrDefault(st.kerfMm, 0);
+    if (!Number.isFinite(stockM) || stockM <= 0 || !Number.isFinite(kerfMm) || kerfMm < 0) return { valid: false, reason: 'invalid_stock' };
+    const stockMm = Math.round(stockM * 1000);
+    const kerf = Math.round(kerfMm);
+
+    const rows = Array.isArray(st.pieces) ? st.pieces : [];
+    const pieces = [];
+    for (const row of rows) {
+        const blankLength = String(row.length ?? '').trim() === '';
+        const blankQty = String(row.qty ?? '').trim() === '';
+        if (blankLength && blankQty) continue;
+        const len = parseNumericInput(row.length);
+        const qty = numberOrDefault(row.qty, 1);
+        if (!Number.isFinite(len) || len <= 0 || !Number.isInteger(qty) || qty < 1) return { valid: false, reason: 'invalid_piece' };
+        for (let i = 0; i < qty; i++) {
+            pieces.push(Math.round(len * 1000));
+            if (pieces.length > CUTTING_MAX_PIECES) return { valid: false, reason: 'too_many_pieces' };
+        }
+    }
+    if (pieces.length === 0) return { valid: false, reason: 'no_pieces' };
+    const longest = Math.max(...pieces);
+    if (longest > stockMm) return { valid: false, reason: 'piece_too_long', longestM: longest / 1000, stockM: stockMm / 1000 };
+
+    pieces.sort((a, b) => b - a);
+    const bars = [];
+    for (const len of pieces) {
+        const bar = bars.find(b => b.used + (b.pieces.length > 0 ? kerf : 0) + len <= stockMm);
+        if (bar) {
+            bar.used += (bar.pieces.length > 0 ? kerf : 0) + len;
+            bar.pieces.push(len);
+        } else {
+            bars.push({ used: len, pieces: [len] });
+        }
+    }
+    const pieceTotalMm = pieces.reduce((sum, v) => sum + v, 0);
+    const wasteMm = bars.length * stockMm - pieceTotalMm;
+    return {
+        valid: true,
+        stockM: stockMm / 1000,
+        kerfMm: kerf,
+        pieceCount: pieces.length,
+        pieceTotalM: pieceTotalMm / 1000,
+        barCount: bars.length,
+        wasteM: wasteMm / 1000,
+        wastePct: (wasteMm / (bars.length * stockMm)) * 100,
+        bars: bars.map(b => ({ pieces: b.pieces.map(v => v / 1000), usedM: b.used / 1000, leftoverM: (stockMm - b.used) / 1000 }))
+    };
+}
+
+function calculateRebar(st) {
+    const type = REBAR_TABLE.find(r => r.key === st.rebarType);
+    const bars = parseNumericInput(st.rebarBars);
+    const lengthM = parseNumericInput(st.rebarLength);
+    const pricePerKg = numberOrDefault(st.rebarPricePerKg, 0);
+    if (!type || ![bars, lengthM, pricePerKg].every(Number.isFinite) || !Number.isInteger(bars) || bars < 1 || lengthM <= 0 || pricePerKg < 0) {
+        return { valid: false };
+    }
+    const totalLengthM = bars * lengthM;
+    const weightKg = totalLengthM * type.kgPerM;
+    return {
+        valid: true,
+        type,
+        bars,
+        lengthM,
+        totalLengthM,
+        weightKg,
+        weightPerBarKg: lengthM * type.kgPerM,
+        stockBars: Math.ceil(totalLengthM / REBAR_STOCK_LENGTH_M - 1e-9),
+        totalCost: weightKg * pricePerKg
+    };
+}
+
+function calculateConcreteVolume(st) {
+    const width = parseNumericInput(st.conWidth);
+    const depth = parseNumericInput(st.conDepth);
+    const length = parseNumericInput(st.conLength);
+    const qty = numberOrDefault(st.conQty, 1);
+    const wastePct = numberOrDefault(st.conWastePct, 5);
+    const pricePerM3 = numberOrDefault(st.conPricePerM3, 0);
+    if (![width, depth, length, qty, wastePct, pricePerM3].every(Number.isFinite)
+        || width <= 0 || depth <= 0 || length <= 0 || !Number.isInteger(qty) || qty < 1 || wastePct < 0 || pricePerM3 < 0) {
+        return { valid: false };
+    }
+    const netM3 = width * depth * length * qty;
+    const orderM3 = netM3 * (1 + wastePct / 100);
+    return { valid: true, netM3, orderM3, wastePct, qty, totalCost: orderM3 * pricePerM3 };
+}
+
+function renderRoofSteelTool(container) {
+    if (!appState.roof_steel_calc) {
+        appState.roof_steel_calc = {
+            tab: 'roof', roofRun: '4', roofLength: '6', roofAngle: '15', roofOverhang: '0.5', roofSides: '1',
+            sheetWidth: '0.76', purlinSpacing: '1', screwsPerSqm: '5', roofPricePerSqm: '',
+            stockLen: '6', kerfMm: '0', pieces: [{ id: '1', length: '2.4', qty: '4' }, { id: '2', length: '1.2', qty: '6' }],
+            rebarType: 'DB12', rebarBars: '10', rebarLength: '6', rebarPricePerKg: '',
+            conWidth: '0.2', conDepth: '0.3', conLength: '4', conQty: '4', conWastePct: '5', conPricePerM3: ''
+        };
+    }
+    const st = appState.roof_steel_calc;
+    const tab = ['roof', 'cut', 'rebar'].includes(st.tab) ? st.tab : 'roof';
+    const row = (label, value) => `<div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">${label}</span><span class="font-semibold font-mono text-right">${value}</span></div>`;
+    const note = lines => `<div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">${lines.map(l => `<div>${l}</div>`).join('')}</div>`;
+    let body = '';
+    let statusHTML = null;
+    let emptyText = '';
+
+    if (tab === 'roof') {
+        const calc = calculateRoof(st);
+        const sideChips = [1, 2].map(n => `<button type="button" class="tool-chip-btn roof-side-chip ${Number(st.roofSides) === n ? 'active font-bold' : ''}" aria-pressed="${Number(st.roofSides) === n}" data-roof-sides="${n}" style="min-height: 44px;">${n === 1 ? 'หลังคาเพิงหมาแหงน (1 ด้าน)' : 'หลังคาจั่ว (2 ด้าน)'}</button>`).join('');
+        body = `
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">รูปแบบหลังคา</div>
+                <div class="grid grid-cols-1 gap-2">${sideChips}</div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'ระยะแนวราบต่อ 1 ด้าน (Run)', st.roofRun, 'เมตร', 'เช่น 4')}
+                ${createKeypadFieldHTML(1, 'ความยาวหลังคาตามแนวสันหรือชายคา', st.roofLength, 'เมตร', 'เช่น 6')}
+                ${createKeypadFieldHTML(2, 'องศาความลาดชัน', st.roofAngle, 'องศา', 'เช่น 15')}
+                ${createKeypadFieldHTML(3, 'ชายคายื่น (ตามแนวลาด)', st.roofOverhang, 'เมตร', 'เช่น 0.5')}
+                ${createKeypadFieldHTML(4, 'หน้ากว้างใช้งานจริงของแผ่น', st.sheetWidth, 'เมตร', 'เช่น 0.76')}
+                ${createKeypadFieldHTML(5, 'ระยะห่างแป', st.purlinSpacing, 'เมตร', 'เช่น 1')}
+                ${createKeypadFieldHTML(6, 'สกรูยิงหลังคา', st.screwsPerSqm, 'ตัว/ตร.ม.', 'เช่น 5')}
+                ${createKeypadFieldHTML(7, 'ราคาหลังคา (ไม่บังคับ)', st.roofPricePerSqm, 'บาท/ตร.ม.', 'เช่น 350')}
+            </div>`;
+        if (calc.valid) {
+            body += `
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">แผ่นหลังคาที่ต้องสั่งตัด</div>
+                <div class="themed-result-value text-2xl font-bold font-mono break-words">${formatNum(calc.sheets, 0)} แผ่น ยาว ${formatNum(calc.sheetOrderLengthM, 2)} ม.</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${row('ความสูงยกจากแนวราบ (Rise)', `${formatNum(calc.riseM, 2)} ม.`)}
+                    ${row('ความยาวจันทัน (ไม่รวมชายคา)', `${formatNum(calc.rafterM, 2)} ม.`)}
+                    ${row('พื้นที่หลังคาตามแนวลาด', `${formatNum(calc.areaSqm, 2)} ตร.ม.`)}
+                    ${row('จำนวนแถวแป', formatNum(calc.purlinRows, 0))}
+                    ${row(`เหล็กแป (ท่อนละ ${ROOF_STEEL_STOCK_M} ม.)`, `${formatNum(calc.purlinStock, 0)} ท่อน`)}
+                    ${row('สกรูยิงหลังคา', `${formatNum(calc.screws, 0)} ตัว`)}
+                    ${calc.totalCost > 0 ? row('ค่าแผ่นหลังคาโดยประมาณ', `${formatMoney(calc.totalCost)} บาท`) : ''}
+                </div>
+            </div>`;
+            statusHTML = `หลังคา <span class="text-lg text-[var(--app-accent)] underline">${formatNum(calc.areaSqm, 2)} ตร.ม.</span><span class="text-xs font-normal opacity-80 block mt-1">${formatNum(calc.sheets, 0)} แผ่น ยาว ${formatNum(calc.sheetOrderLengthM, 2)} ม. · แป ${formatNum(calc.purlinStock, 0)} ท่อน</span>`;
+        }
+        body += note([
+            'ความยาวจันทัน = Run / cos(องศา) ความยาวแผ่นสั่งตัด = จันทัน + ชายคายื่น',
+            'ยังไม่ยืนยัน: หน้ากว้างใช้งานจริงของแผ่น (0.76 ม.) ระยะห่างแป (1.0 ม.) และสกรู (5 ตัว/ตร.ม.) เป็นค่าตั้งต้นที่ต่างกันตามรุ่นและผู้ผลิต ควรเทียบกับข้อมูลรุ่นที่เลือก',
+            'จำนวนเหล็กแปนับแบบรวมความยาวแล้วหารท่อน ไม่ได้วางแผนตัดเศษ ใช้แท็บ "ตัดเหล็ก" ถ้าต้องการลดเศษ ค่าประมาณเพื่อประกอบการตัดสินใจ ควรให้ช่างหรือวิศวกรตรวจโครงสร้าง'
+        ]);
+        emptyText = 'ป้อนระยะแนวราบ ความยาว และองศาความลาดชันของหลังคา';
+    } else if (tab === 'cut') {
+        const calc = calculateCutting(st);
+        const pieces = Array.isArray(st.pieces) ? st.pieces : [];
+        const rowsHTML = pieces.map(p => `
+            <div class="grid grid-cols-[1fr_1fr_auto] gap-2 items-end" data-piece-row="${escapeHTML(p.id)}">
+                <div class="min-w-0">
+                    <label for="piece-length-${escapeHTML(p.id)}" class="text-[var(--app-muted)] text-[11px] block">ความยาวท่อน (เมตร)</label>
+                    <input id="piece-length-${escapeHTML(p.id)}" type="text" inputmode="decimal" class="airbnb-input text-right text-xs w-full min-w-0" style="min-height: 44px;" value="${escapeHTML(p.length || '')}" data-piece-id="${escapeHTML(p.id)}" data-piece-field="length" placeholder="2.4">
+                </div>
+                <div class="min-w-0">
+                    <label for="piece-qty-${escapeHTML(p.id)}" class="text-[var(--app-muted)] text-[11px] block">จำนวน (ท่อน)</label>
+                    <input id="piece-qty-${escapeHTML(p.id)}" type="text" inputmode="numeric" class="airbnb-input text-right text-xs w-full min-w-0" style="min-height: 44px;" value="${escapeHTML(p.qty || '')}" data-piece-id="${escapeHTML(p.id)}" data-piece-field="qty" placeholder="4">
+                </div>
+                <button type="button" class="tool-danger-btn" data-piece-remove="${escapeHTML(p.id)}" style="min-height: 44px; min-width: 44px;" aria-label="ลบรายการท่อนเหล็ก">ลบ</button>
+            </div>`).join('');
+        body = `
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'ความยาวเหล็กเต็มเส้น', st.stockLen, 'เมตร', 'เช่น 6')}
+                ${createKeypadFieldHTML(1, 'ความหนาใบเลื่อย/รอยตัด', st.kerfMm, 'มม.', 'เช่น 3')}
+            </div>
+            <div class="themed-tool-card p-3 space-y-3 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">รายการท่อนที่ต้องตัด</div>
+                ${rowsHTML || '<div class="text-[var(--app-muted)]">ยังไม่มีรายการ กดเพิ่มรายการด้านล่าง</div>'}
+                <button type="button" class="tool-action-btn" id="btnAddPiece" style="min-height: 44px;">เพิ่มรายการท่อน</button>
+            </div>`;
+        if (calc.valid) {
+            const shown = calc.bars.slice(0, 40);
+            const barLines = shown.map((b, i) => `<div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">เส้นที่ ${i + 1}</span><span class="font-mono text-right break-words">${b.pieces.map(v => formatNum(v, 3)).join(' + ')} (เหลือ ${formatNum(b.leftoverM, 3)})</span></div>`).join('');
+            body += `
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">เหล็กเต็มเส้นที่ต้องซื้อ</div>
+                <div class="themed-result-value text-2xl font-bold font-mono break-words">${formatNum(calc.barCount, 0)} เส้น</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${row('ท่อนที่ต้องตัดทั้งหมด', `${formatNum(calc.pieceCount, 0)} ท่อน`)}
+                    ${row('ความยาวท่อนรวม', `${formatNum(calc.pieceTotalM, 2)} ม.`)}
+                    ${row('เศษเหล็กรวม', `${formatNum(calc.wasteM, 2)} ม. (${formatNum(calc.wastePct, 1)}%)`)}
+                </div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    <div class="font-semibold text-[var(--app-ink)]">แผนการตัด</div>
+                    ${barLines}
+                    ${calc.bars.length > shown.length ? `<div class="text-[var(--app-muted)]">แสดง ${shown.length} จาก ${calc.bars.length} เส้น</div>` : ''}
+                </div>
+            </div>`;
+            statusHTML = `ซื้อเหล็ก <span class="text-lg text-[var(--app-accent)] underline">${formatNum(calc.barCount, 0)} เส้น</span><span class="text-xs font-normal opacity-80 block mt-1">เศษเหล็ก ${formatNum(calc.wasteM, 2)} ม. (${formatNum(calc.wastePct, 1)}%)</span>`;
+        } else if (calc.reason === 'piece_too_long') {
+            body += `<div class="themed-subcard p-3 text-xs font-semibold" role="alert">มีท่อนที่ยาว ${formatNum(calc.longestM, 3)} ม. เกินความยาวเหล็กเต็มเส้น ${formatNum(calc.stockM, 3)} ม. ต้องต่อเหล็กหรือใช้เส้นที่ยาวกว่านี้</div>`;
+        } else if (calc.reason === 'too_many_pieces') {
+            body += `<div class="themed-subcard p-3 text-xs font-semibold" role="alert">จำนวนท่อนรวมเกิน ${formatNum(CUTTING_MAX_PIECES, 0)} ท่อน ลดจำนวนหรือแบ่งคำนวณเป็นชุด</div>`;
+        }
+        body += note([
+            'วางแผนตัดแบบ First-Fit Decreasing เรียงท่อนยาวก่อน เป็นวิธีประมาณที่ใช้ได้ดีในงานทั่วไป แต่ไม่รับประกันว่าเศษน้อยที่สุดทุกกรณี',
+            'รอยตัดคิดทุกครั้งที่ตัดระหว่างท่อนในเส้นเดียวกัน ค่าประมาณเพื่อประกอบการตัดสินใจ'
+        ]);
+        emptyText = 'ป้อนความยาวเหล็กเต็มเส้นและรายการท่อนที่ต้องตัด';
+    } else {
+        const rebar = calculateRebar(st);
+        const con = calculateConcreteVolume(st);
+        const typeChips = REBAR_TABLE.map(r => `<button type="button" class="tool-chip-btn rebar-type-chip ${st.rebarType === r.key ? 'active font-bold' : ''}" aria-pressed="${st.rebarType === r.key}" data-rebar="${r.key}" style="min-height: 44px;">${r.key} · ${formatNum(r.kgPerM, 3)} กก./ม.</button>`).join('');
+        body = `
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ชนิดเหล็กเส้น (น้ำหนักตามตาราง มอก.)</div>
+                <div class="grid grid-cols-2 gap-2">${typeChips}</div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'จำนวนเส้นเหล็ก', st.rebarBars, 'เส้น', 'เช่น 10')}
+                ${createKeypadFieldHTML(1, 'ความยาวต่อเส้นที่ใช้', st.rebarLength, 'เมตร', 'เช่น 6')}
+                ${createKeypadFieldHTML(2, 'ราคาเหล็ก (ไม่บังคับ)', st.rebarPricePerKg, 'บาท/กก.', 'เช่น 25')}
+            </div>`;
+        if (rebar.valid) {
+            body += `
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">น้ำหนักเหล็กเส้น ${rebar.type.key}</div>
+                <div class="themed-result-value text-2xl font-bold font-mono break-words">${formatNum(rebar.weightKg, 2)} กก.</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${row('ความยาวรวม', `${formatNum(rebar.totalLengthM, 2)} ม.`)}
+                    ${row('น้ำหนักต่อเส้นที่ใช้', `${formatNum(rebar.weightPerBarKg, 3)} กก.`)}
+                    ${row(`เหล็กเต็มเส้น (เส้นละ ${REBAR_STOCK_LENGTH_M} ม.)`, `${formatNum(rebar.stockBars, 0)} เส้น`)}
+                    ${rebar.totalCost > 0 ? row('ค่าเหล็กโดยประมาณ', `${formatMoney(rebar.totalCost)} บาท`) : ''}
+                </div>
+            </div>`;
+            statusHTML = `เหล็ก ${rebar.type.key} <span class="text-lg text-[var(--app-accent)] underline">${formatNum(rebar.weightKg, 2)} กก.</span><span class="text-xs font-normal opacity-80 block mt-1">${formatNum(rebar.stockBars, 0)} เส้นเต็ม${con.valid ? ` · คอนกรีต ${formatNum(con.orderM3, 2)} คิว` : ''}</span>`;
+        }
+        body += `
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(3, 'ความกว้างหน้าตัด', st.conWidth, 'เมตร', 'เช่น 0.2')}
+                ${createKeypadFieldHTML(4, 'ความลึก/หนา', st.conDepth, 'เมตร', 'เช่น 0.3')}
+                ${createKeypadFieldHTML(5, 'ความยาว/ความสูงชิ้นงาน', st.conLength, 'เมตร', 'เช่น 4')}
+                ${createKeypadFieldHTML(6, 'จำนวนชิ้นงาน', st.conQty, 'ชิ้น', 'เช่น 4')}
+                ${createKeypadFieldHTML(7, 'เผื่อสูญเสีย', st.conWastePct, '%', 'เช่น 5')}
+                ${createKeypadFieldHTML(8, 'ราคาคอนกรีต (ไม่บังคับ)', st.conPricePerM3, 'บาท/คิว', 'เช่น 2000')}
+            </div>`;
+        if (con.valid) {
+            body += `
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">ปริมาตรคอนกรีตที่ต้องสั่ง (รวมเผื่อ ${formatNum(con.wastePct, 1)}%)</div>
+                <div class="themed-result-value text-2xl font-bold font-mono break-words">${formatNum(con.orderM3, 2)} คิว</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${row('ปริมาตรสุทธิ', `${formatNum(con.netM3, 3)} คิว`)}
+                    ${con.totalCost > 0 ? row('ค่าคอนกรีตโดยประมาณ', `${formatMoney(con.totalCost)} บาท`) : ''}
+                </div>
+            </div>`;
+            if (!statusHTML) statusHTML = `คอนกรีต <span class="text-lg text-[var(--app-accent)] underline">${formatNum(con.orderM3, 2)} คิว</span><span class="text-xs font-normal opacity-80 block mt-1">ปริมาตรสุทธิ ${formatNum(con.netM3, 3)} คิว</span>`;
+        }
+        body += note([
+            'น้ำหนักต่อเมตรของเหล็กเส้นตามตารางใน ENGINEERING_REFERENCE_STANDARDS.md ซึ่งตรวจกับสูตร d^2/162 แล้ว',
+            'ไม่รวมระยะทาบเหล็ก ระยะงอ และเหล็กปลอก ต้องเผื่อเองหรือให้วิศวกรถอดแบบ เกณฑ์ระยะทาบ (เช่น 36d-40d) ยังไม่ยืนยัน จึงไม่ถูกนำมาคำนวณ',
+            'ปริมาตรคอนกรีตคิดเป็นทรงกล่องสี่เหลี่ยม ไม่ใช่การออกแบบโครงสร้าง ต้องให้วิศวกรกำหนดหน้าตัดและเหล็กเสริม'
+        ]);
+        emptyText = 'ป้อนจำนวนและความยาวเหล็ก หรือขนาดชิ้นงานคอนกรีต';
+    }
+
+    container.innerHTML = `
+        <div class="roof-steel-tool flex flex-col gap-3 p-1">
+            <div class="segment-group grid-cols-3" role="group" aria-label="ประเภทงาน">
+                <button type="button" class="segment-btn ${tab === 'roof' ? 'active' : ''}" aria-pressed="${tab === 'roof'}" data-rs-tab="roof" style="min-height: 44px;">หลังคา</button>
+                <button type="button" class="segment-btn ${tab === 'cut' ? 'active' : ''}" aria-pressed="${tab === 'cut'}" data-rs-tab="cut" style="min-height: 44px;">ตัดเหล็ก</button>
+                <button type="button" class="segment-btn ${tab === 'rebar' ? 'active' : ''}" aria-pressed="${tab === 'rebar'}" data-rs-tab="rebar" style="min-height: 44px;">เหล็กเส้น</button>
+            </div>
+            ${body}
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    container.querySelectorAll('[data-rs-tab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.tab = btn.dataset.rsTab;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('.roof-side-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.roofSides = btn.dataset.roofSides;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('.rebar-type-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.rebarType = btn.dataset.rebar;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('[data-piece-id]').forEach(input => {
+        input.addEventListener('change', () => {
+            const target = (st.pieces || []).find(p => p.id === input.dataset.pieceId);
+            if (!target) return;
+            target[input.dataset.pieceField] = input.value;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('[data-piece-remove]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.pieces = (st.pieces || []).filter(p => p.id !== btn.dataset.pieceRemove);
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    const addBtn = document.getElementById('btnAddPiece');
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            const list = Array.isArray(st.pieces) ? st.pieces : [];
+            const nextId = String(list.reduce((max, p) => Math.max(max, Number(p.id) || 0), 0) + 1);
+            st.pieces = list.concat([{ id: nextId, length: '', qty: '1' }]);
+            persistAppState();
+            renderActiveTool();
+        });
+    }
+
+    if (statusHTML) {
+        setStatusBanner('success', statusHTML);
+    } else {
+        setStatusBanner('empty', emptyText);
+    }
+}
+
 (function(root) {
     const exportsObj = {
+        REBAR_TABLE,
+        REBAR_STOCK_LENGTH_M,
+        calculateRoof,
+        calculateCutting,
+        calculateRebar,
+        calculateConcreteVolume,
+        renderRoofSteelTool,
         MASONRY_BRICK_PRESETS,
         CEILING_PANEL_PRESETS,
         calculateMasonry,

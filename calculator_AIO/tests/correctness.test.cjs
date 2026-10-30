@@ -287,11 +287,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 39 tools classified into 6 valid groups with search keywords', () => {
+test('catalog contains exactly 40 tools classified into 6 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 6);
-    assert.equal(TOOLS_CATALOG.length, 39);
+    assert.equal(TOOLS_CATALOG.length, 40);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -451,7 +451,7 @@ test('all 36 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 39);
+    assert.equal(ctx.TOOLS_CATALOG.length, 40);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -1214,7 +1214,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('คุ้มค่าที่สุด'));
 });
 
-test('all 39 tool renderers are modularized and exported across the 6 tool groups', () => {
+test('all 40 tool renderers are modularized and exported across the 6 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -1255,10 +1255,11 @@ test('all 39 tool renderers are modularized and exported across the 6 tool group
         food_costing:      'renderFoodCostingTool',
         btu_calc:          'renderBtuTool',
         land_fill_calc: 'renderLandFillTool',
-        wall_ceiling_calc: 'renderWallCeilingTool'
+        wall_ceiling_calc: 'renderWallCeilingTool',
+        roof_steel_calc: 'renderRoofSteelTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 39);
+    assert.equal(Object.keys(rendererMap).length, 40);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -3310,6 +3311,101 @@ test('wall_ceiling_calc: masonry bricks and plaster, ceiling panels, presets and
     assert.equal(ctx.hasInvalidNumericInput('wall_ceiling_calc', { wall_ceiling_calc: st }), false);
     assert.equal(ctx.hasInvalidNumericInput('wall_ceiling_calc', { wall_ceiling_calc: { ...st, tab: 'ceiling' } }), true);
     assert.equal(ctx.hasInvalidNumericInput('wall_ceiling_calc', { wall_ceiling_calc: { ...st, wallHeight: '3m' } }), true);
+});
+
+test('roof_steel_calc: roof geometry, steel cutting plan, rebar weight and concrete volume', () => {
+    const ctx = context();
+    const roof = { roofRun: '4', roofLength: '6', roofAngle: '15', roofOverhang: '0.5', roofSides: '1', sheetWidth: '0.76', purlinSpacing: '1', screwsPerSqm: '5', roofPricePerSqm: '' };
+
+    // Rafter = run / cos(angle); sheet length = rafter + overhang; rise = run x tan(angle)
+    const r = ctx.calculateRoof(roof);
+    const rad = 15 * Math.PI / 180;
+    assert.equal(r.valid, true);
+    assert.ok(Math.abs(r.rafterM - 4 / Math.cos(rad)) < 1e-12);
+    assert.ok(Math.abs(r.riseM - 4 * Math.tan(rad)) < 1e-12);
+    assert.ok(Math.abs(r.slopeLengthM - (4 / Math.cos(rad) + 0.5)) < 1e-12);
+    assert.ok(Math.abs(r.areaSqm - r.slopeLengthM * 6) < 1e-9);
+    assert.equal(r.sheets, Math.ceil(6 / 0.76));
+    assert.equal(r.sheets, 8);
+    assert.equal(r.purlinRows, Math.ceil(r.slopeLengthM / 1) + 1);
+    assert.equal(r.purlinStock, Math.ceil(r.purlinRows * 6 / 6));
+    assert.equal(r.screws, Math.ceil(r.areaSqm * 5));
+
+    // Flat roof and gable (two sides double area, sheets and purlin rows)
+    const flat = ctx.calculateRoof({ ...roof, roofAngle: '0', roofOverhang: '0' });
+    assert.equal(flat.rafterM, 4);
+    assert.equal(flat.riseM, 0);
+    const gable = ctx.calculateRoof({ ...roof, roofSides: '2' });
+    assert.ok(Math.abs(gable.areaSqm - r.areaSqm * 2) < 1e-9);
+    assert.equal(gable.sheets, r.sheets * 2);
+    assert.equal(gable.purlinRows, r.purlinRows * 2);
+    assert.equal(ctx.calculateRoof({ ...roof, roofPricePerSqm: '350' }).totalCost, r.areaSqm * 350);
+
+    // Invalid roof input
+    assert.equal(ctx.calculateRoof({ ...roof, roofRun: '' }).valid, false);
+    assert.equal(ctx.calculateRoof({ ...roof, roofAngle: '80' }).valid, false);
+    assert.equal(ctx.calculateRoof({ ...roof, roofAngle: '-1' }).valid, false);
+    assert.equal(ctx.calculateRoof({ ...roof, sheetWidth: '0' }).valid, false);
+    assert.equal(ctx.calculateRoof({ ...roof, purlinSpacing: '0' }).valid, false);
+
+    // Cutting: 2.4 x4, 1.2 x6 from 6 m bars. Total 9.6 + 7.2 = 16.8 m -> 3 bars (18 m), waste 1.2 m
+    const cut = { stockLen: '6', kerfMm: '0', pieces: [{ id: '1', length: '2.4', qty: '4' }, { id: '2', length: '1.2', qty: '6' }] };
+    const c = ctx.calculateCutting(cut);
+    assert.equal(c.valid, true);
+    assert.equal(c.pieceCount, 10);
+    assert.ok(Math.abs(c.pieceTotalM - 16.8) < 1e-9);
+    assert.equal(c.barCount, 3);
+    assert.ok(Math.abs(c.wasteM - 1.2) < 1e-9);
+    assert.ok(Math.abs(c.wastePct - (1.2 / 18) * 100) < 1e-9);
+    assert.equal(c.bars.reduce((n, b) => n + b.pieces.length, 0), 10);
+    assert.ok(c.bars.every(b => b.usedM <= 6 + 1e-9));
+
+    // Kerf is charged between pieces in the same bar: 3 x 2.0 m fits in 6 m only without kerf
+    const noKerf = ctx.calculateCutting({ stockLen: '6', kerfMm: '0', pieces: [{ id: '1', length: '2', qty: '3' }] });
+    assert.equal(noKerf.barCount, 1);
+    const kerf = ctx.calculateCutting({ stockLen: '6', kerfMm: '3', pieces: [{ id: '1', length: '2', qty: '3' }] });
+    assert.equal(kerf.barCount, 2);
+
+    // Blank rows are ignored, oversize pieces and bad input are reported
+    assert.equal(ctx.calculateCutting({ ...cut, pieces: cut.pieces.concat([{ id: '3', length: '', qty: '' }]) }).pieceCount, 10);
+    const tooLong = ctx.calculateCutting({ ...cut, pieces: [{ id: '1', length: '6.5', qty: '1' }] });
+    assert.equal(tooLong.valid, false);
+    assert.equal(tooLong.reason, 'piece_too_long');
+    assert.equal(ctx.calculateCutting({ ...cut, pieces: [] }).reason, 'no_pieces');
+    assert.equal(ctx.calculateCutting({ ...cut, pieces: [{ id: '1', length: 'x', qty: '1' }] }).reason, 'invalid_piece');
+    assert.equal(ctx.calculateCutting({ ...cut, pieces: [{ id: '1', length: '1', qty: '1.5' }] }).reason, 'invalid_piece');
+    assert.equal(ctx.calculateCutting({ ...cut, pieces: [{ id: '1', length: '0.001', qty: '2001' }] }).reason, 'too_many_pieces');
+    assert.equal(ctx.calculateCutting({ ...cut, stockLen: '' }).valid, false);
+
+    // Rebar: table weights agree with d^2/162 within rounding, DB12 x 10 bars x 6 m = 60 m x 0.888 = 53.28 kg
+    for (const bar of ctx.REBAR_TABLE) assert.ok(Math.abs(bar.kgPerM - bar.diameterMm ** 2 / 162) < 0.01, bar.key);
+    const rebar = ctx.calculateRebar({ rebarType: 'DB12', rebarBars: '10', rebarLength: '6', rebarPricePerKg: '25' });
+    assert.equal(rebar.valid, true);
+    assert.equal(rebar.totalLengthM, 60);
+    assert.ok(Math.abs(rebar.weightKg - 53.28) < 1e-9);
+    assert.equal(rebar.stockBars, 6);
+    assert.ok(Math.abs(rebar.totalCost - 53.28 * 25) < 1e-9);
+    assert.equal(ctx.calculateRebar({ rebarType: 'DB12', rebarBars: '7', rebarLength: '6' }).stockBars, 5);
+    assert.equal(ctx.calculateRebar({ rebarType: 'XX', rebarBars: '10', rebarLength: '6' }).valid, false);
+    assert.equal(ctx.calculateRebar({ rebarType: 'DB12', rebarBars: '2.5', rebarLength: '6' }).valid, false);
+    assert.equal(ctx.calculateRebar({ rebarType: 'DB12', rebarBars: '10', rebarLength: '0' }).valid, false);
+
+    // Concrete: 0.2 x 0.3 x 4 x 4 = 0.96 m3, +5% = 1.008
+    const con = ctx.calculateConcreteVolume({ conWidth: '0.2', conDepth: '0.3', conLength: '4', conQty: '4', conWastePct: '5', conPricePerM3: '2000' });
+    assert.equal(con.valid, true);
+    assert.ok(Math.abs(con.netM3 - 0.96) < 1e-9);
+    assert.ok(Math.abs(con.orderM3 - 1.008) < 1e-9);
+    assert.ok(Math.abs(con.totalCost - 2016) < 1e-9);
+    assert.equal(ctx.calculateConcreteVolume({ conWidth: '0.2', conDepth: '0', conLength: '4', conQty: '4' }).valid, false);
+    assert.equal(ctx.calculateConcreteVolume({ conWidth: '0.2', conDepth: '0.3', conLength: '4', conQty: '0' }).valid, false);
+
+    // Invalid-input detection follows the active tab, including cutting rows
+    const base = { ...roof, ...cut, rebarType: 'DB12', rebarBars: '10', rebarLength: '6', conWidth: '0.2', conDepth: '0.3', conLength: '4', conQty: '4', conWastePct: '5' };
+    assert.equal(ctx.hasInvalidNumericInput('roof_steel_calc', { roof_steel_calc: { ...base, tab: 'roof' } }), false);
+    assert.equal(ctx.hasInvalidNumericInput('roof_steel_calc', { roof_steel_calc: { ...base, tab: 'roof', roofRun: '4m' } }), true);
+    assert.equal(ctx.hasInvalidNumericInput('roof_steel_calc', { roof_steel_calc: { ...base, tab: 'cut', roofRun: '4m' } }), false);
+    assert.equal(ctx.hasInvalidNumericInput('roof_steel_calc', { roof_steel_calc: { ...base, tab: 'cut', pieces: [{ id: '1', length: '2.4x', qty: '1' }] } }), true);
+    assert.equal(ctx.hasInvalidNumericInput('roof_steel_calc', { roof_steel_calc: { ...base, tab: 'rebar', conDepth: 'abc' } }), true);
 });
 
 test('construction_calc: tiles, paint, and concrete calculations', () => {

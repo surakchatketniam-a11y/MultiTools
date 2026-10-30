@@ -106,6 +106,17 @@ function getToolFieldBindings(toolId) {
                 : ['wallLength', 'wallHeight', 'deductArea', 'bricksPerSqm', 'masonryWastePct', 'plasterCoverage', 'brickPrice', 'plasterBagPrice', 'masonryLaborPerSqm', 'plasterLaborPerSqm'];
             return keys.map(field);
         }
+        case 'roof_steel_calc': {
+            const s = () => appState.roof_steel_calc;
+            const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
+            const tab = s().tab;
+            const keys = tab === 'cut'
+                ? ['stockLen', 'kerfMm']
+                : tab === 'rebar'
+                    ? ['rebarBars', 'rebarLength', 'rebarPricePerKg', 'conWidth', 'conDepth', 'conLength', 'conQty', 'conWastePct', 'conPricePerM3']
+                    : ['roofRun', 'roofLength', 'roofAngle', 'roofOverhang', 'sheetWidth', 'purlinSpacing', 'screwsPerSqm', 'roofPricePerSqm'];
+            return keys.map(field);
+        }
         case 'btu_calc':
             return [
                 { get: () => appState.btu_calc.width, set: (v) => { appState.btu_calc.width = v; } },
