@@ -81,6 +81,13 @@ function hasInvalidNumericInput(toolId, stateObj) {
         const areaKeys = st.mode === 'dim' ? ['width', 'length'] : ['rai', 'ngan', 'wa'];
         return areaKeys.concat(['heightCm', 'shrinkPct', 'truck6Cap', 'truck10Cap', 'pricePerM3', 'spreadPerM3']).some(key => invalid(st[key]));
     }
+    if (curToolId === 'wall_ceiling_calc') {
+        const st = state.wall_ceiling_calc || {};
+        const keys = st.tab === 'ceiling'
+            ? ['ceilingArea', 'ceilingWastePct', 'panelAreaSqm', 'panelPrice', 'ceilingLaborPerSqm']
+            : ['wallLength', 'wallHeight', 'deductArea', 'bricksPerSqm', 'masonryWastePct', 'plasterCoverage', 'brickPrice', 'plasterBagPrice', 'masonryLaborPerSqm', 'plasterLaborPerSqm'];
+        return keys.some(key => invalid(st[key]));
+    }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
     return (fields[curToolId] || []).some(key => invalid(state[curToolId][key]));

@@ -591,6 +591,17 @@ function getToolSummaryText(toolId, stateObj) {
             const costLine = calc.totalCost > 0 ? `\n• ค่าดิน ${formatMoney(calc.soilCost)} บาท + ค่าเกลี่ยบดอัด ${formatMoney(calc.spreadCost)} บาท = ${formatMoney(calc.totalCost)} บาท` : '';
             return `สรุปดินถมที่ & รถดั๊มพ์\n${divider}\n• พื้นที่: ${formatNum(calc.areaSqm, 2)} ตร.ม. (${formatNum(calc.areaWa, 2)} ตร.ว.) ถมสูง ${formatNum(calc.heightCm, 0)} ซม.\n• ปริมาตรหลังบดอัด (คิวแน่น): ${formatNum(calc.compactedM3, 2)} คิว\n• อัตรายุบ ${formatNum(calc.shrinkPct, 1)}% ตัวคูณเผื่อยุบ x${formatNum(calc.multiplier, 3)}\n• รถ 6 ล้อ: ${calc.truck6.trips} เที่ยว (${formatNum(calc.truck6.capacity, 1)} คิว/เที่ยว)\n• รถ 10 ล้อ: ${calc.truck10.trips} เที่ยว (${formatNum(calc.truck10.capacity, 1)} คิว/เที่ยว)${costLine}\n----------------------------------\nปริมาตรดินที่ต้องสั่งซื้อ (คิวหลวม): ${formatNum(calc.looseM3, 2)} คิว\n(ค่าประมาณ อัตรายุบและความจุรถยังไม่ยืนยัน)\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'wall_ceiling_calc': {
+            const st = state.wall_ceiling_calc || {};
+            if (st.tab === 'ceiling') {
+                const calc = (typeof calculateCeiling === 'function') ? calculateCeiling(st) : { valid: false };
+                if (!calc.valid) return `สรุปฝ้าเพดาน\n${divider}\nยังไม่ได้ป้อนพื้นที่ฝ้า\n(คำนวณโดย Multitools Calculator)`;
+                return `สรุปคำนวณฝ้าเพดาน\n${divider}\n• พื้นที่ฝ้า: ${formatNum(calc.areaSqm, 2)} ตร.ม.\n• พื้นที่ต่อแผ่น: ${formatNum(calc.panelAreaSqm, 2)} ตร.ม.\n• เผื่อเศษตัด: ${formatNum(calc.wastePct, 1)}%${calc.totalCost > 0 ? `\n• ประมาณการงบประมาณ: ${formatMoney(calc.totalCost)} บาท` : ''}\n----------------------------------\nจำนวนแผ่นที่ต้องสั่งซื้อ: ${formatNum(calc.panels, 0)} แผ่น\n(ไม่รวมโครงคร่าวและอุปกรณ์ ค่าประมาณเพื่อประกอบการตัดสินใจ)\n(คำนวณโดย Multitools Calculator)`;
+            }
+            const calc = (typeof calculateMasonry === 'function') ? calculateMasonry(st) : { valid: false };
+            if (!calc.valid) return `สรุปก่ออิฐ & ฉาบปูน\n${divider}\nยังไม่ได้ป้อนขนาดผนัง\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปคำนวณก่ออิฐ & ฉาบปูน\n${divider}\n• พื้นที่ผนังสุทธิ: ${formatNum(calc.netAreaSqm, 2)} ตร.ม.\n• พื้นที่ฉาบ: ${formatNum(calc.plasterAreaSqm, 2)} ตร.ม. (${calc.sides} ด้าน)\n• ปูนฉาบ: ${formatNum(calc.plasterBags, 0)} ถุง${calc.totalCost > 0 ? `\n• ประมาณการงบประมาณ: ${formatMoney(calc.totalCost)} บาท` : ''}\n----------------------------------\nจำนวนอิฐที่ต้องสั่งซื้อ (เผื่อ ${formatNum(calc.wastePct, 1)}%): ${formatNum(calc.bricks, 0)} ก้อน\n(ค่าประมาณ จำนวนก้อนอิฐมอญและความครอบคลุมปูนฉาบยังไม่ยืนยัน)\n(คำนวณโดย Multitools Calculator)`;
+        }
         case 'btu_calc': {
             const calc = (typeof calculateBtu === 'function') ? calculateBtu(state.btu_calc || {}) : { valid: false };
             if (!calc.valid) return `สรุปขนาดแอร์ BTU\n${divider}\nยังไม่ได้ป้อนขนาดห้อง\n(คำนวณโดย Multitools Calculator)`;

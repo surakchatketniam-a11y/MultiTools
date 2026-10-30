@@ -39,6 +39,7 @@ var TOOLS_CATALOG = [
     { id: 'construction_calc', group: 'engineering', category: 'fav', menuTitle: 'คำนวณวัสดุก่อสร้าง', headerTitle: 'คำนวณวัสดุก่อสร้าง & ปรับปรุงบ้าน (กระเบื้อง/สี/ปูน)', usesSharedKeypad: true, keywords: 'construction calc วัสดุก่อสร้าง ปรับปรุงบ้าน ซ่อมบ้าน กระเบื้อง ปูกระเบื้อง สีทาบ้าน ทาสี ปูน คอนกรีต เทพื้น ปูนกาว ยาแนว ไวร์เมช อิฐ ตารางเมตร คิว boq ช่างปูน ค่าแรง' },
     { id: 'btu_calc', group: 'engineering', category: 'fav', menuTitle: 'ขนาดแอร์ BTU & ค่าไฟ', headerTitle: 'คำนวณขนาดแอร์ BTU & เปรียบเทียบค่าไฟ Fixed Speed vs Inverter', usesSharedKeypad: true, keywords: 'btu calc ขนาดแอร์ btu บีทียู เลือกแอร์ ซื้อแอร์ ห้องนอน แอร์ inverter อินเวอร์เตอร์ fixed speed seer เบอร์ 5 ค่าไฟแอร์ ช่างแอร์ ติดแอร์ กั้นห้อง' },
     { id: 'land_fill_calc', group: 'engineering', category: 'fav', menuTitle: 'ดินถมที่ & รถดั๊มพ์', headerTitle: 'คำนวณดินถมที่ (คิวแน่น/คิวหลวม) & จำนวนเที่ยวรถดั๊มพ์', usesSharedKeypad: true, keywords: 'land fill ดินถม ถมที่ ถมดิน คิวดิน ลูกรัง ทรายถม รถดั๊มพ์ รถ6ล้อ รถ10ล้อ บดอัด ไร่ งาน ตารางวา เกลี่ยดิน ปรับพื้นที่ ที่ดิน' },
+    { id: 'wall_ceiling_calc', group: 'engineering', category: 'all', menuTitle: 'ก่ออิฐ ฉาบปูน & ฝ้าเพดาน', headerTitle: 'คำนวณก่ออิฐ ฉาบปูน & ฝ้าเพดาน (อิฐมวลเบา/อิฐมอญ/ยิปซั่ม/ทีบาร์)', usesSharedKeypad: true, keywords: 'wall ceiling ก่ออิฐ ฉาบปูน ผนัง อิฐมวลเบา อิฐมอญ อิฐบล็อก ปูนฉาบ กั้นห้อง ฝ้าเพดาน ฝ้ายิปซั่ม ยิปซั่ม ทีบาร์ t-bar แผ่นฝ้า ช่างปูน ต่อเติมบ้าน' },
 
     // หมวดหมู่ที่ 2: ธุรกิจ & ค้าขาย
     { id: 'vat',        group: 'biz', category: 'fav', menuTitle: 'ภาษีมูลค่าเพิ่ม (VAT)', headerTitle: 'เครื่องคำนวณภาษีมูลค่าเพิ่ม', usesSharedKeypad: true, keywords: 'vat ภาษี 7% มูลค่าเพิ่ม ถอด vat รวม vat' },
@@ -177,6 +178,13 @@ function hasInvalidNumericInput(toolId, stateObj) {
         const st = state.land_fill_calc || {};
         const areaKeys = st.mode === 'dim' ? ['width', 'length'] : ['rai', 'ngan', 'wa'];
         return areaKeys.concat(['heightCm', 'shrinkPct', 'truck6Cap', 'truck10Cap', 'pricePerM3', 'spreadPerM3']).some(key => invalid(st[key]));
+    }
+    if (curToolId === 'wall_ceiling_calc') {
+        const st = state.wall_ceiling_calc || {};
+        const keys = st.tab === 'ceiling'
+            ? ['ceilingArea', 'ceilingWastePct', 'panelAreaSqm', 'panelPrice', 'ceilingLaborPerSqm']
+            : ['wallLength', 'wallHeight', 'deductArea', 'bricksPerSqm', 'masonryWastePct', 'plasterCoverage', 'brickPrice', 'plasterBagPrice', 'masonryLaborPerSqm', 'plasterLaborPerSqm'];
+        return keys.some(key => invalid(st[key]));
     }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
@@ -5990,6 +5998,17 @@ function getToolSummaryText(toolId, stateObj) {
             const costLine = calc.totalCost > 0 ? `\n• ค่าดิน ${formatMoney(calc.soilCost)} บาท + ค่าเกลี่ยบดอัด ${formatMoney(calc.spreadCost)} บาท = ${formatMoney(calc.totalCost)} บาท` : '';
             return `สรุปดินถมที่ & รถดั๊มพ์\n${divider}\n• พื้นที่: ${formatNum(calc.areaSqm, 2)} ตร.ม. (${formatNum(calc.areaWa, 2)} ตร.ว.) ถมสูง ${formatNum(calc.heightCm, 0)} ซม.\n• ปริมาตรหลังบดอัด (คิวแน่น): ${formatNum(calc.compactedM3, 2)} คิว\n• อัตรายุบ ${formatNum(calc.shrinkPct, 1)}% ตัวคูณเผื่อยุบ x${formatNum(calc.multiplier, 3)}\n• รถ 6 ล้อ: ${calc.truck6.trips} เที่ยว (${formatNum(calc.truck6.capacity, 1)} คิว/เที่ยว)\n• รถ 10 ล้อ: ${calc.truck10.trips} เที่ยว (${formatNum(calc.truck10.capacity, 1)} คิว/เที่ยว)${costLine}\n----------------------------------\nปริมาตรดินที่ต้องสั่งซื้อ (คิวหลวม): ${formatNum(calc.looseM3, 2)} คิว\n(ค่าประมาณ อัตรายุบและความจุรถยังไม่ยืนยัน)\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'wall_ceiling_calc': {
+            const st = state.wall_ceiling_calc || {};
+            if (st.tab === 'ceiling') {
+                const calc = (typeof calculateCeiling === 'function') ? calculateCeiling(st) : { valid: false };
+                if (!calc.valid) return `สรุปฝ้าเพดาน\n${divider}\nยังไม่ได้ป้อนพื้นที่ฝ้า\n(คำนวณโดย Multitools Calculator)`;
+                return `สรุปคำนวณฝ้าเพดาน\n${divider}\n• พื้นที่ฝ้า: ${formatNum(calc.areaSqm, 2)} ตร.ม.\n• พื้นที่ต่อแผ่น: ${formatNum(calc.panelAreaSqm, 2)} ตร.ม.\n• เผื่อเศษตัด: ${formatNum(calc.wastePct, 1)}%${calc.totalCost > 0 ? `\n• ประมาณการงบประมาณ: ${formatMoney(calc.totalCost)} บาท` : ''}\n----------------------------------\nจำนวนแผ่นที่ต้องสั่งซื้อ: ${formatNum(calc.panels, 0)} แผ่น\n(ไม่รวมโครงคร่าวและอุปกรณ์ ค่าประมาณเพื่อประกอบการตัดสินใจ)\n(คำนวณโดย Multitools Calculator)`;
+            }
+            const calc = (typeof calculateMasonry === 'function') ? calculateMasonry(st) : { valid: false };
+            if (!calc.valid) return `สรุปก่ออิฐ & ฉาบปูน\n${divider}\nยังไม่ได้ป้อนขนาดผนัง\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปคำนวณก่ออิฐ & ฉาบปูน\n${divider}\n• พื้นที่ผนังสุทธิ: ${formatNum(calc.netAreaSqm, 2)} ตร.ม.\n• พื้นที่ฉาบ: ${formatNum(calc.plasterAreaSqm, 2)} ตร.ม. (${calc.sides} ด้าน)\n• ปูนฉาบ: ${formatNum(calc.plasterBags, 0)} ถุง${calc.totalCost > 0 ? `\n• ประมาณการงบประมาณ: ${formatMoney(calc.totalCost)} บาท` : ''}\n----------------------------------\nจำนวนอิฐที่ต้องสั่งซื้อ (เผื่อ ${formatNum(calc.wastePct, 1)}%): ${formatNum(calc.bricks, 0)} ก้อน\n(ค่าประมาณ จำนวนก้อนอิฐมอญและความครอบคลุมปูนฉาบยังไม่ยืนยัน)\n(คำนวณโดย Multitools Calculator)`;
+        }
         case 'btu_calc': {
             const calc = (typeof calculateBtu === 'function') ? calculateBtu(state.btu_calc || {}) : { valid: false };
             if (!calc.valid) return `สรุปขนาดแอร์ BTU\n${divider}\nยังไม่ได้ป้อนขนาดห้อง\n(คำนวณโดย Multitools Calculator)`;
@@ -6215,6 +6234,14 @@ function getToolFieldBindings(toolId) {
             const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
             const tail = ['heightCm', 'shrinkPct', 'truck6Cap', 'truck10Cap', 'pricePerM3', 'spreadPerM3'].map(field);
             return (s().mode === 'dim' ? [field('width'), field('length')] : [field('rai'), field('ngan'), field('wa')]).concat(tail);
+        }
+        case 'wall_ceiling_calc': {
+            const s = () => appState.wall_ceiling_calc;
+            const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
+            const keys = s().tab === 'ceiling'
+                ? ['ceilingArea', 'ceilingWastePct', 'panelAreaSqm', 'panelPrice', 'ceilingLaborPerSqm']
+                : ['wallLength', 'wallHeight', 'deductArea', 'bricksPerSqm', 'masonryWastePct', 'plasterCoverage', 'brickPrice', 'plasterBagPrice', 'masonryLaborPerSqm', 'plasterLaborPerSqm'];
+            return keys.map(field);
         }
         case 'btu_calc':
             return [
@@ -18964,8 +18991,259 @@ function renderLandFillTool(container) {
     }
 }
 
+/* -----------------------------------------------------------
+ * TOOL: ก่ออิฐ ฉาบปูน & ฝ้าเพดาน (wall_ceiling_calc)
+ * ----------------------------------------------------------- */
+
+// source: 'derived' = คำนวณจากขนาดก้อนรวมร่องปูน (1 / (กว้าง x สูง)), 'unverified' = ค่าประมาณจาก ROADMAP ยังไม่ยืนยัน
+var MASONRY_BRICK_PRESETS = [
+    { key: 'lightweight', label: 'อิฐมวลเบา 20x60 ซม.',      perSqm: 8.33, source: 'derived' },
+    { key: 'block',       label: 'อิฐบล็อก 19x39 ซม.',       perSqm: 12.5, source: 'derived' },
+    { key: 'red_half',    label: 'อิฐมอญแดง ก่อครึ่งแผ่น',    perSqm: 125,  source: 'unverified' },
+    { key: 'red_full',    label: 'อิฐมอญแดง ก่อเต็มแผ่น',     perSqm: 250,  source: 'unverified' }
+];
+// ขนาดแผ่นมาตรฐาน: ยิปซั่ม 1.20 x 2.40 ม. และ T-Bar 60 x 60 ซม. (คำนวณจากขนาด)
+var CEILING_PANEL_PRESETS = [
+    { key: 'gypsum', label: 'แผ่นยิปซั่ม / ไฟเบอร์ซีเมนต์ 1.20 x 2.40 ม.', areaSqm: 2.88 },
+    { key: 'tbar',   label: 'ฝ้าทีบาร์ 60 x 60 ซม.',                       areaSqm: 0.36 }
+];
+
+function calculateMasonry(st) {
+    const length = parseNumericInput(st.wallLength);
+    const height = parseNumericInput(st.wallHeight);
+    const deduct = numberOrDefault(st.deductArea, 0);
+    const perSqm = parseNumericInput(st.bricksPerSqm);
+    const wastePct = numberOrDefault(st.masonryWastePct, 5);
+    const sides = Number(st.plasterSides);
+    const coverage = numberOrDefault(st.plasterCoverage, 2);
+    const brickPrice = numberOrDefault(st.brickPrice, 0);
+    const bagPrice = numberOrDefault(st.plasterBagPrice, 0);
+    const masonryLabor = numberOrDefault(st.masonryLaborPerSqm, 0);
+    const plasterLabor = numberOrDefault(st.plasterLaborPerSqm, 0);
+
+    const grossArea = length * height;
+    const netArea = grossArea - deduct;
+    if (![length, height, deduct, perSqm, wastePct, coverage, brickPrice, bagPrice, masonryLabor, plasterLabor].every(Number.isFinite)
+        || ![0, 1, 2].includes(sides)
+        || length <= 0 || height <= 0 || deduct < 0 || perSqm <= 0 || wastePct < 0 || coverage <= 0
+        || brickPrice < 0 || bagPrice < 0 || masonryLabor < 0 || plasterLabor < 0 || netArea <= 0) {
+        return { valid: false };
+    }
+
+    const bricksExact = netArea * perSqm;
+    const bricks = Math.ceil(bricksExact * (1 + wastePct / 100) - 1e-9);
+    const plasterAreaSqm = netArea * sides;
+    const plasterBags = plasterAreaSqm > 0 ? Math.ceil(plasterAreaSqm / coverage - 1e-9) : 0;
+    const brickCost = bricks * brickPrice;
+    const plasterMaterialCost = plasterBags * bagPrice;
+    const laborCost = netArea * masonryLabor + plasterAreaSqm * plasterLabor;
+
+    return {
+        valid: true,
+        grossAreaSqm: grossArea,
+        netAreaSqm: netArea,
+        bricksExact,
+        bricks,
+        wastePct,
+        sides,
+        plasterAreaSqm,
+        plasterBags,
+        brickCost,
+        plasterMaterialCost,
+        laborCost,
+        totalCost: brickCost + plasterMaterialCost + laborCost
+    };
+}
+
+function calculateCeiling(st) {
+    const area = parseNumericInput(st.ceilingArea);
+    const panelArea = parseNumericInput(st.panelAreaSqm);
+    const wastePct = numberOrDefault(st.ceilingWastePct, 10);
+    const panelPrice = numberOrDefault(st.panelPrice, 0);
+    const labor = numberOrDefault(st.ceilingLaborPerSqm, 0);
+    if (![area, panelArea, wastePct, panelPrice, labor].every(Number.isFinite)
+        || area <= 0 || panelArea <= 0 || wastePct < 0 || panelPrice < 0 || labor < 0) {
+        return { valid: false };
+    }
+    const panelsExact = area / panelArea;
+    const panels = Math.ceil(panelsExact * (1 + wastePct / 100) - 1e-9);
+    const panelCost = panels * panelPrice;
+    const laborCost = area * labor;
+    return { valid: true, areaSqm: area, panelAreaSqm: panelArea, wastePct, panelsExact, panels, panelCost, laborCost, totalCost: panelCost + laborCost };
+}
+
+function renderWallCeilingTool(container) {
+    if (!appState.wall_ceiling_calc) {
+        appState.wall_ceiling_calc = {
+            tab: 'masonry', wallLength: '5', wallHeight: '3', deductArea: '0', brickType: 'lightweight', bricksPerSqm: '8.33',
+            masonryWastePct: '5', plasterSides: '2', plasterCoverage: '2', brickPrice: '', plasterBagPrice: '',
+            masonryLaborPerSqm: '', plasterLaborPerSqm: '', ceilingArea: '16', ceilingType: 'gypsum', panelAreaSqm: '2.88',
+            ceilingWastePct: '10', panelPrice: '', ceilingLaborPerSqm: ''
+        };
+    }
+    const st = appState.wall_ceiling_calc;
+    const tab = st.tab === 'ceiling' ? 'ceiling' : 'masonry';
+    const costRow = (label, value) => `<div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">${label}</span><span class="font-semibold font-mono">${value}</span></div>`;
+    let body = '';
+    let statusHTML = null;
+
+    if (tab === 'masonry') {
+        const calc = calculateMasonry(st);
+        const currentPerSqm = parseNumericInput(st.bricksPerSqm);
+        const activeBrick = MASONRY_BRICK_PRESETS.find(p => p.perSqm === currentPerSqm);
+        const brickChips = MASONRY_BRICK_PRESETS.map(p => {
+            const active = activeBrick && activeBrick.key === p.key;
+            return `<button type="button" class="tool-chip-btn wc-brick-chip ${active ? 'active font-bold' : ''}" aria-pressed="${Boolean(active)}" data-brick="${p.key}" style="min-height: 44px;">${p.label} · ${formatNum(p.perSqm, 2)} ก้อน/ตร.ม.</button>`;
+        }).join('');
+        const sideChips = [0, 1, 2].map(n => `<button type="button" class="tool-chip-btn wc-side-chip ${Number(st.plasterSides) === n ? 'active font-bold' : ''}" aria-pressed="${Number(st.plasterSides) === n}" data-sides="${n}" style="min-height: 44px;">${n === 0 ? 'ไม่ฉาบ' : `ฉาบ ${n} ด้าน`}</button>`).join('');
+        const unverifiedBrick = !activeBrick || activeBrick.source === 'unverified';
+        body = `
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'ความยาวผนังรวม', st.wallLength, 'เมตร', 'เช่น 5')}
+                ${createKeypadFieldHTML(1, 'ความสูงผนัง', st.wallHeight, 'เมตร', 'เช่น 3')}
+                ${createKeypadFieldHTML(2, 'พื้นที่หักออก (ประตู/หน้าต่าง)', st.deductArea, 'ตร.ม.', 'เช่น 3.6')}
+            </div>
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ชนิดอิฐ</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${brickChips}</div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(3, 'จำนวนก้อนต่อ ตร.ม.', st.bricksPerSqm, 'ก้อน/ตร.ม.', 'เช่น 8.33')}
+                ${createKeypadFieldHTML(4, 'เผื่อแตกหัก', st.masonryWastePct, '%', 'เช่น 5')}
+            </div>
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">การฉาบปูน</div>
+                <div class="grid grid-cols-3 gap-2">${sideChips}</div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(5, 'ปูนฉาบ 1 ถุงฉาบได้ (หนา 1.5 ซม.)', st.plasterCoverage, 'ตร.ม./ถุง', 'เช่น 2')}
+                ${createKeypadFieldHTML(6, 'ราคาอิฐ (ไม่บังคับ)', st.brickPrice, 'บาท/ก้อน', 'เช่น 8')}
+                ${createKeypadFieldHTML(7, 'ราคาปูนฉาบ (ไม่บังคับ)', st.plasterBagPrice, 'บาท/ถุง', 'เช่น 120')}
+                ${createKeypadFieldHTML(8, 'ค่าแรงก่อ (ไม่บังคับ)', st.masonryLaborPerSqm, 'บาท/ตร.ม.', 'เช่น 180')}
+                ${createKeypadFieldHTML(9, 'ค่าแรงฉาบ (ไม่บังคับ)', st.plasterLaborPerSqm, 'บาท/ตร.ม.', 'เช่น 120')}
+            </div>`;
+        if (calc.valid) {
+            body += `
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">จำนวนอิฐที่ต้องสั่งซื้อ (รวมเผื่อ ${formatNum(calc.wastePct, 1)}%)</div>
+                <div class="themed-result-value text-2xl font-bold font-mono break-words">${formatNum(calc.bricks, 0)} ก้อน</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${costRow('พื้นที่ผนังสุทธิ', `${formatNum(calc.netAreaSqm, 2)} ตร.ม.`)}
+                    ${costRow('พื้นที่ฉาบ', `${formatNum(calc.plasterAreaSqm, 2)} ตร.ม.`)}
+                    ${costRow('ปูนฉาบ', `${formatNum(calc.plasterBags, 0)} ถุง`)}
+                    ${calc.totalCost > 0 ? costRow('ค่าอิฐ', `${formatMoney(calc.brickCost)} บาท`) + costRow('ค่าปูนฉาบ', `${formatMoney(calc.plasterMaterialCost)} บาท`) + costRow('ค่าแรง', `${formatMoney(calc.laborCost)} บาท`) + `<div class="flex justify-between gap-2 font-bold"><span>รวมประมาณการ</span><span class="font-mono">${formatMoney(calc.totalCost)} บาท</span></div>` : ''}
+                </div>
+            </div>`;
+            statusHTML = `ต้องใช้อิฐ <span class="text-lg text-[var(--app-accent)] underline">${formatNum(calc.bricks, 0)} ก้อน</span><span class="text-xs font-normal opacity-80 block mt-1">ปูนฉาบ ${formatNum(calc.plasterBags, 0)} ถุง · พื้นที่ผนัง ${formatNum(calc.netAreaSqm, 2)} ตร.ม.</span>`;
+        }
+        body += `
+            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
+                <div>จำนวนก้อนต่อ ตร.ม. ของอิฐมวลเบาและอิฐบล็อกคำนวณจากขนาดก้อนรวมร่องปูน</div>
+                ${unverifiedBrick ? '<div>ยังไม่ยืนยัน: จำนวนก้อนของอิฐมอญและความครอบคลุมของปูนฉาบเป็นค่าประมาณ ควรเทียบกับข้อมูลของผู้ผลิตหรือผู้ขายก่อนสั่งซื้อ</div>' : '<div>ยังไม่ยืนยัน: ความครอบคลุมของปูนฉาบเป็นค่าประมาณ ควรเทียบกับข้อมูลของผู้ผลิต</div>'}
+                <div>ไม่รวมปูนก่อ ทราย เสาเอ็น ทับหลัง และเหล็กหนวดกุ้ง เป็นค่าประมาณเพื่อประกอบการตัดสินใจ</div>
+            </div>`;
+    } else {
+        const calc = calculateCeiling(st);
+        const currentPanel = parseNumericInput(st.panelAreaSqm);
+        const panelChips = CEILING_PANEL_PRESETS.map(p => {
+            const active = currentPanel === p.areaSqm;
+            return `<button type="button" class="tool-chip-btn wc-panel-chip ${active ? 'active font-bold' : ''}" aria-pressed="${active}" data-panel="${p.key}" style="min-height: 44px;">${p.label}</button>`;
+        }).join('');
+        body = `
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'พื้นที่ฝ้าเพดาน', st.ceilingArea, 'ตร.ม.', 'เช่น 16')}
+            </div>
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ชนิดแผ่นฝ้า</div>
+                <div class="grid grid-cols-1 gap-2">${panelChips}</div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(1, 'เผื่อเศษตัด', st.ceilingWastePct, '%', 'เช่น 10')}
+                ${createKeypadFieldHTML(2, 'พื้นที่ต่อแผ่น', st.panelAreaSqm, 'ตร.ม./แผ่น', 'เช่น 2.88')}
+                ${createKeypadFieldHTML(3, 'ราคาแผ่น (ไม่บังคับ)', st.panelPrice, 'บาท/แผ่น', 'เช่น 190')}
+                ${createKeypadFieldHTML(4, 'ค่าแรงทำฝ้า (ไม่บังคับ)', st.ceilingLaborPerSqm, 'บาท/ตร.ม.', 'เช่น 180')}
+            </div>`;
+        if (calc.valid) {
+            body += `
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">จำนวนแผ่นที่ต้องสั่งซื้อ (รวมเผื่อ ${formatNum(calc.wastePct, 1)}%)</div>
+                <div class="themed-result-value text-2xl font-bold font-mono break-words">${formatNum(calc.panels, 0)} แผ่น</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${costRow('พื้นที่ฝ้า', `${formatNum(calc.areaSqm, 2)} ตร.ม.`)}
+                    ${costRow('จำนวนแผ่นก่อนเผื่อ', formatNum(calc.panelsExact, 2))}
+                    ${calc.totalCost > 0 ? costRow('ค่าแผ่น', `${formatMoney(calc.panelCost)} บาท`) + costRow('ค่าแรง', `${formatMoney(calc.laborCost)} บาท`) + `<div class="flex justify-between gap-2 font-bold"><span>รวมประมาณการ</span><span class="font-mono">${formatMoney(calc.totalCost)} บาท</span></div>` : ''}
+                </div>
+            </div>`;
+            statusHTML = `ต้องใช้แผ่นฝ้า <span class="text-lg text-[var(--app-accent)] underline">${formatNum(calc.panels, 0)} แผ่น</span><span class="text-xs font-normal opacity-80 block mt-1">พื้นที่ ${formatNum(calc.areaSqm, 2)} ตร.ม. · เผื่อ ${formatNum(calc.wastePct, 1)}%</span>`;
+        }
+        body += `
+            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
+                <div>จำนวนแผ่น = พื้นที่ / พื้นที่ต่อแผ่น x (1 + เผื่อเศษตัด) ขนาดแผ่นมาตรฐานเป็นค่าตั้งต้นที่ปรับได้</div>
+                <div>ไม่รวมโครงคร่าว ลวดแขวน สกรู และผงยิปซั่มฉาบรอยต่อ เพราะปริมาณขึ้นกับระยะโครงของแต่ละงาน ควรให้ช่างถอดแบบ</div>
+            </div>`;
+    }
+
+    container.innerHTML = `
+        <div class="wall-ceiling-tool flex flex-col gap-3 p-1">
+            <div class="segment-group grid-cols-2" role="group" aria-label="ประเภทงาน">
+                <button type="button" class="segment-btn ${tab === 'masonry' ? 'active' : ''}" aria-pressed="${tab === 'masonry'}" data-wc-tab="masonry" style="min-height: 44px;">ก่ออิฐ & ฉาบปูน</button>
+                <button type="button" class="segment-btn ${tab === 'ceiling' ? 'active' : ''}" aria-pressed="${tab === 'ceiling'}" data-wc-tab="ceiling" style="min-height: 44px;">ฝ้าเพดาน</button>
+            </div>
+            ${body}
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    container.querySelectorAll('[data-wc-tab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.tab = btn.dataset.wcTab;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('.wc-brick-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const preset = MASONRY_BRICK_PRESETS.find(p => p.key === btn.dataset.brick);
+            if (!preset) return;
+            st.brickType = preset.key;
+            st.bricksPerSqm = String(preset.perSqm);
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('.wc-side-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.plasterSides = btn.dataset.sides;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('.wc-panel-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const preset = CEILING_PANEL_PRESETS.find(p => p.key === btn.dataset.panel);
+            if (!preset) return;
+            st.ceilingType = preset.key;
+            st.panelAreaSqm = String(preset.areaSqm);
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    if (statusHTML) {
+        setStatusBanner('success', statusHTML);
+    } else {
+        setStatusBanner('empty', tab === 'masonry' ? 'ป้อนความยาวและความสูงผนังเพื่อคำนวณอิฐและปูนฉาบ' : 'ป้อนพื้นที่ฝ้าเพดานเพื่อคำนวณจำนวนแผ่น');
+    }
+}
+
 (function(root) {
     const exportsObj = {
+        MASONRY_BRICK_PRESETS,
+        CEILING_PANEL_PRESETS,
+        calculateMasonry,
+        calculateCeiling,
+        renderWallCeilingTool,
         LAND_FILL_SOIL_PRESETS,
         calculateLandFill,
         renderLandFillTool,
@@ -19101,6 +19379,8 @@ function clearCurrentTool() {
         };
     } else if (id === 'land_fill_calc') {
         appState.land_fill_calc = { mode: appState.land_fill_calc?.mode || 'land', rai: '', ngan: '', wa: '', width: '', length: '', heightCm: '', soil: 'general', shrinkPct: '25', truck6Cap: '5.5', truck10Cap: '11', pricePerM3: '', spreadPerM3: '' };
+    } else if (id === 'wall_ceiling_calc') {
+        appState.wall_ceiling_calc = { tab: appState.wall_ceiling_calc?.tab || 'masonry', wallLength: '', wallHeight: '', deductArea: '0', brickType: 'lightweight', bricksPerSqm: '8.33', masonryWastePct: '5', plasterSides: '2', plasterCoverage: '2', brickPrice: '', plasterBagPrice: '', masonryLaborPerSqm: '', plasterLaborPerSqm: '', ceilingArea: '', ceilingType: 'gypsum', panelAreaSqm: '2.88', ceilingWastePct: '10', panelPrice: '', ceilingLaborPerSqm: '' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '', length: '', height: '2.8', btuPerSqm: '750', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {
@@ -19380,6 +19660,8 @@ function loadDemoForCurrentTool() {
         appState.tip = { bill: '1850', tipPct: '10', people: '4' };
     } else if (id === 'land_fill_calc') {
         appState.land_fill_calc = { mode: 'land', rai: '1', ngan: '2', wa: '50', width: '', length: '', heightCm: '50', soil: 'general', shrinkPct: '25', truck6Cap: '5.5', truck10Cap: '11', pricePerM3: '150', spreadPerM3: '40' };
+    } else if (id === 'wall_ceiling_calc') {
+        appState.wall_ceiling_calc = { tab: appState.wall_ceiling_calc?.tab || 'masonry', wallLength: '6', wallHeight: '3', deductArea: '3.6', brickType: 'lightweight', bricksPerSqm: '8.33', masonryWastePct: '5', plasterSides: '2', plasterCoverage: '2', brickPrice: '25', plasterBagPrice: '120', masonryLaborPerSqm: '180', plasterLaborPerSqm: '120', ceilingArea: '20', ceilingType: 'gypsum', panelAreaSqm: '2.88', ceilingWastePct: '10', panelPrice: '190', ceilingLaborPerSqm: '180' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '4', length: '5', height: '2.8', btuPerSqm: '850', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {

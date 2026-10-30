@@ -98,6 +98,14 @@ function getToolFieldBindings(toolId) {
             const tail = ['heightCm', 'shrinkPct', 'truck6Cap', 'truck10Cap', 'pricePerM3', 'spreadPerM3'].map(field);
             return (s().mode === 'dim' ? [field('width'), field('length')] : [field('rai'), field('ngan'), field('wa')]).concat(tail);
         }
+        case 'wall_ceiling_calc': {
+            const s = () => appState.wall_ceiling_calc;
+            const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
+            const keys = s().tab === 'ceiling'
+                ? ['ceilingArea', 'ceilingWastePct', 'panelAreaSqm', 'panelPrice', 'ceilingLaborPerSqm']
+                : ['wallLength', 'wallHeight', 'deductArea', 'bricksPerSqm', 'masonryWastePct', 'plasterCoverage', 'brickPrice', 'plasterBagPrice', 'masonryLaborPerSqm', 'plasterLaborPerSqm'];
+            return keys.map(field);
+        }
         case 'btu_calc':
             return [
                 { get: () => appState.btu_calc.width, set: (v) => { appState.btu_calc.width = v; } },

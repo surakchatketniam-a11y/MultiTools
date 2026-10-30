@@ -287,11 +287,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 38 tools classified into 6 valid groups with search keywords', () => {
+test('catalog contains exactly 39 tools classified into 6 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 6);
-    assert.equal(TOOLS_CATALOG.length, 38);
+    assert.equal(TOOLS_CATALOG.length, 39);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -451,7 +451,7 @@ test('all 36 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 38);
+    assert.equal(ctx.TOOLS_CATALOG.length, 39);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -1214,7 +1214,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('คุ้มค่าที่สุด'));
 });
 
-test('all 38 tool renderers are modularized and exported across the 6 tool groups', () => {
+test('all 39 tool renderers are modularized and exported across the 6 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -1254,10 +1254,11 @@ test('all 38 tool renderers are modularized and exported across the 6 tool group
         debt_payoff:       'renderDebtPayoffTool',
         food_costing:      'renderFoodCostingTool',
         btu_calc:          'renderBtuTool',
-        land_fill_calc: 'renderLandFillTool'
+        land_fill_calc: 'renderLandFillTool',
+        wall_ceiling_calc: 'renderWallCeilingTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 38);
+    assert.equal(Object.keys(rendererMap).length, 39);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -3243,6 +3244,72 @@ test('land_fill_calc: Thai land units, compaction multiplier, truck trips and co
     const st = { mode: 'dim', width: '4x', length: '5', rai: '1', heightCm: '50', shrinkPct: '25', truck6Cap: '5.5', truck10Cap: '11', pricePerM3: '', spreadPerM3: '' };
     assert.equal(ctx.hasInvalidNumericInput('land_fill_calc', { land_fill_calc: st }), true);
     assert.equal(ctx.hasInvalidNumericInput('land_fill_calc', { land_fill_calc: { ...st, width: '4', rai: 'bad' } }), false);
+});
+
+test('wall_ceiling_calc: masonry bricks and plaster, ceiling panels, presets and validation', () => {
+    const ctx = context();
+    const wall = { wallLength: '5', wallHeight: '3', deductArea: '0', bricksPerSqm: '8.33', masonryWastePct: '5', plasterSides: '2', plasterCoverage: '2', brickPrice: '', plasterBagPrice: '', masonryLaborPerSqm: '', plasterLaborPerSqm: '' };
+
+    // 5 x 3 m wall = 15 sqm; 15 x 8.33 x 1.05 = 131.2 -> 132 bricks; plaster 30 sqm / 2 = 15 bags
+    const m = ctx.calculateMasonry(wall);
+    assert.equal(m.valid, true);
+    assert.equal(m.netAreaSqm, 15);
+    assert.equal(m.bricks, Math.ceil(15 * 8.33 * 1.05));
+    assert.equal(m.bricks, 132);
+    assert.equal(m.plasterAreaSqm, 30);
+    assert.equal(m.plasterBags, 15);
+    assert.equal(m.totalCost, 0);
+
+    // Deducting openings, one-sided plaster and no plaster
+    const deducted = ctx.calculateMasonry({ ...wall, deductArea: '3.6', plasterSides: '1' });
+    assert.ok(Math.abs(deducted.netAreaSqm - 11.4) < 1e-9);
+    assert.equal(deducted.plasterBags, Math.ceil(11.4 / 2));
+    const none = ctx.calculateMasonry({ ...wall, plasterSides: '0' });
+    assert.equal(none.plasterAreaSqm, 0);
+    assert.equal(none.plasterBags, 0);
+
+    // Exact brick counts do not round up by floating-point noise: 10 sqm x 10 per sqm, no waste
+    assert.equal(ctx.calculateMasonry({ ...wall, wallLength: '5', wallHeight: '2', bricksPerSqm: '10', masonryWastePct: '0' }).bricks, 100);
+
+    // Costs: bricks + plaster bags + labor on wall area and plaster area
+    const cost = ctx.calculateMasonry({ ...wall, brickPrice: '25', plasterBagPrice: '120', masonryLaborPerSqm: '180', plasterLaborPerSqm: '120' });
+    assert.equal(cost.brickCost, 132 * 25);
+    assert.equal(cost.plasterMaterialCost, 15 * 120);
+    assert.equal(cost.laborCost, 15 * 180 + 30 * 120);
+    assert.equal(cost.totalCost, 132 * 25 + 15 * 120 + 15 * 180 + 30 * 120);
+
+    // Invalid masonry input
+    assert.equal(ctx.calculateMasonry({ ...wall, wallLength: '' }).valid, false);
+    assert.equal(ctx.calculateMasonry({ ...wall, deductArea: '15' }).valid, false);
+    assert.equal(ctx.calculateMasonry({ ...wall, deductArea: '20' }).valid, false);
+    assert.equal(ctx.calculateMasonry({ ...wall, plasterSides: '3' }).valid, false);
+    assert.equal(ctx.calculateMasonry({ ...wall, bricksPerSqm: '0' }).valid, false);
+    assert.equal(ctx.calculateMasonry({ ...wall, plasterCoverage: '0' }).valid, false);
+
+    // Ceiling: 16 sqm / 2.88 x 1.10 = 6.11 -> 7 sheets; T-bar 0.36 sqm panels
+    const ceil = { ceilingArea: '16', panelAreaSqm: '2.88', ceilingWastePct: '10', panelPrice: '', ceilingLaborPerSqm: '' };
+    const c = ctx.calculateCeiling(ceil);
+    assert.equal(c.valid, true);
+    assert.ok(Math.abs(c.panelsExact - 16 / 2.88) < 1e-12);
+    assert.equal(c.panels, 7);
+    assert.equal(ctx.calculateCeiling({ ...ceil, ceilingArea: '36', panelAreaSqm: '0.36', ceilingWastePct: '0' }).panels, 100);
+    const cc = ctx.calculateCeiling({ ...ceil, panelPrice: '190', ceilingLaborPerSqm: '180' });
+    assert.equal(cc.totalCost, 7 * 190 + 16 * 180);
+    assert.equal(ctx.calculateCeiling({ ...ceil, ceilingArea: '' }).valid, false);
+    assert.equal(ctx.calculateCeiling({ ...ceil, panelAreaSqm: '0' }).valid, false);
+    assert.equal(ctx.calculateCeiling({ ...ceil, ceilingWastePct: '-1' }).valid, false);
+
+    // Presets: derived sizes and the unverified flag on masonry red brick counts
+    assert.equal(ctx.CEILING_PANEL_PRESETS.find(p => p.key === 'gypsum').areaSqm, 2.88);
+    assert.equal(ctx.CEILING_PANEL_PRESETS.find(p => p.key === 'tbar').areaSqm, 0.36);
+    assert.ok(Math.abs(1 / (0.2 * 0.6) - 8.33) < 0.01);
+    assert.deepEqual(Array.from(ctx.MASONRY_BRICK_PRESETS.filter(p => p.source === 'unverified'), p => p.key), ['red_half', 'red_full']);
+
+    // Invalid-input detection follows the active tab only
+    const st = { ...wall, tab: 'masonry', ...ceil, ceilingArea: 'x1' };
+    assert.equal(ctx.hasInvalidNumericInput('wall_ceiling_calc', { wall_ceiling_calc: st }), false);
+    assert.equal(ctx.hasInvalidNumericInput('wall_ceiling_calc', { wall_ceiling_calc: { ...st, tab: 'ceiling' } }), true);
+    assert.equal(ctx.hasInvalidNumericInput('wall_ceiling_calc', { wall_ceiling_calc: { ...st, wallHeight: '3m' } }), true);
 });
 
 test('construction_calc: tiles, paint, and concrete calculations', () => {

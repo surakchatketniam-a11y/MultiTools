@@ -107,6 +107,8 @@ function clearCurrentTool() {
         };
     } else if (id === 'land_fill_calc') {
         appState.land_fill_calc = { mode: appState.land_fill_calc?.mode || 'land', rai: '', ngan: '', wa: '', width: '', length: '', heightCm: '', soil: 'general', shrinkPct: '25', truck6Cap: '5.5', truck10Cap: '11', pricePerM3: '', spreadPerM3: '' };
+    } else if (id === 'wall_ceiling_calc') {
+        appState.wall_ceiling_calc = { tab: appState.wall_ceiling_calc?.tab || 'masonry', wallLength: '', wallHeight: '', deductArea: '0', brickType: 'lightweight', bricksPerSqm: '8.33', masonryWastePct: '5', plasterSides: '2', plasterCoverage: '2', brickPrice: '', plasterBagPrice: '', masonryLaborPerSqm: '', plasterLaborPerSqm: '', ceilingArea: '', ceilingType: 'gypsum', panelAreaSqm: '2.88', ceilingWastePct: '10', panelPrice: '', ceilingLaborPerSqm: '' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '', length: '', height: '2.8', btuPerSqm: '750', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {
@@ -386,6 +388,8 @@ function loadDemoForCurrentTool() {
         appState.tip = { bill: '1850', tipPct: '10', people: '4' };
     } else if (id === 'land_fill_calc') {
         appState.land_fill_calc = { mode: 'land', rai: '1', ngan: '2', wa: '50', width: '', length: '', heightCm: '50', soil: 'general', shrinkPct: '25', truck6Cap: '5.5', truck10Cap: '11', pricePerM3: '150', spreadPerM3: '40' };
+    } else if (id === 'wall_ceiling_calc') {
+        appState.wall_ceiling_calc = { tab: appState.wall_ceiling_calc?.tab || 'masonry', wallLength: '6', wallHeight: '3', deductArea: '3.6', brickType: 'lightweight', bricksPerSqm: '8.33', masonryWastePct: '5', plasterSides: '2', plasterCoverage: '2', brickPrice: '25', plasterBagPrice: '120', masonryLaborPerSqm: '180', plasterLaborPerSqm: '120', ceilingArea: '20', ceilingType: 'gypsum', panelAreaSqm: '2.88', ceilingWastePct: '10', panelPrice: '190', ceilingLaborPerSqm: '180' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '4', length: '5', height: '2.8', btuPerSqm: '850', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {

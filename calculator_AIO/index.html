@@ -1854,7 +1854,7 @@
     <div id="printFormalReceipt" class="hidden"></div>
 
     <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
-    <script src="src/bundle.js?v=70"></script>
+    <script src="src/bundle.js?v=71"></script>
 
     <script>
         function getSafeDateStr(offsetDays = 0) {
@@ -2223,6 +2223,29 @@
                 spreadPerM3: ''
             },
 
+            // Engineering: masonry & ceiling
+            wall_ceiling_calc: {
+                tab: 'masonry',
+                wallLength: '5',
+                wallHeight: '3',
+                deductArea: '0',
+                brickType: 'lightweight',
+                bricksPerSqm: '8.33',
+                masonryWastePct: '5',
+                plasterSides: '2',
+                plasterCoverage: '2',
+                brickPrice: '',
+                plasterBagPrice: '',
+                masonryLaborPerSqm: '',
+                plasterLaborPerSqm: '',
+                ceilingArea: '16',
+                ceilingType: 'gypsum',
+                panelAreaSqm: '2.88',
+                ceilingWastePct: '10',
+                panelPrice: '',
+                ceilingLaborPerSqm: ''
+            },
+
             // 24. Car Hire Purchase Loan
             car_loan: {
                 vehicleType: 'car',
@@ -2446,6 +2469,7 @@
                 case 'food_costing':     renderFoodCostingTool(topPanel); break;
                 case 'construction_calc': renderConstructionTool(topPanel); break;
                 case 'btu_calc':         renderBtuTool(topPanel); break;
+                case 'wall_ceiling_calc': renderWallCeilingTool(topPanel); break;
                 case 'land_fill_calc': renderLandFillTool(topPanel); break;
             }
             if (typeof arrangeDesktopColumns === 'function') arrangeDesktopColumns(topPanel);
