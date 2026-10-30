@@ -287,11 +287,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 42 tools classified into 6 valid groups with search keywords', () => {
+test('catalog contains exactly 43 tools classified into 6 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 6);
-    assert.equal(TOOLS_CATALOG.length, 42);
+    assert.equal(TOOLS_CATALOG.length, 43);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -451,7 +451,7 @@ test('all 36 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 42);
+    assert.equal(ctx.TOOLS_CATALOG.length, 43);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -1214,7 +1214,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('คุ้มค่าที่สุด'));
 });
 
-test('all 42 tool renderers are modularized and exported across the 6 tool groups', () => {
+test('all 43 tool renderers are modularized and exported across the 6 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -1258,10 +1258,11 @@ test('all 42 tool renderers are modularized and exported across the 6 tool group
         wall_ceiling_calc: 'renderWallCeilingTool',
         roof_steel_calc: 'renderRoofSteelTool',
         contractor_payment: 'renderContractorPaymentTool',
-        plumbing_pump: 'renderPlumbingTool'
+        plumbing_pump: 'renderPlumbingTool',
+        inch_fraction: 'renderInchFractionTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 42);
+    assert.equal(Object.keys(rendererMap).length, 43);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -3525,6 +3526,66 @@ test('plumbing_pump: tank sizing, standard sizes, pump ranges and validation', (
     assert.equal(ctx.calculatePlumbing({ ...base, houseType: 'castle' }).valid, false);
     assert.equal(ctx.hasInvalidNumericInput('plumbing_pump', { plumbing_pump: base }), false);
     assert.equal(ctx.hasInvalidNumericInput('plumbing_pump', { plumbing_pump: { ...base, people: '4p' } }), true);
+});
+
+test('inch_fraction: inch, hun and millimetre conversion, fraction rounding and validation', () => {
+    const ctx = context();
+    const base = { mode: 'inch', whole: '1', num: '3', den: '8', mm: '', hun: '' };
+
+    // 1 3/8 inch = 1.375 in = 34.925 mm = 11 hun
+    const a = ctx.calculateInchConversion(base);
+    assert.equal(a.valid, true);
+    assert.equal(a.inches, 1.375);
+    assert.ok(Math.abs(a.mm - 34.925) < 1e-9);
+    assert.ok(Math.abs(a.cm - 3.4925) < 1e-9);
+    assert.equal(a.hun, 11);
+
+    // hun table: 1 hun = 1/8" = 3.175 mm ... 8 hun = 1" = 25.4 mm
+    const hun4 = ctx.calculateInchConversion({ ...base, mode: 'hun', hun: '4' });
+    assert.equal(hun4.inches, 0.5);
+    assert.ok(Math.abs(hun4.mm - 12.7) < 1e-9);
+    assert.equal(ctx.formatInchFraction(hun4.fraction), '1/2 นิ้ว');
+    assert.ok(Math.abs(ctx.calculateInchConversion({ ...base, mode: 'hun', hun: '1' }).mm - 3.175) < 1e-9);
+    assert.ok(Math.abs(ctx.calculateInchConversion({ ...base, mode: 'hun', hun: '8' }).mm - 25.4) < 1e-9);
+    assert.equal(ctx.calculateInchConversion({ ...base, mode: 'hun', hun: '6' }).inches, 0.75);
+
+    // mm -> nearest fraction: 12.7 mm is exactly 1/2"; 35 mm is 1 3/8" within 0.1 mm at 1/16 or finer
+    const half = ctx.calculateInchConversion({ ...base, mode: 'mm', mm: '12.7', den: '16' });
+    assert.equal(half.fraction.exact, true);
+    assert.equal(ctx.formatInchFraction(half.fraction), '1/2 นิ้ว');
+    assert.ok(half.errorMm < 1e-9);
+    const m35 = ctx.calculateInchConversion({ ...base, mode: 'mm', mm: '35', den: '16' });
+    assert.equal(ctx.formatInchFraction(m35.fraction), '1 3/8 นิ้ว');
+    assert.equal(m35.fraction.exact, false);
+    assert.ok(Math.abs(m35.errorMm - Math.abs(35 - 34.925)) < 1e-9);
+
+    // Whole inches and reduced fractions
+    assert.equal(ctx.formatInchFraction(ctx.inchesToFraction(2, 8)), '2 นิ้ว');
+    assert.equal(ctx.formatInchFraction(ctx.inchesToFraction(0.75, 16)), '3/4 นิ้ว');
+    assert.equal(ctx.formatInchFraction(ctx.inchesToFraction(1.25, 64)), '1 1/4 นิ้ว');
+    assert.equal(ctx.formatInchFraction(ctx.inchesToFraction(0.5, 8)), '1/2 นิ้ว');
+
+    // Coarser denominators change the rounding: 35 mm at 1/2" steps rounds to 1 1/2"
+    assert.equal(ctx.formatInchFraction(ctx.calculateInchConversion({ ...base, mode: 'mm', mm: '35', den: '2' }).fraction), '1 1/2 นิ้ว');
+    // Very small values round to zero at the chosen denominator and are flagged
+    assert.equal(ctx.calculateInchConversion({ ...base, mode: 'mm', mm: '0.2', den: '4' }).fractionIsZero, true);
+
+    // Fraction-only input (no whole inches) and blank parts default to zero
+    assert.equal(ctx.calculateInchConversion({ ...base, whole: '', num: '3', den: '4' }).inches, 0.75);
+    assert.equal(ctx.calculateInchConversion({ ...base, whole: '2', num: '', den: '4' }).inches, 2);
+
+    // Invalid input
+    assert.equal(ctx.calculateInchConversion({ ...base, whole: '', num: '' }).valid, false);
+    assert.equal(ctx.calculateInchConversion({ ...base, den: '7' }).valid, false);
+    assert.equal(ctx.calculateInchConversion({ ...base, whole: '-1' }).valid, false);
+    assert.equal(ctx.calculateInchConversion({ ...base, mode: 'mm', mm: '0' }).valid, false);
+    assert.equal(ctx.calculateInchConversion({ ...base, mode: 'mm', mm: '' }).valid, false);
+    assert.equal(ctx.calculateInchConversion({ ...base, mode: 'hun', hun: 'abc' }).valid, false);
+
+    // Invalid-input detection follows the active mode
+    assert.equal(ctx.hasInvalidNumericInput('inch_fraction', { inch_fraction: base }), false);
+    assert.equal(ctx.hasInvalidNumericInput('inch_fraction', { inch_fraction: { ...base, mode: 'mm', mm: '12x' } }), true);
+    assert.equal(ctx.hasInvalidNumericInput('inch_fraction', { inch_fraction: { ...base, mode: 'inch', mm: '12x' } }), false);
 });
 
 test('construction_calc: tiles, paint, and concrete calculations', () => {

@@ -1459,8 +1459,178 @@ function renderPlumbingTool(container) {
     }
 }
 
+/* -----------------------------------------------------------
+ * TOOL: เศษส่วนนิ้ว หุน ↔ มิลลิเมตร (inch_fraction)
+ * ----------------------------------------------------------- */
+
+var INCH_MM = 25.4;
+var HUN_PER_INCH = 8;
+var INCH_DENOMINATORS = [2, 4, 8, 16, 32, 64];
+
+function inchGcd(a, b) {
+    let x = Math.abs(a);
+    let y = Math.abs(b);
+    while (y) { const t = y; y = x % y; x = t; }
+    return x || 1;
+}
+
+// แยกจำนวนนิ้วเป็นจำนวนเต็ม + เศษส่วนอย่างต่ำ (ตัวส่วนไม่เกิน den)
+function inchesToFraction(inches, den) {
+    const totalParts = Math.round(inches * den);
+    const whole = Math.floor(totalParts / den);
+    const rem = totalParts - whole * den;
+    const g = rem === 0 ? 1 : inchGcd(rem, den);
+    return { whole, num: rem / g, den: rem === 0 ? 1 : den / g, exact: Math.abs(inches * den - totalParts) < 1e-9 };
+}
+
+function formatInchFraction(f) {
+    if (f.num === 0) return `${f.whole} นิ้ว`;
+    return f.whole > 0 ? `${f.whole} ${f.num}/${f.den} นิ้ว` : `${f.num}/${f.den} นิ้ว`;
+}
+
+function calculateInchConversion(st) {
+    const mode = ['inch', 'mm', 'hun'].includes(st.mode) ? st.mode : 'inch';
+    const den = Number(st.den);
+    if (!INCH_DENOMINATORS.includes(den)) return { valid: false };
+    let inches;
+    if (mode === 'inch') {
+        const whole = numberOrDefault(st.whole, 0);
+        const num = numberOrDefault(st.num, 0);
+        if (![whole, num].every(Number.isFinite) || whole < 0 || num < 0) return { valid: false };
+        inches = whole + num / den;
+    } else if (mode === 'mm') {
+        const mm = parseNumericInput(st.mm);
+        if (!Number.isFinite(mm) || mm <= 0) return { valid: false };
+        inches = mm / INCH_MM;
+    } else {
+        const hun = parseNumericInput(st.hun);
+        if (!Number.isFinite(hun) || hun <= 0) return { valid: false };
+        inches = hun / HUN_PER_INCH;
+    }
+    if (!(inches > 0)) return { valid: false };
+
+    const exactMm = inches * INCH_MM;
+    const result = { valid: true, mode, den, inches, mm: exactMm, cm: exactMm / 10, hun: inches * HUN_PER_INCH };
+    if (mode === 'mm') {
+        // ปัดเป็นเศษส่วนนิ้วที่ใกล้ที่สุดตามตัวส่วนที่เลือก
+        const fraction = inchesToFraction(inches, den);
+        const roundedInches = fraction.whole + (fraction.den > 0 ? fraction.num / fraction.den : 0);
+        result.fraction = fraction;
+        result.fractionMm = roundedInches * INCH_MM;
+        result.errorMm = Math.abs(exactMm - result.fractionMm);
+        result.fractionIsZero = roundedInches === 0;
+    } else {
+        result.fraction = inchesToFraction(inches, 64);
+    }
+    return result;
+}
+
+function renderInchFractionTool(container) {
+    if (!appState.inch_fraction) {
+        appState.inch_fraction = { mode: 'inch', whole: '1', num: '3', den: '8', mm: '', hun: '' };
+    }
+    const st = appState.inch_fraction;
+    const mode = ['inch', 'mm', 'hun'].includes(st.mode) ? st.mode : 'inch';
+    const calc = calculateInchConversion(st);
+    const row = (label, value) => `<div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">${label}</span><span class="font-semibold font-mono text-right">${value}</span></div>`;
+    const denChips = INCH_DENOMINATORS.map(d => `<button type="button" class="tool-chip-btn inch-den-chip ${Number(st.den) === d ? 'active font-bold' : ''}" aria-pressed="${Number(st.den) === d}" data-den="${d}" style="min-height: 44px;">1/${d}</button>`).join('');
+    const segBtn = (key, label) => `<button type="button" class="segment-btn ${mode === key ? 'active' : ''}" aria-pressed="${mode === key}" data-inch-mode="${key}" style="min-height: 44px;">${label}</button>`;
+
+    const inputs = mode === 'inch'
+        ? `${createKeypadFieldHTML(0, 'จำนวนเต็ม (นิ้ว)', st.whole, 'นิ้ว', 'เช่น 1')}
+           ${createKeypadFieldHTML(1, `เศษส่วน (ตัวเศษ ส่วน ${st.den})`, st.num, `/${st.den}`, 'เช่น 3')}`
+        : mode === 'mm'
+            ? createKeypadFieldHTML(0, 'ความยาว', st.mm, 'มม.', 'เช่น 35')
+            : createKeypadFieldHTML(0, 'ขนาดเป็นหุน', st.hun, 'หุน', 'เช่น 4');
+    const denLabel = mode === 'mm' ? 'ปัดเป็นเศษส่วนนิ้วที่ละเอียดสุด' : mode === 'inch' ? 'ตัวส่วนของเศษส่วน' : 'ตัวส่วนที่ใช้แสดงผล';
+
+    let resultHTML = '';
+    let statusHTML = null;
+    if (calc.valid) {
+        let main = '';
+        let sub = '';
+        if (mode === 'mm') {
+            main = calc.fractionIsZero ? 'เล็กกว่าเศษส่วนที่เลือก' : formatInchFraction(calc.fraction);
+            sub = `${calc.fraction.exact ? 'ตรงพอดี' : `คลาดเคลื่อน ${formatNum(calc.errorMm, 2)} มม.`} · ${formatNum(calc.mm, 2)} มม. = ${formatNum(calc.inches, 4)} นิ้ว`;
+        } else {
+            main = `${formatNum(calc.mm, 2)} มม.`;
+            sub = mode === 'inch' ? `${formatInchFraction(inchesToFraction(calc.inches, Number(st.den)))} = ${formatNum(calc.inches, 4)} นิ้ว` : `${formatNum(calc.hun, 2)} หุน = ${formatNum(calc.inches, 4)} นิ้ว`;
+        }
+        resultHTML = `
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">ผลการแปลงหน่วย</div>
+                <div class="themed-result-value text-2xl font-bold font-mono break-words">${main}</div>
+                <div class="text-xs text-[var(--app-muted)]">${sub}</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${row('มิลลิเมตร', `${formatNum(calc.mm, 2)} มม.`)}
+                    ${row('เซนติเมตร', `${formatNum(calc.cm, 3)} ซม.`)}
+                    ${row('นิ้ว (ทศนิยม)', `${formatNum(calc.inches, 4)} นิ้ว`)}
+                    ${row('หุน (8 หุน = 1 นิ้ว)', `${formatNum(calc.hun, 3)} หุน`)}
+                </div>
+            </div>`;
+        statusHTML = `${main}<span class="text-xs font-normal opacity-80 block mt-1">${sub}</span>`;
+    }
+
+    const hunRows = [1, 2, 3, 4, 5, 6, 7, 8].map(h => {
+        const f = inchesToFraction(h / HUN_PER_INCH, 8);
+        return `<div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">${h} หุน = ${formatInchFraction(f)}</span><span class="font-mono">${formatNum(h / HUN_PER_INCH * INCH_MM, 2)} มม.</span></div>`;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="inch-fraction-tool flex flex-col gap-3 p-1">
+            <div class="segment-group grid-cols-3" role="group" aria-label="ทิศทางการแปลง">
+                ${segBtn('inch', 'นิ้ว เป็น มม.')}
+                ${segBtn('mm', 'มม. เป็น นิ้ว')}
+                ${segBtn('hun', 'หุน เป็น มม.')}
+            </div>
+            <div class="flex flex-col gap-1.5">${inputs}</div>
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">${denLabel}</div>
+                <div class="grid grid-cols-3 gap-2">${denChips}</div>
+            </div>
+            ${resultHTML}
+            <div class="themed-subcard p-3 space-y-1.5 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ตารางหุน เป็นนิ้วและมิลลิเมตร (1 นิ้ว = 25.4 มม.)</div>
+                ${hunRows}
+            </div>
+            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
+                <div>ตารางนี้เป็นการแปลงหน่วยความยาวเท่านั้น ขนาดเรียกท่อประปา PVC (เช่น ท่อ 4 หุน) เป็นขนาดเรียก ไม่ใช่เส้นผ่านศูนย์กลางนอกจริง จึงต้องตรวจตารางท่อของ มอก. หรือผู้ผลิต ห้ามใช้ค่าในตารางนี้เป็นขนาดจริงของท่อ</div>
+            </div>
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    container.querySelectorAll('[data-inch-mode]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.mode = btn.dataset.inchMode;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('.inch-den-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.den = btn.dataset.den;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    if (statusHTML) {
+        setStatusBanner('success', statusHTML);
+    } else {
+        setStatusBanner('empty', mode === 'inch' ? 'ป้อนนิ้วและเศษส่วนเพื่อแปลงเป็นมิลลิเมตร' : mode === 'mm' ? 'ป้อนความยาวเป็นมิลลิเมตรเพื่อแปลงเป็นเศษส่วนนิ้ว' : 'ป้อนขนาดเป็นหุนเพื่อแปลงเป็นมิลลิเมตร');
+    }
+}
+
 (function(root) {
     const exportsObj = {
+        INCH_MM,
+        INCH_DENOMINATORS,
+        inchesToFraction,
+        formatInchFraction,
+        calculateInchConversion,
+        renderInchFractionTool,
         PLUMBING_TANK_SIZES_L,
         PLUMBING_HOUSE_TYPES,
         calculatePlumbing,

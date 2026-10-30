@@ -115,6 +115,8 @@ function clearCurrentTool() {
         appState.contractor_payment = { contractValue: '', retentionPct: '5', whtPct: '3', vatRate: '7', applyVat: false, applyWht: false, template: '4', installments: [{ id: '1', pct: '30' }, { id: '2', pct: '30' }, { id: '3', pct: '30' }, { id: '4', pct: '10' }] };
     } else if (id === 'plumbing_pump') {
         appState.plumbing_pump = { people: '', litersPerPerson: '200', reserveDays: '1', houseType: appState.plumbing_pump?.houseType || 'two' };
+    } else if (id === 'inch_fraction') {
+        appState.inch_fraction = { mode: appState.inch_fraction?.mode || 'inch', whole: '', num: '', den: '8', mm: '', hun: '' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '', length: '', height: '2.8', btuPerSqm: '750', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {
@@ -402,6 +404,8 @@ function loadDemoForCurrentTool() {
         appState.contractor_payment = { contractValue: '1200000', retentionPct: '5', whtPct: '3', vatRate: '7', applyVat: true, applyWht: true, template: '4', installments: [{ id: '1', pct: '30' }, { id: '2', pct: '30' }, { id: '3', pct: '30' }, { id: '4', pct: '10' }] };
     } else if (id === 'plumbing_pump') {
         appState.plumbing_pump = { people: '5', litersPerPerson: '200', reserveDays: '2', houseType: 'two' };
+    } else if (id === 'inch_fraction') {
+        appState.inch_fraction = { mode: appState.inch_fraction?.mode || 'inch', whole: '1', num: '3', den: '8', mm: '35', hun: '4' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '4', length: '5', height: '2.8', btuPerSqm: '850', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {

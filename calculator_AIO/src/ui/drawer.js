@@ -633,6 +633,14 @@ function getToolSummaryText(toolId, stateObj) {
             const tankText = `${formatNum(calc.tankSizeL, 0)} ลิตร${calc.tankCount > 1 ? ` x ${calc.tankCount} ใบ` : ''}`;
             return `สรุปถังเก็บน้ำ & ปั๊มน้ำบ้าน\n${divider}\n• ผู้อยู่อาศัย: ${formatNum(calc.people, 0)} คน ใช้น้ำ ${formatNum(calc.litersPerPerson, 0)} ลิตร/คน/วัน\n• ใช้น้ำต่อวัน: ${formatNum(calc.dailyLiters, 0)} ลิตร\n• สำรองน้ำ ${formatNum(calc.reserveDays, 1)} วัน: ${formatNum(calc.requiredLiters, 0)} ลิตร\n• กำลังวัตต์ปั๊มโดยทั่วไป: ${calc.pumpMinW}-${calc.pumpMaxW} วัตต์\n----------------------------------\nถังเก็บน้ำที่แนะนำ: ${tankText}\n(ค่าประมาณ ช่วงวัตต์ปั๊มและค่าใช้น้ำยังไม่ยืนยัน ควรให้ช่างประปาตรวจ)\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'inch_fraction': {
+            const calc = (typeof calculateInchConversion === 'function') ? calculateInchConversion(state.inch_fraction || {}) : { valid: false };
+            if (!calc.valid) return `สรุปแปลงเศษส่วนนิ้ว หุน & มม.\n${divider}\nยังไม่ได้ป้อนขนาด\n(คำนวณโดย Multitools Calculator)`;
+            const frac = calc.mode === 'mm' ? calc.fraction : inchesToFraction(calc.inches, 64);
+            const fracText = formatInchFraction(frac);
+            const errLine = calc.mode === 'mm' ? `\n• ${calc.fraction.exact ? 'ตรงกับเศษส่วนพอดี' : `เศษส่วนที่ใกล้ที่สุดคลาดเคลื่อน ${formatNum(calc.errorMm, 2)} มม.`}` : '';
+            return `สรุปแปลงเศษส่วนนิ้ว หุน & มม.\n${divider}\n• มิลลิเมตร: ${formatNum(calc.mm, 2)} มม. (${formatNum(calc.cm, 3)} ซม.)\n• นิ้ว: ${formatNum(calc.inches, 4)} นิ้ว\n• หุน: ${formatNum(calc.hun, 3)} หุน (8 หุน = 1 นิ้ว)${errLine}\n----------------------------------\nขนาดเป็นเศษส่วนนิ้ว: ${fracText}\n(1 นิ้ว = 25.4 มม. ขนาดเรียกท่อ PVC ไม่ใช่เส้นผ่านศูนย์กลางจริง)\n(คำนวณโดย Multitools Calculator)`;
+        }
         case 'btu_calc': {
             const calc = (typeof calculateBtu === 'function') ? calculateBtu(state.btu_calc || {}) : { valid: false };
             if (!calc.valid) return `สรุปขนาดแอร์ BTU\n${divider}\nยังไม่ได้ป้อนขนาดห้อง\n(คำนวณโดย Multitools Calculator)`;

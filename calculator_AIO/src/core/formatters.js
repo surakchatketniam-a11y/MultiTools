@@ -108,6 +108,11 @@ function hasInvalidNumericInput(toolId, stateObj) {
         const st = state.plumbing_pump || {};
         return ['people', 'litersPerPerson', 'reserveDays'].some(key => invalid(st[key]));
     }
+    if (curToolId === 'inch_fraction') {
+        const st = state.inch_fraction || {};
+        const keys = st.mode === 'mm' ? ['mm'] : st.mode === 'hun' ? ['hun'] : ['whole', 'num'];
+        return keys.some(key => invalid(st[key]));
+    }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
     return (fields[curToolId] || []).some(key => invalid(state[curToolId][key]));

@@ -127,6 +127,12 @@ function getToolFieldBindings(toolId) {
             const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
             return ['people', 'litersPerPerson', 'reserveDays'].map(field);
         }
+        case 'inch_fraction': {
+            const s = () => appState.inch_fraction;
+            const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
+            const mode = s().mode;
+            return (mode === 'mm' ? ['mm'] : mode === 'hun' ? ['hun'] : ['whole', 'num']).map(field);
+        }
         case 'btu_calc':
             return [
                 { get: () => appState.btu_calc.width, set: (v) => { appState.btu_calc.width = v; } },
