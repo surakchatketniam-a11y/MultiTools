@@ -1343,8 +1343,128 @@ function renderContractorPaymentTool(container) {
     }
 }
 
+/* -----------------------------------------------------------
+ * TOOL: ถังเก็บน้ำ & ปั๊มน้ำบ้าน (plumbing_pump)
+ * ----------------------------------------------------------- */
+
+// ขนาดถังที่พบทั่วไปในท้องตลาด (ยังไม่ยืนยันกับผู้ผลิต)
+var PLUMBING_TANK_SIZES_L = [500, 700, 1000, 1500, 2000, 3000];
+// ช่วงกำลังวัตต์ปั๊มอัตโนมัติตามลักษณะบ้านจาก ENGINEERING_REFERENCE_STANDARDS.md ข้อ 5 (ยังไม่ยืนยัน)
+var PLUMBING_HOUSE_TYPES = [
+    { key: 'single', label: 'บ้าน 1 ชั้น / ทาวน์โฮม (เปิดน้ำพร้อมกัน 1-2 จุด)',                  minW: 100, maxW: 150 },
+    { key: 'two',    label: 'บ้านเดี่ยว 2 ชั้น (เปิดพร้อมกัน 2-3 จุด / มีฝักบัวและเครื่องทำน้ำอุ่น)', minW: 200, maxW: 250 },
+    { key: 'large',  label: 'บ้าน 2-3 ชั้นหลังใหญ่ / Rain Shower / หลายห้องน้ำ',                   minW: 300, maxW: 400 }
+];
+var PLUMBING_MAX_PEOPLE = 1000;
+var PLUMBING_MAX_RESERVE_DAYS = 7;
+
+function calculatePlumbing(st) {
+    const people = parseNumericInput(st.people);
+    const litersPerPerson = numberOrDefault(st.litersPerPerson, 200);
+    const reserveDays = numberOrDefault(st.reserveDays, 1);
+    const house = PLUMBING_HOUSE_TYPES.find(h => h.key === st.houseType);
+    if (![people, litersPerPerson, reserveDays].every(Number.isFinite) || !Number.isInteger(people)
+        || people < 1 || people > PLUMBING_MAX_PEOPLE || litersPerPerson <= 0 || reserveDays <= 0 || reserveDays > PLUMBING_MAX_RESERVE_DAYS || !house) {
+        return { valid: false };
+    }
+    const dailyLiters = people * litersPerPerson;
+    const requiredLiters = dailyLiters * reserveDays;
+    const largest = PLUMBING_TANK_SIZES_L[PLUMBING_TANK_SIZES_L.length - 1];
+    const standardSize = PLUMBING_TANK_SIZES_L.find(size => size >= requiredLiters - 1e-9);
+    const exceedsStandard = standardSize === undefined;
+    const tankSizeL = exceedsStandard ? largest : standardSize;
+    const tankCount = exceedsStandard ? Math.ceil(requiredLiters / largest - 1e-9) : 1;
+    return {
+        valid: true,
+        people,
+        litersPerPerson,
+        reserveDays,
+        dailyLiters,
+        monthlyM3: dailyLiters * 30 / 1000,
+        requiredLiters,
+        tankSizeL,
+        tankCount,
+        installedLiters: tankSizeL * tankCount,
+        exceedsStandard,
+        house,
+        pumpMinW: house.minW,
+        pumpMaxW: house.maxW
+    };
+}
+
+function renderPlumbingTool(container) {
+    if (!appState.plumbing_pump) {
+        appState.plumbing_pump = { people: '4', litersPerPerson: '200', reserveDays: '1', houseType: 'two' };
+    }
+    const st = appState.plumbing_pump;
+    const calc = calculatePlumbing(st);
+    const houseChips = PLUMBING_HOUSE_TYPES.map(h => `<button type="button" class="tool-chip-btn plumb-house-chip ${st.houseType === h.key ? 'active font-bold' : ''}" aria-pressed="${st.houseType === h.key}" data-house="${h.key}" style="min-height: 44px;">${h.label} · ${h.minW}-${h.maxW} วัตต์</button>`).join('');
+    const row = (label, value) => `<div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">${label}</span><span class="font-semibold font-mono text-right">${value}</span></div>`;
+
+    let resultHTML = '';
+    if (calc.valid) {
+        const tankText = `${formatNum(calc.tankSizeL, 0)} ลิตร${calc.tankCount > 1 ? ` x ${calc.tankCount} ใบ` : ''}`;
+        resultHTML = `
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">ถังเก็บน้ำที่แนะนำ</div>
+                <div class="themed-result-value text-2xl font-bold font-mono break-words">${tankText}</div>
+                <div class="text-xs text-[var(--app-muted)]">ต้องสำรอง ${formatNum(calc.requiredLiters, 0)} ลิตร (${formatNum(calc.people, 0)} คน x ${formatNum(calc.litersPerPerson, 0)} ลิตร x ${formatNum(calc.reserveDays, 1)} วัน)</div>
+                ${calc.exceedsStandard ? `<div class="text-xs font-semibold">เกินขนาดถังที่พบทั่วไป ${formatNum(PLUMBING_TANK_SIZES_L[PLUMBING_TANK_SIZES_L.length - 1], 0)} ลิตร จึงแสดงเป็นหลายใบ หรือพิจารณาถังใต้ดิน/ถังคอนกรีต</div>` : ''}
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${row('ใช้น้ำต่อวัน', `${formatNum(calc.dailyLiters, 0)} ลิตร`)}
+                    ${row('ใช้น้ำต่อเดือนโดยประมาณ', `${formatNum(calc.monthlyM3, 1)} ลบ.ม.`)}
+                    ${row('ความจุที่ติดตั้ง', `${formatNum(calc.installedLiters, 0)} ลิตร`)}
+                </div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    <div class="text-[var(--app-muted)]">กำลังวัตต์ปั๊มอัตโนมัติโดยทั่วไป</div>
+                    <div class="themed-result-value text-xl font-bold font-mono">${calc.pumpMinW}-${calc.pumpMaxW} วัตต์</div>
+                </div>
+            </div>`;
+    }
+
+    container.innerHTML = `
+        <div class="plumbing-pump-tool flex flex-col gap-3 p-1">
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'จำนวนผู้อยู่อาศัย', st.people, 'คน', 'เช่น 4')}
+                ${createKeypadFieldHTML(1, 'ปริมาณการใช้น้ำ', st.litersPerPerson, 'ลิตร/คน/วัน', 'เช่น 200')}
+                ${createKeypadFieldHTML(2, 'จำนวนวันที่สำรองน้ำ', st.reserveDays, 'วัน', 'เช่น 1')}
+            </div>
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ลักษณะบ้านสำหรับเลือกปั๊ม</div>
+                <div class="grid grid-cols-1 gap-2">${houseChips}</div>
+            </div>
+            ${resultHTML}
+            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
+                <div>ขนาดถัง = จำนวนคน x ลิตรต่อคนต่อวัน x จำนวนวันที่สำรอง แล้วเลือกขนาดถังที่ใหญ่ขึ้นไปถัดจากค่าที่คำนวณได้</div>
+                <div>ยังไม่ยืนยัน: ค่า 200 ลิตร/คน/วัน ช่วงวัตต์ปั๊มตามลักษณะบ้าน และขนาดถังมาตรฐาน มาจากเอกสารรวบรวม ไม่ใช่การคำนวณเฮดและอัตราไหล ควรเลือกปั๊มจากอัตราไหล (ลิตร/นาที) และเฮดของรุ่นที่ผู้ผลิตระบุ และให้ช่างประปาตรวจหน้างาน</div>
+            </div>
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    container.querySelectorAll('.plumb-house-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.houseType = btn.dataset.house;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    if (!calc.valid) {
+        setStatusBanner('empty', 'ป้อนจำนวนผู้อยู่อาศัย (จำนวนเต็ม) เพื่อคำนวณขนาดถังเก็บน้ำ');
+    } else {
+        const tankText = `${formatNum(calc.tankSizeL, 0)} ลิตร${calc.tankCount > 1 ? ` x ${calc.tankCount} ใบ` : ''}`;
+        setStatusBanner('success', `ถังเก็บน้ำ <span class="text-lg text-[var(--app-accent)] underline">${tankText}</span><span class="text-xs font-normal opacity-80 block mt-1">ต้องสำรอง ${formatNum(calc.requiredLiters, 0)} ลิตร · ปั๊มทั่วไป ${calc.pumpMinW}-${calc.pumpMaxW} วัตต์</span>`);
+    }
+}
+
 (function(root) {
     const exportsObj = {
+        PLUMBING_TANK_SIZES_L,
+        PLUMBING_HOUSE_TYPES,
+        calculatePlumbing,
+        renderPlumbingTool,
         CONTRACTOR_TEMPLATES,
         calculateContractorPayment,
         renderContractorPaymentTool,

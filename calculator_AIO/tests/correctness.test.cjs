@@ -287,11 +287,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 41 tools classified into 6 valid groups with search keywords', () => {
+test('catalog contains exactly 42 tools classified into 6 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 6);
-    assert.equal(TOOLS_CATALOG.length, 41);
+    assert.equal(TOOLS_CATALOG.length, 42);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -451,7 +451,7 @@ test('all 36 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 41);
+    assert.equal(ctx.TOOLS_CATALOG.length, 42);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -1214,7 +1214,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('คุ้มค่าที่สุด'));
 });
 
-test('all 41 tool renderers are modularized and exported across the 6 tool groups', () => {
+test('all 42 tool renderers are modularized and exported across the 6 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -1257,10 +1257,11 @@ test('all 41 tool renderers are modularized and exported across the 6 tool group
         land_fill_calc: 'renderLandFillTool',
         wall_ceiling_calc: 'renderWallCeilingTool',
         roof_steel_calc: 'renderRoofSteelTool',
-        contractor_payment: 'renderContractorPaymentTool'
+        contractor_payment: 'renderContractorPaymentTool',
+        plumbing_pump: 'renderPlumbingTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 41);
+    assert.equal(Object.keys(rendererMap).length, 42);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -3473,6 +3474,57 @@ test('contractor_payment: installments, retention, VAT, withholding tax and vali
     assert.equal(ctx.hasInvalidNumericInput('contractor_payment', { contractor_payment: base }), false);
     assert.equal(ctx.hasInvalidNumericInput('contractor_payment', { contractor_payment: { ...base, installments: rows([30, 'x', 30, 10]) } }), true);
     assert.equal(ctx.hasInvalidNumericInput('contractor_payment', { contractor_payment: { ...base, vatRate: '7%' } }), true);
+});
+
+test('plumbing_pump: tank sizing, standard sizes, pump ranges and validation', () => {
+    const ctx = context();
+    const base = { people: '4', litersPerPerson: '200', reserveDays: '1', houseType: 'two' };
+
+    // 4 people x 200 L x 1 day = 800 L -> next standard tank is 1,000 L
+    const a = ctx.calculatePlumbing(base);
+    assert.equal(a.valid, true);
+    assert.equal(a.dailyLiters, 800);
+    assert.equal(a.requiredLiters, 800);
+    assert.equal(a.tankSizeL, 1000);
+    assert.equal(a.tankCount, 1);
+    assert.equal(a.exceedsStandard, false);
+    assert.equal(a.monthlyM3, 24);
+    assert.equal(a.pumpMinW, 200);
+    assert.equal(a.pumpMaxW, 250);
+
+    // Exact standard size is not rounded up: 5 people x 200 x 1 = 1,000 L
+    assert.equal(ctx.calculatePlumbing({ ...base, people: '5' }).tankSizeL, 1000);
+    // 2 days reserve: 4 x 200 x 2 = 1,600 L -> 2,000 L
+    assert.equal(ctx.calculatePlumbing({ ...base, reserveDays: '2' }).tankSizeL, 2000);
+    // 1-2 people x 200 x 1 = 200-400 L -> 500 L
+    assert.equal(ctx.calculatePlumbing({ ...base, people: '2' }).tankSizeL, 500);
+
+    // Beyond the largest standard tank: several 3,000 L tanks
+    const big = ctx.calculatePlumbing({ ...base, people: '20', reserveDays: '2' });
+    assert.equal(big.requiredLiters, 8000);
+    assert.equal(big.exceedsStandard, true);
+    assert.equal(big.tankSizeL, 3000);
+    assert.equal(big.tankCount, 3);
+    assert.equal(big.installedLiters, 9000);
+
+    // Pump ranges per house type match the reference document
+    assert.deepEqual(Array.from(ctx.PLUMBING_HOUSE_TYPES, h => [h.minW, h.maxW]), [[100, 150], [200, 250], [300, 400]]);
+    assert.equal(ctx.calculatePlumbing({ ...base, houseType: 'large' }).pumpMaxW, 400);
+
+    // Blank liters/days use the 200 L and 1 day defaults
+    const defaults = ctx.calculatePlumbing({ people: '4', litersPerPerson: '', reserveDays: '', houseType: 'single' });
+    assert.equal(defaults.requiredLiters, 800);
+
+    // Invalid input
+    assert.equal(ctx.calculatePlumbing({ ...base, people: '' }).valid, false);
+    assert.equal(ctx.calculatePlumbing({ ...base, people: '0' }).valid, false);
+    assert.equal(ctx.calculatePlumbing({ ...base, people: '3.5' }).valid, false);
+    assert.equal(ctx.calculatePlumbing({ ...base, people: '1001' }).valid, false);
+    assert.equal(ctx.calculatePlumbing({ ...base, litersPerPerson: '0' }).valid, false);
+    assert.equal(ctx.calculatePlumbing({ ...base, reserveDays: '8' }).valid, false);
+    assert.equal(ctx.calculatePlumbing({ ...base, houseType: 'castle' }).valid, false);
+    assert.equal(ctx.hasInvalidNumericInput('plumbing_pump', { plumbing_pump: base }), false);
+    assert.equal(ctx.hasInvalidNumericInput('plumbing_pump', { plumbing_pump: { ...base, people: '4p' } }), true);
 });
 
 test('construction_calc: tiles, paint, and concrete calculations', () => {

@@ -42,6 +42,7 @@ var TOOLS_CATALOG = [
     { id: 'wall_ceiling_calc', group: 'engineering', category: 'all', menuTitle: 'ก่ออิฐ ฉาบปูน & ฝ้าเพดาน', headerTitle: 'คำนวณก่ออิฐ ฉาบปูน & ฝ้าเพดาน (อิฐมวลเบา/อิฐมอญ/ยิปซั่ม/ทีบาร์)', usesSharedKeypad: true, keywords: 'wall ceiling ก่ออิฐ ฉาบปูน ผนัง อิฐมวลเบา อิฐมอญ อิฐบล็อก ปูนฉาบ กั้นห้อง ฝ้าเพดาน ฝ้ายิปซั่ม ยิปซั่ม ทีบาร์ t-bar แผ่นฝ้า ช่างปูน ต่อเติมบ้าน' },
     { id: 'roof_steel_calc', group: 'engineering', category: 'all', menuTitle: 'หลังคา ตัดเหล็ก & เหล็กเส้น', headerTitle: 'คำนวณหลังคา ตัดท่อนเหล็ก 6 ม. & เหล็กเส้น/คอนกรีตโครงสร้าง', usesSharedKeypad: true, keywords: 'roof steel หลังคา เมทัลชีท กระเบื้องหลังคา จันทัน แป ความลาดชัน กันสาด โรงจอดรถ ตัดเหล็ก เหล็กกล่อง เหล็ก 6 เมตร เศษเหล็ก เหล็กเส้น rb db เหล็กข้ออ้อย น้ำหนักเหล็ก คอนกรีต เสา คาน ฐานราก ช่างเหล็ก' },
     { id: 'contractor_payment', group: 'engineering', category: 'all', menuTitle: 'แบ่งงวดงานรับเหมา & เงินประกัน', headerTitle: 'แบ่งงวดงานรับเหมา เงินประกันผลงาน (Retention) VAT & หัก ณ ที่จ่าย', usesSharedKeypad: true, keywords: 'contractor payment แบ่งงวด งวดงาน รับเหมา ผู้รับเหมา จ้างเหมา ต่อเติมบ้าน สร้างบ้าน รีโนเวท เงินประกันผลงาน retention หัก ณ ที่จ่าย 3% vat ค่าจ้าง สัญญาจ้าง boq ใบเสนอราคา' },
+    { id: 'plumbing_pump', group: 'engineering', category: 'all', menuTitle: 'ถังเก็บน้ำ & ปั๊มน้ำบ้าน', headerTitle: 'คำนวณขนาดถังเก็บน้ำ & กำลังวัตต์ปั๊มน้ำอัตโนมัติ', usesSharedKeypad: true, keywords: 'plumbing pump ปั๊มน้ำ ถังเก็บน้ำ ถังน้ำ แท้งค์น้ำ น้ำประปา สำรองน้ำ ช่างประปา วัตต์ปั๊ม ปั๊มอัตโนมัติ บ้าน 2 ชั้น ลิตร ถังบนดิน ถังใต้ดิน' },
 
     // หมวดหมู่ที่ 2: ธุรกิจ & ค้าขาย
     { id: 'vat',        group: 'biz', category: 'fav', menuTitle: 'ภาษีมูลค่าเพิ่ม (VAT)', headerTitle: 'เครื่องคำนวณภาษีมูลค่าเพิ่ม', usesSharedKeypad: true, keywords: 'vat ภาษี 7% มูลค่าเพิ่ม ถอด vat รวม vat' },
@@ -203,6 +204,10 @@ function hasInvalidNumericInput(toolId, stateObj) {
         const st = state.contractor_payment || {};
         const rows = Array.isArray(st.installments) ? st.installments : [];
         return ['contractValue', 'retentionPct', 'whtPct', 'vatRate'].some(key => invalid(st[key])) || rows.some(r => invalid(r.pct));
+    }
+    if (curToolId === 'plumbing_pump') {
+        const st = state.plumbing_pump || {};
+        return ['people', 'litersPerPerson', 'reserveDays'].some(key => invalid(st[key]));
     }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
@@ -6052,6 +6057,12 @@ function getToolSummaryText(toolId, stateObj) {
             const itemLines = calc.items.map(item => `• งวดที่ ${item.index} (${formatNum(item.pct, 2)}%): ค่าจ้าง ${formatMoney(item.gross)}${calc.applyVat ? ` + VAT ${formatMoney(item.vat)}` : ''} - ประกัน ${formatMoney(item.retention)}${calc.applyWht ? ` - หัก ณ ที่จ่าย ${formatMoney(item.wht)}` : ''} = จ่ายสุทธิ ${formatMoney(item.net)} บาท`).join('\n');
             return `สรุปแบ่งงวดงานรับเหมา\n${divider}\n• มูลค่างานตามสัญญา: ${formatMoney(calc.contract)} บาท (${calc.items.length} งวด)\n• เงินประกันผลงาน ${formatNum(calc.retentionPct, 2)}%: ถือไว้รวม ${formatMoney(calc.totalRetention)} บาท\n${itemLines}\n----------------------------------\nยอดจ่ายสุทธิรวมทุกงวด: ${formatMoney(calc.totalNet)} บาท\n(เปอร์เซ็นต์แต่ละงวดเป็นตัวอย่าง ให้กำหนดตามสัญญาจริง ค่าประมาณ)\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'plumbing_pump': {
+            const calc = (typeof calculatePlumbing === 'function') ? calculatePlumbing(state.plumbing_pump || {}) : { valid: false };
+            if (!calc.valid) return `สรุปถังเก็บน้ำ & ปั๊มน้ำ\n${divider}\nยังไม่ได้ป้อนจำนวนผู้อยู่อาศัย\n(คำนวณโดย Multitools Calculator)`;
+            const tankText = `${formatNum(calc.tankSizeL, 0)} ลิตร${calc.tankCount > 1 ? ` x ${calc.tankCount} ใบ` : ''}`;
+            return `สรุปถังเก็บน้ำ & ปั๊มน้ำบ้าน\n${divider}\n• ผู้อยู่อาศัย: ${formatNum(calc.people, 0)} คน ใช้น้ำ ${formatNum(calc.litersPerPerson, 0)} ลิตร/คน/วัน\n• ใช้น้ำต่อวัน: ${formatNum(calc.dailyLiters, 0)} ลิตร\n• สำรองน้ำ ${formatNum(calc.reserveDays, 1)} วัน: ${formatNum(calc.requiredLiters, 0)} ลิตร\n• กำลังวัตต์ปั๊มโดยทั่วไป: ${calc.pumpMinW}-${calc.pumpMaxW} วัตต์\n----------------------------------\nถังเก็บน้ำที่แนะนำ: ${tankText}\n(ค่าประมาณ ช่วงวัตต์ปั๊มและค่าใช้น้ำยังไม่ยืนยัน ควรให้ช่างประปาตรวจ)\n(คำนวณโดย Multitools Calculator)`;
+        }
         case 'btu_calc': {
             const calc = (typeof calculateBtu === 'function') ? calculateBtu(state.btu_calc || {}) : { valid: false };
             if (!calc.valid) return `สรุปขนาดแอร์ BTU\n${divider}\nยังไม่ได้ป้อนขนาดห้อง\n(คำนวณโดย Multitools Calculator)`;
@@ -6301,6 +6312,11 @@ function getToolFieldBindings(toolId) {
             const s = () => appState.contractor_payment;
             const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
             return ['contractValue', 'retentionPct', 'whtPct', 'vatRate'].map(field);
+        }
+        case 'plumbing_pump': {
+            const s = () => appState.plumbing_pump;
+            const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
+            return ['people', 'litersPerPerson', 'reserveDays'].map(field);
         }
         case 'btu_calc':
             return [
@@ -19899,8 +19915,128 @@ function renderContractorPaymentTool(container) {
     }
 }
 
+/* -----------------------------------------------------------
+ * TOOL: ถังเก็บน้ำ & ปั๊มน้ำบ้าน (plumbing_pump)
+ * ----------------------------------------------------------- */
+
+// ขนาดถังที่พบทั่วไปในท้องตลาด (ยังไม่ยืนยันกับผู้ผลิต)
+var PLUMBING_TANK_SIZES_L = [500, 700, 1000, 1500, 2000, 3000];
+// ช่วงกำลังวัตต์ปั๊มอัตโนมัติตามลักษณะบ้านจาก ENGINEERING_REFERENCE_STANDARDS.md ข้อ 5 (ยังไม่ยืนยัน)
+var PLUMBING_HOUSE_TYPES = [
+    { key: 'single', label: 'บ้าน 1 ชั้น / ทาวน์โฮม (เปิดน้ำพร้อมกัน 1-2 จุด)',                  minW: 100, maxW: 150 },
+    { key: 'two',    label: 'บ้านเดี่ยว 2 ชั้น (เปิดพร้อมกัน 2-3 จุด / มีฝักบัวและเครื่องทำน้ำอุ่น)', minW: 200, maxW: 250 },
+    { key: 'large',  label: 'บ้าน 2-3 ชั้นหลังใหญ่ / Rain Shower / หลายห้องน้ำ',                   minW: 300, maxW: 400 }
+];
+var PLUMBING_MAX_PEOPLE = 1000;
+var PLUMBING_MAX_RESERVE_DAYS = 7;
+
+function calculatePlumbing(st) {
+    const people = parseNumericInput(st.people);
+    const litersPerPerson = numberOrDefault(st.litersPerPerson, 200);
+    const reserveDays = numberOrDefault(st.reserveDays, 1);
+    const house = PLUMBING_HOUSE_TYPES.find(h => h.key === st.houseType);
+    if (![people, litersPerPerson, reserveDays].every(Number.isFinite) || !Number.isInteger(people)
+        || people < 1 || people > PLUMBING_MAX_PEOPLE || litersPerPerson <= 0 || reserveDays <= 0 || reserveDays > PLUMBING_MAX_RESERVE_DAYS || !house) {
+        return { valid: false };
+    }
+    const dailyLiters = people * litersPerPerson;
+    const requiredLiters = dailyLiters * reserveDays;
+    const largest = PLUMBING_TANK_SIZES_L[PLUMBING_TANK_SIZES_L.length - 1];
+    const standardSize = PLUMBING_TANK_SIZES_L.find(size => size >= requiredLiters - 1e-9);
+    const exceedsStandard = standardSize === undefined;
+    const tankSizeL = exceedsStandard ? largest : standardSize;
+    const tankCount = exceedsStandard ? Math.ceil(requiredLiters / largest - 1e-9) : 1;
+    return {
+        valid: true,
+        people,
+        litersPerPerson,
+        reserveDays,
+        dailyLiters,
+        monthlyM3: dailyLiters * 30 / 1000,
+        requiredLiters,
+        tankSizeL,
+        tankCount,
+        installedLiters: tankSizeL * tankCount,
+        exceedsStandard,
+        house,
+        pumpMinW: house.minW,
+        pumpMaxW: house.maxW
+    };
+}
+
+function renderPlumbingTool(container) {
+    if (!appState.plumbing_pump) {
+        appState.plumbing_pump = { people: '4', litersPerPerson: '200', reserveDays: '1', houseType: 'two' };
+    }
+    const st = appState.plumbing_pump;
+    const calc = calculatePlumbing(st);
+    const houseChips = PLUMBING_HOUSE_TYPES.map(h => `<button type="button" class="tool-chip-btn plumb-house-chip ${st.houseType === h.key ? 'active font-bold' : ''}" aria-pressed="${st.houseType === h.key}" data-house="${h.key}" style="min-height: 44px;">${h.label} · ${h.minW}-${h.maxW} วัตต์</button>`).join('');
+    const row = (label, value) => `<div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">${label}</span><span class="font-semibold font-mono text-right">${value}</span></div>`;
+
+    let resultHTML = '';
+    if (calc.valid) {
+        const tankText = `${formatNum(calc.tankSizeL, 0)} ลิตร${calc.tankCount > 1 ? ` x ${calc.tankCount} ใบ` : ''}`;
+        resultHTML = `
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">ถังเก็บน้ำที่แนะนำ</div>
+                <div class="themed-result-value text-2xl font-bold font-mono break-words">${tankText}</div>
+                <div class="text-xs text-[var(--app-muted)]">ต้องสำรอง ${formatNum(calc.requiredLiters, 0)} ลิตร (${formatNum(calc.people, 0)} คน x ${formatNum(calc.litersPerPerson, 0)} ลิตร x ${formatNum(calc.reserveDays, 1)} วัน)</div>
+                ${calc.exceedsStandard ? `<div class="text-xs font-semibold">เกินขนาดถังที่พบทั่วไป ${formatNum(PLUMBING_TANK_SIZES_L[PLUMBING_TANK_SIZES_L.length - 1], 0)} ลิตร จึงแสดงเป็นหลายใบ หรือพิจารณาถังใต้ดิน/ถังคอนกรีต</div>` : ''}
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${row('ใช้น้ำต่อวัน', `${formatNum(calc.dailyLiters, 0)} ลิตร`)}
+                    ${row('ใช้น้ำต่อเดือนโดยประมาณ', `${formatNum(calc.monthlyM3, 1)} ลบ.ม.`)}
+                    ${row('ความจุที่ติดตั้ง', `${formatNum(calc.installedLiters, 0)} ลิตร`)}
+                </div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    <div class="text-[var(--app-muted)]">กำลังวัตต์ปั๊มอัตโนมัติโดยทั่วไป</div>
+                    <div class="themed-result-value text-xl font-bold font-mono">${calc.pumpMinW}-${calc.pumpMaxW} วัตต์</div>
+                </div>
+            </div>`;
+    }
+
+    container.innerHTML = `
+        <div class="plumbing-pump-tool flex flex-col gap-3 p-1">
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'จำนวนผู้อยู่อาศัย', st.people, 'คน', 'เช่น 4')}
+                ${createKeypadFieldHTML(1, 'ปริมาณการใช้น้ำ', st.litersPerPerson, 'ลิตร/คน/วัน', 'เช่น 200')}
+                ${createKeypadFieldHTML(2, 'จำนวนวันที่สำรองน้ำ', st.reserveDays, 'วัน', 'เช่น 1')}
+            </div>
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ลักษณะบ้านสำหรับเลือกปั๊ม</div>
+                <div class="grid grid-cols-1 gap-2">${houseChips}</div>
+            </div>
+            ${resultHTML}
+            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
+                <div>ขนาดถัง = จำนวนคน x ลิตรต่อคนต่อวัน x จำนวนวันที่สำรอง แล้วเลือกขนาดถังที่ใหญ่ขึ้นไปถัดจากค่าที่คำนวณได้</div>
+                <div>ยังไม่ยืนยัน: ค่า 200 ลิตร/คน/วัน ช่วงวัตต์ปั๊มตามลักษณะบ้าน และขนาดถังมาตรฐาน มาจากเอกสารรวบรวม ไม่ใช่การคำนวณเฮดและอัตราไหล ควรเลือกปั๊มจากอัตราไหล (ลิตร/นาที) และเฮดของรุ่นที่ผู้ผลิตระบุ และให้ช่างประปาตรวจหน้างาน</div>
+            </div>
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    container.querySelectorAll('.plumb-house-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.houseType = btn.dataset.house;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    if (!calc.valid) {
+        setStatusBanner('empty', 'ป้อนจำนวนผู้อยู่อาศัย (จำนวนเต็ม) เพื่อคำนวณขนาดถังเก็บน้ำ');
+    } else {
+        const tankText = `${formatNum(calc.tankSizeL, 0)} ลิตร${calc.tankCount > 1 ? ` x ${calc.tankCount} ใบ` : ''}`;
+        setStatusBanner('success', `ถังเก็บน้ำ <span class="text-lg text-[var(--app-accent)] underline">${tankText}</span><span class="text-xs font-normal opacity-80 block mt-1">ต้องสำรอง ${formatNum(calc.requiredLiters, 0)} ลิตร · ปั๊มทั่วไป ${calc.pumpMinW}-${calc.pumpMaxW} วัตต์</span>`);
+    }
+}
+
 (function(root) {
     const exportsObj = {
+        PLUMBING_TANK_SIZES_L,
+        PLUMBING_HOUSE_TYPES,
+        calculatePlumbing,
+        renderPlumbingTool,
         CONTRACTOR_TEMPLATES,
         calculateContractorPayment,
         renderContractorPaymentTool,
@@ -20057,6 +20193,8 @@ function clearCurrentTool() {
         appState.roof_steel_calc = { tab: appState.roof_steel_calc?.tab || 'roof', roofRun: '', roofLength: '', roofAngle: '15', roofOverhang: '0', roofSides: '1', sheetWidth: '0.76', purlinSpacing: '1', screwsPerSqm: '5', roofPricePerSqm: '', stockLen: '6', kerfMm: '0', pieces: [{ id: '1', length: '', qty: '1' }], rebarType: 'DB12', rebarBars: '', rebarLength: '', rebarPricePerKg: '', conWidth: '', conDepth: '', conLength: '', conQty: '1', conWastePct: '5', conPricePerM3: '' };
     } else if (id === 'contractor_payment') {
         appState.contractor_payment = { contractValue: '', retentionPct: '5', whtPct: '3', vatRate: '7', applyVat: false, applyWht: false, template: '4', installments: [{ id: '1', pct: '30' }, { id: '2', pct: '30' }, { id: '3', pct: '30' }, { id: '4', pct: '10' }] };
+    } else if (id === 'plumbing_pump') {
+        appState.plumbing_pump = { people: '', litersPerPerson: '200', reserveDays: '1', houseType: appState.plumbing_pump?.houseType || 'two' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '', length: '', height: '2.8', btuPerSqm: '750', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {
@@ -20342,6 +20480,8 @@ function loadDemoForCurrentTool() {
         appState.roof_steel_calc = { tab: appState.roof_steel_calc?.tab || 'roof', roofRun: '4', roofLength: '6', roofAngle: '15', roofOverhang: '0.5', roofSides: '1', sheetWidth: '0.76', purlinSpacing: '1', screwsPerSqm: '5', roofPricePerSqm: '350', stockLen: '6', kerfMm: '3', pieces: [{ id: '1', length: '2.4', qty: '4' }, { id: '2', length: '1.2', qty: '6' }, { id: '3', length: '0.8', qty: '5' }], rebarType: 'DB12', rebarBars: '10', rebarLength: '6', rebarPricePerKg: '25', conWidth: '0.2', conDepth: '0.3', conLength: '4', conQty: '4', conWastePct: '5', conPricePerM3: '2000' };
     } else if (id === 'contractor_payment') {
         appState.contractor_payment = { contractValue: '1200000', retentionPct: '5', whtPct: '3', vatRate: '7', applyVat: true, applyWht: true, template: '4', installments: [{ id: '1', pct: '30' }, { id: '2', pct: '30' }, { id: '3', pct: '30' }, { id: '4', pct: '10' }] };
+    } else if (id === 'plumbing_pump') {
+        appState.plumbing_pump = { people: '5', litersPerPerson: '200', reserveDays: '2', houseType: 'two' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '4', length: '5', height: '2.8', btuPerSqm: '850', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {

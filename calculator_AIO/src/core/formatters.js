@@ -104,6 +104,10 @@ function hasInvalidNumericInput(toolId, stateObj) {
         const rows = Array.isArray(st.installments) ? st.installments : [];
         return ['contractValue', 'retentionPct', 'whtPct', 'vatRate'].some(key => invalid(st[key])) || rows.some(r => invalid(r.pct));
     }
+    if (curToolId === 'plumbing_pump') {
+        const st = state.plumbing_pump || {};
+        return ['people', 'litersPerPerson', 'reserveDays'].some(key => invalid(st[key]));
+    }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
     return (fields[curToolId] || []).some(key => invalid(state[curToolId][key]));

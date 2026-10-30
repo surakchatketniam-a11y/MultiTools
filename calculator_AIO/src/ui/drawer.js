@@ -627,6 +627,12 @@ function getToolSummaryText(toolId, stateObj) {
             const itemLines = calc.items.map(item => `• งวดที่ ${item.index} (${formatNum(item.pct, 2)}%): ค่าจ้าง ${formatMoney(item.gross)}${calc.applyVat ? ` + VAT ${formatMoney(item.vat)}` : ''} - ประกัน ${formatMoney(item.retention)}${calc.applyWht ? ` - หัก ณ ที่จ่าย ${formatMoney(item.wht)}` : ''} = จ่ายสุทธิ ${formatMoney(item.net)} บาท`).join('\n');
             return `สรุปแบ่งงวดงานรับเหมา\n${divider}\n• มูลค่างานตามสัญญา: ${formatMoney(calc.contract)} บาท (${calc.items.length} งวด)\n• เงินประกันผลงาน ${formatNum(calc.retentionPct, 2)}%: ถือไว้รวม ${formatMoney(calc.totalRetention)} บาท\n${itemLines}\n----------------------------------\nยอดจ่ายสุทธิรวมทุกงวด: ${formatMoney(calc.totalNet)} บาท\n(เปอร์เซ็นต์แต่ละงวดเป็นตัวอย่าง ให้กำหนดตามสัญญาจริง ค่าประมาณ)\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'plumbing_pump': {
+            const calc = (typeof calculatePlumbing === 'function') ? calculatePlumbing(state.plumbing_pump || {}) : { valid: false };
+            if (!calc.valid) return `สรุปถังเก็บน้ำ & ปั๊มน้ำ\n${divider}\nยังไม่ได้ป้อนจำนวนผู้อยู่อาศัย\n(คำนวณโดย Multitools Calculator)`;
+            const tankText = `${formatNum(calc.tankSizeL, 0)} ลิตร${calc.tankCount > 1 ? ` x ${calc.tankCount} ใบ` : ''}`;
+            return `สรุปถังเก็บน้ำ & ปั๊มน้ำบ้าน\n${divider}\n• ผู้อยู่อาศัย: ${formatNum(calc.people, 0)} คน ใช้น้ำ ${formatNum(calc.litersPerPerson, 0)} ลิตร/คน/วัน\n• ใช้น้ำต่อวัน: ${formatNum(calc.dailyLiters, 0)} ลิตร\n• สำรองน้ำ ${formatNum(calc.reserveDays, 1)} วัน: ${formatNum(calc.requiredLiters, 0)} ลิตร\n• กำลังวัตต์ปั๊มโดยทั่วไป: ${calc.pumpMinW}-${calc.pumpMaxW} วัตต์\n----------------------------------\nถังเก็บน้ำที่แนะนำ: ${tankText}\n(ค่าประมาณ ช่วงวัตต์ปั๊มและค่าใช้น้ำยังไม่ยืนยัน ควรให้ช่างประปาตรวจ)\n(คำนวณโดย Multitools Calculator)`;
+        }
         case 'btu_calc': {
             const calc = (typeof calculateBtu === 'function') ? calculateBtu(state.btu_calc || {}) : { valid: false };
             if (!calc.valid) return `สรุปขนาดแอร์ BTU\n${divider}\nยังไม่ได้ป้อนขนาดห้อง\n(คำนวณโดย Multitools Calculator)`;

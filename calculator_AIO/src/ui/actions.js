@@ -113,6 +113,8 @@ function clearCurrentTool() {
         appState.roof_steel_calc = { tab: appState.roof_steel_calc?.tab || 'roof', roofRun: '', roofLength: '', roofAngle: '15', roofOverhang: '0', roofSides: '1', sheetWidth: '0.76', purlinSpacing: '1', screwsPerSqm: '5', roofPricePerSqm: '', stockLen: '6', kerfMm: '0', pieces: [{ id: '1', length: '', qty: '1' }], rebarType: 'DB12', rebarBars: '', rebarLength: '', rebarPricePerKg: '', conWidth: '', conDepth: '', conLength: '', conQty: '1', conWastePct: '5', conPricePerM3: '' };
     } else if (id === 'contractor_payment') {
         appState.contractor_payment = { contractValue: '', retentionPct: '5', whtPct: '3', vatRate: '7', applyVat: false, applyWht: false, template: '4', installments: [{ id: '1', pct: '30' }, { id: '2', pct: '30' }, { id: '3', pct: '30' }, { id: '4', pct: '10' }] };
+    } else if (id === 'plumbing_pump') {
+        appState.plumbing_pump = { people: '', litersPerPerson: '200', reserveDays: '1', houseType: appState.plumbing_pump?.houseType || 'two' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '', length: '', height: '2.8', btuPerSqm: '750', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {
@@ -398,6 +400,8 @@ function loadDemoForCurrentTool() {
         appState.roof_steel_calc = { tab: appState.roof_steel_calc?.tab || 'roof', roofRun: '4', roofLength: '6', roofAngle: '15', roofOverhang: '0.5', roofSides: '1', sheetWidth: '0.76', purlinSpacing: '1', screwsPerSqm: '5', roofPricePerSqm: '350', stockLen: '6', kerfMm: '3', pieces: [{ id: '1', length: '2.4', qty: '4' }, { id: '2', length: '1.2', qty: '6' }, { id: '3', length: '0.8', qty: '5' }], rebarType: 'DB12', rebarBars: '10', rebarLength: '6', rebarPricePerKg: '25', conWidth: '0.2', conDepth: '0.3', conLength: '4', conQty: '4', conWastePct: '5', conPricePerM3: '2000' };
     } else if (id === 'contractor_payment') {
         appState.contractor_payment = { contractValue: '1200000', retentionPct: '5', whtPct: '3', vatRate: '7', applyVat: true, applyWht: true, template: '4', installments: [{ id: '1', pct: '30' }, { id: '2', pct: '30' }, { id: '3', pct: '30' }, { id: '4', pct: '10' }] };
+    } else if (id === 'plumbing_pump') {
+        appState.plumbing_pump = { people: '5', litersPerPerson: '200', reserveDays: '2', houseType: 'two' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '4', length: '5', height: '2.8', btuPerSqm: '850', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {

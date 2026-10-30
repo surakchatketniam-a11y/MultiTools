@@ -1854,7 +1854,7 @@
     <div id="printFormalReceipt" class="hidden"></div>
 
     <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
-    <script src="src/bundle.js?v=73"></script>
+    <script src="src/bundle.js?v=74"></script>
 
     <script>
         function getSafeDateStr(offsetDays = 0) {
@@ -2293,6 +2293,14 @@
                 ]
             },
 
+            // Engineering: water tank & pump
+            plumbing_pump: {
+                people: '4',
+                litersPerPerson: '200',
+                reserveDays: '1',
+                houseType: 'two'
+            },
+
             // 24. Car Hire Purchase Loan
             car_loan: {
                 vehicleType: 'car',
@@ -2516,6 +2524,7 @@
                 case 'food_costing':     renderFoodCostingTool(topPanel); break;
                 case 'construction_calc': renderConstructionTool(topPanel); break;
                 case 'btu_calc':         renderBtuTool(topPanel); break;
+                case 'plumbing_pump': renderPlumbingTool(topPanel); break;
                 case 'contractor_payment': renderContractorPaymentTool(topPanel); break;
                 case 'roof_steel_calc': renderRoofSteelTool(topPanel); break;
                 case 'wall_ceiling_calc': renderWallCeilingTool(topPanel); break;

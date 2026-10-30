@@ -122,6 +122,11 @@ function getToolFieldBindings(toolId) {
             const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
             return ['contractValue', 'retentionPct', 'whtPct', 'vatRate'].map(field);
         }
+        case 'plumbing_pump': {
+            const s = () => appState.plumbing_pump;
+            const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
+            return ['people', 'litersPerPerson', 'reserveDays'].map(field);
+        }
         case 'btu_calc':
             return [
                 { get: () => appState.btu_calc.width, set: (v) => { appState.btu_calc.width = v; } },
