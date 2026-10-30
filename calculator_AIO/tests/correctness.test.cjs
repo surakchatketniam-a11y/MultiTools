@@ -4074,6 +4074,99 @@ test('wire_breaker: three-phase (400 V) conduit wiring, table columns, limits an
     assert.ok(ctx.getToolSummaryText('wire_breaker', { wire_breaker: { watts: '3500', voltage: '230', powerFactor: '1', wireLengthM: '15' } }).includes('ระบบ 1 เฟส'));
 });
 
+test('btu_calc to wire_breaker: air-conditioner rated current table (manual appendix D), size matching and handoff', () => {
+    const ctx = context();
+
+    // Every catalog row is self-consistent: kVA = V x A for single phase and sqrt(3) x V x A for 380 V three phase.
+    // This validates that the rows were read correctly from the manual.
+    assert.equal(ctx.AC_CATALOG_ENTRIES.length, 27);
+    for (const e of ctx.AC_CATALOG_ENTRIES) {
+        const expected = (e.phases === 3 ? Math.sqrt(3) : 1) * e.volts * e.amps / 1000;
+        assert.ok(Math.abs(expected - e.kva) <= 0.011, `${e.type} ${e.btu} BTU ${e.volts} V: ${expected} vs ${e.kva}`);
+        assert.equal(e.volts, e.phases === 3 ? 380 : 220);
+    }
+
+    // Matching a BTU size: the highest running current among catalog rows within +-10% of the size
+    const rated = btu => ctx.acRatedCurrent(btu, 1);
+    assert.deepEqual(Array.from(ctx.BTU_STANDARD_SIZES, btu => rated(btu).currentA), [4.6, 6.0, 6.8, 8.5, 10.4, 13.8, 17.7]);
+    assert.equal(rated(12000).catalogBtu, 12200);
+    assert.equal(rated(12000).type, 'wall');
+    assert.equal(rated(18000).type, 'wall');
+    assert.equal(rated(18000).matches, 3);
+    assert.equal(rated(24000).type, 'duct');
+    assert.equal(rated(36000).currentA, 17.7);
+    // Three-phase 380 V units exist from 36,000 BTU up
+    assert.equal(ctx.acRatedCurrent(36000, 3).currentA, 6.8);
+    assert.equal(ctx.acRatedCurrent(36000, 3).volts, 380);
+    assert.equal(ctx.acRatedCurrent(12000, 3), null);
+    // Outside the catalog sizes, or invalid, there is no value
+    assert.equal(ctx.acRatedCurrent(60000, 1), null);
+    assert.equal(ctx.acRatedCurrent(3000, 1), null);
+    assert.equal(ctx.acRatedCurrent(0, 1), null);
+    assert.equal(ctx.acRatedCurrent(NaN, 1), null);
+    // A size between catalog capacities has no row within 10% (10,000 BTU sits between 8,800 and 12,200)
+    assert.equal(ctx.acRatedCurrent(10000, 1), null);
+
+    // The wire_breaker air-conditioner presets use the same catalog currents (6.0 A and 10.4 A at 230 V, PF 1)
+    const preset = key => ctx.WIRE_APPLIANCE_PRESETS.find(p => p.key === key);
+    assert.equal(preset('ac_12000').watts, Math.round(rated(12000).currentA * 230));
+    assert.equal(preset('ac_24000').watts, Math.round(rated(24000).currentA * 230));
+    assert.equal(preset('ac_12000').powerFactor, 1);
+    assert.equal(preset('ac_12000').continuous, true);
+
+    // Handoff from btu_calc: 4 x 4 m bedroom needs 12,000 BTU -> 6.0 A -> 1,380 W at 230 V, PF 1
+    const room = { width: '4', length: '4', height: '2.8', btuPerSqm: '750', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
+    const handoff = ctx.buildBtuToWireHandoff(room);
+    assert.equal(handoff.hasAmount, true);
+    assert.equal(handoff.btu, 12000);
+    assert.equal(handoff.units, 1);
+    assert.equal(handoff.currentA, 6.0);
+    assert.equal(handoff.watts, 1380);
+    // A large shop needs several 36,000 BTU units: the circuit is per unit
+    const shop = ctx.buildBtuToWireHandoff({ ...room, width: '10', length: '10', btuPerSqm: '1350' });
+    assert.equal(shop.btu, 36000);
+    assert.equal(shop.units, 4);
+    assert.equal(shop.currentA, 17.7);
+    assert.equal(shop.watts, Math.round(17.7 * 230));
+    // No room size, no handoff
+    assert.equal(ctx.buildBtuToWireHandoff({ ...room, width: '' }).hasAmount, false);
+    assert.equal(ctx.buildBtuToWireHandoff(undefined).hasAmount, false);
+
+    // Applying it fills wire_breaker, keeps the previous length and wiring method, and the engine returns the catalog current
+    const wire = { phases: '3', watts: '1', voltage: '400', powerFactor: '0.8', wireLengthM: '25', ambientC: '50', circuits: '3', installMethod: 'surface', isContinuous: false, preset: 'x' };
+    const ctx2 = context({ appState: { wire_breaker: wire } });
+    assert.equal(ctx2.applyBtuToWireHandoff(room), true);
+    const applied = ctx2.appState.wire_breaker;
+    assert.equal(applied.phases, '1');
+    assert.equal(applied.watts, '1380');
+    assert.equal(applied.voltage, '230');
+    assert.equal(applied.powerFactor, '1');
+    assert.equal(applied.wireLengthM, '25');
+    assert.equal(applied.installMethod, 'surface');
+    assert.equal(applied.ambientC, '40');
+    assert.equal(applied.circuits, '1');
+    assert.equal(applied.isContinuous, true);
+    assert.equal(applied.preset, '');
+    assert.equal(applied.source.watts, 1380);
+    assert.ok(applied.source.label.includes('12,000 BTU'));
+    assert.ok(applied.source.label.includes('กระแสทำงาน 6 A'));
+    const result = ctx2.calculateWireBreaker(applied);
+    assert.equal(result.loadCurrent, 6);
+    assert.equal(result.designCurrent, 7.5);
+    assert.equal(result.recommendedBreaker, 10);
+    assert.equal(result.wireSizeSqmm, 1);  // surface wiring: VAF 1.0 sq.mm. (14 A) carries a 10 A breaker
+    assert.equal(ctx2.calculateWireBreaker({ ...applied, installMethod: 'conduit' }).wireSizeSqmm, 1.5);
+    // Blank length falls back to 15 m; nothing is written when there is no amount
+    const ctx3 = context({ appState: { wire_breaker: { wireLengthM: '' } } });
+    assert.equal(ctx3.applyBtuToWireHandoff(room), true);
+    assert.equal(ctx3.appState.wire_breaker.wireLengthM, '15');
+    assert.equal(ctx3.appState.wire_breaker.installMethod, 'conduit');
+    const untouched = { watts: '99' };
+    const ctx4 = context({ appState: { wire_breaker: untouched } });
+    assert.equal(ctx4.applyBtuToWireHandoff({ ...room, width: '' }), false);
+    assert.equal(untouched.watts, '99');
+});
+
 test('construction_calc: tiles, paint, and concrete calculations', () => {
     const ctx = context();
 

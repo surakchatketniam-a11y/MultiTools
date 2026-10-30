@@ -19,6 +19,97 @@ var BTU_STANDARD_SIZES = [9000, 12000, 15000, 18000, 24000, 30000, 36000];
 var BTU_BASE_CEILING_M = 2.8;
 var BTU_DAYS_PER_MONTH = 30;
 
+// กระแสทำงาน (Running Current) ของแอร์ตัวอย่างจากแค็ตตาล็อก Mitsubishi ในภาคผนวก D ของคู่มือการติดตั้งระบบไฟฟ้า พ.ศ. 2564
+// (ตาราง D1 ติดผนัง Standard Inverter, D2 ฝังฝ้า 4 ทิศทาง, D4 Duct, D5 ตั้งพื้น) ใช้เลือกสายและเบรกเกอร์ ไม่ใช่กำลังไฟเฉลี่ยในการคิดค่าไฟ
+// ตรวจความสอดคล้องแล้วทุกแถว: kVA = V x A (1 เฟส) และ kVA = sqrt(3) x V x A (3 เฟส 380 V) ตาราง D3 (ฝังแขวน) ไม่ใช้เพราะข้อความที่ถอดจาก PDF เยื้องแถว
+// เป็นข้อมูลของยี่ห้อเดียว รุ่นอื่นต่างกัน ต้องดูแผ่นป้ายหรือแค็ตตาล็อกของรุ่นที่ซื้อ
+var AC_CATALOG_ENTRIES = [
+    { type: 'wall',     btu: 8800,  amps: 4.6,  kva: 1.01, volts: 220, phases: 1 },
+    { type: 'wall',     btu: 12200, amps: 6.0,  kva: 1.32, volts: 220, phases: 1 },
+    { type: 'wall',     btu: 14300, amps: 6.8,  kva: 1.50, volts: 220, phases: 1 },
+    { type: 'wall',     btu: 17700, amps: 8.5,  kva: 1.87, volts: 220, phases: 1 },
+    { type: 'wall',     btu: 22500, amps: 9.2,  kva: 2.02, volts: 220, phases: 1 },
+    { type: 'cassette', btu: 18000, amps: 7.8,  kva: 1.72, volts: 220, phases: 1 },
+    { type: 'cassette', btu: 24000, amps: 10.1, kva: 2.22, volts: 220, phases: 1 },
+    { type: 'cassette', btu: 30000, amps: 13.8, kva: 3.04, volts: 220, phases: 1 },
+    { type: 'cassette', btu: 36000, amps: 16.6, kva: 3.65, volts: 220, phases: 1 },
+    { type: 'cassette', btu: 42000, amps: 20.4, kva: 4.49, volts: 220, phases: 1 },
+    { type: 'cassette', btu: 48000, amps: 28.1, kva: 6.18, volts: 220, phases: 1 },
+    { type: 'cassette', btu: 36000, amps: 6.2,  kva: 4.08, volts: 380, phases: 3 },
+    { type: 'cassette', btu: 42000, amps: 7.5,  kva: 4.94, volts: 380, phases: 3 },
+    { type: 'cassette', btu: 48000, amps: 10.4, kva: 6.84, volts: 380, phases: 3 },
+    { type: 'duct',     btu: 18000, amps: 8.2,  kva: 1.80, volts: 220, phases: 1 },
+    { type: 'duct',     btu: 24000, amps: 10.4, kva: 2.29, volts: 220, phases: 1 },
+    { type: 'duct',     btu: 30000, amps: 13.8, kva: 3.04, volts: 220, phases: 1 },
+    { type: 'duct',     btu: 36000, amps: 17.7, kva: 3.89, volts: 220, phases: 1 },
+    { type: 'duct',     btu: 42000, amps: 21.8, kva: 4.80, volts: 220, phases: 1 },
+    { type: 'duct',     btu: 48000, amps: 27.3, kva: 6.01, volts: 220, phases: 1 },
+    { type: 'duct',     btu: 36000, amps: 6.8,  kva: 4.48, volts: 380, phases: 3 },
+    { type: 'duct',     btu: 42000, amps: 8.3,  kva: 5.46, volts: 380, phases: 3 },
+    { type: 'duct',     btu: 48000, amps: 10.2, kva: 6.71, volts: 380, phases: 3 },
+    { type: 'floor',    btu: 42000, amps: 19.0, kva: 4.18, volts: 220, phases: 1 },
+    { type: 'floor',    btu: 45700, amps: 27.3, kva: 6.01, volts: 220, phases: 1 },
+    { type: 'floor',    btu: 42000, amps: 7.1,  kva: 4.67, volts: 380, phases: 3 },
+    { type: 'floor',    btu: 45700, amps: 10.1, kva: 6.65, volts: 380, phases: 3 }
+];
+var AC_CATALOG_MATCH_TOLERANCE = 0.10;
+var AC_CATALOG_TYPE_LABELS = { wall: 'ติดผนัง', cassette: 'ฝังฝ้า 4 ทิศทาง', duct: 'ซ่อนในฝ้า (Duct)', floor: 'ตั้งพื้น' };
+
+// กระแสทำงานที่ใช้เลือกสาย: ค่าสูงสุดของรุ่นตัวอย่างที่ขนาดอยู่ในช่วง +-10% ของขนาด BTU ที่ขอ (ระมัดระวังไว้ก่อน)
+// คืน null ถ้าไม่มีรุ่นตัวอย่างใกล้ขนาดนั้นในระบบไฟที่ขอ
+function acRatedCurrent(btu, phases) {
+    const sys = Number(phases) === 3 ? 3 : 1;
+    if (!Number.isFinite(btu) || btu <= 0) return null;
+    const matches = AC_CATALOG_ENTRIES.filter(e => e.phases === sys && Math.abs(e.btu - btu) <= btu * AC_CATALOG_MATCH_TOLERANCE + 1e-9);
+    if (matches.length === 0) return null;
+    const top = matches.reduce((best, e) => (e.amps > best.amps ? e : best), matches[0]);
+    return { currentA: top.amps, kva: top.kva, volts: top.volts, phases: sys, type: top.type, catalogBtu: top.btu, matches: matches.length };
+}
+
+// ส่งขนาดแอร์ที่แนะนำจาก btu_calc ไป wire_breaker: ใช้กระแสทำงานตามแค็ตตาล็อกโดยตรง
+// (กำลังไฟ = กระแส x 230 V ที่ PF 1 ทำให้ wire_breaker ได้กระแสโหลดเท่ากับกระแสทำงานนั้น) และตั้งเป็นโหลดต่อเนื่อง
+function buildBtuToWireHandoff(btuState) {
+    const calc = calculateBtu(btuState || {});
+    if (!calc.valid) return { hasAmount: false };
+    const ac = acRatedCurrent(calc.recommendedBtu, 1);
+    if (!ac) return { hasAmount: false };
+    return {
+        hasAmount: true,
+        btu: calc.recommendedBtu,
+        units: calc.units,
+        currentA: ac.currentA,
+        kva: ac.kva,
+        type: ac.type,
+        catalogBtu: ac.catalogBtu,
+        watts: Math.round(ac.currentA * 230)
+    };
+}
+
+function applyBtuToWireHandoff(btuState) {
+    const handoff = buildBtuToWireHandoff(btuState);
+    if (!handoff.hasAmount) return false;
+    const previous = appState.wire_breaker || {};
+    const lengthKept = String(previous.wireLengthM ?? '').trim() === '' ? '15' : previous.wireLengthM;
+    appState.wire_breaker = {
+        phases: '1',
+        watts: String(handoff.watts),
+        voltage: '230',
+        powerFactor: '1',
+        wireLengthM: lengthKept,
+        ambientC: '40',
+        circuits: '1',
+        installMethod: previous.installMethod === 'surface' ? 'surface' : 'conduit',
+        isContinuous: true,
+        preset: '',
+        source: {
+            label: 'แอร์ ' + formatNum(handoff.btu, 0) + ' BTU กระแสทำงาน ' + formatNum(handoff.currentA, 1) + ' A (ตัวอย่างแค็ตตาล็อก Mitsubishi ในคู่มือ)',
+            watts: handoff.watts
+        }
+    };
+    persistAppState();
+    return true;
+}
+
 function calculateBtu(st) {
     const width = parseNumericInput(st.width);
     const length = parseNumericInput(st.length);
@@ -90,6 +181,7 @@ function renderBtuTool(container) {
     }).join('');
 
     let resultHTML = '';
+    let wireCardHTML = '';
     if (calc.valid) {
         const sizeText = `${formatNum(calc.recommendedBtu, 0)} BTU${calc.units > 1 ? ` × ${calc.units} เครื่อง` : ''}`;
         const column = (title, data) => `
@@ -120,6 +212,14 @@ function renderBtuTool(container) {
                 </div>
                 <div class="text-[11px] text-[var(--app-muted)]">เป็นค่าประมาณ ใช้ประกอบการตัดสินใจ ควรให้ช่างแอร์ตรวจหน้างานก่อนซื้อและติดตั้ง</div>
             </div>`;
+        const ac = acRatedCurrent(calc.recommendedBtu, 1);
+        wireCardHTML = ac ? `
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">วงจรไฟฟ้าของแอร์${calc.units > 1 ? ' (ต่อเครื่อง)' : ''}</div>
+                <div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">กระแสทำงานโดยประมาณ</span><span class="font-semibold font-mono">${formatNum(ac.currentA, 1)} A (${formatNum(ac.kva, 2)} kVA)</span></div>
+                <div class="text-[11px] text-[var(--app-muted)]">จากรุ่นตัวอย่าง Mitsubishi ขนาด ${formatNum(ac.catalogBtu, 0)} BTU แบบ${AC_CATALOG_TYPE_LABELS[ac.type]} (ค่าสูงสุดของรุ่นตัวอย่างขนาดใกล้เคียง) รุ่นอื่นต่างกัน ควรดูแผ่นป้ายเครื่อง</div>
+                <button type="button" class="tool-action-btn" id="btnBtuToWire" style="min-height: 44px;">คำนวณสายไฟและเบรกเกอร์สำหรับแอร์เครื่องนี้</button>
+            </div>` : '';
     }
 
     container.innerHTML = `
@@ -152,10 +252,23 @@ function renderBtuTool(container) {
                 </div>
             </div>
             ${resultHTML}
+            ${wireCardHTML}
         </div>
     `;
 
     attachFieldClickListeners(container);
+
+    const wireBtn = document.getElementById('btnBtuToWire');
+    if (wireBtn) {
+        wireBtn.addEventListener('click', () => {
+            if (!applyBtuToWireHandoff(st)) {
+                if (typeof showHistoryToast === 'function') showHistoryToast('ยังไม่มีข้อมูลกระแสของแอร์ขนาดนี้', false);
+                return;
+            }
+            selectTool('wire_breaker');
+            if (typeof showHistoryToast === 'function') showHistoryToast('ส่งกระแสทำงานของแอร์ไปคำนวณสายไฟและเบรกเกอร์แล้ว');
+        });
+    }
 
     container.querySelectorAll('.btu-preset-chip').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -232,8 +345,8 @@ var WIRE_APPLIANCE_PRESETS = [
     { key: 'water_3500',  label: 'เครื่องทำน้ำอุ่น 3,500W',    watts: 3500,  powerFactor: 1.0,  continuous: false },
     { key: 'water_4500',  label: 'เครื่องทำน้ำอุ่น 4,500W',    watts: 4500,  powerFactor: 1.0,  continuous: false },
     { key: 'water_6000',  label: 'เครื่องทำน้ำร้อน 6,000W',   watts: 6000,  powerFactor: 1.0,  continuous: false },
-    { key: 'ac_12000',    label: 'แอร์ 12,000 BTU',         watts: 1100,  powerFactor: 0.95, continuous: true  },
-    { key: 'ac_24000',    label: 'แอร์ 24,000 BTU',         watts: 2200,  powerFactor: 0.95, continuous: true  },
+    { key: 'ac_12000',    label: 'แอร์ 12,000 BTU (6.0 A)',  watts: 1380,  powerFactor: 1.0,  continuous: true  },
+    { key: 'ac_24000',    label: 'แอร์ 24,000 BTU (10.4 A)', watts: 2392,  powerFactor: 1.0,  continuous: true  },
     { key: 'ev_charger',  label: 'EV Charger 7.4 kW (32A)', watts: 7400,  powerFactor: 1.0,  continuous: true  },
     { key: 'ev_11kw',     label: 'EV Charger 11 kW (3 เฟส 16A)', watts: 11000, powerFactor: 1.0, continuous: true, phases: 3 },
     { key: 'ev_22kw',     label: 'EV Charger 22 kW (3 เฟส 32A)', watts: 22000, powerFactor: 1.0, continuous: true, phases: 3 }
@@ -1923,6 +2036,7 @@ function renderWireBreakerTool(container) {
     };
 
     const dataChecked = WIRE_VD_DATA_VERIFIED && WIRE_SPEC_TABLE.every(w => w.ampacityVerified);
+    const sourceNote = st.source && Number(st.source.watts) === currentWatts ? st.source.label : '';
     const warnings = [dataChecked
         ? `ตัวเลขพิกัดกระแสและแรงดันตกตรวจเทียบกับ${WIRE_DATA_SOURCE_NOTE} แล้ว แต่ยังไม่ได้เทียบกับหนังสือ วสท. โดยตรง คิดตัวคูณอุณหภูมิ (ตาราง 5-43) และจำนวนวงจร (ตาราง 5-8) แล้ว แต่ไม่รวมการเดินสายในผนังฉนวนความร้อนหรือใต้ดิน ต้องให้วิศวกรไฟฟ้าหรือช่างไฟที่มีใบอนุญาตตรวจก่อนติดตั้งจริงเสมอ`
         : 'ตารางพิกัดกระแสและค่าแรงดันตกยังไม่ได้ตรวจกับหนังสือ วสท. ไม่ควรใช้เป็นข้อมูลสำหรับติดตั้งจริง ต้องให้วิศวกรไฟฟ้าหรือช่างไฟที่มีใบอนุญาตตรวจก่อนเสมอ'];
@@ -2026,6 +2140,7 @@ function renderWireBreakerTool(container) {
             <div class="themed-subcard p-3 text-xs font-semibold space-y-1" role="note">
                 ${warnings.map(w => `<div>${w}</div>`).join('')}
             </div>
+            ${sourceNote ? `<div class="themed-subcard p-3 text-xs space-y-1" role="note"><div class="font-semibold text-[var(--app-ink)]">โหลดจากเครื่องมือคำนวณขนาดแอร์</div><div>${escapeHTML(sourceNote)}</div><div class="text-[var(--app-muted)]">ตั้งเป็นโหลดต่อเนื่อง (x1.25) กำลังไฟเป็นกระแส x 230 V ที่ PF 1 เพื่อให้ได้กระแสเท่ากับกระแสทำงาน</div></div>` : ''}
             <div class="segment-group grid-cols-2" role="group" aria-label="ระบบไฟฟ้า">
                 <button type="button" class="segment-btn ${phases === 1 ? 'active' : ''}" aria-pressed="${phases === 1}" data-wire-phases="1" style="min-height: 44px;">1 เฟส (230 V)</button>
                 <button type="button" class="segment-btn ${phases === 3 ? 'active' : ''}" aria-pressed="${phases === 3}" data-wire-phases="3" style="min-height: 44px;">3 เฟส (400 V)</button>
@@ -2441,6 +2556,10 @@ function renderConduitFillTool(container) {
         BTU_DAYS_PER_MONTH,
         calculateBtu,
         renderBtuTool,
+        AC_CATALOG_ENTRIES,
+        acRatedCurrent,
+        buildBtuToWireHandoff,
+        applyBtuToWireHandoff,
         WIRE_VD_DATA_VERIFIED,
         WIRE_DATA_SOURCE_NOTE,
         WIRE_SPEC_TABLE,
