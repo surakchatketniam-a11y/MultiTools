@@ -119,7 +119,7 @@ function hasInvalidNumericInput(toolId, stateObj) {
     }
     if (curToolId === 'wire_breaker') {
         const st = state.wire_breaker || {};
-        return ['watts', 'voltage', 'powerFactor', 'wireLengthM'].some(key => invalid(st[key]));
+        return ['watts', 'voltage', 'powerFactor', 'wireLengthM', 'ambientC', 'circuits'].some(key => invalid(st[key]));
     }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;

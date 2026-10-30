@@ -223,7 +223,7 @@ function hasInvalidNumericInput(toolId, stateObj) {
     }
     if (curToolId === 'wire_breaker') {
         const st = state.wire_breaker || {};
-        return ['watts', 'voltage', 'powerFactor', 'wireLengthM'].some(key => invalid(st[key]));
+        return ['watts', 'voltage', 'powerFactor', 'wireLengthM', 'ambientC', 'circuits'].some(key => invalid(st[key]));
     }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
@@ -6099,13 +6099,14 @@ function getToolSummaryText(toolId, stateObj) {
         case 'wire_breaker': {
             const calc = (typeof calculateWireBreaker === 'function') ? calculateWireBreaker(state.wire_breaker || {}) : { valid: false };
             const checked = (typeof WIRE_VD_DATA_VERIFIED !== 'undefined' && WIRE_VD_DATA_VERIFIED && WIRE_SPEC_TABLE.every(w => w.ampacityVerified));
-            const caution = checked ? 'คำเตือน: ค่าพิกัดกระแสและแรงดันตกตรวจเทียบกับสำเนาตาราง วสท. ในเอกสารผู้ผลิตแล้ว แต่ยังไม่ได้เทียบกับหนังสือ วสท. โดยตรง และไม่รวมตัวคูณลดพิกัดตามอุณหภูมิหรือจำนวนวงจร ต้องให้วิศวกรไฟฟ้าหรือช่างไฟที่มีใบอนุญาตตรวจก่อนติดตั้งจริง' : 'คำเตือน: ตารางพิกัดกระแสและแรงดันตกยังไม่ได้ตรวจกับหนังสือ วสท. ห้ามใช้เป็นข้อมูลติดตั้งจริง ต้องให้วิศวกรไฟฟ้าหรือช่างไฟที่มีใบอนุญาตตรวจก่อน';
+            const caution = checked ? 'คำเตือน: ค่าพิกัดกระแสและแรงดันตกตรวจเทียบกับสำเนาตาราง วสท. ในเอกสารผู้ผลิตแล้ว แต่ยังไม่ได้เทียบกับหนังสือ วสท. โดยตรง คิดตัวคูณอุณหภูมิและจำนวนวงจรตามตาราง 5-43 และ 5-8 แล้ว แต่ไม่รวมการเดินสายในผนังฉนวนความร้อนหรือใต้ดิน ต้องให้วิศวกรไฟฟ้าหรือช่างไฟที่มีใบอนุญาตตรวจก่อนติดตั้งจริง' : 'คำเตือน: ตารางพิกัดกระแสและแรงดันตกยังไม่ได้ตรวจกับหนังสือ วสท. ห้ามใช้เป็นข้อมูลติดตั้งจริง ต้องให้วิศวกรไฟฟ้าหรือช่างไฟที่มีใบอนุญาตตรวจก่อน';
             if (!calc.valid) return `สรุปสายไฟ เบรกเกอร์ & แรงดันตก\n${divider}\nยังไม่ได้ป้อนกำลังไฟฟ้าที่คำนวณได้\n${caution}\n(คำนวณโดย Multitools Calculator)`;
-            const inputLines = `• โหลด ${formatNum(calc.watts, 0)} W ที่ ${formatNum(calc.voltage, 0)} V PF ${formatNum(calc.powerFactor, 2)}\n• ระยะสาย ${formatNum(calc.wireLengthM, 1)} ม. (${calc.method === 'surface' ? 'ตีกิ๊บเกาะผนัง VAF' : 'ร้อยท่อ IEC 01/THW'})\n• กระแสโหลด ${formatNum(calc.loadCurrent, 2)} A กระแสออกแบบ ${formatNum(calc.designCurrent, 2)} A${calc.isContinuous ? ' (โหลดต่อเนื่อง x1.25)' : ''}`;
+            const inputLines = `• โหลด ${formatNum(calc.watts, 0)} W ที่ ${formatNum(calc.voltage, 0)} V PF ${formatNum(calc.powerFactor, 2)}\n• ระยะสาย ${formatNum(calc.wireLengthM, 1)} ม. (${calc.method === 'surface' ? 'ตีกิ๊บเกาะผนัง VAF' : 'ร้อยท่อ IEC 01/THW'})\n• กระแสโหลด ${formatNum(calc.loadCurrent, 2)} A กระแสออกแบบ ${formatNum(calc.designCurrent, 2)} A${calc.isContinuous ? ' (โหลดต่อเนื่อง x1.25)' : ''}\n• อุณหภูมิแวดล้อม ${formatNum(calc.ambientC, 1)} °C ${calc.ambientFactor !== null ? '(Ca x' + formatNum(calc.ambientFactor, 2) + ')' : ''} จำนวนวงจร ${formatNum(calc.circuits, 0)} ${calc.groupFactor !== null ? '(Cg x' + formatNum(calc.groupFactor, 2) + ')' : ''}`;
             if (calc.selectionStatus === 'breaker_out_of_range') return `สรุปสายไฟ เบรกเกอร์ & แรงดันตก\n${divider}\n${inputLines}\n----------------------------------\nไม่มีคำตอบจากตาราง: กระแสออกแบบเกินพิกัดเบรกเกอร์ที่ตารางมี ต้องให้วิศวกรออกแบบ\n${caution}\n(คำนวณโดย Multitools Calculator)`;
+            if (calc.selectionStatus === 'ambient_out_of_range' || calc.selectionStatus === 'circuits_out_of_range') return `สรุปสายไฟ เบรกเกอร์ & แรงดันตก\n${divider}\n${inputLines}\n• เบรกเกอร์ที่คำนวณได้ ${calc.recommendedBreaker} A\n----------------------------------\nไม่มีคำตอบจากตาราง: ${calc.selectionStatus === 'ambient_out_of_range' ? 'อุณหภูมิแวดล้อมอยู่นอกช่วง 11-60 °C ของตาราง 5-43' : 'จำนวนวงจรเกิน 20 วงจรของตาราง 5-8'} ต้องให้วิศวกรออกแบบ\n${caution}\n(คำนวณโดย Multitools Calculator)`;
             if (calc.selectionStatus === 'no_suitable_wire') return `สรุปสายไฟ เบรกเกอร์ & แรงดันตก\n${divider}\n${inputLines}\n• เบรกเกอร์ที่คำนวณได้ ${calc.recommendedBreaker} A\n----------------------------------\nไม่มีคำตอบจากตาราง: ไม่มีสายที่รองรับในวิธีเดินสายนี้\n${caution}\n(คำนวณโดย Multitools Calculator)`;
             const vdLine = `• แรงดันตก ${formatNum(calc.vdVolts, 2)} V (${formatNum(calc.vdPct, 2)}%)${calc.isVdExceeded ? ' เกินเกณฑ์ 3%' : ''}${calc.upgradedForVoltageDrop && !calc.isVdExceeded ? ' (ขยายสายเพื่อลดแรงดันตก)' : ''}`;
-            return `สรุปสายไฟ เบรกเกอร์ & แรงดันตก\n${divider}\n${inputLines}\n• พิกัดกระแสสายในตาราง ${formatNum(calc.wireAmpacity, 0)} A\n${vdLine}\n----------------------------------\nเบรกเกอร์ ${calc.recommendedBreaker} A สาย ${formatNum(calc.wireSizeSqmm, 1)} ตร.มม. (${calc.wireType})\n${caution}\n(คำนวณโดย Multitools Calculator)`;
+            return `สรุปสายไฟ เบรกเกอร์ & แรงดันตก\n${divider}\n${inputLines}\n• พิกัดกระแสสายที่ต้องการ (เบรกเกอร์ / (Ca x Cg)) ${formatNum(calc.requiredAmpacity, 2)} A พิกัดสายในตาราง ${formatNum(calc.wireAmpacity, 0)} A\n${vdLine}\n• ระยะสายสูงสุดที่แรงดันตกไม่เกิน 3%: ${formatNum(calc.maxLengthM, 1)} ม.\n----------------------------------\nเบรกเกอร์ ${calc.recommendedBreaker} A สาย ${formatNum(calc.wireSizeSqmm, 1)} ตร.มม. (${calc.wireType})\n${caution}\n(คำนวณโดย Multitools Calculator)`;
         }
         case 'btu_calc': {
             const calc = (typeof calculateBtu === 'function') ? calculateBtu(state.btu_calc || {}) : { valid: false };
@@ -6376,7 +6377,7 @@ function getToolFieldBindings(toolId) {
         case 'wire_breaker': {
             const s = () => appState.wire_breaker;
             const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
-            return ['watts', 'voltage', 'powerFactor', 'wireLengthM'].map(field);
+            return ['watts', 'voltage', 'powerFactor', 'wireLengthM', 'ambientC', 'circuits'].map(field);
         }
         case 'btu_calc':
             return [
@@ -18832,7 +18833,7 @@ function renderBtuTool(container) {
 // - คู่มือการติดตั้งระบบไฟฟ้า พ.ศ. 2564: ข้อ 9.1 (mV/A/m) และตัวอย่างที่อ้าง 5-20 (IEC 01 2.5 ตร.มม. = 21 A)
 // ผลเทียบ: แก้ conduit 16/25/35 ตร.มม. จาก 68/89/110 เป็น 66/88/109 A, แก้ mV/A/m ของ 25/35 ตร.มม. เป็น 1.81/1.33 (สายเดี่ยวกลุ่ม 1,2)
 // และเพิ่ม VAF 16 ตร.มม. = 74 A ตามตาราง 5-21 (VAF มีขนาดสูงสุด 16 ตร.มม.) ค่าอื่นตรงกับตารางเดิม
-// ยังไม่ได้เทียบกับหนังสือ วสท. 022001-22 โดยตรง และไม่รวมตัวคูณลดพิกัดตามอุณหภูมิ (ตาราง 5-43) หรือจำนวนวงจร (ตาราง 5-8)
+// ยังไม่ได้เทียบกับหนังสือ วสท. 022001-22 โดยตรง ตัวคูณอุณหภูมิ (5-43) และจำนวนวงจร (5-8) อยู่ใน WIRE_AMBIENT_FACTORS / WIRE_GROUP_FACTORS
 // conduit 1.0 ตร.มม. มีค่า 12 A ในตาราง แต่ตั้งเป็น 0 (ไม่ใช้) เพราะยังไม่ได้ตรวจเกณฑ์ขนาดสายขั้นต่ำของวงจรย่อย
 // ดู ENGINEERING_REFERENCE_STANDARDS.md ข้อ 3.1-3.3
 var WIRE_VD_DATA_VERIFIED = true;
@@ -18864,16 +18865,73 @@ var WIRE_APPLIANCE_PRESETS = [
     { key: 'ev_charger',  label: 'EV Charger 7.4 kW (32A)', watts: 7400,  powerFactor: 1.0,  continuous: true  }
 ];
 
+// เกณฑ์แรงดันตกวงจรย่อย (ร้อยละ) ใช้ทั้งในการเลือกสายและคำนวณระยะสายสูงสุด
+var WIRE_VD_LIMIT_PCT = 3;
+
+// ตาราง 5-43 ตัวคูณปรับค่าอุณหภูมิแวดล้อมอื่นจาก 40°C สายหุ้ม PVC ตัวนำ 70°C (สายในอากาศ/ร้อยท่อ)
+// ช่วง 61°C ขึ้นไปไม่มีค่า (ไม่อนุญาตให้ใช้สาย PVC 70°C) แหล่งตรวจ: Yazaki หน้า A43 และ BCC หน้า 186 ค่าคอลัมน์ PVC 70°C ตรงกัน
+var WIRE_AMBIENT_FACTORS = [
+    { minC: 11, maxC: 15, factor: 1.34 },
+    { minC: 16, maxC: 20, factor: 1.29 },
+    { minC: 21, maxC: 25, factor: 1.22 },
+    { minC: 26, maxC: 30, factor: 1.15 },
+    { minC: 31, maxC: 35, factor: 1.08 },
+    { minC: 36, maxC: 40, factor: 1.00 },
+    { minC: 41, maxC: 45, factor: 0.91 },
+    { minC: 46, maxC: 50, factor: 0.82 },
+    { minC: 51, maxC: 55, factor: 0.70 },
+    { minC: 56, maxC: 60, factor: 0.57 }
+];
+
+// ตาราง 5-8 ตัวคูณจำนวนวงจรหรือสายหลายแกนที่เดินรวมกัน
+// raceway: ในท่อร้อยสาย ตรวจจาก Yazaki A23 และ BCC หน้า 157 ตรงกัน และตรงกับตัวอย่างในคู่มือ 2564 (2 วงจร = 0.8)
+// wall: เดินเกาะผนังชั้นเดียว ตรวจจากแหล่งเดียว (Yazaki A23) ยังไม่มีแหล่งที่สองยืนยัน
+var WIRE_GROUP_FACTORS = [
+    { minCircuits: 2,  maxCircuits: 2,  raceway: 0.80, wall: 0.85 },
+    { minCircuits: 3,  maxCircuits: 3,  raceway: 0.70, wall: 0.79 },
+    { minCircuits: 4,  maxCircuits: 4,  raceway: 0.65, wall: 0.75 },
+    { minCircuits: 5,  maxCircuits: 5,  raceway: 0.60, wall: 0.73 },
+    { minCircuits: 6,  maxCircuits: 6,  raceway: 0.57, wall: 0.72 },
+    { minCircuits: 7,  maxCircuits: 7,  raceway: 0.54, wall: 0.72 },
+    { minCircuits: 8,  maxCircuits: 8,  raceway: 0.52, wall: 0.71 },
+    { minCircuits: 9,  maxCircuits: 9,  raceway: 0.50, wall: 0.70 },
+    { minCircuits: 10, maxCircuits: 12, raceway: 0.45, wall: 0.70 },
+    { minCircuits: 13, maxCircuits: 16, raceway: 0.41, wall: 0.70 },
+    { minCircuits: 17, maxCircuits: 20, raceway: 0.38, wall: 0.70 }
+];
+var WIRE_MAX_CIRCUITS = 20;
+var WIRE_AMBIENT_MIN_C = 11;
+var WIRE_AMBIENT_MAX_C = 60;
+
+// ตัวคูณอุณหภูมิ: ปัดอุณหภูมิขึ้นเป็นจำนวนเต็มก่อนหาช่วง (เช่น 40.5 ถือเป็น 41 อยู่ช่วง 41-45) เพื่อไม่ให้ได้ค่าที่ไม่ปลอดภัย
+function wireAmbientFactor(ambientC) {
+    if (!Number.isFinite(ambientC)) return null;
+    const t = Math.ceil(ambientC - 1e-9);
+    const band = WIRE_AMBIENT_FACTORS.find(b => t >= b.minC && t <= b.maxC);
+    return band ? band.factor : null;
+}
+
+function wireGroupFactor(circuits, method) {
+    if (!Number.isInteger(circuits) || circuits < 1) return null;
+    if (circuits === 1) return 1;
+    const band = WIRE_GROUP_FACTORS.find(b => circuits >= b.minCircuits && circuits <= b.maxCircuits);
+    if (!band) return null;
+    return method === 'surface' ? band.wall : band.raceway;
+}
+
 function calculateWireBreaker(st) {
     const watts = parseNumericInput(st.watts);
     const voltage = numberOrDefault(st.voltage, 230);
     const powerFactor = numberOrDefault(st.powerFactor, 0.95);
     const wireLengthM = numberOrDefault(st.wireLengthM, 15);
+    const ambientC = numberOrDefault(st.ambientC, 40);
+    const circuits = numberOrDefault(st.circuits, 1);
     const method = st.installMethod === 'surface' ? 'surface' : 'conduit'; // 'conduit' (THW) or 'surface' (VAF)
     const isContinuous = Boolean(st.isContinuous); // โหลดต่อเนื่อง เช่น แอร์ / EV Charger คิด 125%
 
-    if (![watts, voltage, powerFactor, wireLengthM].every(Number.isFinite)
-        || watts <= 0 || voltage <= 0 || powerFactor <= 0 || powerFactor > 1 || wireLengthM < 0) {
+    if (![watts, voltage, powerFactor, wireLengthM, ambientC, circuits].every(Number.isFinite)
+        || watts <= 0 || voltage <= 0 || powerFactor <= 0 || powerFactor > 1 || wireLengthM < 0
+        || !Number.isInteger(circuits) || circuits < 1) {
         return { valid: false };
     }
 
@@ -18885,12 +18943,21 @@ function calculateWireBreaker(st) {
     const round2 = (val) => Math.round((Number(val) || 0) * 100) / 100;
     const ampKey = method === 'surface' ? 'surfaceAmp' : 'conduitAmp';
     const wireType = method === 'surface' ? 'VAF / VAF-G' : 'IEC 01 (THW)';
+    const ambientFactor = wireAmbientFactor(ambientC);
+    const groupFactor = wireGroupFactor(circuits, method);
+    const derating = (ambientFactor !== null && groupFactor !== null) ? ambientFactor * groupFactor : null;
     const base = {
         valid: true,
         watts,
         voltage,
         powerFactor,
         wireLengthM,
+        ambientC,
+        circuits,
+        ambientFactor,
+        groupFactor,
+        // ตัวคูณจัดกลุ่มแบบเกาะผนังตรวจจากแหล่งเดียว
+        groupFactorSingleSource: method === 'surface' && circuits > 1,
         method,
         isContinuous,
         loadCurrent: round2(loadCurrent),
@@ -18902,6 +18969,9 @@ function calculateWireBreaker(st) {
         ...base,
         selectionStatus,
         recommendedBreaker,
+        derating,
+        requiredAmpacity: null,
+        deratedAmpacity: null,
         wireSizeSqmm: null,
         wireAmpacity: null,
         ampacityUnverified: false,
@@ -18909,15 +18979,22 @@ function calculateWireBreaker(st) {
         vdVolts: null,
         vdPct: null,
         isVdExceeded: false,
-        upgradedForVoltageDrop: false
+        upgradedForVoltageDrop: false,
+        maxLengthM: null
     });
 
     // หาเบรกเกอร์มาตรฐานขั้นต่ำที่ทนกระแสออกแบบได้ (Ib >= Id)
     const selectedBreaker = STANDARD_BREAKER_RATINGS.find(b => b >= designCurrent);
     if (!selectedBreaker) return unresolved('breaker_out_of_range', null);
 
-    // หาสายไฟที่ทนกระแสได้ (Iz >= Ib) ตามประเภทการเดินสาย
-    const candidateWires = WIRE_SPEC_TABLE.filter(w => w[ampKey] > 0 && w[ampKey] >= selectedBreaker);
+    // อุณหภูมิหรือจำนวนวงจรอยู่นอกช่วงตาราง 5-43 / 5-8 ไม่มีตัวคูณให้ใช้
+    if (ambientFactor === null) return unresolved('ambient_out_of_range', selectedBreaker);
+    if (groupFactor === null) return unresolved('circuits_out_of_range', selectedBreaker);
+
+    // หาสายไฟที่ทนกระแสได้ตามหลักคู่มือ 2564: It = In / (Ca x Cg) คือพิกัดกระแสของสายในตารางต้องไม่น้อยกว่า It
+    // (In = พิกัดเบรกเกอร์ Ca = ตัวคูณอุณหภูมิ Cg = ตัวคูณจำนวนวงจร) เทียบเท่า Iz x Ca x Cg >= In
+    const requiredAmpacity = selectedBreaker / derating;
+    const candidateWires = WIRE_SPEC_TABLE.filter(w => w[ampKey] > 0 && w[ampKey] * derating >= selectedBreaker - 1e-9);
     if (candidateWires.length === 0) return unresolved('no_suitable_wire', selectedBreaker);
     let selectedWire = candidateWires[0];
 
@@ -18929,7 +19006,7 @@ function calculateWireBreaker(st) {
 
     // ตรวจสอบเกณฑ์แรงดันตกวงจรย่อย (ตามมาตรฐาน วสท. ไม่ควรเกิน 3%)
     let upgradedForVoltageDrop = false;
-    if (vdPct > 3.0) {
+    if (vdPct > WIRE_VD_LIMIT_PCT) {
         // ลองขยับขนาดสายให้ใหญ่ขึ้นจนกว่า %VD <= 3% หรือจนสุดตาราง
         const currentIdx = WIRE_SPEC_TABLE.findIndex(w => w.sizeSqmm === selectedWire.sizeSqmm);
         // ถ้าไม่มีสายขนาดใดผ่านเกณฑ์ ใช้สายใหญ่สุดที่ตารางมีให้ และคง isVdExceeded ไว้เพื่อแจ้งเตือน
@@ -18942,22 +19019,30 @@ function calculateWireBreaker(st) {
             vdVolts = nextVdVolts;
             vdPct = nextVdPct;
             upgradedForVoltageDrop = true;
-            if (nextVdPct <= 3.0) break;
+            if (nextVdPct <= WIRE_VD_LIMIT_PCT) break;
         }
     }
+
+    // ระยะสายสูงสุดที่แรงดันตกไม่เกินเกณฑ์สำหรับสายที่เลือก ที่กระแสโหลดนี้
+    // Lmax = (V x เกณฑ์% / 100 x 1000) / (mV/A/m x I)
+    const maxLengthM = (voltage * (WIRE_VD_LIMIT_PCT / 100) * 1000) / (selectedWire.mVPerAmpMeter * loadCurrent);
 
     return {
         ...base,
         selectionStatus: 'ok',
         recommendedBreaker: selectedBreaker,
+        derating,
+        requiredAmpacity: round2(requiredAmpacity),
+        deratedAmpacity: round2(selectedWire[ampKey] * derating),
         wireSizeSqmm: selectedWire.sizeSqmm,
         wireAmpacity: selectedWire[ampKey],
         ampacityUnverified: !selectedWire.ampacityVerified,
         voltageDropDataUnverified: !WIRE_VD_DATA_VERIFIED,
         vdVolts: round2(vdVolts),
         vdPct: round2(vdPct),
-        isVdExceeded: vdPct > 3.0,
-        upgradedForVoltageDrop
+        isVdExceeded: vdPct > WIRE_VD_LIMIT_PCT,
+        upgradedForVoltageDrop,
+        maxLengthM: round2(maxLengthM)
     };
 }
 
@@ -20436,8 +20521,6 @@ function renderShapeTool(container) {
  * ถ้าธงตรวจข้อมูลในตารางกลับเป็น false จะแสดงคำเตือนแบบเข้มว่ายังไม่ได้ตรวจ
  * ----------------------------------------------------------- */
 
-var WIRE_VD_LIMIT_PCT = 3;
-
 function renderWireBreakerTool(container) {
     if (!appState.wire_breaker) {
         appState.wire_breaker = { watts: '3500', voltage: '230', powerFactor: '1', wireLengthM: '15', installMethod: 'conduit', isContinuous: false, preset: 'water_3500' };
@@ -20456,7 +20539,7 @@ function renderWireBreakerTool(container) {
 
     const dataChecked = WIRE_VD_DATA_VERIFIED && WIRE_SPEC_TABLE.every(w => w.ampacityVerified);
     const warnings = [dataChecked
-        ? `ตัวเลขพิกัดกระแสและแรงดันตกตรวจเทียบกับ${WIRE_DATA_SOURCE_NOTE} แล้ว แต่ยังไม่ได้เทียบกับหนังสือ วสท. โดยตรง และยังไม่รวมตัวคูณลดพิกัดตามอุณหภูมิหรือจำนวนวงจรที่เดินรวมกัน ต้องให้วิศวกรไฟฟ้าหรือช่างไฟที่มีใบอนุญาตตรวจก่อนติดตั้งจริงเสมอ`
+        ? `ตัวเลขพิกัดกระแสและแรงดันตกตรวจเทียบกับ${WIRE_DATA_SOURCE_NOTE} แล้ว แต่ยังไม่ได้เทียบกับหนังสือ วสท. โดยตรง คิดตัวคูณอุณหภูมิ (ตาราง 5-43) และจำนวนวงจร (ตาราง 5-8) แล้ว แต่ไม่รวมการเดินสายในผนังฉนวนความร้อนหรือใต้ดิน ต้องให้วิศวกรไฟฟ้าหรือช่างไฟที่มีใบอนุญาตตรวจก่อนติดตั้งจริงเสมอ`
         : 'ตารางพิกัดกระแสและค่าแรงดันตกยังไม่ได้ตรวจกับหนังสือ วสท. ไม่ควรใช้เป็นข้อมูลสำหรับติดตั้งจริง ต้องให้วิศวกรไฟฟ้าหรือช่างไฟที่มีใบอนุญาตตรวจก่อนเสมอ'];
     let resultHTML = '';
     let statusType = 'empty';
@@ -20479,19 +20562,37 @@ function renderWireBreakerTool(container) {
     } else if (calc.valid && calc.selectionStatus === 'no_suitable_wire') {
         resultHTML = `
             <div class="themed-result-card p-4 space-y-3" role="alert">
-                <div class="text-xs text-[var(--app-muted)] font-medium">ไม่มีสายในตารางสำหรับวิธีเดินสายนี้</div>
+                <div class="text-xs text-[var(--app-muted)] font-medium">ไม่มีสายในตารางสำหรับเงื่อนไขนี้</div>
                 <div class="themed-result-value text-xl font-bold break-words">เบรกเกอร์ ${calc.recommendedBreaker} A แต่ไม่มีสาย ${calc.wireType} ที่รองรับ</div>
                 <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
                     ${row('กระแสโหลด', `${formatNum(calc.loadCurrent, 2)} A`)}
                     ${row('กระแสออกแบบ', `${formatNum(calc.designCurrent, 2)} A`)}
                     ${row('เบรกเกอร์ที่คำนวณได้', `${calc.recommendedBreaker} A`)}
                 </div>
-                <div class="text-xs">ลองเปลี่ยนวิธีเดินสายเป็นร้อยท่อ หรือให้วิศวกรไฟฟ้าเลือกสายให้</div>
+                <div class="text-xs">ลองเปลี่ยนวิธีเดินสายเป็นร้อยท่อ ลดจำนวนวงจรที่เดินรวมกัน หรือให้วิศวกรไฟฟ้าเลือกสายให้ (พิกัดสายต้องไม่น้อยกว่าเบรกเกอร์ / (Ca x Cg))</div>
             </div>`;
         statusType = 'error';
-        statusHTML = `ไม่มีสายในตารางที่รองรับเบรกเกอร์ ${calc.recommendedBreaker} A ในวิธีเดินสายนี้ ให้เปลี่ยนวิธีหรือปรึกษาวิศวกร`;
+        statusHTML = `ไม่มีสายในตารางที่รองรับเบรกเกอร์ ${calc.recommendedBreaker} A ในเงื่อนไขนี้ (วิธีเดินสาย อุณหภูมิ จำนวนวงจร) ให้เปลี่ยนเงื่อนไขหรือปรึกษาวิศวกร`;
+    } else if (calc.valid && (calc.selectionStatus === 'ambient_out_of_range' || calc.selectionStatus === 'circuits_out_of_range')) {
+        const isAmbient = calc.selectionStatus === 'ambient_out_of_range';
+        const reason = isAmbient
+            ? `อุณหภูมิแวดล้อม ${formatNum(calc.ambientC, 1)} องศา อยู่นอกช่วงตาราง ${WIRE_AMBIENT_MIN_C}-${WIRE_AMBIENT_MAX_C} องศาของสาย PVC 70 องศา`
+            : `จำนวนวงจรที่เดินรวมกัน ${formatNum(calc.circuits, 0)} วงจร เกินช่วงตารางที่มีถึง ${WIRE_MAX_CIRCUITS} วงจร`;
+        resultHTML = `
+            <div class="themed-result-card p-4 space-y-3" role="alert">
+                <div class="text-xs text-[var(--app-muted)] font-medium">ไม่มีตัวคูณลดพิกัดในตาราง</div>
+                <div class="themed-result-value text-xl font-bold break-words">${reason}</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${row('กระแสออกแบบ', `${formatNum(calc.designCurrent, 2)} A`)}
+                    ${row('เบรกเกอร์ที่คำนวณได้', `${calc.recommendedBreaker} A`)}
+                </div>
+                <div class="text-xs">${isAmbient ? 'ถ้าอุณหภูมิสูงกว่านี้ ต้องใช้สายชนิดทนความร้อนสูงกว่าและให้วิศวกรไฟฟ้าเลือกให้' : 'ให้แยกวงจรออกเป็นหลายท่อ หรือให้วิศวกรไฟฟ้าออกแบบ'}</div>
+            </div>`;
+        statusType = 'error';
+        statusHTML = `${reason} ให้ปรึกษาวิศวกรไฟฟ้า`;
     } else if (calc.valid) {
         const lengthAssumed = String(st.wireLengthM ?? '').trim() === '';
+        if (calc.groupFactorSingleSource) warnings.push('ตัวคูณจำนวนวงจรของสายเดินเกาะผนังตรวจจากแหล่งเดียว (แค็ตตาล็อก Yazaki) ยังไม่มีแหล่งที่สองยืนยัน');
         if (calc.isVdExceeded) warnings.push(`แรงดันตก ${formatNum(calc.vdPct, 2)}% เกินเกณฑ์ ${WIRE_VD_LIMIT_PCT}% แม้ใช้สายใหญ่สุดที่ตารางมีให้แล้ว ลดระยะสายหรือให้วิศวกรตรวจ`);
         else if (calc.upgradedForVoltageDrop) warnings.push('ขยายขนาดสายจากเกณฑ์กระแสเพื่อให้แรงดันตกไม่เกิน 3%');
         if (calc.ampacityUnverified) warnings.push('ขนาดสายที่เลือกอยู่ในแถวที่ไม่มีแหล่งอ้างอิงยืนยันพิกัดกระแสเลย (25 หรือ 35 ตร.มม.)');
@@ -20504,9 +20605,13 @@ function renderWireBreakerTool(container) {
                 <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
                     ${row('กระแสโหลด', `${formatNum(calc.loadCurrent, 2)} A`)}
                     ${row(calc.isContinuous ? 'กระแสออกแบบ (x1.25 โหลดต่อเนื่อง)' : 'กระแสออกแบบ', `${formatNum(calc.designCurrent, 2)} A`)}
-                    ${row('พิกัดกระแสของสายในตาราง', `${formatNum(calc.wireAmpacity, 0)} A`)}
+                    ${row('ตัวคูณอุณหภูมิ Ca (ตาราง 5-43)', `x${formatNum(calc.ambientFactor, 2)} ที่ ${formatNum(calc.ambientC, 1)} °C`)}
+                    ${row('ตัวคูณจำนวนวงจร Cg (ตาราง 5-8)', `x${formatNum(calc.groupFactor, 2)} (${formatNum(calc.circuits, 0)} วงจร)`)}
+                    ${row('พิกัดกระแสสายที่ต้องการ = เบรกเกอร์ / (Ca x Cg)', `${formatNum(calc.requiredAmpacity, 2)} A`)}
+                    ${row('พิกัดกระแสของสายในตาราง', `${formatNum(calc.wireAmpacity, 0)} A (หลังลดพิกัด ${formatNum(calc.deratedAmpacity, 1)} A)`)}
                     ${row('แรงดันตก', `${formatNum(calc.vdVolts, 2)} V (${formatNum(calc.vdPct, 2)}%)`)}
                     ${row('เกณฑ์แรงดันตกวงจรย่อย', `ไม่เกิน ${WIRE_VD_LIMIT_PCT}%`)}
+                    ${row(`ระยะสายสูงสุดที่แรงดันตกไม่เกิน ${WIRE_VD_LIMIT_PCT}%`, `${formatNum(calc.maxLengthM, 1)} ม.`)}
                     ${row('ใช้ระยะสาย / แรงดัน / PF', `${formatNum(calc.wireLengthM, 1)} ม. / ${formatNum(calc.voltage, 0)} V / ${formatNum(calc.powerFactor, 2)}`)}
                 </div>
             </div>`;
@@ -20530,6 +20635,8 @@ function renderWireBreakerTool(container) {
                 ${createKeypadFieldHTML(1, 'แรงดันไฟฟ้า (1 เฟส)', st.voltage, 'โวลต์', 'เช่น 230')}
                 ${createKeypadFieldHTML(2, 'ตัวประกอบกำลัง (PF)', st.powerFactor, '', 'เช่น 0.95')}
                 ${createKeypadFieldHTML(3, 'ระยะสายจากตู้ถึงโหลด', st.wireLengthM, 'เมตร', 'เช่น 15')}
+                ${createKeypadFieldHTML(4, 'อุณหภูมิแวดล้อม', st.ambientC, '°C', 'เช่น 40')}
+                ${createKeypadFieldHTML(5, 'จำนวนวงจรที่เดินรวมกันในท่อ/แนวเดียวกัน', st.circuits, 'วงจร', 'เช่น 1')}
             </div>
             <div class="segment-group grid-cols-2" role="group" aria-label="วิธีเดินสาย">
                 ${methodBtn('conduit', 'ร้อยท่อ (IEC 01 / THW)')}
@@ -20540,8 +20647,9 @@ function renderWireBreakerTool(container) {
             </div>
             ${resultHTML}
             <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
-                <div>รองรับเฉพาะระบบ 1 เฟส สายทองแดงหุ้ม PVC 70 องศา ไม่รวมตัวคูณลดพิกัดตามอุณหภูมิหรือจำนวนวงจรที่เดินรวมกัน และไม่รวมการเลือกชนิดเบรกเกอร์ (MCB, RCBO) หรือสายดิน</div>
-                <div>วิธีคิด: เบรกเกอร์ต้องไม่เล็กกว่ากระแสออกแบบ สายต้องรับกระแสได้ไม่น้อยกว่าเบรกเกอร์ และแรงดันตกวงจรย่อยไม่เกิน 3% ถ้าเกินจะขยับขนาดสายขึ้น</div>
+                <div>รองรับเฉพาะระบบ 1 เฟส สายทองแดงหุ้ม PVC 70 องศา ไม่รวมการเดินสายในผนังหรือเพดานฉนวนความร้อน (กลุ่ม 1) การเดินใต้ดิน การเลือกชนิดเบรกเกอร์ (MCB, RCBO) และสายดิน</div>
+                <div>วิธีคิด: เบรกเกอร์ต้องไม่เล็กกว่ากระแสออกแบบ พิกัดกระแสของสายในตารางต้องไม่น้อยกว่า เบรกเกอร์ / (Ca x Cg) ตามคู่มือ พ.ศ. 2564 และแรงดันตกวงจรย่อยไม่เกิน 3% ถ้าเกินจะขยับขนาดสายขึ้น ระยะสายสูงสุด = (แรงดัน x 3% x 1,000) / (mV/A/m x กระแสโหลด)</div>
+                <div>เว้นช่องอุณหภูมิหรือจำนวนวงจรว่างไว้ = 40 องศา และ 1 วงจร (ไม่ลดพิกัด)</div>
             </div>
         </div>
     `;
@@ -20582,6 +20690,10 @@ function renderWireBreakerTool(container) {
 (function(root) {
     const exportsObj = {
         WIRE_VD_LIMIT_PCT,
+        WIRE_AMBIENT_FACTORS,
+        WIRE_GROUP_FACTORS,
+        wireAmbientFactor,
+        wireGroupFactor,
         renderWireBreakerTool,
         SHAPE_DEFINITIONS,
         shapeFieldKeys,
@@ -20762,7 +20874,7 @@ function clearCurrentTool() {
     } else if (id === 'shape_calc') {
         appState.shape_calc = { shape: appState.shape_calc?.shape || 'rect', width: '', length: '', top: '', bottom: '', height: '', base: '', sideA: '', sideB: '', sideC: '', diameter: '', depth: '' };
     } else if (id === 'wire_breaker') {
-        appState.wire_breaker = { watts: '', voltage: '230', powerFactor: '0.95', wireLengthM: '', installMethod: appState.wire_breaker?.installMethod || 'conduit', isContinuous: false, preset: '' };
+        appState.wire_breaker = { watts: '', voltage: '230', powerFactor: '0.95', wireLengthM: '', ambientC: '40', circuits: '1', installMethod: appState.wire_breaker?.installMethod || 'conduit', isContinuous: false, preset: '' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '', length: '', height: '2.8', btuPerSqm: '750', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {
@@ -21055,7 +21167,7 @@ function loadDemoForCurrentTool() {
     } else if (id === 'shape_calc') {
         appState.shape_calc = { shape: appState.shape_calc?.shape || 'rect', width: '5', length: '8', top: '3', bottom: '5', height: '2', base: '4', sideA: '3', sideB: '4', sideC: '5', diameter: '2', depth: '0.1' };
     } else if (id === 'wire_breaker') {
-        appState.wire_breaker = { watts: '3500', voltage: '230', powerFactor: '1', wireLengthM: '15', installMethod: appState.wire_breaker?.installMethod || 'conduit', isContinuous: false, preset: 'water_3500' };
+        appState.wire_breaker = { watts: '3500', voltage: '230', powerFactor: '1', wireLengthM: '15', ambientC: '40', circuits: '1', installMethod: appState.wire_breaker?.installMethod || 'conduit', isContinuous: false, preset: 'water_3500' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '4', length: '5', height: '2.8', btuPerSqm: '850', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {

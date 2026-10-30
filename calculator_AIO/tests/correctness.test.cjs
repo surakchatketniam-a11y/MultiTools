@@ -3722,6 +3722,131 @@ test('wire_breaker UI wiring: catalog, summary warnings, keypad fields and inval
     assert.equal(ctx.WIRE_VD_LIMIT_PCT, 3);
 });
 
+test('wire_breaker: ambient and grouping factors (tables 5-43, 5-8), the 2564 manual worked example, and maximum cable length', () => {
+    const ctx = context();
+    const base = { voltage: '230', powerFactor: '1', wireLengthM: '5', installMethod: 'conduit', isContinuous: false };
+    const calc = extra => ctx.calculateWireBreaker({ ...base, ...extra });
+
+    // Factor tables as printed (PVC 70C column of 5-43, raceway and single-layer-on-wall columns of 5-8)
+    assert.deepEqual(Array.from(ctx.WIRE_AMBIENT_FACTORS, b => b.factor), [1.34, 1.29, 1.22, 1.15, 1.08, 1.00, 0.91, 0.82, 0.70, 0.57]);
+    assert.deepEqual(Array.from(ctx.WIRE_GROUP_FACTORS, b => b.raceway), [0.80, 0.70, 0.65, 0.60, 0.57, 0.54, 0.52, 0.50, 0.45, 0.41, 0.38]);
+    assert.deepEqual(Array.from(ctx.WIRE_GROUP_FACTORS, b => b.wall), [0.85, 0.79, 0.75, 0.73, 0.72, 0.72, 0.71, 0.70, 0.70, 0.70, 0.70]);
+
+    // Ambient lookup: bands of 5 C, partial degrees round up (conservative), outside 11-60 C there is no factor
+    assert.equal(ctx.wireAmbientFactor(40), 1);
+    assert.equal(ctx.wireAmbientFactor(36), 1);
+    assert.equal(ctx.wireAmbientFactor(35), 1.08);
+    assert.equal(ctx.wireAmbientFactor(45), 0.91);
+    assert.equal(ctx.wireAmbientFactor(40.5), 0.91);
+    assert.equal(ctx.wireAmbientFactor(60), 0.57);
+    assert.equal(ctx.wireAmbientFactor(60.5), null);
+    assert.equal(ctx.wireAmbientFactor(11), 1.34);
+    assert.equal(ctx.wireAmbientFactor(10), null);
+    assert.equal(ctx.wireAmbientFactor(NaN), null);
+
+    // Grouping lookup
+    assert.equal(ctx.wireGroupFactor(1, 'conduit'), 1);
+    assert.equal(ctx.wireGroupFactor(2, 'conduit'), 0.8);
+    assert.equal(ctx.wireGroupFactor(2, 'surface'), 0.85);
+    assert.equal(ctx.wireGroupFactor(12, 'conduit'), 0.45);
+    assert.equal(ctx.wireGroupFactor(13, 'conduit'), 0.41);
+    assert.equal(ctx.wireGroupFactor(20, 'conduit'), 0.38);
+    assert.equal(ctx.wireGroupFactor(21, 'conduit'), null);
+    assert.equal(ctx.wireGroupFactor(0, 'conduit'), null);
+    assert.equal(ctx.wireGroupFactor(2.5, 'conduit'), null);
+
+    // Defaults: blank ambient and circuits mean 40 C and one circuit, i.e. no derating and the old results
+    const plain = calc({ watts: '7000' });
+    assert.equal(plain.derating, 1);
+    assert.equal(plain.recommendedBreaker, 32);
+    assert.equal(plain.wireSizeSqmm, 6);
+    assert.equal(calc({ watts: '7000', ambientC: '', circuits: '' }).wireSizeSqmm, 6);
+
+    // The 2564 manual's worked example: It = In / (Ca x Cg). 32 A breaker at 45 C with 2 circuits in conduit:
+    // 32 / (0.91 x 0.8) = 43.96 A -> 10 sq.mm.; 40 A breaker: 54.95 A -> 16 sq.mm. (the same sizes the manual picks)
+    const ex1 = calc({ watts: '7000', ambientC: '45', circuits: '2' });
+    assert.equal(ex1.selectionStatus, 'ok');
+    assert.equal(ex1.recommendedBreaker, 32);
+    assert.equal(ex1.ambientFactor, 0.91);
+    assert.equal(ex1.groupFactor, 0.8);
+    assert.ok(Math.abs(ex1.derating - 0.728) < 1e-12);
+    assert.equal(ex1.requiredAmpacity, 43.96);
+    assert.equal(ex1.wireSizeSqmm, 10);
+    assert.equal(ex1.deratedAmpacity, 36.4);
+    const ex2 = calc({ watts: '8500', ambientC: '45', circuits: '2' });
+    assert.equal(ex2.recommendedBreaker, 40);
+    assert.equal(ex2.requiredAmpacity, 54.95);
+    assert.equal(ex2.wireSizeSqmm, 16);
+
+    // Cooler ambient lets a smaller wire carry the breaker: 32 A at 30 C (x1.15): 32 / 1.15 = 27.8 A -> 4 sq.mm. (28 A)
+    assert.equal(calc({ watts: '7000', ambientC: '30' }).wireSizeSqmm, 4);
+
+    // Wall grouping uses the wall column and is flagged as single-source; raceway grouping is not
+    const wall = calc({ watts: '3500', installMethod: 'surface', circuits: '3' });
+    assert.equal(wall.groupFactor, 0.79);
+    assert.equal(wall.groupFactorSingleSource, true);
+    assert.equal(calc({ watts: '3500', circuits: '3' }).groupFactorSingleSource, false);
+    assert.equal(calc({ watts: '3500', installMethod: 'surface', circuits: '1' }).groupFactorSingleSource, false);
+
+    // Derating can leave no wire in the table: 100 A breaker, 35 sq.mm. 109 A x 0.728 = 79 A < 100 A
+    const noWire = calc({ watts: '23000', ambientC: '45', circuits: '2' });
+    assert.equal(noWire.selectionStatus, 'no_suitable_wire');
+    assert.equal(noWire.recommendedBreaker, 100);
+    assert.equal(noWire.wireSizeSqmm, null);
+    assert.equal(noWire.maxLengthM, null);
+
+    // Outside the factor tables there is no safe answer, but the breaker is still reported
+    const hot = calc({ watts: '3500', ambientC: '61' });
+    assert.equal(hot.selectionStatus, 'ambient_out_of_range');
+    assert.equal(hot.recommendedBreaker, 16);
+    assert.equal(hot.wireSizeSqmm, null);
+    assert.equal(calc({ watts: '3500', ambientC: '10' }).selectionStatus, 'ambient_out_of_range');
+    const crowded = calc({ watts: '3500', circuits: '21' });
+    assert.equal(crowded.selectionStatus, 'circuits_out_of_range');
+    assert.equal(crowded.recommendedBreaker, 16);
+    assert.equal(crowded.wireSizeSqmm, null);
+    // A load above the largest breaker is still reported as such before the factor checks
+    assert.equal(calc({ watts: '30000', ambientC: '61' }).selectionStatus, 'breaker_out_of_range');
+
+    // Invalid factor input
+    assert.equal(calc({ watts: '3500', circuits: '2.5' }).valid, false);
+    assert.equal(calc({ watts: '3500', circuits: '0' }).valid, false);
+    assert.equal(calc({ watts: '3500', ambientC: 'abc' }).valid, false);
+    assert.equal(ctx.hasInvalidNumericInput('wire_breaker', { wire_breaker: { ...base, watts: '3500', ambientC: '4o' } }), true);
+    assert.equal(ctx.hasInvalidNumericInput('wire_breaker', { wire_breaker: { ...base, watts: '3500', circuits: '2x' } }), true);
+    assert.equal(ctx.hasInvalidNumericInput('wire_breaker', { wire_breaker: { ...base, watts: '3500', ambientC: '40', circuits: '1' } }), false);
+
+    // Maximum length: Lmax = V x 3% x 1000 / (mV/A/m x I). 3,500 W at 230 V = 15.217 A, 2.5 sq.mm. 18 mV/A/m -> 25.19 m
+    const heater = calc({ watts: '3500', wireLengthM: '10' });
+    assert.equal(heater.wireSizeSqmm, 2.5);
+    assert.ok(Math.abs(heater.maxLengthM - 6900 / (18 * (3500 / 230))) < 0.01);
+    assert.ok(Math.abs(heater.maxLengthM - 25.19) < 0.01);
+    // Running exactly at that length gives the 3% limit; just beyond it the wire is upsized
+    const atLimit = calc({ watts: '3500', wireLengthM: String(heater.maxLengthM) });
+    assert.equal(atLimit.wireSizeSqmm, 2.5);
+    assert.ok(Math.abs(atLimit.vdPct - 3) < 0.01);
+    const beyond = calc({ watts: '3500', wireLengthM: '26' });
+    assert.ok(beyond.wireSizeSqmm > 2.5);
+    assert.equal(beyond.upgradedForVoltageDrop, true);
+    assert.ok(beyond.maxLengthM > 26 * 0.9);
+    // A bigger wire reaches further, a higher current reaches less far
+    assert.ok(calc({ watts: '3500', wireLengthM: '60' }).maxLengthM > heater.maxLengthM);
+    assert.ok(calc({ watts: '4500', wireLengthM: '10' }).maxLengthM < heater.maxLengthM);
+    // Scales with the supply voltage
+    assert.ok(Math.abs(calc({ watts: '3500', voltage: '115', wireLengthM: '5' }).maxLengthM) > 0);
+
+    // The summary shows the factors and the maximum length
+    const summary = ctx.getToolSummaryText('wire_breaker', { wire_breaker: { ...base, watts: '7000', ambientC: '45', circuits: '2' } });
+    assert.ok(summary.includes('Ca x0.91'));
+    assert.ok(summary.includes('Cg x0.8'));
+    assert.ok(summary.includes('43.96'));
+    assert.ok(summary.includes('ระยะสายสูงสุดที่แรงดันตกไม่เกิน 3%'));
+    const hotSummary = ctx.getToolSummaryText('wire_breaker', { wire_breaker: { ...base, watts: '3500', ambientC: '61' } });
+    assert.ok(hotSummary.includes('ไม่มีคำตอบจากตาราง'));
+    assert.ok(hotSummary.includes('11-60'));
+    assert.ok(!hotSummary.includes('ตร.มม.'));
+});
+
 test('construction_calc: tiles, paint, and concrete calculations', () => {
     const ctx = context();
 
