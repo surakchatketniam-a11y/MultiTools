@@ -3159,6 +3159,21 @@ test('wire_breaker: pure engine calculation according to EIT 2021 standards', ()
     assert.equal(fromPreset.recommendedBreaker, 16);
     assert.ok(ctx.WIRE_APPLIANCE_PRESETS.every(p => p.powerFactor > 0 && p.powerFactor <= 1));
 
+    // 10. Data-verification flags: rows without a reference source and all mV/A/m values are marked unverified
+    assert.equal(ctx.WIRE_VD_DATA_VERIFIED, false);
+    assert.equal(wh3500.ampacityUnverified, false);
+    assert.equal(wh3500.voltageDropDataUnverified, true);
+    assert.equal(conduitBig.ampacityUnverified, false);
+    const unverifiedRows = ctx.WIRE_SPEC_TABLE.filter(w => !w.ampacityVerified).map(w => w.sizeSqmm);
+    assert.deepEqual(Array.from(unverifiedRows), [25, 35]);
+    const wire25 = ctx.calculateWireBreaker({ watts: '18000', voltage: '230', powerFactor: '1.0', wireLengthM: '10', installMethod: 'conduit' });
+    assert.equal(wire25.recommendedBreaker, 80);
+    assert.equal(wire25.wireSizeSqmm, 25);
+    assert.equal(wire25.ampacityUnverified, true);
+    assert.equal(farConduit.ampacityUnverified, true);
+    assert.equal(tooBig.voltageDropDataUnverified, true);
+    assert.equal(surfaceBig.voltageDropDataUnverified, true);
+
 });
 
 test('btu_calc: catalog entry, keypad fields and invalid-input detection are wired up', () => {

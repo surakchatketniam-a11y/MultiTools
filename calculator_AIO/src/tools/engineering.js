@@ -193,16 +193,24 @@ function renderBtuTool(container) {
 // conduit: ตารางที่ 5-20 (IEC 01 / THW ร้อยท่อในอากาศ กลุ่มที่ 2 ระบบ 1 เฟส 2 สาย)
 // surface: ตารางที่ 5-21 (VAF / VAF-G เดินเกาะผนัง กลุ่มที่ 3 ระบบ 1 เฟส 2 สาย)
 // mVPerAmpMeter: ค่าแรงดันตกประมาณการ (mV/A/m) สำหรับคำนวณ Voltage Drop สายทองแดง PVC 1 เฟส 230V
+//
+// สถานะการตรวจข้อมูล (ยังไม่ได้ตรวจกับต้นฉบับ วสท. โดยตรง):
+// - พิกัดกระแสแถว 1.0-16 ตร.มม. (conduit) และ 1.0-10 ตร.มม. (VAF) มาจาก ENGINEERING_REFERENCE_STANDARDS.md
+//   ซึ่งเป็นเอกสารรวบรวม ไม่ใช่ตัวมาตรฐาน จึงยังต้องให้ผู้ชำนาญเทียบกับเล่มจริง
+// - แถว 25 และ 35 ตร.มม. (ampacityVerified: false) ไม่มีในเอกสารอ้างอิงเลย
+// - ค่า mVPerAmpMeter ทุกแถวไม่มีในเอกสารอ้างอิง (WIRE_VD_DATA_VERIFIED = false)
+// ผลลัพธ์ของ calculateWireBreaker จึงส่งธง ampacityUnverified / voltageDropDataUnverified ให้ UI แสดงคำเตือน
+var WIRE_VD_DATA_VERIFIED = false;
 var WIRE_SPEC_TABLE = [
-    { sizeSqmm: 1.0,  conduitAmp: 0,   surfaceAmp: 14, mVPerAmpMeter: 44.0, defaultBreaker: 10 },
-    { sizeSqmm: 1.5,  conduitAmp: 15,  surfaceAmp: 17, mVPerAmpMeter: 29.0, defaultBreaker: 10 },
-    { sizeSqmm: 2.5,  conduitAmp: 21,  surfaceAmp: 23, mVPerAmpMeter: 18.0, defaultBreaker: 16 },
-    { sizeSqmm: 4.0,  conduitAmp: 28,  surfaceAmp: 32, mVPerAmpMeter: 11.0, defaultBreaker: 20 },
-    { sizeSqmm: 6.0,  conduitAmp: 36,  surfaceAmp: 41, mVPerAmpMeter: 7.3,  defaultBreaker: 32 },
-    { sizeSqmm: 10.0, conduitAmp: 50,  surfaceAmp: 56, mVPerAmpMeter: 4.4,  defaultBreaker: 50 },
-    { sizeSqmm: 16.0, conduitAmp: 68,  surfaceAmp: 0,  mVPerAmpMeter: 2.8,  defaultBreaker: 63 },
-    { sizeSqmm: 25.0, conduitAmp: 89,  surfaceAmp: 0,  mVPerAmpMeter: 1.75, defaultBreaker: 80 },
-    { sizeSqmm: 35.0, conduitAmp: 110, surfaceAmp: 0,  mVPerAmpMeter: 1.25, defaultBreaker: 100 }
+    { sizeSqmm: 1.0,  conduitAmp: 0,   surfaceAmp: 14, mVPerAmpMeter: 44.0, defaultBreaker: 10,  ampacityVerified: true },
+    { sizeSqmm: 1.5,  conduitAmp: 15,  surfaceAmp: 17, mVPerAmpMeter: 29.0, defaultBreaker: 10,  ampacityVerified: true },
+    { sizeSqmm: 2.5,  conduitAmp: 21,  surfaceAmp: 23, mVPerAmpMeter: 18.0, defaultBreaker: 16,  ampacityVerified: true },
+    { sizeSqmm: 4.0,  conduitAmp: 28,  surfaceAmp: 32, mVPerAmpMeter: 11.0, defaultBreaker: 20,  ampacityVerified: true },
+    { sizeSqmm: 6.0,  conduitAmp: 36,  surfaceAmp: 41, mVPerAmpMeter: 7.3,  defaultBreaker: 32,  ampacityVerified: true },
+    { sizeSqmm: 10.0, conduitAmp: 50,  surfaceAmp: 56, mVPerAmpMeter: 4.4,  defaultBreaker: 50,  ampacityVerified: true },
+    { sizeSqmm: 16.0, conduitAmp: 68,  surfaceAmp: 0,  mVPerAmpMeter: 2.8,  defaultBreaker: 63,  ampacityVerified: true },
+    { sizeSqmm: 25.0, conduitAmp: 89,  surfaceAmp: 0,  mVPerAmpMeter: 1.75, defaultBreaker: 80,  ampacityVerified: false },
+    { sizeSqmm: 35.0, conduitAmp: 110, surfaceAmp: 0,  mVPerAmpMeter: 1.25, defaultBreaker: 100, ampacityVerified: false }
 ];
 
 // พิกัดเบรกเกอร์มาตรฐาน (MCB Ampere Trip)
@@ -260,6 +268,8 @@ function calculateWireBreaker(st) {
         recommendedBreaker,
         wireSizeSqmm: null,
         wireAmpacity: null,
+        ampacityUnverified: false,
+        voltageDropDataUnverified: !WIRE_VD_DATA_VERIFIED,
         vdVolts: null,
         vdPct: null,
         isVdExceeded: false,
@@ -306,6 +316,8 @@ function calculateWireBreaker(st) {
         recommendedBreaker: selectedBreaker,
         wireSizeSqmm: selectedWire.sizeSqmm,
         wireAmpacity: selectedWire[ampKey],
+        ampacityUnverified: !selectedWire.ampacityVerified,
+        voltageDropDataUnverified: !WIRE_VD_DATA_VERIFIED,
         vdVolts: round2(vdVolts),
         vdPct: round2(vdPct),
         isVdExceeded: vdPct > 3.0,
@@ -321,6 +333,7 @@ function calculateWireBreaker(st) {
         BTU_DAYS_PER_MONTH,
         calculateBtu,
         renderBtuTool,
+        WIRE_VD_DATA_VERIFIED,
         WIRE_SPEC_TABLE,
         STANDARD_BREAKER_RATINGS,
         WIRE_APPLIANCE_PRESETS,
