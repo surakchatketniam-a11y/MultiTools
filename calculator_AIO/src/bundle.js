@@ -45,7 +45,7 @@ var TOOLS_CATALOG = [
     { id: 'plumbing_pump', group: 'engineering', category: 'all', menuTitle: 'ถังเก็บน้ำ & ปั๊มน้ำบ้าน', headerTitle: 'คำนวณขนาดถังเก็บน้ำ & กำลังวัตต์ปั๊มน้ำอัตโนมัติ', usesSharedKeypad: true, keywords: 'plumbing pump ปั๊มน้ำ ถังเก็บน้ำ ถังน้ำ แท้งค์น้ำ น้ำประปา สำรองน้ำ ช่างประปา วัตต์ปั๊ม ปั๊มอัตโนมัติ บ้าน 2 ชั้น ลิตร ถังบนดิน ถังใต้ดิน' },
     { id: 'inch_fraction', group: 'engineering', category: 'all', menuTitle: 'เศษส่วนนิ้ว หุน & มม.', headerTitle: 'แปลงเศษส่วนนิ้ว หุน เป็นมิลลิเมตร (หน่วยช่างไทย)', usesSharedKeypad: true, keywords: 'inch fraction หุน นิ้ว เศษส่วนนิ้ว มิลลิเมตร มม. ซม. 4 หุน 6 หุน 1/2 นิ้ว 3/8 แปลงหน่วย ตลับเมตร ท่อ น็อต สกรู ดอกสว่าน หน่วยช่าง' },
     { id: 'shape_calc', group: 'engineering', category: 'all', menuTitle: 'พื้นที่ & ปริมาตรรูปทรง', headerTitle: 'คำนวณพื้นที่ & ปริมาตรรูปทรงหน้างาน (คางหมู สามเหลี่ยม วงกลม ทรงกระบอก)', usesSharedKeypad: true, keywords: 'shape area volume พื้นที่ ปริมาตร รูปทรง สี่เหลี่ยมคางหมู สามเหลี่ยม เฮรอน วงกลม ครึ่งวงกลม ทรงกระบอก เสากลม ร่องน้ำ คันดิน ปริซึม คิว ตารางเมตร ตารางวา ช่าง ถอดแบบ' },
-    { id: 'wire_breaker', group: 'engineering', category: 'all', menuTitle: 'สายไฟ เบรกเกอร์ & แรงดันตก', headerTitle: 'เลือกขนาดสายไฟ เบรกเกอร์ & ตรวจแรงดันตก (1 เฟส ข้อมูลยังไม่ยืนยันกับ วสท.)', usesSharedKeypad: true, keywords: 'wire breaker สายไฟ เบรกเกอร์ ขนาดสาย แรงดันตก voltage drop ตร.มม. แอมป์ เครื่องทำน้ำอุ่น แอร์ ev charger wallbox ช่างไฟ ติดตั้งไฟฟ้า thw vaf iec 01 mcb วสท.' },
+    { id: 'wire_breaker', group: 'engineering', category: 'all', menuTitle: 'สายไฟ เบรกเกอร์ & แรงดันตก', headerTitle: 'เลือกขนาดสายไฟ เบรกเกอร์ & ตรวจแรงดันตก (1 เฟส)', usesSharedKeypad: true, keywords: 'wire breaker สายไฟ เบรกเกอร์ ขนาดสาย แรงดันตก voltage drop ตร.มม. แอมป์ เครื่องทำน้ำอุ่น แอร์ ev charger wallbox ช่างไฟ ติดตั้งไฟฟ้า thw vaf iec 01 mcb วสท.' },
 
     // หมวดหมู่ที่ 2: ธุรกิจ & ค้าขาย
     { id: 'vat',        group: 'biz', category: 'fav', menuTitle: 'ภาษีมูลค่าเพิ่ม (VAT)', headerTitle: 'เครื่องคำนวณภาษีมูลค่าเพิ่ม', usesSharedKeypad: true, keywords: 'vat ภาษี 7% มูลค่าเพิ่ม ถอด vat รวม vat' },
@@ -6098,7 +6098,8 @@ function getToolSummaryText(toolId, stateObj) {
         }
         case 'wire_breaker': {
             const calc = (typeof calculateWireBreaker === 'function') ? calculateWireBreaker(state.wire_breaker || {}) : { valid: false };
-            const caution = 'คำเตือน: ตารางพิกัดกระแสและแรงดันตกยังไม่ได้ตรวจกับหนังสือ วสท. ห้ามใช้เป็นข้อมูลติดตั้งจริง ต้องให้วิศวกรไฟฟ้าหรือช่างไฟที่มีใบอนุญาตตรวจก่อน';
+            const checked = (typeof WIRE_VD_DATA_VERIFIED !== 'undefined' && WIRE_VD_DATA_VERIFIED && WIRE_SPEC_TABLE.every(w => w.ampacityVerified));
+            const caution = checked ? 'คำเตือน: ค่าพิกัดกระแสและแรงดันตกตรวจเทียบกับสำเนาตาราง วสท. ในเอกสารผู้ผลิตแล้ว แต่ยังไม่ได้เทียบกับหนังสือ วสท. โดยตรง และไม่รวมตัวคูณลดพิกัดตามอุณหภูมิหรือจำนวนวงจร ต้องให้วิศวกรไฟฟ้าหรือช่างไฟที่มีใบอนุญาตตรวจก่อนติดตั้งจริง' : 'คำเตือน: ตารางพิกัดกระแสและแรงดันตกยังไม่ได้ตรวจกับหนังสือ วสท. ห้ามใช้เป็นข้อมูลติดตั้งจริง ต้องให้วิศวกรไฟฟ้าหรือช่างไฟที่มีใบอนุญาตตรวจก่อน';
             if (!calc.valid) return `สรุปสายไฟ เบรกเกอร์ & แรงดันตก\n${divider}\nยังไม่ได้ป้อนกำลังไฟฟ้าที่คำนวณได้\n${caution}\n(คำนวณโดย Multitools Calculator)`;
             const inputLines = `• โหลด ${formatNum(calc.watts, 0)} W ที่ ${formatNum(calc.voltage, 0)} V PF ${formatNum(calc.powerFactor, 2)}\n• ระยะสาย ${formatNum(calc.wireLengthM, 1)} ม. (${calc.method === 'surface' ? 'ตีกิ๊บเกาะผนัง VAF' : 'ร้อยท่อ IEC 01/THW'})\n• กระแสโหลด ${formatNum(calc.loadCurrent, 2)} A กระแสออกแบบ ${formatNum(calc.designCurrent, 2)} A${calc.isContinuous ? ' (โหลดต่อเนื่อง x1.25)' : ''}`;
             if (calc.selectionStatus === 'breaker_out_of_range') return `สรุปสายไฟ เบรกเกอร์ & แรงดันตก\n${divider}\n${inputLines}\n----------------------------------\nไม่มีคำตอบจากตาราง: กระแสออกแบบเกินพิกัดเบรกเกอร์ที่ตารางมี ต้องให้วิศวกรออกแบบ\n${caution}\n(คำนวณโดย Multitools Calculator)`;
@@ -18820,21 +18821,22 @@ function renderBtuTool(container) {
  * อ้างอิง: มาตรฐานการติดตั้งทางไฟฟ้าสำหรับประเทศไทย พ.ศ. 2564 (วสท.)
  * ----------------------------------------------------------- */
 
-// ตารางขนาดสายไฟทองแดง (ตร.มม.) และพิกัดกระแส (A) ที่ 40°C
-// conduit: สาย IEC 01 / THW ร้อยท่อในอากาศ กลุ่มที่ 2 ระบบ 1 เฟส 2 สาย
-// surface: สาย VAF / VAF-G เดินเกาะผนัง กลุ่มที่ 3 ระบบ 1 เฟส 2 สาย
-// เลขตาราง "5-20 / 5-21" ที่เคยระบุไว้ไม่ตรงกับสารบัญของหนังสือ วสท. 2564 (022001-22): ตาราง 5-20 และ 5-21 เป็นของสายแรงดัน 0.6/1 kV
-// ส่วนสาย มอก.11 แรงดัน 450/750 V (กลุ่ม IEC 01) อยู่ที่ตาราง 5-22 และ 300/500 V ที่ตาราง 5-24 (อ่านจากสารบัญ ยังไม่ได้เทียบค่าในตาราง)
-// ดู ENGINEERING_REFERENCE_STANDARDS.md ข้อ 3.3
-// mVPerAmpMeter: ค่าแรงดันตกประมาณการ (mV/A/m) สำหรับคำนวณ Voltage Drop สายทองแดง PVC 1 เฟส 230V
+// ตารางขนาดสายไฟทองแดง (ตร.มม.) และพิกัดกระแส (A) สายหุ้ม PVC ตัวนำ 70°C อุณหภูมิแวดล้อม 40°C ระบบ 1 เฟส (2 สายนำกระแส)
+// conduit: สายเดี่ยว IEC 01 / THW ร้อยท่อ กลุ่มการติดตั้งที่ 2 (ตาราง 5-20)
+// surface: สาย VAF / VAF-G เกาะผนัง กลุ่มการติดตั้งที่ 3 (ตาราง 5-21) VAF มีขนาด 1-16 ตร.มม.
+// mVPerAmpMeter: แรงดันตก (mV/A/m) 1 เฟส สายเดี่ยว 70°C กลุ่ม 1,2 จากตาราง "Voltage Drop" ของ Yazaki
 //
-// สถานะการตรวจข้อมูล (ยังไม่ได้ตรวจกับต้นฉบับ วสท. โดยตรง):
-// - พิกัดกระแสแถว 1.0-16 ตร.มม. (conduit) และ 1.0-10 ตร.มม. (VAF) มาจาก ENGINEERING_REFERENCE_STANDARDS.md
-//   ซึ่งเป็นเอกสารรวบรวม ไม่ใช่ตัวมาตรฐาน จึงยังต้องให้ผู้ชำนาญเทียบกับเล่มจริง
-// - แถว 25 และ 35 ตร.มม. (ampacityVerified: false) ไม่มีในเอกสารอ้างอิงเลย
-// - ค่า mVPerAmpMeter ทุกแถวไม่มีในเอกสารอ้างอิง (WIRE_VD_DATA_VERIFIED = false)
-// ผลลัพธ์ของ calculateWireBreaker จึงส่งธง ampacityUnverified / voltageDropDataUnverified ให้ UI แสดงคำเตือน
-var WIRE_VD_DATA_VERIFIED = false;
+// แหล่งที่ใช้เทียบ (30 ต.ค. 2569) คือสำเนาตาราง วสท. ในเอกสารผู้ผลิต 3 ฉบับ ที่อยู่ในโฟลเดอร์ Knowledge/
+// - Yazaki Technical Data Catalog: Table 5-20 (A24), Table 5-21 (A25), Voltage Drop Table 1-2 (A48-A49)
+// - BCC Electric Design & Installation Guide: ตาราง 5-20 และ 5-21 (หน้า 158-160)
+// - คู่มือการติดตั้งระบบไฟฟ้า พ.ศ. 2564: ข้อ 9.1 (mV/A/m) และตัวอย่างที่อ้าง 5-20 (IEC 01 2.5 ตร.มม. = 21 A)
+// ผลเทียบ: แก้ conduit 16/25/35 ตร.มม. จาก 68/89/110 เป็น 66/88/109 A, แก้ mV/A/m ของ 25/35 ตร.มม. เป็น 1.81/1.33 (สายเดี่ยวกลุ่ม 1,2)
+// และเพิ่ม VAF 16 ตร.มม. = 74 A ตามตาราง 5-21 (VAF มีขนาดสูงสุด 16 ตร.มม.) ค่าอื่นตรงกับตารางเดิม
+// ยังไม่ได้เทียบกับหนังสือ วสท. 022001-22 โดยตรง และไม่รวมตัวคูณลดพิกัดตามอุณหภูมิ (ตาราง 5-43) หรือจำนวนวงจร (ตาราง 5-8)
+// conduit 1.0 ตร.มม. มีค่า 12 A ในตาราง แต่ตั้งเป็น 0 (ไม่ใช้) เพราะยังไม่ได้ตรวจเกณฑ์ขนาดสายขั้นต่ำของวงจรย่อย
+// ดู ENGINEERING_REFERENCE_STANDARDS.md ข้อ 3.1-3.3
+var WIRE_VD_DATA_VERIFIED = true;
+var WIRE_DATA_SOURCE_NOTE = 'สำเนาตาราง วสท. ในแค็ตตาล็อก Yazaki และคู่มือ BCC';
 var WIRE_SPEC_TABLE = [
     { sizeSqmm: 1.0,  conduitAmp: 0,   surfaceAmp: 14, mVPerAmpMeter: 44.0, defaultBreaker: 10,  ampacityVerified: true },
     { sizeSqmm: 1.5,  conduitAmp: 15,  surfaceAmp: 17, mVPerAmpMeter: 29.0, defaultBreaker: 10,  ampacityVerified: true },
@@ -18842,9 +18844,9 @@ var WIRE_SPEC_TABLE = [
     { sizeSqmm: 4.0,  conduitAmp: 28,  surfaceAmp: 32, mVPerAmpMeter: 11.0, defaultBreaker: 20,  ampacityVerified: true },
     { sizeSqmm: 6.0,  conduitAmp: 36,  surfaceAmp: 41, mVPerAmpMeter: 7.3,  defaultBreaker: 32,  ampacityVerified: true },
     { sizeSqmm: 10.0, conduitAmp: 50,  surfaceAmp: 56, mVPerAmpMeter: 4.4,  defaultBreaker: 50,  ampacityVerified: true },
-    { sizeSqmm: 16.0, conduitAmp: 68,  surfaceAmp: 0,  mVPerAmpMeter: 2.8,  defaultBreaker: 63,  ampacityVerified: true },
-    { sizeSqmm: 25.0, conduitAmp: 89,  surfaceAmp: 0,  mVPerAmpMeter: 1.75, defaultBreaker: 80,  ampacityVerified: false },
-    { sizeSqmm: 35.0, conduitAmp: 110, surfaceAmp: 0,  mVPerAmpMeter: 1.25, defaultBreaker: 100, ampacityVerified: false }
+    { sizeSqmm: 16.0, conduitAmp: 66,  surfaceAmp: 74, mVPerAmpMeter: 2.8,  defaultBreaker: 63,  ampacityVerified: true },
+    { sizeSqmm: 25.0, conduitAmp: 88,  surfaceAmp: 0,  mVPerAmpMeter: 1.81, defaultBreaker: 80,  ampacityVerified: true },
+    { sizeSqmm: 35.0, conduitAmp: 109, surfaceAmp: 0,  mVPerAmpMeter: 1.33, defaultBreaker: 100, ampacityVerified: true }
 ];
 
 // พิกัดเบรกเกอร์มาตรฐาน (MCB Ampere Trip)
@@ -20429,8 +20431,9 @@ function renderShapeTool(container) {
 
 /* -----------------------------------------------------------
  * UI: ขนาดสายไฟ เบรกเกอร์ & แรงดันตก (wire_breaker)
- * engine และตารางอยู่ด้านบน (calculateWireBreaker) ตารางพิกัดกระแสยังไม่ได้ตรวจกับต้นฉบับ วสท.
- * UI จึงแสดงคำเตือนทุกครั้ง และไม่แสดงตัวเลขเมื่อ engine ไม่มีคำตอบที่ปลอดภัย
+ * engine และตารางอยู่ด้านบน (calculateWireBreaker) ตารางตรวจเทียบกับสำเนาตาราง วสท. ในเอกสารผู้ผลิตแล้ว
+ * แต่ยังไม่ได้เทียบกับหนังสือ วสท. โดยตรง UI จึงแสดงคำเตือนทุกครั้ง และไม่แสดงตัวเลขเมื่อ engine ไม่มีคำตอบที่ปลอดภัย
+ * ถ้าธงตรวจข้อมูลในตารางกลับเป็น false จะแสดงคำเตือนแบบเข้มว่ายังไม่ได้ตรวจ
  * ----------------------------------------------------------- */
 
 var WIRE_VD_LIMIT_PCT = 3;
@@ -20451,7 +20454,10 @@ function renderWireBreakerTool(container) {
     }).join('');
     const methodBtn = (key, label) => `<button type="button" class="segment-btn ${method === key ? 'active' : ''}" aria-pressed="${method === key}" data-wire-method="${key}" style="min-height: 44px;">${label}</button>`;
 
-    const warnings = ['ตารางพิกัดกระแสและค่าแรงดันตกยังไม่ได้ตรวจกับหนังสือ วสท. ไม่ควรใช้เป็นข้อมูลสำหรับติดตั้งจริง ต้องให้วิศวกรไฟฟ้าหรือช่างไฟที่มีใบอนุญาตตรวจก่อนเสมอ'];
+    const dataChecked = WIRE_VD_DATA_VERIFIED && WIRE_SPEC_TABLE.every(w => w.ampacityVerified);
+    const warnings = [dataChecked
+        ? `ตัวเลขพิกัดกระแสและแรงดันตกตรวจเทียบกับ${WIRE_DATA_SOURCE_NOTE} แล้ว แต่ยังไม่ได้เทียบกับหนังสือ วสท. โดยตรง และยังไม่รวมตัวคูณลดพิกัดตามอุณหภูมิหรือจำนวนวงจรที่เดินรวมกัน ต้องให้วิศวกรไฟฟ้าหรือช่างไฟที่มีใบอนุญาตตรวจก่อนติดตั้งจริงเสมอ`
+        : 'ตารางพิกัดกระแสและค่าแรงดันตกยังไม่ได้ตรวจกับหนังสือ วสท. ไม่ควรใช้เป็นข้อมูลสำหรับติดตั้งจริง ต้องให้วิศวกรไฟฟ้าหรือช่างไฟที่มีใบอนุญาตตรวจก่อนเสมอ'];
     let resultHTML = '';
     let statusType = 'empty';
     let statusHTML = 'ป้อนกำลังไฟฟ้าของอุปกรณ์เพื่อคำนวณขนาดสายไฟและเบรกเกอร์';
@@ -20492,7 +20498,7 @@ function renderWireBreakerTool(container) {
         if (lengthAssumed) warnings.push(`ไม่ได้ป้อนระยะสาย จึงใช้ ${formatNum(calc.wireLengthM, 0)} ม. ตามค่าเริ่มต้น`);
         resultHTML = `
             <div class="themed-result-card p-4 space-y-3">
-                <div class="text-xs text-[var(--app-muted)] font-medium">ผลการคำนวณ (ยังไม่ยืนยันกับ วสท.)</div>
+                <div class="text-xs text-[var(--app-muted)] font-medium">${dataChecked ? 'ผลการคำนวณ (ค่าตารางตรวจกับเอกสารผู้ผลิต)' : 'ผลการคำนวณ (ยังไม่ยืนยันกับ วสท.)'}</div>
                 <div class="themed-result-value text-2xl font-bold font-mono break-words">เบรกเกอร์ ${calc.recommendedBreaker} A · สาย ${formatNum(calc.wireSizeSqmm, 1)} ตร.มม.</div>
                 <div class="text-xs text-[var(--app-muted)]">${calc.wireType} · ${calc.method === 'surface' ? 'เดินเกาะผนัง (ตีกิ๊บ)' : 'ร้อยท่อ'}</div>
                 <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
@@ -20505,9 +20511,9 @@ function renderWireBreakerTool(container) {
                 </div>
             </div>`;
         const vdBad = calc.isVdExceeded;
-        // ไม่ใช้สถานะ success เพราะจะบันทึกผลลงประวัติอัตโนมัติ ทั้งที่ตารางยังไม่ได้ยืนยันกับ วสท.
+        // ไม่ใช้สถานะ success เพราะจะบันทึกผลลงประวัติอัตโนมัติ ทั้งที่ยังไม่ได้เทียบกับหนังสือ วสท. โดยตรง
         statusType = 'warning';
-        statusHTML = `${vdBad ? 'แรงดันตกเกินเกณฑ์ · ' : ''}เบรกเกอร์ <span class="text-lg text-[var(--app-accent)] underline">${calc.recommendedBreaker} A</span> สาย ${formatNum(calc.wireSizeSqmm, 1)} ตร.มม.<span class="text-xs font-normal opacity-80 block mt-1">ยังไม่ยืนยันกับ วสท. ต้องให้ช่างไฟตรวจ</span>`;
+        statusHTML = `${vdBad ? 'แรงดันตกเกินเกณฑ์ · ' : ''}เบรกเกอร์ <span class="text-lg text-[var(--app-accent)] underline">${calc.recommendedBreaker} A</span> สาย ${formatNum(calc.wireSizeSqmm, 1)} ตร.มม.<span class="text-xs font-normal opacity-80 block mt-1">${dataChecked ? 'ต้องให้ช่างไฟตรวจก่อนติดตั้งจริง' : 'ยังไม่ยืนยันกับ วสท. ต้องให้ช่างไฟตรวจ'}</span>`;
     }
 
     container.innerHTML = `
@@ -20617,6 +20623,7 @@ function renderWireBreakerTool(container) {
         calculateBtu,
         renderBtuTool,
         WIRE_VD_DATA_VERIFIED,
+        WIRE_DATA_SOURCE_NOTE,
         WIRE_SPEC_TABLE,
         STANDARD_BREAKER_RATINGS,
         WIRE_APPLIANCE_PRESETS,

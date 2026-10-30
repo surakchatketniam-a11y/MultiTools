@@ -3135,18 +3135,23 @@ test('wire_breaker: pure engine calculation according to EIT 2021 standards', ()
     assert.equal(tooBig.recommendedBreaker, null);
     assert.equal(tooBig.wireSizeSqmm, null);
 
-    // 7. VAF surface table stops at 10 sq.mm. (56 A): a 63 A breaker has no valid VAF wire,
-    // while the same load in conduit is served by 16 sq.mm. (68 A)
+    // 7. VAF goes up to 16 sq.mm. (74 A): a 63 A breaker is served by 16 sq.mm. VAF, while an 80 A breaker has no VAF wire.
+    // In conduit the 63 A load uses 16 sq.mm. (66 A)
     const surfaceBig = ctx.calculateWireBreaker({ watts: '14000', voltage: '230', powerFactor: '1.0', wireLengthM: '10', installMethod: 'surface' });
-    assert.equal(surfaceBig.selectionStatus, 'no_suitable_wire');
+    assert.equal(surfaceBig.selectionStatus, 'ok');
     assert.equal(surfaceBig.recommendedBreaker, 63);
-    assert.equal(surfaceBig.wireSizeSqmm, null);
-    assert.equal(surfaceBig.wireAmpacity, null);
+    assert.equal(surfaceBig.wireSizeSqmm, 16);
+    assert.equal(surfaceBig.wireAmpacity, 74);
+    const surfaceHuge = ctx.calculateWireBreaker({ watts: '18000', voltage: '230', powerFactor: '1.0', wireLengthM: '10', installMethod: 'surface' });
+    assert.equal(surfaceHuge.selectionStatus, 'no_suitable_wire');
+    assert.equal(surfaceHuge.recommendedBreaker, 80);
+    assert.equal(surfaceHuge.wireSizeSqmm, null);
+    assert.equal(surfaceHuge.wireAmpacity, null);
     const conduitBig = ctx.calculateWireBreaker({ watts: '14000', voltage: '230', powerFactor: '1.0', wireLengthM: '10', installMethod: 'conduit' });
     assert.equal(conduitBig.selectionStatus, 'ok');
     assert.equal(conduitBig.recommendedBreaker, 63);
     assert.equal(conduitBig.wireSizeSqmm, 16);
-    assert.equal(conduitBig.wireAmpacity, 68);
+    assert.equal(conduitBig.wireAmpacity, 66);
 
     // 8. Voltage drop cannot be fixed by any table size: use the largest wire and keep the warning
     const farConduit = ctx.calculateWireBreaker({ watts: '3450', voltage: '230', powerFactor: '1.0', wireLengthM: '500', installMethod: 'conduit' });
@@ -3156,9 +3161,13 @@ test('wire_breaker: pure engine calculation according to EIT 2021 standards', ()
     assert.equal(farConduit.isVdExceeded, true);
     const farSurface = ctx.calculateWireBreaker({ watts: '4500', voltage: '230', powerFactor: '1.0', wireLengthM: '100', installMethod: 'surface' });
     assert.equal(farSurface.selectionStatus, 'ok');
-    assert.equal(farSurface.wireSizeSqmm, 10);
-    assert.equal(farSurface.isVdExceeded, true);
+    assert.equal(farSurface.wireSizeSqmm, 16);
+    assert.equal(farSurface.isVdExceeded, false);
+    assert.equal(farSurface.upgradedForVoltageDrop, true);
     assert.ok(farSurface.wireAmpacity > 0);
+    const farSurface2 = ctx.calculateWireBreaker({ watts: '4500', voltage: '230', powerFactor: '1.0', wireLengthM: '200', installMethod: 'surface' });
+    assert.equal(farSurface2.wireSizeSqmm, 16);
+    assert.equal(farSurface2.isVdExceeded, true);
 
     // 9. Resistive presets carry PF 1.0, so a 3,500 W heater needs a 16 A breaker (not 20 A at PF 0.95)
     const heater = ctx.WIRE_APPLIANCE_PRESETS.find(p => p.key === 'water_3500');
@@ -3167,20 +3176,25 @@ test('wire_breaker: pure engine calculation according to EIT 2021 standards', ()
     assert.equal(fromPreset.recommendedBreaker, 16);
     assert.ok(ctx.WIRE_APPLIANCE_PRESETS.every(p => p.powerFactor > 0 && p.powerFactor <= 1));
 
-    // 10. Data-verification flags: rows without a reference source and all mV/A/m values are marked unverified
-    assert.equal(ctx.WIRE_VD_DATA_VERIFIED, false);
+    // 10. Data checked against the manufacturer reproductions of the EIT tables (Yazaki, BCC): no row is flagged unverified
+    assert.equal(ctx.WIRE_VD_DATA_VERIFIED, true);
     assert.equal(wh3500.ampacityUnverified, false);
-    assert.equal(wh3500.voltageDropDataUnverified, true);
+    assert.equal(wh3500.voltageDropDataUnverified, false);
     assert.equal(conduitBig.ampacityUnverified, false);
-    const unverifiedRows = ctx.WIRE_SPEC_TABLE.filter(w => !w.ampacityVerified).map(w => w.sizeSqmm);
-    assert.deepEqual(Array.from(unverifiedRows), [25, 35]);
+    assert.deepEqual(Array.from(ctx.WIRE_SPEC_TABLE.filter(w => !w.ampacityVerified).map(w => w.sizeSqmm)), []);
+    // Table 5-20 (conduit, group 2, 2 loaded conductors, single-core) and 5-21 (VAF, group 3) values as printed
+    assert.deepEqual(Array.from(ctx.WIRE_SPEC_TABLE, w => w.conduitAmp), [0, 15, 21, 28, 36, 50, 66, 88, 109]);
+    assert.deepEqual(Array.from(ctx.WIRE_SPEC_TABLE, w => w.surfaceAmp), [14, 17, 23, 32, 41, 56, 74, 0, 0]);
+    // mV/A/m for single-core 70C cable, single phase, group 1-2
+    assert.deepEqual(Array.from(ctx.WIRE_SPEC_TABLE, w => w.mVPerAmpMeter), [44, 29, 18, 11, 7.3, 4.4, 2.8, 1.81, 1.33]);
     const wire25 = ctx.calculateWireBreaker({ watts: '18000', voltage: '230', powerFactor: '1.0', wireLengthM: '10', installMethod: 'conduit' });
     assert.equal(wire25.recommendedBreaker, 80);
     assert.equal(wire25.wireSizeSqmm, 25);
-    assert.equal(wire25.ampacityUnverified, true);
-    assert.equal(farConduit.ampacityUnverified, true);
-    assert.equal(tooBig.voltageDropDataUnverified, true);
-    assert.equal(surfaceBig.voltageDropDataUnverified, true);
+    assert.equal(wire25.ampacityUnverified, false);
+    assert.equal(wire25.wireAmpacity, 88);
+    assert.equal(farConduit.ampacityUnverified, false);
+    assert.equal(tooBig.voltageDropDataUnverified, false);
+    assert.equal(surfaceBig.voltageDropDataUnverified, false);
 
 });
 
@@ -3670,21 +3684,21 @@ test('wire_breaker UI wiring: catalog, summary warnings, keypad fields and inval
     // The summary always carries the unverified-data caution and the engine result
     const summary = ctx.getToolSummaryText('wire_breaker', { wire_breaker: ok });
     assert.ok(summary.includes('เบรกเกอร์ 16 A สาย 2.5 ตร.มม.'));
-    assert.ok(summary.includes('ยังไม่ได้ตรวจกับหนังสือ วสท.'));
+    assert.ok(summary.includes('ยังไม่ได้เทียบกับหนังสือ วสท. โดยตรง'));
     assert.ok(summary.includes('IEC 01'));
 
     // No numbers are offered when the engine has no safe answer
     const tooBig = ctx.getToolSummaryText('wire_breaker', { wire_breaker: { ...ok, watts: '30000' } });
     assert.ok(tooBig.includes('ไม่มีคำตอบจากตาราง'));
     assert.ok(!tooBig.includes('ตร.มม.'));
-    assert.ok(tooBig.includes('ยังไม่ได้ตรวจกับหนังสือ วสท.'));
-    const noWire = ctx.getToolSummaryText('wire_breaker', { wire_breaker: { ...ok, watts: '14000', installMethod: 'surface' } });
+    assert.ok(tooBig.includes('ยังไม่ได้เทียบกับหนังสือ วสท. โดยตรง'));
+    const noWire = ctx.getToolSummaryText('wire_breaker', { wire_breaker: { ...ok, watts: '18000', installMethod: 'surface' } });
     assert.ok(noWire.includes('ไม่มีคำตอบจากตาราง'));
-    assert.ok(noWire.includes('เบรกเกอร์ที่คำนวณได้ 63 A'));
+    assert.ok(noWire.includes('เบรกเกอร์ที่คำนวณได้ 80 A'));
 
     // Empty input still shows the caution
     const empty = ctx.getToolSummaryText('wire_breaker', { wire_breaker: { ...ok, watts: '' } });
-    assert.ok(empty.includes('ยังไม่ได้ตรวจกับหนังสือ วสท.'));
+    assert.ok(empty.includes('ยังไม่ได้เทียบกับหนังสือ วสท. โดยตรง'));
 
     // Voltage-drop wording in the summary
     const far = ctx.getToolSummaryText('wire_breaker', { wire_breaker: { ...ok, watts: '3450', wireLengthM: '500' } });
@@ -3703,7 +3717,7 @@ test('wire_breaker UI wiring: catalog, summary warnings, keypad fields and inval
         const res = ctx.calculateWireBreaker({ watts: String(p.watts), powerFactor: String(p.powerFactor), voltage: '230', wireLengthM: '10', isContinuous: p.continuous });
         assert.equal(res.valid, true, p.key);
         assert.equal(res.selectionStatus, 'ok', p.key);
-        assert.equal(res.voltageDropDataUnverified, true, p.key);
+        assert.equal(res.voltageDropDataUnverified, false, p.key);
     }
     assert.equal(ctx.WIRE_VD_LIMIT_PCT, 3);
 });
