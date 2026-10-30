@@ -1854,7 +1854,7 @@
     <div id="printFormalReceipt" class="hidden"></div>
 
     <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
-    <script src="src/bundle.js?v=80"></script>
+    <script src="src/bundle.js?v=81"></script>
 
     <script>
         function getSafeDateStr(offsetDays = 0) {
@@ -2340,6 +2340,17 @@
                 preset: 'water_3500'
             },
 
+            // Engineering: conduit fill
+            conduit_fill: {
+                mode: 'size',
+                rows: [
+                    { id: '1', size: '2.5', count: '6' },
+                    { id: '2', size: '4', count: '2' }
+                ],
+                wireSize: '2.5',
+                conduit: '20'
+            },
+
             // 24. Car Hire Purchase Loan
             car_loan: {
                 vehicleType: 'car',
@@ -2563,6 +2574,7 @@
                 case 'food_costing':     renderFoodCostingTool(topPanel); break;
                 case 'construction_calc': renderConstructionTool(topPanel); break;
                 case 'btu_calc':         renderBtuTool(topPanel); break;
+                case 'conduit_fill': renderConduitFillTool(topPanel); break;
                 case 'wire_breaker': renderWireBreakerTool(topPanel); break;
                 case 'shape_calc': renderShapeTool(topPanel); break;
                 case 'inch_fraction': renderInchFractionTool(topPanel); break;

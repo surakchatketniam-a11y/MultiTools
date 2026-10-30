@@ -662,6 +662,18 @@ function getToolSummaryText(toolId, stateObj) {
             const vdLine = `• แรงดันตก ${formatNum(calc.vdVolts, 2)} V (${formatNum(calc.vdPct, 2)}%)${calc.isVdExceeded ? ' เกินเกณฑ์ 3%' : ''}${calc.upgradedForVoltageDrop && !calc.isVdExceeded ? ' (ขยายสายเพื่อลดแรงดันตก)' : ''}`;
             return `สรุปสายไฟ เบรกเกอร์ & แรงดันตก\n${divider}\n${inputLines}\n• พิกัดกระแสสายที่ต้องการ (เบรกเกอร์ / (Ca x Cg)) ${formatNum(calc.requiredAmpacity, 2)} A พิกัดสายในตาราง ${formatNum(calc.wireAmpacity, 0)} A\n${vdLine}\n• ระยะสายสูงสุดที่แรงดันตกไม่เกิน 3%: ${formatNum(calc.maxLengthM, 1)} ม.\n----------------------------------\nเบรกเกอร์ ${calc.recommendedBreaker} A สาย ${formatNum(calc.wireSizeSqmm, 1)} ตร.มม. (${calc.wireType})\n${caution}\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'conduit_fill': {
+            const calc = (typeof calculateConduitFill === 'function') ? calculateConduitFill(state.conduit_fill || {}) : { valid: false };
+            const note = '(ค่าประมาณ พื้นที่ท่อคิดจากขนาดเรียก เฉพาะสาย IEC 01 ควรให้ช่างตรวจ)';
+            if (!calc.valid) return `สรุปขนาดท่อร้อยสาย\n${divider}\nยังไม่ได้ป้อนรายการสายที่คำนวณได้\n(คำนวณโดย Multitools Calculator)`;
+            if (calc.mode === 'count') {
+                const perConduit = calc.perConduit.map(c => `• ท่อ ${c.mm} มม. (${c.inch} นิ้ว): ${c.maxCount > 0 ? c.maxCount + ' เส้น' : 'ใส่ไม่ได้'}`).join('\n');
+                return `สรุปจำนวนสายในท่อ\n${divider}\n• สาย IEC 01 ขนาด ${formatNum(calc.wireSizeSqmm, 1)} ตร.มม. (เส้นผ่านศูนย์กลางนอก ${formatNum(calc.wireOuterMm, 1)} มม.)\n${perConduit}\n----------------------------------\nท่อ ${calc.conduitMm} มม. ร้อยได้สูงสุด ${calc.maxCount > 0 ? calc.maxCount + ' เส้น' : 'ใส่ไม่ได้'}\n${note}\n(คำนวณโดย Multitools Calculator)`;
+            }
+            const itemLines = calc.items.map(i => `• สาย ${formatNum(i.sizeSqmm, 1)} ตร.มม. x ${i.count} เส้น (${formatNum(i.areaMm2, 1)} ตร.มม.)`).join('\n');
+            const result = calc.recommended ? `ท่อที่เล็กที่สุดที่ร้อยได้: ท่อ ${calc.recommended.mm} มม. (${calc.recommended.inch} นิ้ว) ใช้พื้นที่ท่อ ${formatNum(calc.recommended.fillPct, 1)}% จากเกณฑ์ ${formatNum(calc.limitPct, 0)}%` : 'สายมากเกินกว่าท่อที่มีในตาราง (เกินท่อ 150 มม.)';
+            return `สรุปขนาดท่อร้อยสาย\n${divider}\n${itemLines}\n• สายรวม ${calc.totalCount} เส้น พื้นที่ ${formatNum(calc.totalAreaMm2, 1)} ตร.มม. สัดส่วนสูงสุด ${formatNum(calc.limitPct, 0)}%\n----------------------------------\n${result}\n${note}\n(คำนวณโดย Multitools Calculator)`;
+        }
         case 'btu_calc': {
             const calc = (typeof calculateBtu === 'function') ? calculateBtu(state.btu_calc || {}) : { valid: false };
             if (!calc.valid) return `สรุปขนาดแอร์ BTU\n${divider}\nยังไม่ได้ป้อนขนาดห้อง\n(คำนวณโดย Multitools Calculator)`;

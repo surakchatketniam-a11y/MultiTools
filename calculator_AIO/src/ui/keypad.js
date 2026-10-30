@@ -143,6 +143,8 @@ function getToolFieldBindings(toolId) {
             const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
             return ['watts', 'voltage', 'powerFactor', 'wireLengthM', 'ambientC', 'circuits'].map(field);
         }
+        case 'conduit_fill':
+            return [];
         case 'btu_calc':
             return [
                 { get: () => appState.btu_calc.width, set: (v) => { appState.btu_calc.width = v; } },

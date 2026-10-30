@@ -2054,8 +2054,295 @@ function renderWireBreakerTool(container) {
     setStatusBanner(statusType, statusHTML);
 }
 
+/* -----------------------------------------------------------
+ * TOOL: ขนาดท่อร้อยสาย (conduit_fill)
+ * ----------------------------------------------------------- */
+
+// เส้นผ่านศูนย์กลางนอกสูงสุด (มม.) ของสาย 60227 IEC 01 (THW) ตัวนำ non-compacted/compacted จากแค็ตตาล็อก Yazaki หน้า B1
+// (ขนาด 1.5-4 ตร.มม. ใช้ค่าของสายตีเกลียวที่ใหญ่กว่าสายเดี่ยว) แหล่งเดียว แต่ตรวจย้อนแล้วว่าคำนวณได้ตรงกับตาราง C1 ของคู่มือ พ.ศ. 2564
+// 126 จาก 131 ช่อง ส่วนอีก 5 ช่องคู่มือให้ได้มากกว่า 1 เส้น (ดู ENGINEERING_REFERENCE_STANDARDS.md ข้อ 3.5)
+var CONDUIT_WIRE_DIAMETERS = [
+    { sizeSqmm: 1.5, outerMm: 3.3 },
+    { sizeSqmm: 2.5, outerMm: 4.0 },
+    { sizeSqmm: 4,   outerMm: 4.6 },
+    { sizeSqmm: 6,   outerMm: 5.2 },
+    { sizeSqmm: 10,  outerMm: 6.7 },
+    { sizeSqmm: 16,  outerMm: 7.8 },
+    { sizeSqmm: 25,  outerMm: 9.7 },
+    { sizeSqmm: 35,  outerMm: 10.9 },
+    { sizeSqmm: 50,  outerMm: 12.8 },
+    { sizeSqmm: 70,  outerMm: 14.6 },
+    { sizeSqmm: 95,  outerMm: 17.1 },
+    { sizeSqmm: 120, outerMm: 18.8 },
+    { sizeSqmm: 150, outerMm: 20.9 },
+    { sizeSqmm: 185, outerMm: 23.3 },
+    { sizeSqmm: 240, outerMm: 26.6 },
+    { sizeSqmm: 300, outerMm: 29.6 },
+    { sizeSqmm: 400, outerMm: 33.2 }
+];
+// ขนาดท่อตามตาราง C ของคู่มือ (มม. และขนาดนิ้ว) พื้นที่หน้าตัดคิดจากขนาดเรียก: pi/4 x d^2 ตรงกับตาราง C5 (177, 314, 491, ...)
+var CONDUIT_SIZES = [
+    { mm: 15,  inch: '1/2' },
+    { mm: 20,  inch: '3/4' },
+    { mm: 25,  inch: '1' },
+    { mm: 32,  inch: '1 1/4' },
+    { mm: 40,  inch: '1 1/2' },
+    { mm: 50,  inch: '2' },
+    { mm: 65,  inch: '2 1/2' },
+    { mm: 80,  inch: '3' },
+    { mm: 90,  inch: '3 1/2' },
+    { mm: 100, inch: '4' },
+    { mm: 125, inch: '5' },
+    { mm: 150, inch: '6' }
+];
+var CONDUIT_MAX_CONDUCTORS = 400;
+
+// สัดส่วนพื้นที่สายต่อพื้นที่ท่อสูงสุด: 1 เส้น 53%, 2 เส้น 31%, ตั้งแต่ 3 เส้นขึ้นไป 40% (ตาราง C5 ของคู่มือ พ.ศ. 2564)
+function conduitFillLimit(conductorCount) {
+    if (conductorCount === 1) return 0.53;
+    if (conductorCount === 2) return 0.31;
+    return 0.40;
+}
+
+function conduitAreaMm2(tradeMm) {
+    return Math.PI / 4 * tradeMm * tradeMm;
+}
+
+function conduitWireAreaMm2(sizeSqmm) {
+    const wire = CONDUIT_WIRE_DIAMETERS.find(w => w.sizeSqmm === sizeSqmm);
+    return wire ? Math.PI / 4 * wire.outerMm * wire.outerMm : null;
+}
+
+// จำนวนสายขนาดเดียวกันมากที่สุดที่ร้อยในท่อได้ (0 = ใส่ไม่ได้แม้เส้นเดียว)
+function conduitMaxConductors(sizeSqmm, conduitMm) {
+    const wireArea = conduitWireAreaMm2(sizeSqmm);
+    if (wireArea === null || !(conduitMm > 0)) return 0;
+    const area = conduitAreaMm2(conduitMm);
+    let best = 0;
+    for (let n = 1; n <= CONDUIT_MAX_CONDUCTORS; n++) {
+        if (n * wireArea <= conduitFillLimit(n) * area + 1e-9) best = n;
+    }
+    return best;
+}
+
+function calculateConduitFill(st) {
+    const mode = st.mode === 'count' ? 'count' : 'size';
+
+    if (mode === 'count') {
+        const wireSize = Number(st.wireSize);
+        const conduitMm = Number(st.conduit);
+        if (conduitWireAreaMm2(wireSize) === null || !CONDUIT_SIZES.some(c => c.mm === conduitMm)) return { valid: false, mode };
+        const perConduit = CONDUIT_SIZES.map(c => ({ mm: c.mm, inch: c.inch, maxCount: conduitMaxConductors(wireSize, c.mm) }));
+        return {
+            valid: true,
+            mode,
+            wireSizeSqmm: wireSize,
+            wireOuterMm: CONDUIT_WIRE_DIAMETERS.find(w => w.sizeSqmm === wireSize).outerMm,
+            conduitMm,
+            conduitInch: CONDUIT_SIZES.find(c => c.mm === conduitMm).inch,
+            maxCount: conduitMaxConductors(wireSize, conduitMm),
+            perConduit
+        };
+    }
+
+    const rows = Array.isArray(st.rows) ? st.rows : [];
+    let totalCount = 0;
+    let totalAreaMm2 = 0;
+    const items = [];
+    for (const row of rows) {
+        const countRaw = String(row.count ?? '').trim();
+        if (countRaw === '') continue;
+        const size = Number(row.size);
+        const count = parseNumericInput(countRaw);
+        const wireArea = conduitWireAreaMm2(size);
+        if (wireArea === null || !Number.isInteger(count) || count < 1) return { valid: false, mode, reason: 'invalid_row' };
+        totalCount += count;
+        if (totalCount > CONDUIT_MAX_CONDUCTORS) return { valid: false, mode, reason: 'too_many' };
+        totalAreaMm2 += count * wireArea;
+        items.push({ sizeSqmm: size, count, areaMm2: count * wireArea });
+    }
+    if (items.length === 0) return { valid: false, mode, reason: 'no_rows' };
+
+    const limit = conduitFillLimit(totalCount);
+    const options = CONDUIT_SIZES.map(c => {
+        const area = conduitAreaMm2(c.mm);
+        const fillPct = totalAreaMm2 / area * 100;
+        return { mm: c.mm, inch: c.inch, areaMm2: area, fillPct, limitPct: limit * 100, ok: totalAreaMm2 <= limit * area + 1e-9 };
+    });
+    const recommended = options.find(o => o.ok) || null;
+    return {
+        valid: true,
+        mode,
+        items,
+        totalCount,
+        totalAreaMm2,
+        limitPct: limit * 100,
+        options,
+        recommended,
+        exceedsAll: recommended === null
+    };
+}
+
+function renderConduitFillTool(container) {
+    if (!appState.conduit_fill) {
+        appState.conduit_fill = {
+            mode: 'size', rows: [{ id: '1', size: '2.5', count: '6' }, { id: '2', size: '4', count: '2' }], wireSize: '2.5', conduit: '20'
+        };
+    }
+    const st = appState.conduit_fill;
+    const mode = st.mode === 'count' ? 'count' : 'size';
+    const calc = calculateConduitFill(st);
+    const row = (label, value) => `<div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">${label}</span><span class="font-semibold font-mono text-right">${value}</span></div>`;
+    const sizeOptions = selected => CONDUIT_WIRE_DIAMETERS.map(w => `<option value="${w.sizeSqmm}" ${String(w.sizeSqmm) === String(selected) ? 'selected' : ''}>${w.sizeSqmm} ตร.มม.</option>`).join('');
+    const segBtn = (key, label) => `<button type="button" class="segment-btn ${mode === key ? 'active' : ''}" aria-pressed="${mode === key}" data-conduit-mode="${key}" style="min-height: 44px;">${label}</button>`;
+    let body = '';
+
+    if (mode === 'size') {
+        const rows = Array.isArray(st.rows) ? st.rows : [];
+        const rowsHTML = rows.map((r, i) => `
+            <div class="grid grid-cols-[1fr_1fr_auto] gap-2 items-end" data-conduit-row="${escapeHTML(r.id)}">
+                <div class="min-w-0">
+                    <label for="conduit-size-${escapeHTML(r.id)}" class="text-[var(--app-muted)] text-[11px] block">ขนาดสายรายการที่ ${i + 1}</label>
+                    <select id="conduit-size-${escapeHTML(r.id)}" class="airbnb-input text-xs w-full min-w-0" style="min-height: 44px;" data-conduit-field="size" data-conduit-id="${escapeHTML(r.id)}">${sizeOptions(r.size)}</select>
+                </div>
+                <div class="min-w-0">
+                    <label for="conduit-count-${escapeHTML(r.id)}" class="text-[var(--app-muted)] text-[11px] block">จำนวนเส้น</label>
+                    <input id="conduit-count-${escapeHTML(r.id)}" type="text" inputmode="numeric" class="airbnb-input text-right text-xs w-full min-w-0" style="min-height: 44px;" value="${escapeHTML(r.count || '')}" data-conduit-field="count" data-conduit-id="${escapeHTML(r.id)}" placeholder="6">
+                </div>
+                <button type="button" class="tool-danger-btn" data-conduit-remove="${escapeHTML(r.id)}" style="min-height: 44px; min-width: 44px;" aria-label="ลบรายการที่ ${i + 1}">ลบ</button>
+            </div>`).join('');
+        body = `
+            <div class="themed-tool-card p-3 space-y-3 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">สายที่จะร้อยในท่อเดียวกัน (นับรวมสายดิน)</div>
+                ${rowsHTML || '<div class="text-[var(--app-muted)]">ยังไม่มีรายการ กดเพิ่มรายการด้านล่าง</div>'}
+                <button type="button" class="tool-action-btn" id="btnAddConduitRow" style="min-height: 44px;">เพิ่มรายการสาย</button>
+            </div>`;
+        if (calc.valid) {
+            const rec = calc.recommended;
+            const recIdx = rec ? calc.options.indexOf(rec) : calc.options.length - 1;
+            const shown = calc.options.slice(Math.max(0, recIdx - 1), Math.max(0, recIdx - 1) + 4);
+            const optionRows = shown.map(o => `<div class="flex justify-between gap-2"><span class="${o.ok ? 'font-semibold' : 'text-[var(--app-muted)]'}">ท่อ ${o.mm} มม. (${o.inch} นิ้ว)</span><span class="font-mono text-right">${formatNum(o.fillPct, 1)}% จาก ${formatNum(o.limitPct, 0)}% ${o.ok ? 'ผ่าน' : 'เกิน'}</span></div>`).join('');
+            body += `
+            <div class="themed-result-card p-4 space-y-3" ${rec ? '' : 'role="alert"'}>
+                <div class="text-xs text-[var(--app-muted)] font-medium">${rec ? 'ท่อที่เล็กที่สุดที่ร้อยได้' : 'สายมากเกินกว่าท่อที่มีในตาราง'}</div>
+                <div class="themed-result-value text-2xl font-bold font-mono break-words">${rec ? `ท่อ ${rec.mm} มม. (${rec.inch} นิ้ว)` : `เกินท่อ ${CONDUIT_SIZES[CONDUIT_SIZES.length - 1].mm} มม.`}</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${row('จำนวนสายรวม', `${formatNum(calc.totalCount, 0)} เส้น`)}
+                    ${row('พื้นที่สายรวม', `${formatNum(calc.totalAreaMm2, 1)} ตร.มม.`)}
+                    ${row('สัดส่วนสูงสุดที่ยอมให้', `${formatNum(calc.limitPct, 0)}% ของพื้นที่ท่อ`)}
+                    ${rec ? row('ใช้พื้นที่ท่อ', `${formatNum(rec.fillPct, 1)}%`) : ''}
+                </div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    <div class="font-semibold text-[var(--app-ink)]">เทียบขนาดท่อ</div>
+                    ${optionRows}
+                </div>
+            </div>`;
+        } else if (calc.reason === 'invalid_row') {
+            body += '<div class="themed-subcard p-3 text-xs font-semibold" role="alert">จำนวนเส้นต้องเป็นจำนวนเต็มตั้งแต่ 1 ขึ้นไป</div>';
+        } else if (calc.reason === 'too_many') {
+            body += `<div class="themed-subcard p-3 text-xs font-semibold" role="alert">จำนวนสายรวมเกิน ${formatNum(CONDUIT_MAX_CONDUCTORS, 0)} เส้น ให้แบ่งเป็นหลายท่อ</div>`;
+        }
+    } else {
+        const conduitChips = CONDUIT_SIZES.map(c => `<button type="button" class="tool-chip-btn conduit-size-chip ${Number(st.conduit) === c.mm ? 'active font-bold' : ''}" aria-pressed="${Number(st.conduit) === c.mm}" data-conduit-size="${c.mm}" style="min-height: 44px;">${c.mm} มม. (${c.inch})</button>`).join('');
+        body = `
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <label for="conduitWireSize" class="font-semibold text-[var(--app-ink)] block">ขนาดสาย IEC 01 (THW)</label>
+                <select id="conduitWireSize" class="airbnb-input text-xs w-full min-w-0" style="min-height: 44px;">${sizeOptions(st.wireSize)}</select>
+            </div>
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ขนาดท่อ</div>
+                <div class="grid grid-cols-2 gap-2">${conduitChips}</div>
+            </div>`;
+        if (calc.valid) {
+            const tableRows = calc.perConduit.map(c => `<div class="flex justify-between gap-2 ${c.mm === calc.conduitMm ? 'font-bold' : ''}"><span class="${c.mm === calc.conduitMm ? '' : 'text-[var(--app-muted)]'}">ท่อ ${c.mm} มม. (${c.inch} นิ้ว)</span><span class="font-mono text-right">${c.maxCount > 0 ? `${formatNum(c.maxCount, 0)} เส้น` : 'ใส่ไม่ได้'}</span></div>`).join('');
+            body += `
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">ร้อยสาย ${formatNum(calc.wireSizeSqmm, 1)} ตร.มม. ในท่อ ${calc.conduitMm} มม. ได้มากที่สุด</div>
+                <div class="themed-result-value text-2xl font-bold font-mono break-words">${calc.maxCount > 0 ? `${formatNum(calc.maxCount, 0)} เส้น` : 'ใส่ไม่ได้'}</div>
+                <div class="text-xs text-[var(--app-muted)]">เส้นผ่านศูนย์กลางนอกของสาย ${formatNum(calc.wireOuterMm, 1)} มม.</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    <div class="font-semibold text-[var(--app-ink)]">จำนวนสายสูงสุดในท่อแต่ละขนาด</div>
+                    ${tableRows}
+                </div>
+            </div>`;
+        }
+    }
+
+    container.innerHTML = `
+        <div class="conduit-fill-tool flex flex-col gap-3 p-1">
+            <div class="segment-group grid-cols-2" role="group" aria-label="โหมดคำนวณ">
+                ${segBtn('size', 'หาขนาดท่อ')}
+                ${segBtn('count', 'ร้อยสายได้กี่เส้น')}
+            </div>
+            ${body}
+            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
+                <div>สัดส่วนพื้นที่สายรวมต่อพื้นที่ท่อไม่เกิน 53% (1 เส้น), 31% (2 เส้น), 40% (3 เส้นขึ้นไป) ตามตาราง C5 ของคู่มือ พ.ศ. 2564 พื้นที่ท่อคิดจากขนาดเรียก (มม.) ไม่ใช่เส้นผ่านศูนย์กลางภายในจริง ซึ่งต่างกันตามชนิดท่อ (EMT, IMC, RSC, PVC) ควรตรวจกับข้อมูลท่อรุ่นที่ใช้</div>
+                <div>เฉพาะสายเดี่ยว 60227 IEC 01 (THW) ใช้เส้นผ่านศูนย์กลางนอกสูงสุดจากแค็ตตาล็อก Yazaki ผลคำนวณตรงกับตาราง C1 ของคู่มือ 126 จาก 131 ช่อง ส่วนที่ต่างกัน 5 ช่อง คู่มือให้มากกว่า 1 เส้น เครื่องมือนี้จึงระมัดระวังกว่า</div>
+                <div>ค่าประมาณเพื่อประกอบการตัดสินใจ ไม่รวมการดัดท่อ ระยะดึงสาย และข้อกำหนดเฉพาะของผู้ผลิตท่อ ควรให้ช่างหรือวิศวกรตรวจ</div>
+            </div>
+        </div>
+    `;
+
+    container.querySelectorAll('[data-conduit-mode]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.mode = btn.dataset.conduitMode;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('[data-conduit-field]').forEach(input => {
+        input.addEventListener('change', () => {
+            const target = (st.rows || []).find(r => r.id === input.dataset.conduitId);
+            if (!target) return;
+            target[input.dataset.conduitField] = input.value;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('[data-conduit-remove]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.rows = (st.rows || []).filter(r => r.id !== btn.dataset.conduitRemove);
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    const addBtn = document.getElementById('btnAddConduitRow');
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            const list = Array.isArray(st.rows) ? st.rows : [];
+            const nextId = String(list.reduce((max, r) => Math.max(max, Number(r.id) || 0), 0) + 1);
+            st.rows = list.concat([{ id: nextId, size: '2.5', count: '1' }]);
+            persistAppState();
+            renderActiveTool();
+        });
+    }
+    container.querySelectorAll('.conduit-size-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.conduit = btn.dataset.conduitSize;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    const wireSelect = document.getElementById('conduitWireSize');
+    if (wireSelect) {
+        wireSelect.addEventListener('change', () => {
+            st.wireSize = wireSelect.value;
+            persistAppState();
+            renderActiveTool();
+        });
+    }
+}
+
 (function(root) {
     const exportsObj = {
+        CONDUIT_WIRE_DIAMETERS,
+        CONDUIT_SIZES,
+        conduitFillLimit,
+        conduitAreaMm2,
+        conduitWireAreaMm2,
+        conduitMaxConductors,
+        calculateConduitFill,
+        renderConduitFillTool,
         WIRE_VD_LIMIT_PCT,
         WIRE_AMBIENT_FACTORS,
         WIRE_GROUP_FACTORS,

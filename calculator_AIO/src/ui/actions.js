@@ -121,6 +121,8 @@ function clearCurrentTool() {
         appState.shape_calc = { shape: appState.shape_calc?.shape || 'rect', width: '', length: '', top: '', bottom: '', height: '', base: '', sideA: '', sideB: '', sideC: '', diameter: '', depth: '' };
     } else if (id === 'wire_breaker') {
         appState.wire_breaker = { watts: '', voltage: '230', powerFactor: '0.95', wireLengthM: '', ambientC: '40', circuits: '1', installMethod: appState.wire_breaker?.installMethod || 'conduit', isContinuous: false, preset: '' };
+    } else if (id === 'conduit_fill') {
+        appState.conduit_fill = { mode: appState.conduit_fill?.mode || 'size', rows: [{ id: '1', size: '2.5', count: '' }], wireSize: '2.5', conduit: '20' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '', length: '', height: '2.8', btuPerSqm: '750', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {
@@ -414,6 +416,8 @@ function loadDemoForCurrentTool() {
         appState.shape_calc = { shape: appState.shape_calc?.shape || 'rect', width: '5', length: '8', top: '3', bottom: '5', height: '2', base: '4', sideA: '3', sideB: '4', sideC: '5', diameter: '2', depth: '0.1' };
     } else if (id === 'wire_breaker') {
         appState.wire_breaker = { watts: '3500', voltage: '230', powerFactor: '1', wireLengthM: '15', ambientC: '40', circuits: '1', installMethod: appState.wire_breaker?.installMethod || 'conduit', isContinuous: false, preset: 'water_3500' };
+    } else if (id === 'conduit_fill') {
+        appState.conduit_fill = { mode: appState.conduit_fill?.mode || 'size', rows: [{ id: '1', size: '2.5', count: '6' }, { id: '2', size: '4', count: '2' }], wireSize: '2.5', conduit: '20' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '4', length: '5', height: '2.8', btuPerSqm: '850', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {

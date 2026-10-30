@@ -287,11 +287,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 45 tools classified into 6 valid groups with search keywords', () => {
+test('catalog contains exactly 46 tools classified into 6 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 6);
-    assert.equal(TOOLS_CATALOG.length, 45);
+    assert.equal(TOOLS_CATALOG.length, 46);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -451,7 +451,7 @@ test('all 36 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 45);
+    assert.equal(ctx.TOOLS_CATALOG.length, 46);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -1214,7 +1214,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('คุ้มค่าที่สุด'));
 });
 
-test('all 45 tool renderers are modularized and exported across the 6 tool groups', () => {
+test('all 46 tool renderers are modularized and exported across the 6 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -1261,10 +1261,11 @@ test('all 45 tool renderers are modularized and exported across the 6 tool group
         plumbing_pump: 'renderPlumbingTool',
         inch_fraction: 'renderInchFractionTool',
         shape_calc: 'renderShapeTool',
-        wire_breaker: 'renderWireBreakerTool'
+        wire_breaker: 'renderWireBreakerTool',
+        conduit_fill: 'renderConduitFillTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 45);
+    assert.equal(Object.keys(rendererMap).length, 46);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -3845,6 +3846,132 @@ test('wire_breaker: ambient and grouping factors (tables 5-43, 5-8), the 2564 ma
     assert.ok(hotSummary.includes('ไม่มีคำตอบจากตาราง'));
     assert.ok(hotSummary.includes('11-60'));
     assert.ok(!hotSummary.includes('ตร.มม.'));
+});
+
+test('conduit_fill: fill limits, max conductors per conduit (manual appendix C1), minimum conduit and validation', () => {
+    const ctx = context();
+
+    // Fill limits (manual table C5): 53% for 1 conductor, 31% for 2, 40% for 3 or more
+    assert.equal(ctx.conduitFillLimit(1), 0.53);
+    assert.equal(ctx.conduitFillLimit(2), 0.31);
+    assert.equal(ctx.conduitFillLimit(3), 0.40);
+    assert.equal(ctx.conduitFillLimit(40), 0.40);
+
+    // Conduit areas from the nominal size match table C5 (177, 314, 491, 804, 1257, 1964, 3318, 5027, 6362, 7854, 12272, 17672 within 1 sq.mm.)
+    const c5 = [177, 314, 491, 804, 1257, 1964, 3318, 5027, 6362, 7854, 12272, 17672];
+    ctx.CONDUIT_SIZES.forEach((c, i) => assert.ok(Math.abs(ctx.conduitAreaMm2(c.mm) - c5[i]) < 1, `${c.mm} mm`));
+    // and the 53 / 40 / 31 percent columns of C5 (first conduit): 94, 71, 55
+    assert.equal(Math.round(ctx.conduitAreaMm2(15) * 0.53), 94);
+    assert.equal(Math.round(ctx.conduitAreaMm2(15) * 0.40), 71);
+    assert.equal(Math.round(ctx.conduitAreaMm2(15) * 0.31), 55);
+
+    // Manual appendix C1 (IEC 01): maximum conductors per conduit 15..150 mm, null = not listed in the manual
+    const C1 = {
+        '1.5': [8, 14, 22, 37], '2.5': [5, 10, 15, 25], '4': [4, 7, 11, 19, 30], '6': [3, 5, 9, 15, 23, 37], '10': [1, 3, 5, 9, 14, 22],
+        '16': [1, 2, 4, 6, 10, 16, 27, 42], '25': [1, 2, 2, 4, 6, 10, 17, 27, 34], '35': [1, 1, 2, 3, 5, 8, 14, 21, 27, 33],
+        '50': [null, 1, 1, 1, 3, 6, 10, 15, 19, 24, 38], '70': [null, null, 1, 1, 3, 4, 7, 12, 15, 18, 29, 42],
+        '95': [null, null, 1, 1, 1, 3, 5, 8, 11, 13, 21, 30], '120': [null, null, null, 1, 1, 2, 4, 7, 9, 11, 17, 25],
+        '150': [null, null, null, 1, 1, 1, 3, 5, 7, 9, 14, 20], '185': [null, null, null, 1, 1, 1, 3, 4, 6, 7, 11, 16],
+        '240': [null, null, null, null, 1, 1, 1, 3, 4, 5, 8, 12], '300': [null, null, null, null, null, 1, 1, 2, 3, 4, 7, 10],
+        '400': [null, null, null, null, null, 1, 1, 1, 2, 3, 5, 8]
+    };
+    // Cells where the manual allows exactly one more conductor than the computation (the tool is more conservative there)
+    const manualHigherBy1 = new Set(['6@50', '25@20', '35@25', '185@32', '185@90']);
+    let compared = 0;
+    let equal = 0;
+    for (const [size, row] of Object.entries(C1)) {
+        row.forEach((manual, i) => {
+            if (manual === null) return;
+            const mm = ctx.CONDUIT_SIZES[i].mm;
+            const calc = ctx.conduitMaxConductors(Number(size), mm);
+            compared++;
+            if (manualHigherBy1.has(`${size}@${mm}`)) {
+                assert.equal(manual - calc, 1, `${size} sq.mm @ ${mm} mm`);
+            } else {
+                assert.equal(calc, manual, `${size} sq.mm @ ${mm} mm`);
+                equal++;
+            }
+        });
+    }
+    assert.equal(compared, 131);
+    assert.equal(equal, 126);
+
+    // Minimum conduit for a mix: 6 x 2.5 + 2 x 4 sq.mm. = 8 conductors, 40% limit
+    const mix = ctx.calculateConduitFill({ mode: 'size', rows: [{ id: '1', size: '2.5', count: '6' }, { id: '2', size: '4', count: '2' }] });
+    assert.equal(mix.valid, true);
+    assert.equal(mix.totalCount, 8);
+    assert.equal(mix.limitPct, 40);
+    const area = 6 * Math.PI / 4 * 4.0 ** 2 + 2 * Math.PI / 4 * 4.6 ** 2;
+    assert.ok(Math.abs(mix.totalAreaMm2 - area) < 1e-9);
+    assert.equal(mix.recommended.mm, 20);
+    assert.ok(mix.recommended.fillPct <= 40);
+    assert.equal(mix.options.find(o => o.mm === 15).ok, false);
+    assert.equal(mix.options.length, 12);
+
+    // One and two conductors use the 53% and 31% limits: a single 16 sq.mm. wire fits 15 mm (47.8 / 176.7 = 27%)
+    const one = ctx.calculateConduitFill({ mode: 'size', rows: [{ id: '1', size: '16', count: '1' }] });
+    assert.equal(one.limitPct, 53);
+    assert.equal(one.recommended.mm, 15);
+    // Two 16 sq.mm. wires need 31%: 95.6 > 54.8 (15 mm) so the next conduit (20 mm: 97.3) is used
+    const two = ctx.calculateConduitFill({ mode: 'size', rows: [{ id: '1', size: '16', count: '2' }] });
+    assert.equal(two.limitPct, 31);
+    assert.equal(two.recommended.mm, 20);
+    // Splitting the same wires across rows counts them together
+    const split = ctx.calculateConduitFill({ mode: 'size', rows: [{ id: '1', size: '16', count: '1' }, { id: '2', size: '16', count: '1' }] });
+    assert.equal(split.totalCount, 2);
+    assert.equal(split.recommended.mm, 20);
+    // Blank-count rows are ignored
+    assert.equal(ctx.calculateConduitFill({ mode: 'size', rows: [{ id: '1', size: '16', count: '1' }, { id: '2', size: '4', count: '' }] }).totalCount, 1);
+
+    // More wire than the biggest conduit holds
+    const huge = ctx.calculateConduitFill({ mode: 'size', rows: [{ id: '1', size: '400', count: '10' }] });
+    assert.equal(huge.valid, true);
+    assert.equal(huge.exceedsAll, true);
+    assert.equal(huge.recommended, null);
+
+    // The recommended conduit is the first that passes, and the one just below it fails
+    for (const [size, count] of [['2.5', 3], ['4', 9], ['10', 5], ['35', 12], ['95', 4]]) {
+        const res = ctx.calculateConduitFill({ mode: 'size', rows: [{ id: '1', size, count: String(count) }] });
+        const idx = res.options.indexOf(res.recommended);
+        assert.ok(res.recommended.ok);
+        if (idx > 0) assert.equal(res.options[idx - 1].ok, false, `${count} x ${size}`);
+        // consistent with the per-size maximum
+        assert.ok(ctx.conduitMaxConductors(Number(size), res.recommended.mm) >= count);
+        if (idx > 0) assert.ok(ctx.conduitMaxConductors(Number(size), res.options[idx - 1].mm) < count);
+    }
+
+    // Count mode: max conductors of one size in a conduit, and the full row per conduit
+    const cnt = ctx.calculateConduitFill({ mode: 'count', wireSize: '2.5', conduit: '20' });
+    assert.equal(cnt.valid, true);
+    assert.equal(cnt.maxCount, 10);
+    assert.equal(cnt.conduitInch, '3/4');
+    assert.equal(cnt.wireOuterMm, 4);
+    assert.deepEqual(Array.from(cnt.perConduit.slice(0, 4), c => c.maxCount), [5, 10, 15, 25]);
+    // A wire too big for a small conduit cannot be pulled at all
+    assert.equal(ctx.calculateConduitFill({ mode: 'count', wireSize: '400', conduit: '15' }).maxCount, 0);
+
+    // Invalid input
+    assert.equal(ctx.calculateConduitFill({ mode: 'size', rows: [] }).reason, 'no_rows');
+    assert.equal(ctx.calculateConduitFill({ mode: 'size', rows: [{ id: '1', size: '2.5', count: '0' }] }).reason, 'invalid_row');
+    assert.equal(ctx.calculateConduitFill({ mode: 'size', rows: [{ id: '1', size: '2.5', count: '1.5' }] }).reason, 'invalid_row');
+    assert.equal(ctx.calculateConduitFill({ mode: 'size', rows: [{ id: '1', size: '2.5', count: 'x' }] }).reason, 'invalid_row');
+    assert.equal(ctx.calculateConduitFill({ mode: 'size', rows: [{ id: '1', size: '3', count: '2' }] }).reason, 'invalid_row');
+    assert.equal(ctx.calculateConduitFill({ mode: 'size', rows: [{ id: '1', size: '2.5', count: '401' }] }).reason, 'too_many');
+    assert.equal(ctx.calculateConduitFill({ mode: 'count', wireSize: '3', conduit: '20' }).valid, false);
+    assert.equal(ctx.calculateConduitFill({ mode: 'count', wireSize: '2.5', conduit: '22' }).valid, false);
+    assert.equal(ctx.conduitWireAreaMm2(3), null);
+    assert.equal(ctx.conduitMaxConductors(3, 20), 0);
+
+    // Summary text and invalid-input detection
+    const summary = ctx.getToolSummaryText('conduit_fill', { conduit_fill: { mode: 'size', rows: [{ id: '1', size: '2.5', count: '6' }, { id: '2', size: '4', count: '2' }] } });
+    assert.ok(summary.includes('ท่อ 20 มม.'));
+    assert.ok(summary.includes('สายรวม 8 เส้น'));
+    assert.ok(summary.includes('สัดส่วนสูงสุด 40%'));
+    const countSummary = ctx.getToolSummaryText('conduit_fill', { conduit_fill: { mode: 'count', wireSize: '2.5', conduit: '20' } });
+    assert.ok(countSummary.includes('ร้อยได้สูงสุด 10 เส้น'));
+    assert.equal(ctx.hasInvalidNumericInput('conduit_fill', { conduit_fill: { mode: 'size', rows: [{ id: '1', size: '2.5', count: '6' }] } }), false);
+    assert.equal(ctx.hasInvalidNumericInput('conduit_fill', { conduit_fill: { mode: 'size', rows: [{ id: '1', size: '2.5', count: '6x' }] } }), true);
+    assert.equal(ctx.hasInvalidNumericInput('conduit_fill', { conduit_fill: { mode: 'count', rows: [{ id: '1', size: '2.5', count: '6x' }] } }), false);
 });
 
 test('construction_calc: tiles, paint, and concrete calculations', () => {
