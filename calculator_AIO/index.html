@@ -1854,7 +1854,7 @@
     <div id="printFormalReceipt" class="hidden"></div>
 
     <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
-    <script src="src/bundle.js?v=75"></script>
+    <script src="src/bundle.js?v=76"></script>
 
     <script>
         function getSafeDateStr(offsetDays = 0) {
@@ -2311,6 +2311,22 @@
                 hun: ''
             },
 
+            // Engineering: shape area & volume
+            shape_calc: {
+                shape: 'rect',
+                width: '5',
+                length: '8',
+                top: '3',
+                bottom: '5',
+                height: '2',
+                base: '4',
+                sideA: '3',
+                sideB: '4',
+                sideC: '5',
+                diameter: '2',
+                depth: ''
+            },
+
             // 24. Car Hire Purchase Loan
             car_loan: {
                 vehicleType: 'car',
@@ -2534,6 +2550,7 @@
                 case 'food_costing':     renderFoodCostingTool(topPanel); break;
                 case 'construction_calc': renderConstructionTool(topPanel); break;
                 case 'btu_calc':         renderBtuTool(topPanel); break;
+                case 'shape_calc': renderShapeTool(topPanel); break;
                 case 'inch_fraction': renderInchFractionTool(topPanel); break;
                 case 'plumbing_pump': renderPlumbingTool(topPanel); break;
                 case 'contractor_payment': renderContractorPaymentTool(topPanel); break;

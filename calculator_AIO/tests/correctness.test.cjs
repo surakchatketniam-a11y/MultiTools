@@ -287,11 +287,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 43 tools classified into 6 valid groups with search keywords', () => {
+test('catalog contains exactly 44 tools classified into 6 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 6);
-    assert.equal(TOOLS_CATALOG.length, 43);
+    assert.equal(TOOLS_CATALOG.length, 44);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -451,7 +451,7 @@ test('all 36 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 43);
+    assert.equal(ctx.TOOLS_CATALOG.length, 44);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -1214,7 +1214,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('คุ้มค่าที่สุด'));
 });
 
-test('all 43 tool renderers are modularized and exported across the 6 tool groups', () => {
+test('all 44 tool renderers are modularized and exported across the 6 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -1259,10 +1259,11 @@ test('all 43 tool renderers are modularized and exported across the 6 tool group
         roof_steel_calc: 'renderRoofSteelTool',
         contractor_payment: 'renderContractorPaymentTool',
         plumbing_pump: 'renderPlumbingTool',
-        inch_fraction: 'renderInchFractionTool'
+        inch_fraction: 'renderInchFractionTool',
+        shape_calc: 'renderShapeTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 43);
+    assert.equal(Object.keys(rendererMap).length, 44);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -3586,6 +3587,76 @@ test('inch_fraction: inch, hun and millimetre conversion, fraction rounding and 
     assert.equal(ctx.hasInvalidNumericInput('inch_fraction', { inch_fraction: base }), false);
     assert.equal(ctx.hasInvalidNumericInput('inch_fraction', { inch_fraction: { ...base, mode: 'mm', mm: '12x' } }), true);
     assert.equal(ctx.hasInvalidNumericInput('inch_fraction', { inch_fraction: { ...base, mode: 'inch', mm: '12x' } }), false);
+});
+
+test('shape_calc: areas, perimeters, volumes, Heron triangles and Thai land split', () => {
+    const ctx = context();
+    const base = { shape: 'rect', width: '5', length: '8', top: '3', bottom: '5', height: '2', base: '4', sideA: '3', sideB: '4', sideC: '5', diameter: '2', depth: '' };
+    const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} vs ${b}`);
+
+    const rect = ctx.calculateShape(base);
+    assert.equal(rect.valid, true);
+    assert.equal(rect.areaSqm, 40);
+    assert.equal(rect.perimeterM, 26);
+    assert.equal(rect.areaWa, 10);
+    assert.equal(rect.volumeM3, undefined);
+
+    // Optional depth turns a flat area into a volume (slab 40 sqm x 0.1 m = 4 m3)
+    near(ctx.calculateShape({ ...base, depth: '0.1' }).volumeM3, 4);
+    assert.equal(ctx.calculateShape({ ...base, depth: '0' }).valid, false);
+    assert.equal(ctx.calculateShape({ ...base, depth: 'x' }).valid, false);
+
+    // Trapezoid (3 + 5) / 2 x 2 = 8; triangle base x height / 2 = 4 x 2 / 2 = 4
+    assert.equal(ctx.calculateShape({ ...base, shape: 'trapezoid' }).areaSqm, 8);
+    assert.equal(ctx.calculateShape({ ...base, shape: 'triangle_bh' }).areaSqm, 4);
+
+    // Heron: 3-4-5 right triangle has area 6, perimeter 12
+    const heron = ctx.calculateShape({ ...base, shape: 'triangle_sides' });
+    near(heron.areaSqm, 6);
+    assert.equal(heron.perimeterM, 12);
+    // 2-3-6 cannot form a triangle, and a degenerate 1-2-3 is rejected as well
+    assert.equal(ctx.calculateShape({ ...base, shape: 'triangle_sides', sideA: '2', sideB: '3', sideC: '6' }).reason, 'triangle_inequality');
+    assert.equal(ctx.calculateShape({ ...base, shape: 'triangle_sides', sideA: '1', sideB: '2', sideC: '3' }).reason, 'triangle_inequality');
+
+    // Circle d = 2: area pi, circumference 2 pi; semicircle: area pi/2, perimeter pi + 2
+    const circle = ctx.calculateShape({ ...base, shape: 'circle' });
+    near(circle.areaSqm, Math.PI);
+    near(circle.perimeterM, 2 * Math.PI);
+    const semi = ctx.calculateShape({ ...base, shape: 'semicircle' });
+    near(semi.areaSqm, Math.PI / 2);
+    near(semi.perimeterM, Math.PI + 2);
+
+    // Cylinder d = 2, h = 2: volume 2 pi, lateral area 4 pi
+    const cyl = ctx.calculateShape({ ...base, shape: 'cylinder' });
+    near(cyl.volumeM3, 2 * Math.PI);
+    near(cyl.lateralAreaSqm, 4 * Math.PI);
+    near(cyl.areaSqm, Math.PI);
+
+    // Trapezoid prism: cross-section 8 sqm x length 8 m = 64 m3
+    const prism = ctx.calculateShape({ ...base, shape: 'prism_trap' });
+    assert.equal(prism.areaSqm, 8);
+    assert.equal(prism.volumeM3, 64);
+
+    // Thai land split: 2,000 sqm = 1 rai 1 ngan 0 wa; 3,805 sqm = 2 rai 1 ngan 51.25 wa
+    const split = ctx.splitRaiNganWa(2000);
+    assert.deepEqual([split.rai, split.ngan, split.wa], [1, 1, 0]);
+    const split2 = ctx.splitRaiNganWa(3805);
+    assert.deepEqual([split2.rai, split2.ngan, split2.wa], [2, 1, 51.25]);
+    assert.deepEqual(Object.values(ctx.splitRaiNganWa(399)).slice(0, 2), [0, 0]);
+
+    // Field keys per shape drive both the keypad and the invalid-input check
+    assert.deepEqual(Array.from(ctx.shapeFieldKeys('rect')), ['width', 'length', 'depth']);
+    assert.deepEqual(Array.from(ctx.shapeFieldKeys('prism_trap')), ['top', 'bottom', 'height', 'length']);
+    assert.deepEqual(Array.from(ctx.shapeFieldKeys('nope')), []);
+
+    // Invalid input
+    assert.equal(ctx.calculateShape({ ...base, width: '' }).valid, false);
+    assert.equal(ctx.calculateShape({ ...base, length: '-3' }).valid, false);
+    assert.equal(ctx.calculateShape({ ...base, shape: 'nope' }).valid, false);
+    assert.equal(ctx.calculateShape({ ...base, shape: 'circle', diameter: '0' }).valid, false);
+    assert.equal(ctx.hasInvalidNumericInput('shape_calc', { shape_calc: base }), false);
+    assert.equal(ctx.hasInvalidNumericInput('shape_calc', { shape_calc: { ...base, width: '5m' } }), true);
+    assert.equal(ctx.hasInvalidNumericInput('shape_calc', { shape_calc: { ...base, shape: 'circle', width: '5m' } }), false);
 });
 
 test('construction_calc: tiles, paint, and concrete calculations', () => {

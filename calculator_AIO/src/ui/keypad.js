@@ -133,6 +133,11 @@ function getToolFieldBindings(toolId) {
             const mode = s().mode;
             return (mode === 'mm' ? ['mm'] : mode === 'hun' ? ['hun'] : ['whole', 'num']).map(field);
         }
+        case 'shape_calc': {
+            const s = () => appState.shape_calc;
+            const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
+            return shapeFieldKeys(s().shape).map(field);
+        }
         case 'btu_calc':
             return [
                 { get: () => appState.btu_calc.width, set: (v) => { appState.btu_calc.width = v; } },

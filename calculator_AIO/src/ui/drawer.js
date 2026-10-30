@@ -641,6 +641,15 @@ function getToolSummaryText(toolId, stateObj) {
             const errLine = calc.mode === 'mm' ? `\n• ${calc.fraction.exact ? 'ตรงกับเศษส่วนพอดี' : `เศษส่วนที่ใกล้ที่สุดคลาดเคลื่อน ${formatNum(calc.errorMm, 2)} มม.`}` : '';
             return `สรุปแปลงเศษส่วนนิ้ว หุน & มม.\n${divider}\n• มิลลิเมตร: ${formatNum(calc.mm, 2)} มม. (${formatNum(calc.cm, 3)} ซม.)\n• นิ้ว: ${formatNum(calc.inches, 4)} นิ้ว\n• หุน: ${formatNum(calc.hun, 3)} หุน (8 หุน = 1 นิ้ว)${errLine}\n----------------------------------\nขนาดเป็นเศษส่วนนิ้ว: ${fracText}\n(1 นิ้ว = 25.4 มม. ขนาดเรียกท่อ PVC ไม่ใช่เส้นผ่านศูนย์กลางจริง)\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'shape_calc': {
+            const st = state.shape_calc || {};
+            const calc = (typeof calculateShape === 'function') ? calculateShape(st) : { valid: false };
+            if (!calc.valid) return `สรุปพื้นที่ & ปริมาตรรูปทรง\n${divider}\nยังไม่ได้ป้อนขนาดที่คำนวณได้\n(คำนวณโดย Multitools Calculator)`;
+            const def = SHAPE_DEFINITIONS.find(s => s.key === calc.shape);
+            const extra = (calc.perimeterM !== undefined ? `\n• เส้นรอบรูป: ${formatNum(calc.perimeterM, 3)} ม.` : '') + (calc.lateralAreaSqm !== undefined ? `\n• พื้นที่ผิวด้านข้าง: ${formatNum(calc.lateralAreaSqm, 3)} ตร.ม.` : '');
+            const volume = calc.volumeM3 !== undefined ? `\nปริมาตร: ${formatNum(calc.volumeM3, 3)} ลบ.ม.` : '';
+            return `สรุปพื้นที่ & ปริมาตรรูปทรง: ${def ? def.label : ''}\n${divider}\n• พื้นที่: ${formatNum(calc.areaSqm, 3)} ตร.ม. (${formatNum(calc.areaWa, 3)} ตร.ว.)${extra}\n----------------------------------${volume || '\nพื้นที่: ' + formatNum(calc.areaSqm, 3) + ' ตร.ม.'}\n(ค่าตามรูปทรงอุดมคติ ไม่รวมเผื่อสูญเสีย)\n(คำนวณโดย Multitools Calculator)`;
+        }
         case 'btu_calc': {
             const calc = (typeof calculateBtu === 'function') ? calculateBtu(state.btu_calc || {}) : { valid: false };
             if (!calc.valid) return `สรุปขนาดแอร์ BTU\n${divider}\nยังไม่ได้ป้อนขนาดห้อง\n(คำนวณโดย Multitools Calculator)`;

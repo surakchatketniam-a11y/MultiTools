@@ -117,6 +117,8 @@ function clearCurrentTool() {
         appState.plumbing_pump = { people: '', litersPerPerson: '200', reserveDays: '1', houseType: appState.plumbing_pump?.houseType || 'two' };
     } else if (id === 'inch_fraction') {
         appState.inch_fraction = { mode: appState.inch_fraction?.mode || 'inch', whole: '', num: '', den: '8', mm: '', hun: '' };
+    } else if (id === 'shape_calc') {
+        appState.shape_calc = { shape: appState.shape_calc?.shape || 'rect', width: '', length: '', top: '', bottom: '', height: '', base: '', sideA: '', sideB: '', sideC: '', diameter: '', depth: '' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '', length: '', height: '2.8', btuPerSqm: '750', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {
@@ -406,6 +408,8 @@ function loadDemoForCurrentTool() {
         appState.plumbing_pump = { people: '5', litersPerPerson: '200', reserveDays: '2', houseType: 'two' };
     } else if (id === 'inch_fraction') {
         appState.inch_fraction = { mode: appState.inch_fraction?.mode || 'inch', whole: '1', num: '3', den: '8', mm: '35', hun: '4' };
+    } else if (id === 'shape_calc') {
+        appState.shape_calc = { shape: appState.shape_calc?.shape || 'rect', width: '5', length: '8', top: '3', bottom: '5', height: '2', base: '4', sideA: '3', sideB: '4', sideC: '5', diameter: '2', depth: '0.1' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '4', length: '5', height: '2.8', btuPerSqm: '850', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {

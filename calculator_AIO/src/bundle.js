@@ -44,6 +44,7 @@ var TOOLS_CATALOG = [
     { id: 'contractor_payment', group: 'engineering', category: 'all', menuTitle: 'แบ่งงวดงานรับเหมา & เงินประกัน', headerTitle: 'แบ่งงวดงานรับเหมา เงินประกันผลงาน (Retention) VAT & หัก ณ ที่จ่าย', usesSharedKeypad: true, keywords: 'contractor payment แบ่งงวด งวดงาน รับเหมา ผู้รับเหมา จ้างเหมา ต่อเติมบ้าน สร้างบ้าน รีโนเวท เงินประกันผลงาน retention หัก ณ ที่จ่าย 3% vat ค่าจ้าง สัญญาจ้าง boq ใบเสนอราคา' },
     { id: 'plumbing_pump', group: 'engineering', category: 'all', menuTitle: 'ถังเก็บน้ำ & ปั๊มน้ำบ้าน', headerTitle: 'คำนวณขนาดถังเก็บน้ำ & กำลังวัตต์ปั๊มน้ำอัตโนมัติ', usesSharedKeypad: true, keywords: 'plumbing pump ปั๊มน้ำ ถังเก็บน้ำ ถังน้ำ แท้งค์น้ำ น้ำประปา สำรองน้ำ ช่างประปา วัตต์ปั๊ม ปั๊มอัตโนมัติ บ้าน 2 ชั้น ลิตร ถังบนดิน ถังใต้ดิน' },
     { id: 'inch_fraction', group: 'engineering', category: 'all', menuTitle: 'เศษส่วนนิ้ว หุน & มม.', headerTitle: 'แปลงเศษส่วนนิ้ว หุน เป็นมิลลิเมตร (หน่วยช่างไทย)', usesSharedKeypad: true, keywords: 'inch fraction หุน นิ้ว เศษส่วนนิ้ว มิลลิเมตร มม. ซม. 4 หุน 6 หุน 1/2 นิ้ว 3/8 แปลงหน่วย ตลับเมตร ท่อ น็อต สกรู ดอกสว่าน หน่วยช่าง' },
+    { id: 'shape_calc', group: 'engineering', category: 'all', menuTitle: 'พื้นที่ & ปริมาตรรูปทรง', headerTitle: 'คำนวณพื้นที่ & ปริมาตรรูปทรงหน้างาน (คางหมู สามเหลี่ยม วงกลม ทรงกระบอก)', usesSharedKeypad: true, keywords: 'shape area volume พื้นที่ ปริมาตร รูปทรง สี่เหลี่ยมคางหมู สามเหลี่ยม เฮรอน วงกลม ครึ่งวงกลม ทรงกระบอก เสากลม ร่องน้ำ คันดิน ปริซึม คิว ตารางเมตร ตารางวา ช่าง ถอดแบบ' },
 
     // หมวดหมู่ที่ 2: ธุรกิจ & ค้าขาย
     { id: 'vat',        group: 'biz', category: 'fav', menuTitle: 'ภาษีมูลค่าเพิ่ม (VAT)', headerTitle: 'เครื่องคำนวณภาษีมูลค่าเพิ่ม', usesSharedKeypad: true, keywords: 'vat ภาษี 7% มูลค่าเพิ่ม ถอด vat รวม vat' },
@@ -214,6 +215,10 @@ function hasInvalidNumericInput(toolId, stateObj) {
         const st = state.inch_fraction || {};
         const keys = st.mode === 'mm' ? ['mm'] : st.mode === 'hun' ? ['hun'] : ['whole', 'num'];
         return keys.some(key => invalid(st[key]));
+    }
+    if (curToolId === 'shape_calc') {
+        const st = state.shape_calc || {};
+        return shapeFieldKeys(st.shape).some(key => invalid(st[key]));
     }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
@@ -6077,6 +6082,15 @@ function getToolSummaryText(toolId, stateObj) {
             const errLine = calc.mode === 'mm' ? `\n• ${calc.fraction.exact ? 'ตรงกับเศษส่วนพอดี' : `เศษส่วนที่ใกล้ที่สุดคลาดเคลื่อน ${formatNum(calc.errorMm, 2)} มม.`}` : '';
             return `สรุปแปลงเศษส่วนนิ้ว หุน & มม.\n${divider}\n• มิลลิเมตร: ${formatNum(calc.mm, 2)} มม. (${formatNum(calc.cm, 3)} ซม.)\n• นิ้ว: ${formatNum(calc.inches, 4)} นิ้ว\n• หุน: ${formatNum(calc.hun, 3)} หุน (8 หุน = 1 นิ้ว)${errLine}\n----------------------------------\nขนาดเป็นเศษส่วนนิ้ว: ${fracText}\n(1 นิ้ว = 25.4 มม. ขนาดเรียกท่อ PVC ไม่ใช่เส้นผ่านศูนย์กลางจริง)\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'shape_calc': {
+            const st = state.shape_calc || {};
+            const calc = (typeof calculateShape === 'function') ? calculateShape(st) : { valid: false };
+            if (!calc.valid) return `สรุปพื้นที่ & ปริมาตรรูปทรง\n${divider}\nยังไม่ได้ป้อนขนาดที่คำนวณได้\n(คำนวณโดย Multitools Calculator)`;
+            const def = SHAPE_DEFINITIONS.find(s => s.key === calc.shape);
+            const extra = (calc.perimeterM !== undefined ? `\n• เส้นรอบรูป: ${formatNum(calc.perimeterM, 3)} ม.` : '') + (calc.lateralAreaSqm !== undefined ? `\n• พื้นที่ผิวด้านข้าง: ${formatNum(calc.lateralAreaSqm, 3)} ตร.ม.` : '');
+            const volume = calc.volumeM3 !== undefined ? `\nปริมาตร: ${formatNum(calc.volumeM3, 3)} ลบ.ม.` : '';
+            return `สรุปพื้นที่ & ปริมาตรรูปทรง: ${def ? def.label : ''}\n${divider}\n• พื้นที่: ${formatNum(calc.areaSqm, 3)} ตร.ม. (${formatNum(calc.areaWa, 3)} ตร.ว.)${extra}\n----------------------------------${volume || '\nพื้นที่: ' + formatNum(calc.areaSqm, 3) + ' ตร.ม.'}\n(ค่าตามรูปทรงอุดมคติ ไม่รวมเผื่อสูญเสีย)\n(คำนวณโดย Multitools Calculator)`;
+        }
         case 'btu_calc': {
             const calc = (typeof calculateBtu === 'function') ? calculateBtu(state.btu_calc || {}) : { valid: false };
             if (!calc.valid) return `สรุปขนาดแอร์ BTU\n${divider}\nยังไม่ได้ป้อนขนาดห้อง\n(คำนวณโดย Multitools Calculator)`;
@@ -6337,6 +6351,11 @@ function getToolFieldBindings(toolId) {
             const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
             const mode = s().mode;
             return (mode === 'mm' ? ['mm'] : mode === 'hun' ? ['hun'] : ['whole', 'num']).map(field);
+        }
+        case 'shape_calc': {
+            const s = () => appState.shape_calc;
+            const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
+            return shapeFieldKeys(s().shape).map(field);
         }
         case 'btu_calc':
             return [
@@ -20215,8 +20234,183 @@ function renderInchFractionTool(container) {
     }
 }
 
+/* -----------------------------------------------------------
+ * TOOL: พื้นที่ & ปริมาตรรูปทรงหน้างาน (shape_calc)
+ * ----------------------------------------------------------- */
+
+// รายการช่องกรอกของแต่ละรูปทรง (หน่วยเป็นเมตร) ลำดับตรงกับช่องคีย์แพดกลาง
+var SHAPE_DEFINITIONS = [
+    { key: 'rect',           label: 'สี่เหลี่ยมผืนผ้า',          fields: [['width', 'ความกว้าง'], ['length', 'ความยาว']], optionalDepth: true },
+    { key: 'trapezoid',      label: 'สี่เหลี่ยมคางหมู',          fields: [['top', 'ด้านบน'], ['bottom', 'ด้านล่าง'], ['height', 'ความสูง']], optionalDepth: true },
+    { key: 'triangle_bh',    label: 'สามเหลี่ยม (ฐาน x สูง)',    fields: [['base', 'ความยาวฐาน'], ['height', 'ความสูง']], optionalDepth: true },
+    { key: 'triangle_sides', label: 'สามเหลี่ยม (รู้ 3 ด้าน)',    fields: [['sideA', 'ด้าน A'], ['sideB', 'ด้าน B'], ['sideC', 'ด้าน C']], optionalDepth: true },
+    { key: 'circle',         label: 'วงกลม',                    fields: [['diameter', 'เส้นผ่านศูนย์กลาง']], optionalDepth: true },
+    { key: 'semicircle',     label: 'ครึ่งวงกลม',                fields: [['diameter', 'เส้นผ่านศูนย์กลาง']], optionalDepth: true },
+    { key: 'cylinder',       label: 'ทรงกระบอก (เสากลม)',        fields: [['diameter', 'เส้นผ่านศูนย์กลาง'], ['height', 'ความสูง']], optionalDepth: false },
+    { key: 'prism_trap',     label: 'ปริซึมคางหมู (ร่องน้ำ/คันดิน)', fields: [['top', 'หน้าตัดด้านบน'], ['bottom', 'หน้าตัดด้านล่าง'], ['height', 'ความสูงหน้าตัด'], ['length', 'ความยาว']], optionalDepth: false }
+];
+var SHAPE_SQM_PER_RAI = 1600;
+var SHAPE_SQM_PER_NGAN = 400;
+var SHAPE_SQM_PER_WA = 4;
+
+function shapeFieldKeys(shapeKey) {
+    const def = SHAPE_DEFINITIONS.find(s => s.key === shapeKey);
+    if (!def) return [];
+    return def.fields.map(f => f[0]).concat(def.optionalDepth ? ['depth'] : []);
+}
+
+function splitRaiNganWa(areaSqm) {
+    const rai = Math.floor(areaSqm / SHAPE_SQM_PER_RAI + 1e-9);
+    const afterRai = areaSqm - rai * SHAPE_SQM_PER_RAI;
+    const ngan = Math.floor(afterRai / SHAPE_SQM_PER_NGAN + 1e-9);
+    const wa = (afterRai - ngan * SHAPE_SQM_PER_NGAN) / SHAPE_SQM_PER_WA;
+    return { rai, ngan, wa };
+}
+
+function calculateShape(st) {
+    const def = SHAPE_DEFINITIONS.find(s => s.key === st.shape);
+    if (!def) return { valid: false };
+    const v = {};
+    for (const [key] of def.fields) v[key] = parseNumericInput(st[key]);
+    if (!Object.values(v).every(n => Number.isFinite(n) && n > 0)) return { valid: false };
+
+    const result = { valid: true, shape: def.key };
+    switch (def.key) {
+        case 'rect':
+            result.areaSqm = v.width * v.length;
+            result.perimeterM = 2 * (v.width + v.length);
+            break;
+        case 'trapezoid':
+            result.areaSqm = (v.top + v.bottom) / 2 * v.height;
+            break;
+        case 'triangle_bh':
+            result.areaSqm = v.base * v.height / 2;
+            break;
+        case 'triangle_sides': {
+            const { sideA: a, sideB: b, sideC: c } = v;
+            if (a + b <= c || a + c <= b || b + c <= a) return { valid: false, reason: 'triangle_inequality' };
+            const s = (a + b + c) / 2;
+            // สูตรเฮรอน
+            result.areaSqm = Math.sqrt(s * (s - a) * (s - b) * (s - c));
+            result.perimeterM = a + b + c;
+            break;
+        }
+        case 'circle':
+            result.areaSqm = Math.PI * (v.diameter / 2) ** 2;
+            result.perimeterM = Math.PI * v.diameter;
+            break;
+        case 'semicircle':
+            result.areaSqm = Math.PI * (v.diameter / 2) ** 2 / 2;
+            result.perimeterM = Math.PI * v.diameter / 2 + v.diameter;
+            break;
+        case 'cylinder':
+            result.areaSqm = Math.PI * (v.diameter / 2) ** 2;
+            result.lateralAreaSqm = Math.PI * v.diameter * v.height;
+            result.volumeM3 = result.areaSqm * v.height;
+            break;
+        case 'prism_trap':
+            result.areaSqm = (v.top + v.bottom) / 2 * v.height;
+            result.volumeM3 = result.areaSqm * v.length;
+            break;
+    }
+
+    if (def.optionalDepth) {
+        const depthRaw = String(st.depth ?? '').trim();
+        if (depthRaw !== '') {
+            const depth = parseNumericInput(depthRaw);
+            if (!Number.isFinite(depth) || depth <= 0) return { valid: false, reason: 'invalid_depth' };
+            result.depthM = depth;
+            result.volumeM3 = result.areaSqm * depth;
+        }
+    }
+    result.areaWa = result.areaSqm / SHAPE_SQM_PER_WA;
+    result.raiNganWa = splitRaiNganWa(result.areaSqm);
+    return result;
+}
+
+function renderShapeTool(container) {
+    if (!appState.shape_calc) {
+        appState.shape_calc = {
+            shape: 'rect', width: '5', length: '8', top: '3', bottom: '5', height: '2', base: '4',
+            sideA: '3', sideB: '4', sideC: '5', diameter: '2', depth: ''
+        };
+    }
+    const st = appState.shape_calc;
+    const def = SHAPE_DEFINITIONS.find(s => s.key === st.shape) || SHAPE_DEFINITIONS[0];
+    const calc = calculateShape({ ...st, shape: def.key });
+    const row = (label, value) => `<div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">${label}</span><span class="font-semibold font-mono text-right">${value}</span></div>`;
+    const chips = SHAPE_DEFINITIONS.map(s => `<button type="button" class="tool-chip-btn shape-chip ${s.key === def.key ? 'active font-bold' : ''}" aria-pressed="${s.key === def.key}" data-shape="${s.key}" style="min-height: 44px;">${s.label}</button>`).join('');
+    const fieldsHTML = def.fields.map((f, i) => createKeypadFieldHTML(i, f[1], st[f[0]], 'เมตร', 'เช่น 5')).join('')
+        + (def.optionalDepth ? createKeypadFieldHTML(def.fields.length, 'ความหนา/ความลึก (ไม่บังคับ หาปริมาตร)', st.depth, 'เมตร', 'เช่น 0.1') : '');
+
+    let resultHTML = '';
+    let statusHTML = null;
+    let emptyText = 'ป้อนขนาดของรูปทรงที่เลือก';
+    if (calc.valid) {
+        const rnw = calc.raiNganWa;
+        const mainIsVolume = def.key === 'cylinder' || def.key === 'prism_trap';
+        const mainLabel = mainIsVolume ? 'ปริมาตร' : 'พื้นที่';
+        const mainValue = mainIsVolume ? `${formatNum(calc.volumeM3, 3)} ลบ.ม.` : `${formatNum(calc.areaSqm, 3)} ตร.ม.`;
+        resultHTML = `
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">${mainLabel}${def.key === 'prism_trap' ? 'รวมตลอดความยาว' : ''}</div>
+                <div class="themed-result-value text-2xl font-bold font-mono break-words">${mainValue}</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${row(def.key === 'prism_trap' ? 'พื้นที่หน้าตัด' : def.key === 'cylinder' ? 'พื้นที่หน้าตัดวงกลม' : 'พื้นที่', `${formatNum(calc.areaSqm, 3)} ตร.ม.`)}
+                    ${row('พื้นที่เป็นตารางวา', `${formatNum(calc.areaWa, 3)} ตร.ว.`)}
+                    ${calc.areaSqm >= SHAPE_SQM_PER_NGAN ? row('ไร่ - งาน - ตร.ว.', `${formatNum(rnw.rai, 0)} - ${formatNum(rnw.ngan, 0)} - ${formatNum(rnw.wa, 2)}`) : ''}
+                    ${calc.perimeterM !== undefined ? row(def.key === 'circle' ? 'เส้นรอบวง' : 'เส้นรอบรูป', `${formatNum(calc.perimeterM, 3)} ม.`) : ''}
+                    ${calc.lateralAreaSqm !== undefined ? row('พื้นที่ผิวด้านข้าง', `${formatNum(calc.lateralAreaSqm, 3)} ตร.ม.`) : ''}
+                    ${calc.volumeM3 !== undefined && !mainIsVolume ? row(`ปริมาตร (หนา ${formatNum(calc.depthM, 3)} ม.)`, `${formatNum(calc.volumeM3, 3)} ลบ.ม.`) : ''}
+                </div>
+            </div>`;
+        statusHTML = `${mainLabel} <span class="text-lg text-[var(--app-accent)] underline">${mainValue}</span><span class="text-xs font-normal opacity-80 block mt-1">${def.label}${calc.volumeM3 !== undefined && !mainIsVolume ? ` · ปริมาตร ${formatNum(calc.volumeM3, 3)} ลบ.ม.` : ''}</span>`;
+    } else if (calc.reason === 'triangle_inequality') {
+        resultHTML = `<div class="themed-subcard p-3 text-xs font-semibold" role="alert">ความยาว 3 ด้านนี้ประกอบเป็นสามเหลี่ยมไม่ได้ ผลรวมของสองด้านใดๆ ต้องมากกว่าด้านที่เหลือ</div>`;
+        emptyText = 'ความยาว 3 ด้านต้องประกอบเป็นสามเหลี่ยมได้';
+    } else if (calc.reason === 'invalid_depth') {
+        emptyText = 'ความหนา/ความลึกต้องเป็นตัวเลขที่มากกว่า 0 หรือเว้นว่างไว้';
+    }
+
+    container.innerHTML = `
+        <div class="shape-calc-tool flex flex-col gap-3 p-1">
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">รูปทรง</div>
+                <div class="grid grid-cols-2 gap-2">${chips}</div>
+            </div>
+            <div class="flex flex-col gap-1.5">${fieldsHTML}</div>
+            ${resultHTML}
+            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
+                <div>ป้อนหน่วยเป็นเมตรทั้งหมด 1 ตารางวา = 4 ตร.ม. 1 งาน = 400 ตร.ม. 1 ไร่ = 1,600 ตร.ม.</div>
+                <div>สามเหลี่ยม 3 ด้านใช้สูตรเฮรอน ปริมาตรของรูปทรงแบนคิดจากพื้นที่ x ความหนา ค่านี้เป็นค่าตามรูปทรงอุดมคติ ไม่รวมเผื่อสูญเสีย</div>
+            </div>
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    container.querySelectorAll('.shape-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.shape = btn.dataset.shape;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    if (statusHTML) {
+        setStatusBanner('success', statusHTML);
+    } else {
+        setStatusBanner('empty', emptyText);
+    }
+}
+
 (function(root) {
     const exportsObj = {
+        SHAPE_DEFINITIONS,
+        shapeFieldKeys,
+        splitRaiNganWa,
+        calculateShape,
+        renderShapeTool,
         INCH_MM,
         INCH_DENOMINATORS,
         inchesToFraction,
@@ -20387,6 +20581,8 @@ function clearCurrentTool() {
         appState.plumbing_pump = { people: '', litersPerPerson: '200', reserveDays: '1', houseType: appState.plumbing_pump?.houseType || 'two' };
     } else if (id === 'inch_fraction') {
         appState.inch_fraction = { mode: appState.inch_fraction?.mode || 'inch', whole: '', num: '', den: '8', mm: '', hun: '' };
+    } else if (id === 'shape_calc') {
+        appState.shape_calc = { shape: appState.shape_calc?.shape || 'rect', width: '', length: '', top: '', bottom: '', height: '', base: '', sideA: '', sideB: '', sideC: '', diameter: '', depth: '' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '', length: '', height: '2.8', btuPerSqm: '750', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {
@@ -20676,6 +20872,8 @@ function loadDemoForCurrentTool() {
         appState.plumbing_pump = { people: '5', litersPerPerson: '200', reserveDays: '2', houseType: 'two' };
     } else if (id === 'inch_fraction') {
         appState.inch_fraction = { mode: appState.inch_fraction?.mode || 'inch', whole: '1', num: '3', den: '8', mm: '35', hun: '4' };
+    } else if (id === 'shape_calc') {
+        appState.shape_calc = { shape: appState.shape_calc?.shape || 'rect', width: '5', length: '8', top: '3', bottom: '5', height: '2', base: '4', sideA: '3', sideB: '4', sideC: '5', diameter: '2', depth: '0.1' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '4', length: '5', height: '2.8', btuPerSqm: '850', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {

@@ -1623,8 +1623,183 @@ function renderInchFractionTool(container) {
     }
 }
 
+/* -----------------------------------------------------------
+ * TOOL: พื้นที่ & ปริมาตรรูปทรงหน้างาน (shape_calc)
+ * ----------------------------------------------------------- */
+
+// รายการช่องกรอกของแต่ละรูปทรง (หน่วยเป็นเมตร) ลำดับตรงกับช่องคีย์แพดกลาง
+var SHAPE_DEFINITIONS = [
+    { key: 'rect',           label: 'สี่เหลี่ยมผืนผ้า',          fields: [['width', 'ความกว้าง'], ['length', 'ความยาว']], optionalDepth: true },
+    { key: 'trapezoid',      label: 'สี่เหลี่ยมคางหมู',          fields: [['top', 'ด้านบน'], ['bottom', 'ด้านล่าง'], ['height', 'ความสูง']], optionalDepth: true },
+    { key: 'triangle_bh',    label: 'สามเหลี่ยม (ฐาน x สูง)',    fields: [['base', 'ความยาวฐาน'], ['height', 'ความสูง']], optionalDepth: true },
+    { key: 'triangle_sides', label: 'สามเหลี่ยม (รู้ 3 ด้าน)',    fields: [['sideA', 'ด้าน A'], ['sideB', 'ด้าน B'], ['sideC', 'ด้าน C']], optionalDepth: true },
+    { key: 'circle',         label: 'วงกลม',                    fields: [['diameter', 'เส้นผ่านศูนย์กลาง']], optionalDepth: true },
+    { key: 'semicircle',     label: 'ครึ่งวงกลม',                fields: [['diameter', 'เส้นผ่านศูนย์กลาง']], optionalDepth: true },
+    { key: 'cylinder',       label: 'ทรงกระบอก (เสากลม)',        fields: [['diameter', 'เส้นผ่านศูนย์กลาง'], ['height', 'ความสูง']], optionalDepth: false },
+    { key: 'prism_trap',     label: 'ปริซึมคางหมู (ร่องน้ำ/คันดิน)', fields: [['top', 'หน้าตัดด้านบน'], ['bottom', 'หน้าตัดด้านล่าง'], ['height', 'ความสูงหน้าตัด'], ['length', 'ความยาว']], optionalDepth: false }
+];
+var SHAPE_SQM_PER_RAI = 1600;
+var SHAPE_SQM_PER_NGAN = 400;
+var SHAPE_SQM_PER_WA = 4;
+
+function shapeFieldKeys(shapeKey) {
+    const def = SHAPE_DEFINITIONS.find(s => s.key === shapeKey);
+    if (!def) return [];
+    return def.fields.map(f => f[0]).concat(def.optionalDepth ? ['depth'] : []);
+}
+
+function splitRaiNganWa(areaSqm) {
+    const rai = Math.floor(areaSqm / SHAPE_SQM_PER_RAI + 1e-9);
+    const afterRai = areaSqm - rai * SHAPE_SQM_PER_RAI;
+    const ngan = Math.floor(afterRai / SHAPE_SQM_PER_NGAN + 1e-9);
+    const wa = (afterRai - ngan * SHAPE_SQM_PER_NGAN) / SHAPE_SQM_PER_WA;
+    return { rai, ngan, wa };
+}
+
+function calculateShape(st) {
+    const def = SHAPE_DEFINITIONS.find(s => s.key === st.shape);
+    if (!def) return { valid: false };
+    const v = {};
+    for (const [key] of def.fields) v[key] = parseNumericInput(st[key]);
+    if (!Object.values(v).every(n => Number.isFinite(n) && n > 0)) return { valid: false };
+
+    const result = { valid: true, shape: def.key };
+    switch (def.key) {
+        case 'rect':
+            result.areaSqm = v.width * v.length;
+            result.perimeterM = 2 * (v.width + v.length);
+            break;
+        case 'trapezoid':
+            result.areaSqm = (v.top + v.bottom) / 2 * v.height;
+            break;
+        case 'triangle_bh':
+            result.areaSqm = v.base * v.height / 2;
+            break;
+        case 'triangle_sides': {
+            const { sideA: a, sideB: b, sideC: c } = v;
+            if (a + b <= c || a + c <= b || b + c <= a) return { valid: false, reason: 'triangle_inequality' };
+            const s = (a + b + c) / 2;
+            // สูตรเฮรอน
+            result.areaSqm = Math.sqrt(s * (s - a) * (s - b) * (s - c));
+            result.perimeterM = a + b + c;
+            break;
+        }
+        case 'circle':
+            result.areaSqm = Math.PI * (v.diameter / 2) ** 2;
+            result.perimeterM = Math.PI * v.diameter;
+            break;
+        case 'semicircle':
+            result.areaSqm = Math.PI * (v.diameter / 2) ** 2 / 2;
+            result.perimeterM = Math.PI * v.diameter / 2 + v.diameter;
+            break;
+        case 'cylinder':
+            result.areaSqm = Math.PI * (v.diameter / 2) ** 2;
+            result.lateralAreaSqm = Math.PI * v.diameter * v.height;
+            result.volumeM3 = result.areaSqm * v.height;
+            break;
+        case 'prism_trap':
+            result.areaSqm = (v.top + v.bottom) / 2 * v.height;
+            result.volumeM3 = result.areaSqm * v.length;
+            break;
+    }
+
+    if (def.optionalDepth) {
+        const depthRaw = String(st.depth ?? '').trim();
+        if (depthRaw !== '') {
+            const depth = parseNumericInput(depthRaw);
+            if (!Number.isFinite(depth) || depth <= 0) return { valid: false, reason: 'invalid_depth' };
+            result.depthM = depth;
+            result.volumeM3 = result.areaSqm * depth;
+        }
+    }
+    result.areaWa = result.areaSqm / SHAPE_SQM_PER_WA;
+    result.raiNganWa = splitRaiNganWa(result.areaSqm);
+    return result;
+}
+
+function renderShapeTool(container) {
+    if (!appState.shape_calc) {
+        appState.shape_calc = {
+            shape: 'rect', width: '5', length: '8', top: '3', bottom: '5', height: '2', base: '4',
+            sideA: '3', sideB: '4', sideC: '5', diameter: '2', depth: ''
+        };
+    }
+    const st = appState.shape_calc;
+    const def = SHAPE_DEFINITIONS.find(s => s.key === st.shape) || SHAPE_DEFINITIONS[0];
+    const calc = calculateShape({ ...st, shape: def.key });
+    const row = (label, value) => `<div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">${label}</span><span class="font-semibold font-mono text-right">${value}</span></div>`;
+    const chips = SHAPE_DEFINITIONS.map(s => `<button type="button" class="tool-chip-btn shape-chip ${s.key === def.key ? 'active font-bold' : ''}" aria-pressed="${s.key === def.key}" data-shape="${s.key}" style="min-height: 44px;">${s.label}</button>`).join('');
+    const fieldsHTML = def.fields.map((f, i) => createKeypadFieldHTML(i, f[1], st[f[0]], 'เมตร', 'เช่น 5')).join('')
+        + (def.optionalDepth ? createKeypadFieldHTML(def.fields.length, 'ความหนา/ความลึก (ไม่บังคับ หาปริมาตร)', st.depth, 'เมตร', 'เช่น 0.1') : '');
+
+    let resultHTML = '';
+    let statusHTML = null;
+    let emptyText = 'ป้อนขนาดของรูปทรงที่เลือก';
+    if (calc.valid) {
+        const rnw = calc.raiNganWa;
+        const mainIsVolume = def.key === 'cylinder' || def.key === 'prism_trap';
+        const mainLabel = mainIsVolume ? 'ปริมาตร' : 'พื้นที่';
+        const mainValue = mainIsVolume ? `${formatNum(calc.volumeM3, 3)} ลบ.ม.` : `${formatNum(calc.areaSqm, 3)} ตร.ม.`;
+        resultHTML = `
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">${mainLabel}${def.key === 'prism_trap' ? 'รวมตลอดความยาว' : ''}</div>
+                <div class="themed-result-value text-2xl font-bold font-mono break-words">${mainValue}</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${row(def.key === 'prism_trap' ? 'พื้นที่หน้าตัด' : def.key === 'cylinder' ? 'พื้นที่หน้าตัดวงกลม' : 'พื้นที่', `${formatNum(calc.areaSqm, 3)} ตร.ม.`)}
+                    ${row('พื้นที่เป็นตารางวา', `${formatNum(calc.areaWa, 3)} ตร.ว.`)}
+                    ${calc.areaSqm >= SHAPE_SQM_PER_NGAN ? row('ไร่ - งาน - ตร.ว.', `${formatNum(rnw.rai, 0)} - ${formatNum(rnw.ngan, 0)} - ${formatNum(rnw.wa, 2)}`) : ''}
+                    ${calc.perimeterM !== undefined ? row(def.key === 'circle' ? 'เส้นรอบวง' : 'เส้นรอบรูป', `${formatNum(calc.perimeterM, 3)} ม.`) : ''}
+                    ${calc.lateralAreaSqm !== undefined ? row('พื้นที่ผิวด้านข้าง', `${formatNum(calc.lateralAreaSqm, 3)} ตร.ม.`) : ''}
+                    ${calc.volumeM3 !== undefined && !mainIsVolume ? row(`ปริมาตร (หนา ${formatNum(calc.depthM, 3)} ม.)`, `${formatNum(calc.volumeM3, 3)} ลบ.ม.`) : ''}
+                </div>
+            </div>`;
+        statusHTML = `${mainLabel} <span class="text-lg text-[var(--app-accent)] underline">${mainValue}</span><span class="text-xs font-normal opacity-80 block mt-1">${def.label}${calc.volumeM3 !== undefined && !mainIsVolume ? ` · ปริมาตร ${formatNum(calc.volumeM3, 3)} ลบ.ม.` : ''}</span>`;
+    } else if (calc.reason === 'triangle_inequality') {
+        resultHTML = `<div class="themed-subcard p-3 text-xs font-semibold" role="alert">ความยาว 3 ด้านนี้ประกอบเป็นสามเหลี่ยมไม่ได้ ผลรวมของสองด้านใดๆ ต้องมากกว่าด้านที่เหลือ</div>`;
+        emptyText = 'ความยาว 3 ด้านต้องประกอบเป็นสามเหลี่ยมได้';
+    } else if (calc.reason === 'invalid_depth') {
+        emptyText = 'ความหนา/ความลึกต้องเป็นตัวเลขที่มากกว่า 0 หรือเว้นว่างไว้';
+    }
+
+    container.innerHTML = `
+        <div class="shape-calc-tool flex flex-col gap-3 p-1">
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">รูปทรง</div>
+                <div class="grid grid-cols-2 gap-2">${chips}</div>
+            </div>
+            <div class="flex flex-col gap-1.5">${fieldsHTML}</div>
+            ${resultHTML}
+            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
+                <div>ป้อนหน่วยเป็นเมตรทั้งหมด 1 ตารางวา = 4 ตร.ม. 1 งาน = 400 ตร.ม. 1 ไร่ = 1,600 ตร.ม.</div>
+                <div>สามเหลี่ยม 3 ด้านใช้สูตรเฮรอน ปริมาตรของรูปทรงแบนคิดจากพื้นที่ x ความหนา ค่านี้เป็นค่าตามรูปทรงอุดมคติ ไม่รวมเผื่อสูญเสีย</div>
+            </div>
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    container.querySelectorAll('.shape-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.shape = btn.dataset.shape;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    if (statusHTML) {
+        setStatusBanner('success', statusHTML);
+    } else {
+        setStatusBanner('empty', emptyText);
+    }
+}
+
 (function(root) {
     const exportsObj = {
+        SHAPE_DEFINITIONS,
+        shapeFieldKeys,
+        splitRaiNganWa,
+        calculateShape,
+        renderShapeTool,
         INCH_MM,
         INCH_DENOMINATORS,
         inchesToFraction,
