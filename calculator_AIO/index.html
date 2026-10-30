@@ -1854,7 +1854,7 @@
     <div id="printFormalReceipt" class="hidden"></div>
 
     <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
-    <script src="src/bundle.js?v=72"></script>
+    <script src="src/bundle.js?v=73"></script>
 
     <script>
         function getSafeDateStr(offsetDays = 0) {
@@ -2276,6 +2276,23 @@
                 conPricePerM3: ''
             },
 
+            // Engineering: contractor payment installments
+            contractor_payment: {
+                contractValue: '1200000',
+                retentionPct: '5',
+                whtPct: '3',
+                vatRate: '7',
+                applyVat: false,
+                applyWht: false,
+                template: '4',
+                installments: [
+                    { id: '1', pct: '30' },
+                    { id: '2', pct: '30' },
+                    { id: '3', pct: '30' },
+                    { id: '4', pct: '10' }
+                ]
+            },
+
             // 24. Car Hire Purchase Loan
             car_loan: {
                 vehicleType: 'car',
@@ -2499,6 +2516,7 @@
                 case 'food_costing':     renderFoodCostingTool(topPanel); break;
                 case 'construction_calc': renderConstructionTool(topPanel); break;
                 case 'btu_calc':         renderBtuTool(topPanel); break;
+                case 'contractor_payment': renderContractorPaymentTool(topPanel); break;
                 case 'roof_steel_calc': renderRoofSteelTool(topPanel); break;
                 case 'wall_ceiling_calc': renderWallCeilingTool(topPanel); break;
                 case 'land_fill_calc': renderLandFillTool(topPanel); break;

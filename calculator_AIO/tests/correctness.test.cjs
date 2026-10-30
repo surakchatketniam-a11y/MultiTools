@@ -287,11 +287,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 40 tools classified into 6 valid groups with search keywords', () => {
+test('catalog contains exactly 41 tools classified into 6 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 6);
-    assert.equal(TOOLS_CATALOG.length, 40);
+    assert.equal(TOOLS_CATALOG.length, 41);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -451,7 +451,7 @@ test('all 36 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 40);
+    assert.equal(ctx.TOOLS_CATALOG.length, 41);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -1214,7 +1214,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('คุ้มค่าที่สุด'));
 });
 
-test('all 40 tool renderers are modularized and exported across the 6 tool groups', () => {
+test('all 41 tool renderers are modularized and exported across the 6 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -1256,10 +1256,11 @@ test('all 40 tool renderers are modularized and exported across the 6 tool group
         btu_calc:          'renderBtuTool',
         land_fill_calc: 'renderLandFillTool',
         wall_ceiling_calc: 'renderWallCeilingTool',
-        roof_steel_calc: 'renderRoofSteelTool'
+        roof_steel_calc: 'renderRoofSteelTool',
+        contractor_payment: 'renderContractorPaymentTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 40);
+    assert.equal(Object.keys(rendererMap).length, 41);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -3406,6 +3407,72 @@ test('roof_steel_calc: roof geometry, steel cutting plan, rebar weight and concr
     assert.equal(ctx.hasInvalidNumericInput('roof_steel_calc', { roof_steel_calc: { ...base, tab: 'cut', roofRun: '4m' } }), false);
     assert.equal(ctx.hasInvalidNumericInput('roof_steel_calc', { roof_steel_calc: { ...base, tab: 'cut', pieces: [{ id: '1', length: '2.4x', qty: '1' }] } }), true);
     assert.equal(ctx.hasInvalidNumericInput('roof_steel_calc', { roof_steel_calc: { ...base, tab: 'rebar', conDepth: 'abc' } }), true);
+});
+
+test('contractor_payment: installments, retention, VAT, withholding tax and validation', () => {
+    const ctx = context();
+    const rows = pcts => pcts.map((p, i) => ({ id: String(i + 1), pct: String(p) }));
+    const base = { contractValue: '1200000', retentionPct: '5', whtPct: '3', vatRate: '7', applyVat: false, applyWht: false, installments: rows([30, 30, 30, 10]) };
+
+    // No tax: gross 360k/360k/360k/120k, retention 5% each, net = gross - retention
+    const plain = ctx.calculateContractorPayment(base);
+    assert.equal(plain.valid, true);
+    assert.deepEqual(Array.from(plain.items, i => i.gross), [360000, 360000, 360000, 120000]);
+    assert.deepEqual(Array.from(plain.items, i => i.retention), [18000, 18000, 18000, 6000]);
+    assert.deepEqual(Array.from(plain.items, i => i.net), [342000, 342000, 342000, 114000]);
+    assert.equal(plain.totalGross, 1200000);
+    assert.equal(plain.totalRetention, 60000);
+    assert.equal(plain.retentionReleased, 60000);
+    assert.equal(plain.totalNet, 1140000);
+    assert.equal(plain.totalVat, 0);
+    assert.equal(plain.totalWht, 0);
+
+    // VAT and 3% withholding are computed on the installment value before VAT
+    const taxed = ctx.calculateContractorPayment({ ...base, applyVat: true, applyWht: true });
+    const first = taxed.items[0];
+    assert.equal(first.vat, 25200);
+    assert.equal(first.wht, 10800);
+    assert.equal(first.net, 360000 + 25200 - 18000 - 10800);
+    assert.equal(taxed.totalVat, 84000);
+    assert.equal(taxed.totalWht, 36000);
+    assert.equal(taxed.totalNet, 1200000 + 84000 - 60000 - 36000);
+
+    // Rounding: the last installment absorbs the rounding difference so gross adds up exactly
+    const odd = ctx.calculateContractorPayment({ ...base, contractValue: '100000', installments: rows([33.33, 33.33, 33.34]), retentionPct: '0' });
+    assert.equal(odd.valid, true);
+    assert.equal(odd.totalGross, 100000);
+    assert.equal(odd.items[0].gross, 33330);
+    assert.equal(odd.items[2].gross, 33340);
+    const thirds = ctx.calculateContractorPayment({ ...base, contractValue: '100', installments: rows([33.3333, 33.3333, 33.3334]), retentionPct: '0' });
+    assert.equal(thirds.totalGross, 100);
+
+    // Zero retention and a single installment
+    const single = ctx.calculateContractorPayment({ ...base, retentionPct: '0', installments: rows([100]) });
+    assert.equal(single.items.length, 1);
+    assert.equal(single.items[0].net, 1200000);
+
+    // Percentages must add up to 100
+    const short = ctx.calculateContractorPayment({ ...base, installments: rows([30, 30, 30]) });
+    assert.equal(short.valid, false);
+    assert.equal(short.reason, 'pct_sum');
+    assert.equal(short.pctSum, 90);
+    assert.equal(ctx.calculateContractorPayment({ ...base, installments: rows([60, 60]) }).reason, 'pct_sum');
+
+    // Invalid input
+    assert.equal(ctx.calculateContractorPayment({ ...base, contractValue: '' }).valid, false);
+    assert.equal(ctx.calculateContractorPayment({ ...base, contractValue: '0' }).valid, false);
+    assert.equal(ctx.calculateContractorPayment({ ...base, retentionPct: '101' }).valid, false);
+    assert.equal(ctx.calculateContractorPayment({ ...base, installments: [] }).valid, false);
+    assert.equal(ctx.calculateContractorPayment({ ...base, installments: rows([50, 'x', 50]) }).reason, 'invalid_installment');
+    assert.equal(ctx.calculateContractorPayment({ ...base, installments: rows([-10, 110]) }).reason, 'invalid_installment');
+
+    // Templates each add up to 100
+    for (const tpl of ctx.CONTRACTOR_TEMPLATES) assert.equal(tpl.pcts.reduce((s, p) => s + p, 0), 100, tpl.key);
+
+    // Invalid-input detection includes installment rows
+    assert.equal(ctx.hasInvalidNumericInput('contractor_payment', { contractor_payment: base }), false);
+    assert.equal(ctx.hasInvalidNumericInput('contractor_payment', { contractor_payment: { ...base, installments: rows([30, 'x', 30, 10]) } }), true);
+    assert.equal(ctx.hasInvalidNumericInput('contractor_payment', { contractor_payment: { ...base, vatRate: '7%' } }), true);
 });
 
 test('construction_calc: tiles, paint, and concrete calculations', () => {

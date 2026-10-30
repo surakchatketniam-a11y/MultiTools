@@ -621,6 +621,12 @@ function getToolSummaryText(toolId, stateObj) {
             if (!calc.valid) return `สรุปหลังคา\n${divider}\nยังไม่ได้ป้อนขนาดหลังคา\n(คำนวณโดย Multitools Calculator)`;
             return `สรุปคำนวณหลังคา & เหล็กแป\n${divider}\n• ความลาดชัน: ${formatNum(calc.angle, 1)} องศา ยก ${formatNum(calc.riseM, 2)} ม.\n• ความยาวจันทัน: ${formatNum(calc.rafterM, 2)} ม. (รวมชายคา ${formatNum(calc.slopeLengthM, 2)} ม.)\n• พื้นที่หลังคา: ${formatNum(calc.areaSqm, 2)} ตร.ม. (${calc.sides} ด้าน)\n• แถวแป: ${formatNum(calc.purlinRows, 0)} แถว ใช้เหล็กแป ${formatNum(calc.purlinStock, 0)} ท่อน\n• สกรู: ${formatNum(calc.screws, 0)} ตัว${calc.totalCost > 0 ? `\n• ค่าแผ่นหลังคาโดยประมาณ: ${formatMoney(calc.totalCost)} บาท` : ''}\n----------------------------------\nแผ่นหลังคาที่ต้องสั่งตัด: ${formatNum(calc.sheets, 0)} แผ่น ยาว ${formatNum(calc.sheetOrderLengthM, 2)} ม.\n(ค่าประมาณ หน้ากว้างแผ่น ระยะแป และสกรูยังไม่ยืนยัน ควรให้ช่างตรวจ)\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'contractor_payment': {
+            const calc = (typeof calculateContractorPayment === 'function') ? calculateContractorPayment(state.contractor_payment || {}) : { valid: false };
+            if (!calc.valid) return `สรุปแบ่งงวดงานรับเหมา\n${divider}\nยังไม่มีข้อมูลที่คำนวณได้ (ตรวจมูลค่างานและเปอร์เซ็นต์ให้รวม 100%)\n(คำนวณโดย Multitools Calculator)`;
+            const itemLines = calc.items.map(item => `• งวดที่ ${item.index} (${formatNum(item.pct, 2)}%): ค่าจ้าง ${formatMoney(item.gross)}${calc.applyVat ? ` + VAT ${formatMoney(item.vat)}` : ''} - ประกัน ${formatMoney(item.retention)}${calc.applyWht ? ` - หัก ณ ที่จ่าย ${formatMoney(item.wht)}` : ''} = จ่ายสุทธิ ${formatMoney(item.net)} บาท`).join('\n');
+            return `สรุปแบ่งงวดงานรับเหมา\n${divider}\n• มูลค่างานตามสัญญา: ${formatMoney(calc.contract)} บาท (${calc.items.length} งวด)\n• เงินประกันผลงาน ${formatNum(calc.retentionPct, 2)}%: ถือไว้รวม ${formatMoney(calc.totalRetention)} บาท\n${itemLines}\n----------------------------------\nยอดจ่ายสุทธิรวมทุกงวด: ${formatMoney(calc.totalNet)} บาท\n(เปอร์เซ็นต์แต่ละงวดเป็นตัวอย่าง ให้กำหนดตามสัญญาจริง ค่าประมาณ)\n(คำนวณโดย Multitools Calculator)`;
+        }
         case 'btu_calc': {
             const calc = (typeof calculateBtu === 'function') ? calculateBtu(state.btu_calc || {}) : { valid: false };
             if (!calc.valid) return `สรุปขนาดแอร์ BTU\n${divider}\nยังไม่ได้ป้อนขนาดห้อง\n(คำนวณโดย Multitools Calculator)`;

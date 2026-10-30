@@ -117,6 +117,11 @@ function getToolFieldBindings(toolId) {
                     : ['roofRun', 'roofLength', 'roofAngle', 'roofOverhang', 'sheetWidth', 'purlinSpacing', 'screwsPerSqm', 'roofPricePerSqm'];
             return keys.map(field);
         }
+        case 'contractor_payment': {
+            const s = () => appState.contractor_payment;
+            const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
+            return ['contractValue', 'retentionPct', 'whtPct', 'vatRate'].map(field);
+        }
         case 'btu_calc':
             return [
                 { get: () => appState.btu_calc.width, set: (v) => { appState.btu_calc.width = v; } },

@@ -41,6 +41,7 @@ var TOOLS_CATALOG = [
     { id: 'land_fill_calc', group: 'engineering', category: 'fav', menuTitle: 'ดินถมที่ & รถดั๊มพ์', headerTitle: 'คำนวณดินถมที่ (คิวแน่น/คิวหลวม) & จำนวนเที่ยวรถดั๊มพ์', usesSharedKeypad: true, keywords: 'land fill ดินถม ถมที่ ถมดิน คิวดิน ลูกรัง ทรายถม รถดั๊มพ์ รถ6ล้อ รถ10ล้อ บดอัด ไร่ งาน ตารางวา เกลี่ยดิน ปรับพื้นที่ ที่ดิน' },
     { id: 'wall_ceiling_calc', group: 'engineering', category: 'all', menuTitle: 'ก่ออิฐ ฉาบปูน & ฝ้าเพดาน', headerTitle: 'คำนวณก่ออิฐ ฉาบปูน & ฝ้าเพดาน (อิฐมวลเบา/อิฐมอญ/ยิปซั่ม/ทีบาร์)', usesSharedKeypad: true, keywords: 'wall ceiling ก่ออิฐ ฉาบปูน ผนัง อิฐมวลเบา อิฐมอญ อิฐบล็อก ปูนฉาบ กั้นห้อง ฝ้าเพดาน ฝ้ายิปซั่ม ยิปซั่ม ทีบาร์ t-bar แผ่นฝ้า ช่างปูน ต่อเติมบ้าน' },
     { id: 'roof_steel_calc', group: 'engineering', category: 'all', menuTitle: 'หลังคา ตัดเหล็ก & เหล็กเส้น', headerTitle: 'คำนวณหลังคา ตัดท่อนเหล็ก 6 ม. & เหล็กเส้น/คอนกรีตโครงสร้าง', usesSharedKeypad: true, keywords: 'roof steel หลังคา เมทัลชีท กระเบื้องหลังคา จันทัน แป ความลาดชัน กันสาด โรงจอดรถ ตัดเหล็ก เหล็กกล่อง เหล็ก 6 เมตร เศษเหล็ก เหล็กเส้น rb db เหล็กข้ออ้อย น้ำหนักเหล็ก คอนกรีต เสา คาน ฐานราก ช่างเหล็ก' },
+    { id: 'contractor_payment', group: 'engineering', category: 'all', menuTitle: 'แบ่งงวดงานรับเหมา & เงินประกัน', headerTitle: 'แบ่งงวดงานรับเหมา เงินประกันผลงาน (Retention) VAT & หัก ณ ที่จ่าย', usesSharedKeypad: true, keywords: 'contractor payment แบ่งงวด งวดงาน รับเหมา ผู้รับเหมา จ้างเหมา ต่อเติมบ้าน สร้างบ้าน รีโนเวท เงินประกันผลงาน retention หัก ณ ที่จ่าย 3% vat ค่าจ้าง สัญญาจ้าง boq ใบเสนอราคา' },
 
     // หมวดหมู่ที่ 2: ธุรกิจ & ค้าขาย
     { id: 'vat',        group: 'biz', category: 'fav', menuTitle: 'ภาษีมูลค่าเพิ่ม (VAT)', headerTitle: 'เครื่องคำนวณภาษีมูลค่าเพิ่ม', usesSharedKeypad: true, keywords: 'vat ภาษี 7% มูลค่าเพิ่ม ถอด vat รวม vat' },
@@ -197,6 +198,11 @@ function hasInvalidNumericInput(toolId, stateObj) {
             ? ['rebarBars', 'rebarLength', 'rebarPricePerKg', 'conWidth', 'conDepth', 'conLength', 'conQty', 'conWastePct', 'conPricePerM3']
             : ['roofRun', 'roofLength', 'roofAngle', 'roofOverhang', 'sheetWidth', 'purlinSpacing', 'screwsPerSqm', 'roofPricePerSqm'];
         return keys.some(key => invalid(st[key]));
+    }
+    if (curToolId === 'contractor_payment') {
+        const st = state.contractor_payment || {};
+        const rows = Array.isArray(st.installments) ? st.installments : [];
+        return ['contractValue', 'retentionPct', 'whtPct', 'vatRate'].some(key => invalid(st[key])) || rows.some(r => invalid(r.pct));
     }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
@@ -6040,6 +6046,12 @@ function getToolSummaryText(toolId, stateObj) {
             if (!calc.valid) return `สรุปหลังคา\n${divider}\nยังไม่ได้ป้อนขนาดหลังคา\n(คำนวณโดย Multitools Calculator)`;
             return `สรุปคำนวณหลังคา & เหล็กแป\n${divider}\n• ความลาดชัน: ${formatNum(calc.angle, 1)} องศา ยก ${formatNum(calc.riseM, 2)} ม.\n• ความยาวจันทัน: ${formatNum(calc.rafterM, 2)} ม. (รวมชายคา ${formatNum(calc.slopeLengthM, 2)} ม.)\n• พื้นที่หลังคา: ${formatNum(calc.areaSqm, 2)} ตร.ม. (${calc.sides} ด้าน)\n• แถวแป: ${formatNum(calc.purlinRows, 0)} แถว ใช้เหล็กแป ${formatNum(calc.purlinStock, 0)} ท่อน\n• สกรู: ${formatNum(calc.screws, 0)} ตัว${calc.totalCost > 0 ? `\n• ค่าแผ่นหลังคาโดยประมาณ: ${formatMoney(calc.totalCost)} บาท` : ''}\n----------------------------------\nแผ่นหลังคาที่ต้องสั่งตัด: ${formatNum(calc.sheets, 0)} แผ่น ยาว ${formatNum(calc.sheetOrderLengthM, 2)} ม.\n(ค่าประมาณ หน้ากว้างแผ่น ระยะแป และสกรูยังไม่ยืนยัน ควรให้ช่างตรวจ)\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'contractor_payment': {
+            const calc = (typeof calculateContractorPayment === 'function') ? calculateContractorPayment(state.contractor_payment || {}) : { valid: false };
+            if (!calc.valid) return `สรุปแบ่งงวดงานรับเหมา\n${divider}\nยังไม่มีข้อมูลที่คำนวณได้ (ตรวจมูลค่างานและเปอร์เซ็นต์ให้รวม 100%)\n(คำนวณโดย Multitools Calculator)`;
+            const itemLines = calc.items.map(item => `• งวดที่ ${item.index} (${formatNum(item.pct, 2)}%): ค่าจ้าง ${formatMoney(item.gross)}${calc.applyVat ? ` + VAT ${formatMoney(item.vat)}` : ''} - ประกัน ${formatMoney(item.retention)}${calc.applyWht ? ` - หัก ณ ที่จ่าย ${formatMoney(item.wht)}` : ''} = จ่ายสุทธิ ${formatMoney(item.net)} บาท`).join('\n');
+            return `สรุปแบ่งงวดงานรับเหมา\n${divider}\n• มูลค่างานตามสัญญา: ${formatMoney(calc.contract)} บาท (${calc.items.length} งวด)\n• เงินประกันผลงาน ${formatNum(calc.retentionPct, 2)}%: ถือไว้รวม ${formatMoney(calc.totalRetention)} บาท\n${itemLines}\n----------------------------------\nยอดจ่ายสุทธิรวมทุกงวด: ${formatMoney(calc.totalNet)} บาท\n(เปอร์เซ็นต์แต่ละงวดเป็นตัวอย่าง ให้กำหนดตามสัญญาจริง ค่าประมาณ)\n(คำนวณโดย Multitools Calculator)`;
+        }
         case 'btu_calc': {
             const calc = (typeof calculateBtu === 'function') ? calculateBtu(state.btu_calc || {}) : { valid: false };
             if (!calc.valid) return `สรุปขนาดแอร์ BTU\n${divider}\nยังไม่ได้ป้อนขนาดห้อง\n(คำนวณโดย Multitools Calculator)`;
@@ -6284,6 +6296,11 @@ function getToolFieldBindings(toolId) {
                     ? ['rebarBars', 'rebarLength', 'rebarPricePerKg', 'conWidth', 'conDepth', 'conLength', 'conQty', 'conWastePct', 'conPricePerM3']
                     : ['roofRun', 'roofLength', 'roofAngle', 'roofOverhang', 'sheetWidth', 'purlinSpacing', 'screwsPerSqm', 'roofPricePerSqm'];
             return keys.map(field);
+        }
+        case 'contractor_payment': {
+            const s = () => appState.contractor_payment;
+            const field = key => ({ get: () => s()[key], set: (v) => { s()[key] = v; } });
+            return ['contractValue', 'retentionPct', 'whtPct', 'vatRate'].map(field);
         }
         case 'btu_calc':
             return [
@@ -19671,8 +19688,222 @@ function renderRoofSteelTool(container) {
     }
 }
 
+/* -----------------------------------------------------------
+ * TOOL: แบ่งงวดงานรับเหมา & เงินประกันผลงาน (contractor_payment)
+ * ----------------------------------------------------------- */
+
+// เปอร์เซ็นต์แต่ละงวดเป็น "ตัวอย่างเริ่มต้น" ไม่ใช่มาตรฐาน ต้องกำหนดตามสัญญาจริง
+var CONTRACTOR_TEMPLATES = [
+    { key: '3', label: '3 งวด (40/40/20)',            pcts: [40, 40, 20] },
+    { key: '4', label: '4 งวด (30/30/30/10)',         pcts: [30, 30, 30, 10] },
+    { key: '6', label: '6 งวด (20/20/20/20/10/10)',   pcts: [20, 20, 20, 20, 10, 10] }
+];
+var CONTRACTOR_MAX_INSTALLMENTS = 24;
+
+function calculateContractorPayment(st) {
+    const contract = parseNumericInput(st.contractValue);
+    const retentionPct = numberOrDefault(st.retentionPct, 0);
+    const whtPct = numberOrDefault(st.whtPct, 3);
+    const vatPct = numberOrDefault(st.vatRate, 7);
+    const applyVat = Boolean(st.applyVat);
+    const applyWht = Boolean(st.applyWht);
+    const rows = Array.isArray(st.installments) ? st.installments : [];
+
+    if (![contract, retentionPct, whtPct, vatPct].every(Number.isFinite)
+        || contract <= 0 || retentionPct < 0 || retentionPct > 100 || whtPct < 0 || whtPct > 100 || vatPct < 0 || vatPct > 100
+        || rows.length === 0 || rows.length > CONTRACTOR_MAX_INSTALLMENTS) {
+        return { valid: false, reason: 'invalid_input' };
+    }
+    const pcts = rows.map(r => parseNumericInput(r.pct));
+    if (!pcts.every(p => Number.isFinite(p) && p >= 0)) return { valid: false, reason: 'invalid_installment' };
+    const pctSum = pcts.reduce((sum, p) => sum + p, 0);
+    if (Math.abs(pctSum - 100) > 1e-6) return { valid: false, reason: 'pct_sum', pctSum };
+
+    const round2 = v => Math.round(v * 100 + (v >= 0 ? 1e-9 : -1e-9)) / 100;
+    const items = [];
+    let allocated = 0;
+    pcts.forEach((pct, i) => {
+        const last = i === pcts.length - 1;
+        // งวดสุดท้ายรับส่วนต่างจากการปัดเศษ เพื่อให้ยอดรวมเท่ากับมูลค่าสัญญา
+        const gross = last ? round2(contract - allocated) : round2(contract * pct / 100);
+        allocated += gross;
+        const vat = applyVat ? round2(gross * vatPct / 100) : 0;
+        const retention = round2(gross * retentionPct / 100);
+        const wht = applyWht ? round2(gross * whtPct / 100) : 0;
+        items.push({ index: i + 1, pct, gross, vat, retention, wht, net: round2(gross + vat - retention - wht) });
+    });
+    const sum = key => round2(items.reduce((total, item) => total + item[key], 0));
+    return {
+        valid: true,
+        contract,
+        retentionPct,
+        whtPct,
+        vatPct,
+        applyVat,
+        applyWht,
+        items,
+        totalGross: sum('gross'),
+        totalVat: sum('vat'),
+        totalRetention: sum('retention'),
+        totalWht: sum('wht'),
+        totalNet: sum('net'),
+        // เงินประกันที่ผู้ว่าจ้างถือไว้และต้องจ่ายคืนเมื่อพ้นระยะประกันผลงาน
+        retentionReleased: sum('retention')
+    };
+}
+
+function renderContractorPaymentTool(container) {
+    if (!appState.contractor_payment) {
+        appState.contractor_payment = {
+            contractValue: '1200000', retentionPct: '5', whtPct: '3', vatRate: '7', applyVat: false, applyWht: false, template: '4',
+            installments: CONTRACTOR_TEMPLATES[1].pcts.map((p, i) => ({ id: String(i + 1), pct: String(p) }))
+        };
+    }
+    const st = appState.contractor_payment;
+    const calc = calculateContractorPayment(st);
+    const rows = Array.isArray(st.installments) ? st.installments : [];
+    const pctNow = rows.map(r => parseNumericInput(r.pct));
+    const pctSumNow = pctNow.every(Number.isFinite) ? pctNow.reduce((s, p) => s + p, 0) : NaN;
+
+    const templateChips = CONTRACTOR_TEMPLATES.map(t => `<button type="button" class="tool-chip-btn cp-template-chip ${st.template === t.key ? 'active font-bold' : ''}" aria-pressed="${st.template === t.key}" data-cp-template="${t.key}" style="min-height: 44px;">${t.label}</button>`).join('');
+    const toggle = (key, label, on) => `<button type="button" class="tool-chip-btn cp-toggle-chip ${on ? 'active font-bold' : ''}" aria-pressed="${on}" data-cp-toggle="${key}" style="min-height: 44px;">${label}</button>`;
+    const rowsHTML = rows.map((r, i) => `
+        <div class="grid grid-cols-[1fr_auto] gap-2 items-end" data-cp-row="${escapeHTML(r.id)}">
+            <div class="min-w-0">
+                <label for="cp-pct-${escapeHTML(r.id)}" class="text-[var(--app-muted)] text-[11px] block">งวดที่ ${i + 1} (% ของมูลค่าสัญญา)</label>
+                <input id="cp-pct-${escapeHTML(r.id)}" type="text" inputmode="decimal" class="airbnb-input text-right text-xs w-full min-w-0" style="min-height: 44px;" value="${escapeHTML(r.pct || '')}" data-cp-pct="${escapeHTML(r.id)}" placeholder="30">
+            </div>
+            <button type="button" class="tool-danger-btn" data-cp-remove="${escapeHTML(r.id)}" style="min-height: 44px; min-width: 44px;" aria-label="ลบงวดที่ ${i + 1}">ลบ</button>
+        </div>`).join('');
+
+    let resultHTML = '';
+    let statusHTML = null;
+    let emptyText = 'ป้อนมูลค่างานตามสัญญาเพื่อคำนวณงวดงาน';
+    const line = (label, value, strong) => `<div class="flex justify-between gap-2 ${strong ? 'font-bold' : ''}"><span class="${strong ? '' : 'text-[var(--app-muted)]'}">${label}</span><span class="font-mono text-right">${value}</span></div>`;
+    if (calc.valid) {
+        const cards = calc.items.map(item => `
+            <div class="themed-subcard p-3 space-y-1.5 text-xs">
+                <div class="font-bold text-[var(--app-ink)]">งวดที่ ${item.index} (${formatNum(item.pct, 2)}%)</div>
+                ${line('ค่าจ้างงวดนี้', `${formatMoney(item.gross)} บาท`)}
+                ${calc.applyVat ? line(`VAT ${formatNum(calc.vatPct, 2)}%`, `+${formatMoney(item.vat)} บาท`) : ''}
+                ${calc.retentionPct > 0 ? line(`หักเงินประกันผลงาน ${formatNum(calc.retentionPct, 2)}%`, `-${formatMoney(item.retention)} บาท`) : ''}
+                ${calc.applyWht ? line(`หัก ณ ที่จ่าย ${formatNum(calc.whtPct, 2)}%`, `-${formatMoney(item.wht)} บาท`) : ''}
+                ${line('ยอดจ่ายสุทธิ', `${formatMoney(item.net)} บาท`, true)}
+            </div>`).join('');
+        resultHTML = `
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">ยอดจ่ายสุทธิรวมทุกงวด (ไม่รวมเงินประกันที่ถือไว้)</div>
+                <div class="themed-result-value text-2xl font-bold font-mono break-words">${formatMoney(calc.totalNet)} บาท</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${line('มูลค่างานตามสัญญา', `${formatMoney(calc.totalGross)} บาท`)}
+                    ${calc.applyVat ? line('VAT รวม', `${formatMoney(calc.totalVat)} บาท`) : ''}
+                    ${line('เงินประกันผลงานที่ถือไว้รวม', `${formatMoney(calc.totalRetention)} บาท`)}
+                    ${calc.applyWht ? line('ภาษีหัก ณ ที่จ่ายรวม', `${formatMoney(calc.totalWht)} บาท`) : ''}
+                </div>
+                <div class="space-y-2">${cards}</div>
+            </div>`;
+        statusHTML = `จ่ายสุทธิรวม <span class="text-lg text-[var(--app-accent)] underline">${formatMoney(calc.totalNet)} บาท</span><span class="text-xs font-normal opacity-80 block mt-1">${calc.items.length} งวด · เงินประกันถือไว้ ${formatMoney(calc.totalRetention)} บาท</span>`;
+    } else if (calc.reason === 'pct_sum') {
+        resultHTML = `<div class="themed-subcard p-3 text-xs font-semibold" role="alert">เปอร์เซ็นต์ทุกงวดรวมกันได้ ${formatNum(calc.pctSum, 2)}% ต้องรวมกันเท่ากับ 100%</div>`;
+        emptyText = 'เปอร์เซ็นต์ทุกงวดต้องรวมกันเท่ากับ 100%';
+    } else if (calc.reason === 'invalid_installment') {
+        emptyText = 'กรอกเปอร์เซ็นต์ของทุกงวดเป็นตัวเลข';
+    }
+
+    container.innerHTML = `
+        <div class="contractor-payment-tool flex flex-col gap-3 p-1">
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'มูลค่างานตามสัญญา (ก่อน VAT)', st.contractValue, 'บาท', 'เช่น 1,200,000')}
+                ${createKeypadFieldHTML(1, 'เงินประกันผลงาน (Retention)', st.retentionPct, '%', 'เช่น 5')}
+                ${createKeypadFieldHTML(2, 'อัตราหัก ณ ที่จ่าย (ใช้เมื่อเลือกหัก)', st.whtPct, '%', 'เช่น 3')}
+                ${createKeypadFieldHTML(3, 'อัตรา VAT (ใช้เมื่อเลือกคิด)', st.vatRate, '%', 'เช่น 7')}
+            </div>
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ภาษี</div>
+                <div class="grid grid-cols-2 gap-2">
+                    ${toggle('applyVat', 'คิด VAT เพิ่มจากราคาสัญญา', Boolean(st.applyVat))}
+                    ${toggle('applyWht', 'หักภาษี ณ ที่จ่าย', Boolean(st.applyWht))}
+                </div>
+            </div>
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ตัวอย่างการแบ่งงวด (ปรับเองได้)</div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">${templateChips}</div>
+            </div>
+            <div class="themed-tool-card p-3 space-y-3 text-xs">
+                <div class="flex justify-between gap-2"><span class="font-semibold text-[var(--app-ink)]">งวดงาน</span><span class="font-mono ${Number.isFinite(pctSumNow) && Math.abs(pctSumNow - 100) <= 1e-6 ? 'text-[var(--app-muted)]' : 'font-bold'}">รวม ${Number.isFinite(pctSumNow) ? formatNum(pctSumNow, 2) : '-'}%</span></div>
+                ${rowsHTML || '<div class="text-[var(--app-muted)]">ยังไม่มีงวด กดเพิ่มงวดด้านล่าง</div>'}
+                <button type="button" class="tool-action-btn" id="btnAddInstallment" style="min-height: 44px;">เพิ่มงวด</button>
+            </div>
+            ${resultHTML}
+            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
+                <div>เปอร์เซ็นต์ของตัวอย่างเป็นเพียงค่าเริ่มต้น ไม่ใช่มาตรฐาน ให้กำหนดตามสัญญาจริงที่ตกลงกัน</div>
+                <div>วิธีคิด: VAT และหัก ณ ที่จ่ายคำนวณจากค่าจ้างงวดนั้นก่อน VAT ส่วนเงินประกันหักจากค่าจ้างงวดนั้น ยอดสุทธิ = ค่าจ้าง + VAT - เงินประกัน - หัก ณ ที่จ่าย</div>
+                <div>ยังไม่ยืนยัน: ภาษีหัก ณ ที่จ่ายใช้กรณีผู้ว่าจ้างเป็นนิติบุคคลและเป็นค่าจ้างทำของ และวิธีจัดการ VAT กับเงินประกันขึ้นกับเงื่อนไขสัญญา ควรสอบถามนักบัญชีหรือผู้ทำสัญญา</div>
+            </div>
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    container.querySelectorAll('[data-cp-template]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tpl = CONTRACTOR_TEMPLATES.find(t => t.key === btn.dataset.cpTemplate);
+            if (!tpl) return;
+            st.template = tpl.key;
+            st.installments = tpl.pcts.map((p, i) => ({ id: String(i + 1), pct: String(p) }));
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('[data-cp-toggle]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st[btn.dataset.cpToggle] = !st[btn.dataset.cpToggle];
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('[data-cp-pct]').forEach(input => {
+        input.addEventListener('change', () => {
+            const target = rows.find(r => r.id === input.dataset.cpPct);
+            if (!target) return;
+            target.pct = input.value;
+            st.template = '';
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('[data-cp-remove]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.installments = rows.filter(r => r.id !== btn.dataset.cpRemove);
+            st.template = '';
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    const addBtn = document.getElementById('btnAddInstallment');
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            if (rows.length >= CONTRACTOR_MAX_INSTALLMENTS) return;
+            const nextId = String(rows.reduce((max, r) => Math.max(max, Number(r.id) || 0), 0) + 1);
+            st.installments = rows.concat([{ id: nextId, pct: '' }]);
+            st.template = '';
+            persistAppState();
+            renderActiveTool();
+        });
+    }
+
+    if (statusHTML) {
+        setStatusBanner('success', statusHTML);
+    } else {
+        setStatusBanner('empty', emptyText);
+    }
+}
+
 (function(root) {
     const exportsObj = {
+        CONTRACTOR_TEMPLATES,
+        calculateContractorPayment,
+        renderContractorPaymentTool,
         REBAR_TABLE,
         REBAR_STOCK_LENGTH_M,
         calculateRoof,
@@ -19824,6 +20055,8 @@ function clearCurrentTool() {
         appState.wall_ceiling_calc = { tab: appState.wall_ceiling_calc?.tab || 'masonry', wallLength: '', wallHeight: '', deductArea: '0', brickType: 'lightweight', bricksPerSqm: '8.33', masonryWastePct: '5', plasterSides: '2', plasterCoverage: '2', brickPrice: '', plasterBagPrice: '', masonryLaborPerSqm: '', plasterLaborPerSqm: '', ceilingArea: '', ceilingType: 'gypsum', panelAreaSqm: '2.88', ceilingWastePct: '10', panelPrice: '', ceilingLaborPerSqm: '' };
     } else if (id === 'roof_steel_calc') {
         appState.roof_steel_calc = { tab: appState.roof_steel_calc?.tab || 'roof', roofRun: '', roofLength: '', roofAngle: '15', roofOverhang: '0', roofSides: '1', sheetWidth: '0.76', purlinSpacing: '1', screwsPerSqm: '5', roofPricePerSqm: '', stockLen: '6', kerfMm: '0', pieces: [{ id: '1', length: '', qty: '1' }], rebarType: 'DB12', rebarBars: '', rebarLength: '', rebarPricePerKg: '', conWidth: '', conDepth: '', conLength: '', conQty: '1', conWastePct: '5', conPricePerM3: '' };
+    } else if (id === 'contractor_payment') {
+        appState.contractor_payment = { contractValue: '', retentionPct: '5', whtPct: '3', vatRate: '7', applyVat: false, applyWht: false, template: '4', installments: [{ id: '1', pct: '30' }, { id: '2', pct: '30' }, { id: '3', pct: '30' }, { id: '4', pct: '10' }] };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '', length: '', height: '2.8', btuPerSqm: '750', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {
@@ -20107,6 +20340,8 @@ function loadDemoForCurrentTool() {
         appState.wall_ceiling_calc = { tab: appState.wall_ceiling_calc?.tab || 'masonry', wallLength: '6', wallHeight: '3', deductArea: '3.6', brickType: 'lightweight', bricksPerSqm: '8.33', masonryWastePct: '5', plasterSides: '2', plasterCoverage: '2', brickPrice: '25', plasterBagPrice: '120', masonryLaborPerSqm: '180', plasterLaborPerSqm: '120', ceilingArea: '20', ceilingType: 'gypsum', panelAreaSqm: '2.88', ceilingWastePct: '10', panelPrice: '190', ceilingLaborPerSqm: '180' };
     } else if (id === 'roof_steel_calc') {
         appState.roof_steel_calc = { tab: appState.roof_steel_calc?.tab || 'roof', roofRun: '4', roofLength: '6', roofAngle: '15', roofOverhang: '0.5', roofSides: '1', sheetWidth: '0.76', purlinSpacing: '1', screwsPerSqm: '5', roofPricePerSqm: '350', stockLen: '6', kerfMm: '3', pieces: [{ id: '1', length: '2.4', qty: '4' }, { id: '2', length: '1.2', qty: '6' }, { id: '3', length: '0.8', qty: '5' }], rebarType: 'DB12', rebarBars: '10', rebarLength: '6', rebarPricePerKg: '25', conWidth: '0.2', conDepth: '0.3', conLength: '4', conQty: '4', conWastePct: '5', conPricePerM3: '2000' };
+    } else if (id === 'contractor_payment') {
+        appState.contractor_payment = { contractValue: '1200000', retentionPct: '5', whtPct: '3', vatRate: '7', applyVat: true, applyWht: true, template: '4', installments: [{ id: '1', pct: '30' }, { id: '2', pct: '30' }, { id: '3', pct: '30' }, { id: '4', pct: '10' }] };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '4', length: '5', height: '2.8', btuPerSqm: '850', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {

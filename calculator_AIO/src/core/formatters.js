@@ -99,6 +99,11 @@ function hasInvalidNumericInput(toolId, stateObj) {
             : ['roofRun', 'roofLength', 'roofAngle', 'roofOverhang', 'sheetWidth', 'purlinSpacing', 'screwsPerSqm', 'roofPricePerSqm'];
         return keys.some(key => invalid(st[key]));
     }
+    if (curToolId === 'contractor_payment') {
+        const st = state.contractor_payment || {};
+        const rows = Array.isArray(st.installments) ? st.installments : [];
+        return ['contractValue', 'retentionPct', 'whtPct', 'vatRate'].some(key => invalid(st[key])) || rows.some(r => invalid(r.pct));
+    }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
     return (fields[curToolId] || []).some(key => invalid(state[curToolId][key]));
