@@ -149,6 +149,15 @@ function getToolFieldBindings(toolId) {
             const s = () => appState.wire_data;
             return [{ get: () => s().lengthM, set: (v) => { s().lengthM = v; } }];
         }
+        case 'solar_rooftop': {
+            const s = () => appState.solar_rooftop;
+            return [
+                { get: () => s().monthlyKwh, set: (v) => { s().monthlyKwh = v; } },
+                { get: () => s().monthlyBill, set: (v) => { s().monthlyBill = v; } },
+                { get: () => s().costPerKwp, set: (v) => { s().costPerKwp = v; } },
+                { get: () => s().exportRate, set: (v) => { s().exportRate = v; } }
+            ];
+        }
         case 'btu_calc':
             return [
                 { get: () => appState.btu_calc.width, set: (v) => { appState.btu_calc.width = v; } },

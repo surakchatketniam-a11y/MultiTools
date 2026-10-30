@@ -1854,7 +1854,7 @@
     <div id="printFormalReceipt" class="hidden"></div>
 
     <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
-    <script src="src/bundle.js?v=84"></script>
+    <script src="src/bundle.js?v=85"></script>
 
     <script>
         function getSafeDateStr(offsetDays = 0) {
@@ -2360,6 +2360,16 @@
                 lengthM: '100'
             },
 
+            // Engineering: solar rooftop sizing & payback
+            solar_rooftop: {
+                monthlyKwh: '450',
+                monthlyBill: '2100',
+                daytimePct: '30',
+                costPerKwp: '35000',
+                exportRate: '2.2',
+                contractYears: '10'
+            },
+
             // 24. Car Hire Purchase Loan
             car_loan: {
                 vehicleType: 'car',
@@ -2583,6 +2593,7 @@
                 case 'food_costing':     renderFoodCostingTool(topPanel); break;
                 case 'construction_calc': renderConstructionTool(topPanel); break;
                 case 'btu_calc':         renderBtuTool(topPanel); break;
+                case 'solar_rooftop': renderSolarRooftopTool(topPanel); break;
                 case 'wire_data': renderWireDataTool(topPanel); break;
                 case 'conduit_fill': renderConduitFillTool(topPanel); break;
                 case 'wire_breaker': renderWireBreakerTool(topPanel); break;

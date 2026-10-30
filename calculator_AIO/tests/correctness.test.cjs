@@ -287,11 +287,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 47 tools classified into 6 valid groups with search keywords', () => {
+test('catalog contains exactly 48 tools classified into 6 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
     assert.equal(TOOL_GROUPS.length, 6);
-    assert.equal(TOOLS_CATALOG.length, 47);
+    assert.equal(TOOLS_CATALOG.length, 48);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -451,7 +451,7 @@ test('all 36 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 47);
+    assert.equal(ctx.TOOLS_CATALOG.length, 48);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -1214,7 +1214,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('คุ้มค่าที่สุด'));
 });
 
-test('all 47 tool renderers are modularized and exported across the 6 tool groups', () => {
+test('all 48 tool renderers are modularized and exported across the 6 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -1263,10 +1263,11 @@ test('all 47 tool renderers are modularized and exported across the 6 tool group
         shape_calc: 'renderShapeTool',
         wire_breaker: 'renderWireBreakerTool',
         conduit_fill: 'renderConduitFillTool',
-        wire_data: 'renderWireDataTool'
+        wire_data: 'renderWireDataTool',
+        solar_rooftop: 'renderSolarRooftopTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 47);
+    assert.equal(Object.keys(rendererMap).length, 48);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -4292,6 +4293,86 @@ test('wire_data: IEC 01 and VAF catalog rows agree with the wire_breaker and con
     assert.ok(vafSummary.includes('VAF 2 แกน'));
     assert.ok(vafSummary.includes('กระแสในอากาศ 40°C 23 A'));
     assert.ok(!vafSummary.includes('สั่งซื้อ'));
+});
+
+test('solar_rooftop: sizing, self-consumption split, payback, warnings and flags', () => {
+    const ctx = context();
+    const near = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} vs ${b}`);
+    const base = { monthlyKwh: '450', monthlyBill: '2100', daytimePct: '30', costPerKwp: '35000', exportRate: '2.2', contractYears: '10' };
+    const yieldPerKwpDay = ctx.SOLAR_PSH * ctx.SOLAR_PR;
+    near(yieldPerKwpDay, 3.276);   // 4.2 h x 0.78: 5 kWp gives 16.38 kWh/day as in the reference document
+    near(5 * yieldPerKwpDay, 16.38);
+
+    const a = ctx.calculateSolarRooftop(base);
+    assert.equal(a.valid, true);
+    assert.equal(a.dataVerified, false);
+    assert.equal(ctx.SOLAR_DATA_VERIFIED, false);
+    near(a.unitPrice, 2100 / 450);
+    // daytime use 135 kWh/month = 4.438 kWh/day -> 1.355 kWp -> 2 panels of 550 W
+    near(a.daytimeKwh, 135);
+    assert.equal(a.panels, 2);
+    near(a.sizeKwp, 1.1);
+    assert.equal(a.inverterKw, 3);
+    near(a.roofAreaSqm, 2 * ctx.SOLAR_PANEL_AREA_SQM);
+    near(a.monthlyProductionKwh, 1.1 * yieldPerKwpDay * 365 / 12);
+    // Production is split between self use and export, nothing is lost
+    near(a.selfKwh + a.exportKwh, a.monthlyProductionKwh);
+    assert.ok(a.selfKwh <= a.daytimeKwh + 1e-9);
+    near(a.selfSavingMonth, a.selfKwh * a.unitPrice);
+    near(a.exportIncomeMonth, a.exportKwh * 2.2);
+    near(a.systemCost, 1.1 * 35000);
+
+    // Cumulative benefit: year 1 is 12 x monthly, later years lose 0.5% per year, export income stops after the contract
+    near(a.yearly[0].benefit, 12 * (a.selfSavingMonth + a.exportIncomeMonth));
+    near(a.yearly[1].benefit, 12 * 0.995 * (a.selfSavingMonth + a.exportIncomeMonth));
+    near(a.yearly[10].benefit, 12 * Math.pow(0.995, 10) * a.selfSavingMonth);
+    assert.equal(a.yearly.length, 25);
+    near(a.lifetimeProfit, a.yearly[24].cumulative - a.systemCost);
+    assert.ok(a.paybackYears > 0 && a.paybackYears < 25);
+    // Payback year is where the cumulative benefit reaches the cost
+    const whole = Math.floor(a.paybackYears);
+    assert.ok(whole === 0 || a.yearly[whole - 1].cumulative < a.systemCost);
+    assert.ok(a.yearly[Math.ceil(a.paybackYears) - 1].cumulative >= a.systemCost - 1e-6);
+
+    // A 20-year contract earns more than 10 years when there is surplus export
+    const big = { ...base, monthlyKwh: '1000', monthlyBill: '4800', daytimePct: '70' };
+    const b10 = ctx.calculateSolarRooftop(big);
+    const b20 = ctx.calculateSolarRooftop({ ...big, contractYears: '20' });
+    assert.equal(b10.contractYears, 10);
+    assert.equal(b20.contractYears, 20);
+    assert.ok(b20.lifetimeProfit >= b10.lifetimeProfit);
+    // Sizes above 5 kW trigger the export limit warning (draft announcement, unverified)
+    assert.equal(b10.sizeKwp > 5, true);
+    assert.ok(Array.from(b10.warnings).includes('over_export_limit'));
+    assert.ok(!Array.from(a.warnings).includes('over_export_limit'));
+
+    // Share of daytime use scales the size; export rate 0 means no export income
+    const half = ctx.calculateSolarRooftop({ ...base, daytimePct: '50' });
+    assert.ok(half.sizeKwp > a.sizeKwp);
+    assert.equal(ctx.calculateSolarRooftop({ ...base, exportRate: '0' }).exportIncomeMonth, 0);
+    // Too small a bill to pay back within 25 years
+    const none = ctx.calculateSolarRooftop({ ...base, monthlyBill: '45', costPerKwp: '100000' });
+    assert.equal(none.paybackYears, null);
+    assert.ok(Array.from(none.warnings).includes('no_payback'));
+    // Defaults used when cost and rate are blank
+    const blank = ctx.calculateSolarRooftop({ ...base, costPerKwp: '', exportRate: '' });
+    assert.equal(blank.costPerKwp, 35000);
+    assert.equal(blank.exportRate, 2.2);
+
+    // Invalid input
+    assert.equal(ctx.calculateSolarRooftop({ ...base, monthlyKwh: '' }).reason, 'invalid_kwh');
+    assert.equal(ctx.calculateSolarRooftop({ ...base, monthlyBill: '0' }).reason, 'invalid_bill');
+    assert.equal(ctx.calculateSolarRooftop({ ...base, daytimePct: '120' }).reason, 'invalid_daytime');
+    assert.equal(ctx.calculateSolarRooftop({ ...base, costPerKwp: '-1' }).reason, 'invalid_cost');
+    assert.equal(ctx.calculateSolarRooftop({ ...base, exportRate: 'x' }).reason, 'invalid_rate');
+    assert.equal(ctx.hasInvalidNumericInput('solar_rooftop', { solar_rooftop: { ...base, monthlyKwh: '4a' } }), true);
+    assert.equal(ctx.hasInvalidNumericInput('solar_rooftop', { solar_rooftop: base }), false);
+
+    // Summary text carries the unverified-policy warning
+    const summary = ctx.getToolSummaryText('solar_rooftop', { solar_rooftop: base });
+    assert.ok(summary.includes('1.1 kWp'));
+    assert.ok(summary.includes('2 แผง'));
+    assert.ok(summary.includes('ยังไม่ยืนยัน'));
 });
 
 test('construction_calc: tiles, paint, and concrete calculations', () => {

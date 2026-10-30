@@ -131,6 +131,10 @@ function hasInvalidNumericInput(toolId, stateObj) {
         const st = state.wire_data || {};
         return invalid(st.lengthM);
     }
+    if (curToolId === 'solar_rooftop') {
+        const st = state.solar_rooftop || {};
+        return invalid(st.monthlyKwh) || invalid(st.monthlyBill) || invalid(st.costPerKwp) || invalid(st.exportRate);
+    }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
     return (fields[curToolId] || []).some(key => invalid(state[curToolId][key]));

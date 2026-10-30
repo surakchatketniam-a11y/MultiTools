@@ -48,6 +48,7 @@ var TOOLS_CATALOG = [
     { id: 'wire_breaker', group: 'engineering', category: 'all', menuTitle: 'สายไฟ เบรกเกอร์ & แรงดันตก', headerTitle: 'เลือกขนาดสายไฟ เบรกเกอร์ & ตรวจแรงดันตก (1 เฟส)', usesSharedKeypad: true, keywords: 'wire breaker สายไฟ เบรกเกอร์ ขนาดสาย แรงดันตก voltage drop ตร.มม. แอมป์ เครื่องทำน้ำอุ่น แอร์ ev charger wallbox ช่างไฟ ติดตั้งไฟฟ้า thw vaf iec 01 mcb วสท.' },
     { id: 'conduit_fill', group: 'engineering', category: 'all', menuTitle: 'ขนาดท่อร้อยสาย', headerTitle: 'เลือกขนาดท่อร้อยสาย & นับจำนวนสายในท่อ (สาย IEC 01 / THW)', usesSharedKeypad: false, keywords: 'conduit fill ท่อร้อยสาย ขนาดท่อ ท่อ pvc ท่อ emt ท่อเหล็ก ร้อยสายไฟ จำนวนสายในท่อ ท่อ 20 มม. ท่อ 3 หุน ท่อ 4 หุน สายไฟ thw iec 01 ช่างไฟ ร้อยท่อ 53% 40% 31%' },
     { id: 'wire_data', group: 'engineering', category: 'all', menuTitle: 'ข้อมูลสาย THW/VAF & จำนวนม้วน', headerTitle: 'ข้อมูลสายไฟ IEC 01 (THW) / VAF & คำนวณจำนวนม้วนและน้ำหนัก', usesSharedKeypad: true, keywords: 'wire data สายไฟ thw iec 01 vaf น้ำหนักสาย ม้วนสาย ดรัม เส้นผ่านศูนย์กลางสาย ความต้านทานสาย ขนาดสาย ตร.มม. สั่งซื้อสาย กี่ม้วน สายไฟ 100 เมตร ช่างไฟ yazaki ยาซากิ' },
+    { id: 'solar_rooftop', group: 'engineering', category: 'all', menuTitle: 'โซลาร์เซลล์หลังคาบ้าน & คืนทุน', headerTitle: 'คำนวณขนาดโซลาร์รูฟท็อปและจุดคุ้มทุน', usesSharedKeypad: true, keywords: 'solar rooftop โซลาร์ โซลาร์เซลล์ โซลาร์รูฟท็อป แผงโซลาร์ คืนทุน ประหยัดค่าไฟ ขายไฟคืน รับซื้อไฟ 2.20 โซลาร์ภาคประชาชน กี่แผง อินเวอร์เตอร์ kw kwp ค่าไฟ' },
 
     // หมวดหมู่ที่ 2: ธุรกิจ & ค้าขาย
     { id: 'vat',        group: 'biz', category: 'fav', menuTitle: 'ภาษีมูลค่าเพิ่ม (VAT)', headerTitle: 'เครื่องคำนวณภาษีมูลค่าเพิ่ม', usesSharedKeypad: true, keywords: 'vat ภาษี 7% มูลค่าเพิ่ม ถอด vat รวม vat' },
@@ -236,6 +237,10 @@ function hasInvalidNumericInput(toolId, stateObj) {
     if (curToolId === 'wire_data') {
         const st = state.wire_data || {};
         return invalid(st.lengthM);
+    }
+    if (curToolId === 'solar_rooftop') {
+        const st = state.solar_rooftop || {};
+        return invalid(st.monthlyKwh) || invalid(st.monthlyBill) || invalid(st.costPerKwp) || invalid(st.exportRate);
     }
     const integers = { tip: ['people'], loan: ['months', ...(state.loan && state.loan.rateType === 'step' ? ['promoMonths'] : [])] };
     if ((integers[curToolId] || []).some(key => !Number.isFinite(integerOrDefault(state[curToolId][key])))) return true;
@@ -6144,6 +6149,12 @@ function getToolSummaryText(toolId, stateObj) {
             const order = calc.hasLength ? `\n----------------------------------\nสั่งซื้อ ${formatNum(calc.lengthM, 1)} ม.: หนักประมาณ ${formatNum(calc.totalWeightKg, 1)} กก. ความต้านทานรวม ${formatNum(calc.resistanceOhm, 3)} โอห์ม (20°C)\nจำนวน${packName}มาตรฐาน (${formatNum(r.lengthM, 0)} ม./${packName}): ${formatNum(calc.packs, 0)} ${packName} (ความยาวรวม ${formatNum(calc.packedLengthM, 0)} ม. เหลือ ${formatNum(calc.leftoverM, 1)} ม.)` : '';
             return `สรุปข้อมูลสายไฟ ${typeName} ${formatNum(r.sizeSqmm, 1)} ตร.มม.\n${divider}\n• ตัวนำ: ${WIRE_DATA_CONDUCTOR_LABELS[r.conductor]} ฉนวนหนา ${formatNum(r.insulationMm, 1)} มม.\n• ขนาดรวม: ${dims}\n• ความต้านทานที่ 20°C: ${formatNum(r.r20, 4)} โอห์ม/กม.\n• ${currents}\n• น้ำหนักประมาณ: ${formatNum(r.weightKgKm, 0)} กก./กม.${order}\n(ข้อมูลจากแค็ตตาล็อก Thai-Yazaki ค่าประมาณ ควรให้ช่างไฟตรวจ)\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'solar_rooftop': {
+            const calc = (typeof calculateSolarRooftop === 'function') ? calculateSolarRooftop(state.solar_rooftop || {}) : { valid: false };
+            if (!calc.valid) return `สรุปโซลาร์เซลล์หลังคาบ้าน\n${divider}\nกรอกหน่วยไฟและค่าไฟต่อเดือนให้ถูกต้อง\n(คำนวณโดย Multitools Calculator)`;
+            const payback = calc.paybackYears === null ? 'ไม่คืนทุนใน 25 ปี' : `${formatNum(calc.paybackYears, 1)} ปี`;
+            return `สรุปโซลาร์เซลล์หลังคาบ้าน\n${divider}\n• ใช้ไฟ ${formatNum(calc.daytimeKwh / ((Number(state.solar_rooftop.daytimePct) || 1) / 100), 0)} หน่วย/เดือน ค่าไฟเฉลี่ย ${formatNum(calc.unitPrice, 2)} บาท/หน่วย\n• ขนาดระบบแนะนำ: ${formatNum(calc.sizeKwp, 2)} kWp (${formatNum(calc.panels, 0)} แผง) พื้นที่หลังคาประมาณ ${formatNum(calc.roofAreaSqm, 1)} ตร.ม.\n• ผลิตไฟประมาณ ${formatNum(calc.monthlyProductionKwh, 0)} หน่วย/เดือน (ใช้เอง ${formatNum(calc.selfKwh, 0)} ขายคืน ${formatNum(calc.exportKwh, 0)})\n• ประหยัด+ขายไฟ ${formatNum(calc.monthlySaving, 0)} บาท/เดือน (${formatNum(calc.yearlySaving, 0)} บาท/ปี)\n• ค่าติดตั้งประมาณ ${formatNum(calc.systemCost, 0)} บาท คืนทุน ${payback}\n• กำไรสะสม 25 ปี ${formatNum(calc.lifetimeProfit, 0)} บาท\n(ค่าประมาณ นโยบายรับซื้อไฟและราคาติดตั้งยังไม่ยืนยัน ตรวจกับ กฟน./กฟภ. และผู้ติดตั้งก่อนตัดสินใจ)\n(คำนวณโดย Multitools Calculator)`;
+        }
         case 'btu_calc': {
             const calc = (typeof calculateBtu === 'function') ? calculateBtu(state.btu_calc || {}) : { valid: false };
             if (!calc.valid) return `สรุปขนาดแอร์ BTU\n${divider}\nยังไม่ได้ป้อนขนาดห้อง\n(คำนวณโดย Multitools Calculator)`;
@@ -6420,6 +6431,15 @@ function getToolFieldBindings(toolId) {
         case 'wire_data': {
             const s = () => appState.wire_data;
             return [{ get: () => s().lengthM, set: (v) => { s().lengthM = v; } }];
+        }
+        case 'solar_rooftop': {
+            const s = () => appState.solar_rooftop;
+            return [
+                { get: () => s().monthlyKwh, set: (v) => { s().monthlyKwh = v; } },
+                { get: () => s().monthlyBill, set: (v) => { s().monthlyBill = v; } },
+                { get: () => s().costPerKwp, set: (v) => { s().costPerKwp = v; } },
+                { get: () => s().exportRate, set: (v) => { s().exportRate = v; } }
+            ];
         }
         case 'btu_calc':
             return [
@@ -21370,8 +21390,213 @@ function renderWireDataTool(container) {
     }
 }
 
+/* -----------------------------------------------------------
+ * solar_rooftop: ขนาดระบบโซลาร์หลังคาบ้านและจุดคุ้มทุน
+ * ค่าที่ยังไม่ยืนยันทุกตัวให้ผู้ใช้ปรับได้ และแสดงบนหน้าจอ (ดู ENGINEERING_REFERENCE_STANDARDS.md หัวข้อ 4)
+ * ----------------------------------------------------------- */
+const SOLAR_PSH = 4.2;                // ชั่วโมงแดดจัดเฉลี่ย (ช่วงอ้างอิง 4.0 - 4.5) ค่าประมาณ
+const SOLAR_PR = 0.78;                // Performance Ratio (ช่วงอ้างอิง 0.75 - 0.80) ค่าประมาณ
+const SOLAR_PANEL_WATT = 550;         // แผงมาตรฐาน ~550 W ค่าประมาณ
+const SOLAR_PANEL_AREA_SQM = 2.6;     // พื้นที่ต่อแผงรวมช่องว่างติดตั้ง ค่าประมาณ
+const SOLAR_DEGRADATION = 0.005;      // กำลังผลิตลดลงต่อปี ค่าประมาณ
+const SOLAR_LIFETIME_YEARS = 25;
+const SOLAR_INVERTER_SIZES = [3, 5, 10, 15];
+const SOLAR_EXPORT_LIMIT_KW = 5;      // ร่างประกาศ กกพ.: เสนอขายไม่เกิน 5 kW ต่อมิเตอร์ (ยังไม่ยืนยัน)
+const SOLAR_DAYTIME_PRESETS = [
+    { pct: 30, label: '30% ทำงานนอกบ้าน' },
+    { pct: 50, label: '50% อยู่บ้านบางส่วน' },
+    { pct: 70, label: '70% ร้านค้า/ออฟฟิศ' }
+];
+const SOLAR_DEFAULTS = { exportRate: 2.2, costPerKwp: 35000, contractYears: 10 };
+const SOLAR_DATA_VERIFIED = false;
+const SOLAR_POLICY_NOTE = 'อัตรารับซื้อ 2.20 บาท/หน่วย เป็นมติ กพช. (เม.ย. และ ก.ย. 2569) ส่วนระยะสัญญา 10 ปีมาจากร่างประกาศ กกพ. ขณะที่มติ กพช. ก.ย. 2569 ขยายเป็น 20 ปี ยังไม่พบประกาศฉบับสุดท้าย ให้ตรวจกับ กกพ./กฟน./กฟภ. ก่อนตัดสินใจ';
+
+function calculateSolarRooftop(st) {
+    const s = st || {};
+    const kwh = numberOrDefault(s.monthlyKwh, NaN);
+    const bill = numberOrDefault(s.monthlyBill, NaN);
+    const pct = numberOrDefault(s.daytimePct, NaN);
+    const costPerKwp = numberOrDefault(s.costPerKwp, SOLAR_DEFAULTS.costPerKwp);
+    const exportRate = numberOrDefault(s.exportRate, SOLAR_DEFAULTS.exportRate);
+    const contractYears = Number(s.contractYears) === 20 ? 20 : 10;
+    if (!Number.isFinite(kwh) || kwh <= 0) return { valid: false, reason: 'invalid_kwh' };
+    if (!Number.isFinite(bill) || bill <= 0) return { valid: false, reason: 'invalid_bill' };
+    if (!Number.isFinite(pct) || pct <= 0 || pct > 100) return { valid: false, reason: 'invalid_daytime' };
+    if (!Number.isFinite(costPerKwp) || costPerKwp <= 0) return { valid: false, reason: 'invalid_cost' };
+    if (!Number.isFinite(exportRate) || exportRate < 0) return { valid: false, reason: 'invalid_rate' };
+
+    const daysPerMonth = 365 / 12;
+    const unitPrice = bill / kwh;
+    const daytimeKwh = kwh * pct / 100;
+    const yieldPerKwpDay = SOLAR_PSH * SOLAR_PR;
+    const targetKwp = (daytimeKwh / daysPerMonth) / yieldPerKwpDay;
+    const panels = Math.max(1, Math.round(targetKwp * 1000 / SOLAR_PANEL_WATT));
+    const sizeKwp = panels * SOLAR_PANEL_WATT / 1000;
+    const inverterKw = SOLAR_INVERTER_SIZES.find(k => k >= sizeKwp - 1e-9) || null;
+    const monthlyProductionKwh = sizeKwp * yieldPerKwpDay * daysPerMonth;
+    const selfKwh = Math.min(monthlyProductionKwh, daytimeKwh);
+    const exportKwh = monthlyProductionKwh - selfKwh;
+    const selfSavingMonth = selfKwh * unitPrice;
+    const exportIncomeMonth = exportKwh * exportRate;
+    const systemCost = sizeKwp * costPerKwp;
+
+    // กระแสเงินสดรายปี: ค่าไฟที่ประหยัดได้ตลอด + รายได้ขายไฟเฉพาะช่วงสัญญา กำลังผลิตลดลงปีละ SOLAR_DEGRADATION
+    let cumulative = 0;
+    let paybackYears = null;
+    const yearly = [];
+    for (let y = 1; y <= SOLAR_LIFETIME_YEARS; y++) {
+        const factor = Math.pow(1 - SOLAR_DEGRADATION, y - 1);
+        const benefit = 12 * factor * (selfSavingMonth + (y <= contractYears ? exportIncomeMonth : 0));
+        const before = cumulative;
+        cumulative += benefit;
+        yearly.push({ year: y, benefit, cumulative });
+        if (paybackYears === null && cumulative >= systemCost) {
+            paybackYears = (y - 1) + (systemCost - before) / benefit;
+        }
+    }
+    const warnings = [];
+    if (sizeKwp > SOLAR_EXPORT_LIMIT_KW) warnings.push('over_export_limit');
+    if (!inverterKw) warnings.push('inverter_out_of_range');
+    if (paybackYears === null) warnings.push('no_payback');
+
+    return {
+        valid: true, unitPrice, daytimeKwh, targetKwp, panels, sizeKwp, inverterKw,
+        roofAreaSqm: panels * SOLAR_PANEL_AREA_SQM,
+        monthlyProductionKwh, selfKwh, exportKwh, selfSavingMonth, exportIncomeMonth,
+        monthlySaving: selfSavingMonth + exportIncomeMonth,
+        yearlySaving: 12 * (selfSavingMonth + exportIncomeMonth),
+        systemCost, costPerKwp, exportRate, contractYears,
+        paybackYears, lifetimeProfit: cumulative - systemCost, lifetimeBenefit: cumulative,
+        yearly, warnings, dataVerified: SOLAR_DATA_VERIFIED
+    };
+}
+
+function renderSolarRooftopTool(container) {
+    if (!appState.solar_rooftop) {
+        appState.solar_rooftop = { monthlyKwh: '450', monthlyBill: '2100', daytimePct: '30', costPerKwp: '35000', exportRate: '2.2', contractYears: '10' };
+    }
+    const st = appState.solar_rooftop;
+    const calc = calculateSolarRooftop(st);
+    const row = (label, value) => `<div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">${label}</span><span class="font-semibold font-mono text-right">${value}</span></div>`;
+    const pctNow = Number(st.daytimePct);
+    const pctChips = SOLAR_DAYTIME_PRESETS.map(p => `<button type="button" class="tool-chip-btn solar-pct-chip ${pctNow === p.pct ? 'active font-bold' : ''}" aria-pressed="${pctNow === p.pct}" data-solar-pct="${p.pct}" style="min-height: 44px;">${p.label}</button>`).join('');
+    const yearBtn = y => {
+        const on = (Number(st.contractYears) === 20) === (y === 20);
+        return `<button type="button" class="segment-btn ${on ? 'active' : ''}" aria-pressed="${on}" data-solar-years="${y}" style="min-height: 44px;">สัญญา ${y} ปี</button>`;
+    };
+    const reasons = {
+        invalid_kwh: 'หน่วยไฟต่อเดือนต้องเป็นตัวเลขมากกว่า 0',
+        invalid_bill: 'ค่าไฟต่อเดือนต้องเป็นตัวเลขมากกว่า 0',
+        invalid_daytime: 'สัดส่วนการใช้ไฟกลางวันต้องอยู่ระหว่าง 1 - 100%',
+        invalid_cost: 'ราคาติดตั้งต่อ kWp ต้องเป็นตัวเลขมากกว่า 0',
+        invalid_rate: 'ราคารับซื้อต้องเป็นตัวเลขตั้งแต่ 0'
+    };
+
+    let resultHTML = '';
+    let warnHTML = '';
+    if (calc.valid) {
+        if (calc.warnings.includes('over_export_limit')) warnHTML += `<div>ขนาดระบบเกิน ${SOLAR_EXPORT_LIMIT_KW} kW ร่างประกาศ กกพ. จำกัดการเสนอขายไม่เกิน ${SOLAR_EXPORT_LIMIT_KW} kW ต่อมิเตอร์ (ยังไม่ยืนยัน) รายได้ขายไฟอาจน้อยกว่าที่แสดง</div>`;
+        if (calc.warnings.includes('inverter_out_of_range')) warnHTML += '<div>ขนาดเกิน 15 kW ควรปรึกษาผู้ออกแบบและการไฟฟ้า</div>';
+        if (calc.warnings.includes('no_payback')) warnHTML += `<div>ไม่คืนทุนภายใน ${SOLAR_LIFETIME_YEARS} ปีตามข้อมูลที่กรอก</div>`;
+        const payback = calc.paybackYears === null ? 'ไม่คืนทุนใน 25 ปี' : `${formatNum(Math.floor(calc.paybackYears), 0)} ปี ${formatNum(Math.round((calc.paybackYears % 1) * 12), 0)} เดือน`;
+        resultHTML = `
+            <div class="themed-result-card p-4 space-y-3">
+                <div class="text-xs text-[var(--app-muted)] font-medium">ขนาดระบบที่แนะนำ</div>
+                <div class="themed-result-value text-2xl font-bold font-mono break-words">${formatNum(calc.sizeKwp, 2)} kWp</div>
+                <div class="text-xs text-[var(--app-muted)]">${formatNum(calc.panels, 0)} แผง ขนาดแผง ${SOLAR_PANEL_WATT} W · อินเวอร์เตอร์ ${calc.inverterKw ? `${calc.inverterKw} kW` : 'ปรึกษาผู้ออกแบบ'}</div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${row('พื้นที่หลังคาโดยประมาณ', `${formatNum(calc.roofAreaSqm, 1)} ตร.ม.`)}
+                    ${row('ผลิตไฟต่อเดือน', `${formatNum(calc.monthlyProductionKwh, 0)} หน่วย`)}
+                    ${row('ใช้เองตอนกลางวัน', `${formatNum(calc.selfKwh, 0)} หน่วย`)}
+                    ${row('ส่วนเกินขายคืน', `${formatNum(calc.exportKwh, 0)} หน่วย`)}
+                    ${row('ค่าไฟต่อหน่วยเฉลี่ยของคุณ', `${formatNum(calc.unitPrice, 2)} บาท`)}
+                </div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${row('ประหยัดค่าไฟต่อเดือน', `${formatNum(calc.selfSavingMonth, 0)} บาท`)}
+                    ${row(`รายได้ขายไฟต่อเดือน (ช่วงสัญญา ${calc.contractYears} ปี)`, `${formatNum(calc.exportIncomeMonth, 0)} บาท`)}
+                    ${row('รวมต่อปี (ปีแรก)', `${formatNum(calc.yearlySaving, 0)} บาท`)}
+                </div>
+                <div class="pt-2 border-t border-[var(--app-hairline)] space-y-1.5 text-xs">
+                    ${row('ค่าติดตั้งโดยประมาณ', `${formatNum(calc.systemCost, 0)} บาท`)}
+                    ${row('คืนทุน', payback)}
+                    ${row(`กำไรสะสมตลอด ${SOLAR_LIFETIME_YEARS} ปี`, `${formatNum(calc.lifetimeProfit, 0)} บาท`)}
+                </div>
+            </div>
+            ${warnHTML ? `<div class="themed-subcard p-3 text-xs font-semibold space-y-1" role="alert">${warnHTML}</div>` : ''}`;
+    } else {
+        resultHTML = `<div class="themed-subcard p-3 text-xs font-semibold" role="alert">${reasons[calc.reason] || 'กรอกข้อมูลให้ครบ'}</div>`;
+    }
+
+    container.innerHTML = `
+        <div class="solar-rooftop-tool flex flex-col gap-3 p-1">
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'หน่วยไฟต่อเดือน', st.monthlyKwh, 'หน่วย', 'เช่น 450')}
+                ${createKeypadFieldHTML(1, 'ค่าไฟต่อเดือน', st.monthlyBill, 'บาท', 'เช่น 2,100')}
+            </div>
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">สัดส่วนการใช้ไฟช่วงกลางวัน (09:00 - 16:00 น.)</div>
+                <div class="grid grid-cols-1 gap-2">${pctChips}</div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(2, 'ราคาติดตั้งต่อ kWp', st.costPerKwp, 'บาท', '35,000')}
+                ${createKeypadFieldHTML(3, 'ราคารับซื้อไฟส่วนเกิน', st.exportRate, 'บาท/หน่วย', '2.20')}
+            </div>
+            <div class="segment-group grid-cols-2" role="group" aria-label="ระยะสัญญารับซื้อ">
+                ${yearBtn(10)}
+                ${yearBtn(20)}
+            </div>
+            ${resultHTML}
+            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1" role="note">
+                <div class="font-semibold text-[var(--app-ink)]">ค่าที่ยังไม่ยืนยัน ตรวจก่อนตัดสินใจ</div>
+                <div>${SOLAR_POLICY_NOTE}</div>
+                <div>ใช้ชั่วโมงแดด ${SOLAR_PSH} ชม./วัน และ PR ${SOLAR_PR} (ค่าประมาณจากช่วง 4.0 - 4.5 ชม. และ 0.75 - 0.80) กำลังผลิตลดลงปีละ ${SOLAR_DEGRADATION * 100}% ไม่คิดค่าบำรุงรักษา ค่าเปลี่ยนอินเวอร์เตอร์ และการปรับค่าไฟในอนาคต</div>
+                <div>ราคาติดตั้งต่อ kWp ปรับได้ ค่าเริ่มต้น 35,000 บาท อยู่กลางช่วงราคาตลาดบ้านที่พบ ราว 26,000 - 50,000 บาท/kWp ยังไม่รวมเงินสนับสนุนของรัฐ ซึ่งยังไม่ยืนยัน</div>
+                <div>คิดประหยัดจากค่าไฟเฉลี่ย (ค่าไฟ/หน่วย) ซึ่งต่ำกว่าอัตราขั้นบันไดหน่วยสุดท้ายจริง จึงค่อนข้างระมัดระวัง ให้ผู้ติดตั้งที่ได้รับอนุญาตสำรวจหลังคาและขอแบบก่อนติดตั้งจริง</div>
+            </div>
+        </div>
+    `;
+
+    attachFieldClickListeners(container);
+
+    container.querySelectorAll('[data-solar-pct]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.daytimePct = btn.dataset.solarPct;
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+    container.querySelectorAll('[data-solar-years]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            st.contractYears = btn.dataset.solarYears === '20' ? '20' : '10';
+            persistAppState();
+            renderActiveTool();
+        });
+    });
+
+    if (calc.valid) {
+        const payback = calc.paybackYears === null ? 'ไม่คืนทุนใน 25 ปี' : `คืนทุน ${formatNum(calc.paybackYears, 1)} ปี`;
+        setStatusBanner('warning', `โซลาร์ <span class="text-lg text-[var(--app-accent)] underline">${formatNum(calc.sizeKwp, 2)} kWp</span><span class="text-xs font-normal opacity-80 block mt-1">${formatNum(calc.panels, 0)} แผง · ประหยัด ${formatNum(calc.monthlySaving, 0)} บาท/เดือน · ${payback} (ค่าประมาณ ยังไม่ยืนยันนโยบาย)</span>`);
+    } else {
+        setStatusBanner('empty', reasons[calc.reason] || 'กรอกข้อมูลให้ครบ');
+    }
+}
+
 (function(root) {
     const exportsObj = {
+        SOLAR_PSH,
+        SOLAR_PR,
+        SOLAR_PANEL_WATT,
+        SOLAR_PANEL_AREA_SQM,
+        SOLAR_DEGRADATION,
+        SOLAR_LIFETIME_YEARS,
+        SOLAR_INVERTER_SIZES,
+        SOLAR_EXPORT_LIMIT_KW,
+        SOLAR_DAYTIME_PRESETS,
+        SOLAR_DEFAULTS,
+        SOLAR_DATA_VERIFIED,
+        SOLAR_POLICY_NOTE,
+        calculateSolarRooftop,
+        renderSolarRooftopTool,
         WIRE_DATA_THW,
         WIRE_DATA_VAF,
         wireDataRows,
@@ -21579,6 +21804,8 @@ function clearCurrentTool() {
         appState.conduit_fill = { mode: appState.conduit_fill?.mode || 'size', rows: [{ id: '1', size: '2.5', count: '' }], wireSize: '2.5', conduit: '20' };
     } else if (id === 'wire_data') {
         appState.wire_data = { type: appState.wire_data?.type === 'vaf' ? 'vaf' : 'thw', size: appState.wire_data?.size || '2.5', conductor: 'stranded', lengthM: '' };
+    } else if (id === 'solar_rooftop') {
+        appState.solar_rooftop = { monthlyKwh: '', monthlyBill: '', daytimePct: appState.solar_rooftop?.daytimePct || '30', costPerKwp: '35000', exportRate: '2.2', contractYears: '10' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '', length: '', height: '2.8', btuPerSqm: '750', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {
@@ -21876,6 +22103,8 @@ function loadDemoForCurrentTool() {
         appState.conduit_fill = { mode: appState.conduit_fill?.mode || 'size', rows: [{ id: '1', size: '2.5', count: '6' }, { id: '2', size: '4', count: '2' }], wireSize: '2.5', conduit: '20' };
     } else if (id === 'wire_data') {
         appState.wire_data = { type: 'thw', size: '2.5', conductor: 'stranded', lengthM: '250' };
+    } else if (id === 'solar_rooftop') {
+        appState.solar_rooftop = { monthlyKwh: '450', monthlyBill: '2100', daytimePct: '50', costPerKwp: '35000', exportRate: '2.2', contractYears: '10' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '4', length: '5', height: '2.8', btuPerSqm: '850', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {

@@ -125,6 +125,8 @@ function clearCurrentTool() {
         appState.conduit_fill = { mode: appState.conduit_fill?.mode || 'size', rows: [{ id: '1', size: '2.5', count: '' }], wireSize: '2.5', conduit: '20' };
     } else if (id === 'wire_data') {
         appState.wire_data = { type: appState.wire_data?.type === 'vaf' ? 'vaf' : 'thw', size: appState.wire_data?.size || '2.5', conductor: 'stranded', lengthM: '' };
+    } else if (id === 'solar_rooftop') {
+        appState.solar_rooftop = { monthlyKwh: '', monthlyBill: '', daytimePct: appState.solar_rooftop?.daytimePct || '30', costPerKwp: '35000', exportRate: '2.2', contractYears: '10' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '', length: '', height: '2.8', btuPerSqm: '750', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {
@@ -422,6 +424,8 @@ function loadDemoForCurrentTool() {
         appState.conduit_fill = { mode: appState.conduit_fill?.mode || 'size', rows: [{ id: '1', size: '2.5', count: '6' }, { id: '2', size: '4', count: '2' }], wireSize: '2.5', conduit: '20' };
     } else if (id === 'wire_data') {
         appState.wire_data = { type: 'thw', size: '2.5', conductor: 'stranded', lengthM: '250' };
+    } else if (id === 'solar_rooftop') {
+        appState.solar_rooftop = { monthlyKwh: '450', monthlyBill: '2100', daytimePct: '50', costPerKwp: '35000', exportRate: '2.2', contractYears: '10' };
     } else if (id === 'btu_calc') {
         appState.btu_calc = { width: '4', length: '5', height: '2.8', btuPerSqm: '850', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
     } else if (id === 'fuel_eff') {
