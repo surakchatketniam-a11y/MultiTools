@@ -39,6 +39,7 @@ function hasInvalidNumericInput(toolId, stateObj) {
             : ['distance', 'efficiency', 'oilPrice', 'tollFee', 'passengers'],
         health: ['weight', 'height', 'age', 'activity'], tip: ['bill', 'tipPct', 'people'], fuel_eff: ['distance', 'fuelUsed'],
         area_cost: ['rai', 'ngan', 'wa', 'rate', 'rounds'],
+        btu_calc: ['width', 'length', 'height', 'btuPerSqm', 'hoursPerDay', 'ratePerKwh', 'fixedSeer', 'inverterSeer'],
         loan: ['principal', 'interestRate', 'months', 'extra', ...(state.loan && state.loan.rateType === 'step' ? ['rateAfter', 'promoMonths'] : [])],
         savings: ['initial', 'monthly', 'interestRate', 'annualIncrease', 'inflationRate',
             ...(state.savings && state.savings.mode === 'retirement' ? ['currentAge', 'retirementAge', 'retirementMonthly'] : ['years']),

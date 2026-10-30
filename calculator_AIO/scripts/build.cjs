@@ -34,6 +34,7 @@ const sourceFiles = [
     'src/tools/lifestyle_thai.js',
     'src/tools/finance_thai.js',
     'src/tools/legal_labor.js',
+    'src/tools/engineering.js',
     'src/ui/actions.js',
     'src/ui/modals.js'
 ];

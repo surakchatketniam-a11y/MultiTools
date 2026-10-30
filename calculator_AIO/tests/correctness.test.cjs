@@ -31,6 +31,7 @@ const moduleFiles = [
     'src/tools/lifestyle_thai.js',
     'src/tools/finance_thai.js',
     'src/tools/legal_labor.js',
+    'src/tools/engineering.js',
     'src/ui/actions.js',
     'src/ui/modals.js'
 ];
@@ -286,11 +287,11 @@ test('undo restores the cleared tool and a second empty clear preserves the snap
     assert.equal(renders, 1);
 });
 
-test('catalog contains exactly 36 tools classified into 5 valid groups with search keywords', () => {
+test('catalog contains exactly 37 tools classified into 6 valid groups with search keywords', () => {
     const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
     assert.ok(Array.isArray(TOOL_GROUPS) && Array.isArray(TOOLS_CATALOG), 'Missing TOOL_GROUPS or TOOLS_CATALOG definitions');
-    assert.equal(TOOL_GROUPS.length, 5);
-    assert.equal(TOOLS_CATALOG.length, 36);
+    assert.equal(TOOL_GROUPS.length, 6);
+    assert.equal(TOOLS_CATALOG.length, 37);
     const validGroupIds = new Set(TOOL_GROUPS.map(g => g.id));
     for (const tool of TOOLS_CATALOG) {
         assert.ok(tool.id && typeof tool.id === 'string', 'Tool id must be non-empty string');
@@ -450,7 +451,7 @@ test('all 36 tools have complete and valid clear and demo data mappings', () => 
         function renderActiveTool() {}
     ` + '\n' + source('clearCurrentTool') + '\n' + source('loadDemoForCurrentTool'), ctx);
 
-    assert.equal(ctx.TOOLS_CATALOG.length, 36);
+    assert.equal(ctx.TOOLS_CATALOG.length, 37);
 
     for (const tool of ctx.TOOLS_CATALOG) {
         ctx.appState.activeToolId = tool.id;
@@ -1213,7 +1214,7 @@ test('quick compare engine: side-by-side metrics, delta calculation, winner iden
     assert.ok(printHTML.includes('คุ้มค่าที่สุด'));
 });
 
-test('all 36 tool renderers are modularized and exported across the 5 tool groups', () => {
+test('all 37 tool renderers are modularized and exported across the 6 tool groups', () => {
     const ctx = context();
     const rendererMap = {
         unit_price:        'renderUnitPriceTool',
@@ -1251,10 +1252,11 @@ test('all 36 tool renderers are modularized and exported across the 5 tool group
         ot_calc:           'renderOvertimeTool',
         ecommerce_profit:  'renderEcommerceProfitTool',
         debt_payoff:       'renderDebtPayoffTool',
-        food_costing:      'renderFoodCostingTool'
+        food_costing:      'renderFoodCostingTool',
+        btu_calc:          'renderBtuTool'
     };
 
-    assert.equal(Object.keys(rendererMap).length, 36);
+    assert.equal(Object.keys(rendererMap).length, 37);
 
     for (const [toolId, fnName] of Object.entries(rendererMap)) {
         assert.equal(typeof ctx[fnName], 'function', `Tool renderer function ${fnName} for ${toolId} must be exported and callable`);
@@ -2979,6 +2981,197 @@ test('fuel_cost: fuel consumption and EV charging comparison', () => {
     assert.equal(ctx.hasInvalidNumericInput('fuel_cost', { fuel_cost: { mode: 'fuel', distance: 'abc', efficiency: '15', oilPrice: '36.50', tollFee: '0', passengers: '1' } }), true);
     assert.equal(ctx.hasInvalidNumericInput('fuel_cost', { fuel_cost: { mode: 'ev', distance: '100', evEfficiency: '6.5', electricityRate: '2.90', chargingLossPct: '10', batteryCapacity: '60', compareIceEfficiency: '15', compareFuelPrice: '36.50', yearlyKm: '20000' } }), false);
     assert.equal(ctx.hasInvalidNumericInput('fuel_cost', { fuel_cost: { mode: 'ev', distance: '100', evEfficiency: 'notanumber', electricityRate: '2.90', chargingLossPct: '10', batteryCapacity: '60', compareIceEfficiency: '15', compareFuelPrice: '36.50', yearlyKm: '20000' } }), true);
+});
+
+test('btu_calc: room load, standard size selection and fixed vs inverter electricity cost', () => {
+    const ctx = context();
+    const base = { width: '4', length: '4', height: '2.8', btuPerSqm: '750', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' };
+
+    // 4x4 m bedroom at 750 BTU/sqm = 12,000 BTU -> exactly a 12,000 BTU unit
+    const bedroom = ctx.calculateBtu(base);
+    assert.equal(bedroom.valid, true);
+    assert.equal(bedroom.areaSqm, 16);
+    assert.equal(bedroom.requiredBtu, 12000);
+    assert.equal(bedroom.recommendedBtu, 12000);
+    assert.equal(bedroom.units, 1);
+    assert.equal(bedroom.exceedsStandard, false);
+
+    // Electricity: watts = BTU / SEER, 8 h/day x 30 days x 4.5 THB/kWh
+    assert.ok(Math.abs(bedroom.inverter.watts - 600) < 1e-9);
+    assert.ok(Math.abs(bedroom.inverter.kwhPerMonth - 144) < 1e-9);
+    assert.ok(Math.abs(bedroom.inverter.costPerMonth - 648) < 1e-9);
+    assert.ok(Math.abs(bedroom.fixed.costPerMonth - (12000 / 11 / 1000) * 240 * 4.5) < 1e-9);
+    assert.ok(Math.abs(bedroom.inverter.costPerYear - 648 * 12) < 1e-9);
+    assert.ok(bedroom.savingsPerMonth > 0);
+
+    // Required load just above a size rounds up to the next standard size
+    assert.equal(ctx.calculateBtu({ ...base, width: '4', length: '5', btuPerSqm: '850' }).recommendedBtu, 18000);
+
+    // Ceiling above 2.8 m scales the load linearly: 12,000 x 3.5/2.8 = 15,000
+    const tall = ctx.calculateBtu({ ...base, height: '3.5' });
+    assert.equal(tall.requiredBtu, 15000);
+    assert.equal(tall.recommendedBtu, 15000);
+    // Ceiling at or below 2.8 m does not reduce the load
+    assert.equal(ctx.calculateBtu({ ...base, height: '2.4' }).requiredBtu, 12000);
+
+    // Beyond the largest standard unit, report several 36,000 BTU units
+    const shop = ctx.calculateBtu({ ...base, width: '10', length: '10', btuPerSqm: '1350' });
+    assert.equal(shop.requiredBtu, 135000);
+    assert.equal(shop.exceedsStandard, true);
+    assert.equal(shop.recommendedBtu, 36000);
+    assert.equal(shop.units, 4);
+
+    // Thai digits and thousands separators are accepted
+    assert.equal(ctx.calculateBtu({ ...base, width: '๔', length: '๔', btuPerSqm: '๗๕๐' }).requiredBtu, 12000);
+
+    // Missing or invalid input is not calculated
+    assert.equal(ctx.calculateBtu({ ...base, width: '' }).valid, false);
+    assert.equal(ctx.calculateBtu({ ...base, length: '0' }).valid, false);
+    assert.equal(ctx.calculateBtu({ ...base, btuPerSqm: 'abc' }).valid, false);
+    assert.equal(ctx.calculateBtu({ ...base, hoursPerDay: '25' }).valid, false);
+    assert.equal(ctx.calculateBtu({ ...base, inverterSeer: '0' }).valid, false);
+
+    // Defaults apply when optional fields are left blank
+    const defaults = ctx.calculateBtu({ width: '4', length: '4', btuPerSqm: '750' });
+    assert.equal(defaults.valid, true);
+    assert.equal(defaults.hoursPerDay, 8);
+    assert.equal(defaults.ratePerKwh, 4.5);
+});
+
+test('wire_breaker: pure engine calculation according to EIT 2021 standards', () => {
+    const ctx = context();
+
+    // 1. Water Heater 3,500W, Conduit (THW), 15m, 230V, PF 1.0 (resistive)
+    // I = 3500 / 230 = 15.22 A. Non-continuous -> designCurrent = 15.22 A
+    // Breaker >= 15.22 -> 16 A
+    // Wire: Conduit (THW) ampacity >= 16 A -> 2.5 sq.mm. (21 A)
+    // VD = (18 mV/A/m * 15.22 * 15) / 1000 = 4.11 V -> 1.79% (<= 3%)
+    const wh3500 = ctx.calculateWireBreaker({
+        watts: '3500',
+        voltage: '230',
+        powerFactor: '1.0',
+        wireLengthM: '15',
+        installMethod: 'conduit',
+        isContinuous: false
+    });
+    assert.equal(wh3500.valid, true);
+    assert.equal(wh3500.loadCurrent, 15.22);
+    assert.equal(wh3500.recommendedBreaker, 16);
+    assert.equal(wh3500.wireSizeSqmm, 2.5);
+    assert.equal(wh3500.wireAmpacity, 21);
+    assert.equal(wh3500.wireType, 'IEC 01 (THW)');
+    assert.equal(wh3500.isVdExceeded, false);
+
+    // 2. EV Charger 7.4 kW (32A), continuous (x1.25), Conduit (THW), 20m, 230V, PF 1.0
+    // I = 7400 / 230 = 32.17 A. Continuous -> designCurrent = 32.17 * 1.25 = 40.22 A
+    // Breaker >= 40.22 -> 50 A
+    // Wire: Conduit ampacity >= 50 A -> 10.0 sq.mm. (50 A)
+    const evCharger = ctx.calculateWireBreaker({
+        watts: '7400',
+        voltage: '230',
+        powerFactor: '1.0',
+        wireLengthM: '20',
+        installMethod: 'conduit',
+        isContinuous: true
+    });
+    assert.equal(evCharger.valid, true);
+    assert.equal(evCharger.recommendedBreaker, 50);
+    assert.equal(evCharger.wireSizeSqmm, 10.0);
+    assert.equal(evCharger.wireAmpacity, 50);
+
+    // 3. Surface installation (VAF): 4,500W water heater
+    // I = 4500 / 230 = 19.57 A -> Breaker 20 A
+    // Surface (VAF) table: 2.5 sq.mm. is 23 A >= 20 A -> 2.5 sq.mm.
+    const whSurface = ctx.calculateWireBreaker({
+        watts: '4500',
+        voltage: '230',
+        powerFactor: '1.0',
+        wireLengthM: '10',
+        installMethod: 'surface',
+        isContinuous: false
+    });
+    assert.equal(whSurface.valid, true);
+    assert.equal(whSurface.recommendedBreaker, 20);
+    assert.equal(whSurface.wireSizeSqmm, 2.5);
+    assert.equal(whSurface.wireAmpacity, 23);
+    assert.equal(whSurface.wireType, 'VAF / VAF-G');
+
+    // 4. Voltage drop upgrade check (long distance: 60m with 15A load)
+    // Normally 2.5 sq.mm. handles 16A breaker, but with 60m:
+    // 2.5 sq.mm.: VD = (18 * 15 * 60) / 1000 = 16.2 V -> 7.04% (> 3%)
+    // Must upgrade wire size until VD <= 3.0%
+    const longDist = ctx.calculateWireBreaker({
+        watts: '3450', // 15A at 230V
+        voltage: '230',
+        powerFactor: '1.0',
+        wireLengthM: '60',
+        installMethod: 'conduit',
+        isContinuous: false
+    });
+    assert.equal(longDist.valid, true);
+    assert.equal(longDist.upgradedForVoltageDrop, true);
+    assert.ok(longDist.wireSizeSqmm > 2.5);
+    assert.ok(longDist.vdPct <= 3.0);
+
+    // 5. Invalid / blank input safety
+    assert.equal(ctx.calculateWireBreaker({ watts: '' }).valid, false);
+    assert.equal(ctx.calculateWireBreaker({ watts: '0' }).valid, false);
+    assert.equal(ctx.calculateWireBreaker({ watts: '-500' }).valid, false);
+    assert.equal(ctx.calculateWireBreaker({ watts: '1000', powerFactor: '1.5' }).valid, false);
+    assert.equal(ctx.calculateWireBreaker({ watts: '1000', voltage: 'abc' }).valid, false);
+
+    // 6. Load beyond the largest standard breaker (100 A) must not be answered with a 100 A breaker
+    const tooBig = ctx.calculateWireBreaker({ watts: '30000', voltage: '230', powerFactor: '1.0', wireLengthM: '10', installMethod: 'conduit' });
+    assert.equal(tooBig.valid, true);
+    assert.equal(tooBig.selectionStatus, 'breaker_out_of_range');
+    assert.equal(tooBig.recommendedBreaker, null);
+    assert.equal(tooBig.wireSizeSqmm, null);
+
+    // 7. VAF surface table stops at 10 sq.mm. (56 A): a 63 A breaker has no valid VAF wire,
+    // while the same load in conduit is served by 16 sq.mm. (68 A)
+    const surfaceBig = ctx.calculateWireBreaker({ watts: '14000', voltage: '230', powerFactor: '1.0', wireLengthM: '10', installMethod: 'surface' });
+    assert.equal(surfaceBig.selectionStatus, 'no_suitable_wire');
+    assert.equal(surfaceBig.recommendedBreaker, 63);
+    assert.equal(surfaceBig.wireSizeSqmm, null);
+    assert.equal(surfaceBig.wireAmpacity, null);
+    const conduitBig = ctx.calculateWireBreaker({ watts: '14000', voltage: '230', powerFactor: '1.0', wireLengthM: '10', installMethod: 'conduit' });
+    assert.equal(conduitBig.selectionStatus, 'ok');
+    assert.equal(conduitBig.recommendedBreaker, 63);
+    assert.equal(conduitBig.wireSizeSqmm, 16);
+    assert.equal(conduitBig.wireAmpacity, 68);
+
+    // 8. Voltage drop cannot be fixed by any table size: use the largest wire and keep the warning
+    const farConduit = ctx.calculateWireBreaker({ watts: '3450', voltage: '230', powerFactor: '1.0', wireLengthM: '500', installMethod: 'conduit' });
+    assert.equal(farConduit.selectionStatus, 'ok');
+    assert.equal(farConduit.wireSizeSqmm, 35);
+    assert.equal(farConduit.upgradedForVoltageDrop, true);
+    assert.equal(farConduit.isVdExceeded, true);
+    const farSurface = ctx.calculateWireBreaker({ watts: '4500', voltage: '230', powerFactor: '1.0', wireLengthM: '100', installMethod: 'surface' });
+    assert.equal(farSurface.selectionStatus, 'ok');
+    assert.equal(farSurface.wireSizeSqmm, 10);
+    assert.equal(farSurface.isVdExceeded, true);
+    assert.ok(farSurface.wireAmpacity > 0);
+
+    // 9. Resistive presets carry PF 1.0, so a 3,500 W heater needs a 16 A breaker (not 20 A at PF 0.95)
+    const heater = ctx.WIRE_APPLIANCE_PRESETS.find(p => p.key === 'water_3500');
+    assert.equal(heater.powerFactor, 1.0);
+    const fromPreset = ctx.calculateWireBreaker({ watts: String(heater.watts), powerFactor: String(heater.powerFactor), voltage: '230', wireLengthM: '15' });
+    assert.equal(fromPreset.recommendedBreaker, 16);
+    assert.ok(ctx.WIRE_APPLIANCE_PRESETS.every(p => p.powerFactor > 0 && p.powerFactor <= 1));
+
+});
+
+test('btu_calc: catalog entry, keypad fields and invalid-input detection are wired up', () => {
+    const { TOOL_GROUPS, TOOLS_CATALOG } = require('../src/catalog.js');
+    assert.ok(TOOL_GROUPS.some(g => g.id === 'engineering'));
+    assert.equal(TOOLS_CATALOG.find(t => t.id === 'btu_calc').group, 'engineering');
+    assert.equal(TOOLS_CATALOG.find(t => t.id === 'construction_calc').group, 'engineering');
+
+    const ctx = context();
+    const state = { btu_calc: { width: '4', length: '4', height: '2.8', btuPerSqm: '750', hoursPerDay: '8', ratePerKwh: '4.5', fixedSeer: '11', inverterSeer: '20' } };
+    assert.equal(ctx.hasInvalidNumericInput('btu_calc', state), false);
+    assert.equal(ctx.hasInvalidNumericInput('btu_calc', { btu_calc: { ...state.btu_calc, width: '4x' } }), true);
+    assert.equal(ctx.hasInvalidNumericInput('btu_calc', { btu_calc: { ...state.btu_calc, inverterSeer: 'abc' } }), true);
 });
 
 test('construction_calc: tiles, paint, and concrete calculations', () => {

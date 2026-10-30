@@ -585,6 +585,12 @@ function getToolSummaryText(toolId, stateObj) {
             }
             return `สรุปแผนปลดหนี้หลายบัญชี (${stratName})\n${divider}\n• ยอดหนี้รวมเริ่มต้น: ${formatMoney(calc.initialTotalDebt)} บาท\n• เงินโปะเพิ่มต่อเดือน: +${formatMoney(calc.extraMonthly || 0)} บาท\n• ระยะเวลาปลดหนี้: ${calc.summary.months} เดือน (${calc.summary.years} ปี)\n• ดอกเบี้ยรวมที่ต้องจ่าย: ${formatMoney(calc.summary.totalInterest)} บาท\n• ยอดชำระรวมทั้งสิ้น: ${formatMoney(calc.summary.totalPaid)} บาท\n${calc.summary.interestSavedVsOther > 0 ? `• ประหยัดดอกเบี้ยได้มากกว่าอีกวิธี: ${formatMoney(calc.summary.interestSavedVsOther)} บาท\n` : ''}${divider}\nปลดหนี้หมดสำเร็จใน ${calc.summary.months} เดือน\n(คำนวณโดย Multitools Calculator)`;
         }
+        case 'btu_calc': {
+            const calc = (typeof calculateBtu === 'function') ? calculateBtu(state.btu_calc || {}) : { valid: false };
+            if (!calc.valid) return `สรุปขนาดแอร์ BTU\n${divider}\nยังไม่ได้ป้อนขนาดห้อง\n(คำนวณโดย Multitools Calculator)`;
+            const sizeText = `${formatNum(calc.recommendedBtu, 0)} BTU${calc.units > 1 ? ` x ${calc.units} เครื่อง` : ''}`;
+            return `สรุปขนาดแอร์ BTU & ค่าไฟ\n${divider}\n• พื้นที่ห้อง: ${formatNum(calc.areaSqm, 2)} ตร.ม.\n• ภาระความเย็นที่คำนวณได้: ${formatNum(calc.requiredBtu, 0)} BTU\n----------------------------------\nขนาดแอร์ที่แนะนำ: ${sizeText}\n• ค่าไฟ Fixed Speed: ${formatMoney(calc.fixed.costPerMonth)} บาท/เดือน (${formatMoney(calc.fixed.costPerYear)} บาท/ปี)\n• ค่าไฟ Inverter: ${formatMoney(calc.inverter.costPerMonth)} บาท/เดือน (${formatMoney(calc.inverter.costPerYear)} บาท/ปี)\n• Inverter ประหยัดกว่า: ${formatMoney(calc.savingsPerYear)} บาท/ปี\n(ค่าประมาณ ควรให้ช่างแอร์ตรวจหน้างาน)\n(คำนวณโดย Multitools Calculator)`;
+        }
         case 'food_costing': {
             const st = state.food_costing || {};
             const calc = (typeof calculateFoodCosting === 'function')

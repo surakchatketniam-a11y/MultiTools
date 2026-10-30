@@ -1854,7 +1854,7 @@
     <div id="printFormalReceipt" class="hidden"></div>
 
     <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
-    <script src="src/bundle.js?v=68"></script>
+    <script src="src/bundle.js?v=69"></script>
 
     <script>
         function getSafeDateStr(offsetDays = 0) {
@@ -2194,6 +2194,18 @@
                 ]
             },
 
+            // Engineering: BTU air-conditioner sizing
+            btu_calc: {
+                width: '4',
+                length: '4',
+                height: '2.8',
+                btuPerSqm: '750',
+                hoursPerDay: '8',
+                ratePerKwh: '4.5',
+                fixedSeer: '11',
+                inverterSeer: '20'
+            },
+
             // 24. Car Hire Purchase Loan
             car_loan: {
                 vehicleType: 'car',
@@ -2416,6 +2428,7 @@
                 case 'debt_payoff':      renderDebtPayoffTool(topPanel); break;
                 case 'food_costing':     renderFoodCostingTool(topPanel); break;
                 case 'construction_calc': renderConstructionTool(topPanel); break;
+                case 'btu_calc':         renderBtuTool(topPanel); break;
             }
             if (typeof arrangeDesktopColumns === 'function') arrangeDesktopColumns(topPanel);
             if (editing) {

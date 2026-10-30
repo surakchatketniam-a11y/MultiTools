@@ -92,6 +92,15 @@ function getToolFieldBindings(toolId) {
                 { get: () => appState.tip.tipPct, set: (v) => { appState.tip.tipPct = v; } },
                 { get: () => appState.tip.people, set: (v) => { appState.tip.people = v; } }
             ];
+        case 'btu_calc':
+            return [
+                { get: () => appState.btu_calc.width, set: (v) => { appState.btu_calc.width = v; } },
+                { get: () => appState.btu_calc.length, set: (v) => { appState.btu_calc.length = v; } },
+                { get: () => appState.btu_calc.height, set: (v) => { appState.btu_calc.height = v; } },
+                { get: () => appState.btu_calc.btuPerSqm, set: (v) => { appState.btu_calc.btuPerSqm = v; } },
+                { get: () => appState.btu_calc.hoursPerDay, set: (v) => { appState.btu_calc.hoursPerDay = v; } },
+                { get: () => appState.btu_calc.ratePerKwh, set: (v) => { appState.btu_calc.ratePerKwh = v; } }
+            ];
         case 'fuel_eff':
             return [
                 { get: () => appState.fuel_eff.distance, set: (v) => { appState.fuel_eff.distance = v; } },
