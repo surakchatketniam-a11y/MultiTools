@@ -5644,3 +5644,94 @@ test('wheel follows a gliding user scroll even when scroll events are sparse', a
     await wait(350);
     assert.equal(wheelEl.scrollTop, 2 * 56);
 });
+
+test('recent tools tracking: records deduplicated MRU order, caps length, and filters unknown IDs', () => {
+    const store = {};
+    const ctx = context({
+        localStorage: {
+            getItem: (k) => (k in store ? store[k] : null),
+            setItem: (k, v) => { store[k] = String(v); }
+        }
+    });
+
+    assert.deepEqual(Array.from(ctx.getRecentToolIds()), []);
+
+    ctx.recordRecentTool('btu_calc');
+    ctx.recordRecentTool('wire_breaker');
+    ctx.recordRecentTool('conduit_fill');
+    ctx.recordRecentTool('btu_calc'); // duplicate moves to front
+    assert.deepEqual(Array.from(ctx.getRecentToolIds()), ['btu_calc', 'conduit_fill', 'wire_breaker']);
+
+    // Unknown IDs are ignored
+    ctx.recordRecentTool('nonexistent_tool');
+    assert.deepEqual(Array.from(ctx.getRecentToolIds()), ['btu_calc', 'conduit_fill', 'wire_breaker']);
+
+    // Cap at RECENT_TOOLS_LIMIT (6)
+    ['vat', 'loan', 'salary', 'slope_stair', 'solar_rooftop'].forEach(id => ctx.recordRecentTool(id));
+    const recentIds = Array.from(ctx.getRecentToolIds());
+    assert.equal(recentIds.length, 6);
+    assert.equal(recentIds[0], 'solar_rooftop');
+
+    // getRecentTools resolves catalog entries and respects limit
+    const top4 = Array.from(ctx.getRecentTools(4));
+    assert.equal(top4.length, 4);
+    assert.equal(top4[0].id, 'solar_rooftop');
+    assert.ok(top4[0].menuTitle.length > 0);
+});
+
+test('workflow handoffs: wire_breaker -> conduit_fill / wire_data and shape_calc -> ceiling / land_fill', () => {
+    const ctx = context({
+        appState: {},
+        persistAppState: () => {}
+    });
+
+    // 1. wire_breaker (1-phase conduit, 2 circuits, 15m) -> 3 conductors x 2 = 6 wires, 90m total
+    const wire1P = { phases: '1', watts: '3500', voltage: '230', powerFactor: '1', wireLengthM: '15', ambientC: '40', circuits: '2', installMethod: 'conduit', isContinuous: false };
+    const wh1 = ctx.buildWireBreakerHandoff(wire1P);
+    assert.equal(wh1.hasWire, true);
+    assert.equal(wh1.canUseConduit, true);
+    assert.equal(wh1.totalConductors, 6);
+    assert.equal(wh1.totalLengthM, 90);
+    assert.equal(wh1.wireType, 'thw');
+
+    assert.equal(ctx.applyWireToConduitHandoff(wire1P), true);
+    assert.equal(ctx.appState.conduit_fill.mode, 'size');
+    assert.equal(ctx.appState.conduit_fill.cableType, 'thw');
+    assert.equal(ctx.appState.conduit_fill.rows[0].count, '6');
+    assert.equal(ctx.appState.conduit_fill.rows[0].size, String(wh1.wireSizeSqmm));
+
+    assert.equal(ctx.applyWireToWireDataHandoff(wire1P), true);
+    assert.equal(ctx.appState.wire_data.type, 'thw');
+    assert.equal(ctx.appState.wire_data.size, String(wh1.wireSizeSqmm));
+    assert.equal(ctx.appState.wire_data.lengthM, '90');
+
+    // 2. wire_breaker (surface VAF) cannot use conduit_fill, but sends to wire_data as VAF
+    const wireVaf = { phases: '1', watts: '3500', voltage: '230', powerFactor: '1', wireLengthM: '20', ambientC: '40', circuits: '1', installMethod: 'surface', isContinuous: false };
+    const whVaf = ctx.buildWireBreakerHandoff(wireVaf);
+    assert.equal(whVaf.canUseConduit, false);
+    assert.equal(whVaf.wireType, 'vaf');
+    assert.equal(whVaf.totalLengthM, 20);
+    assert.equal(ctx.applyWireToConduitHandoff(wireVaf), false);
+    assert.equal(ctx.applyWireToWireDataHandoff(wireVaf), true);
+    assert.equal(ctx.appState.wire_data.type, 'vaf');
+    assert.equal(ctx.appState.wire_data.lengthM, '20');
+
+    // 3. shape_calc (trapezoid 4m top, 6m bottom, 40m height = 200 sqm = 0 rai 0 ngan 50 wa) -> ceiling & land_fill
+    const shapeTrap = { shape: 'trapezoid', top: '4', bottom: '6', height: '40', depth: '' };
+    const sh = ctx.buildShapeHandoff(shapeTrap);
+    assert.equal(sh.hasArea, true);
+    assert.equal(sh.areaSqm, 200);
+    assert.equal(sh.rai, 0);
+    assert.equal(sh.ngan, 0);
+    assert.equal(sh.wa, 50);
+
+    assert.equal(ctx.applyShapeToCeilingHandoff(shapeTrap), true);
+    assert.equal(ctx.appState.wall_ceiling_calc.tab, 'ceiling');
+    assert.equal(ctx.appState.wall_ceiling_calc.ceilingArea, '200');
+
+    assert.equal(ctx.applyShapeToLandFillHandoff(shapeTrap), true);
+    assert.equal(ctx.appState.land_fill_calc.mode, 'land');
+    assert.equal(ctx.appState.land_fill_calc.rai, '0');
+    assert.equal(ctx.appState.land_fill_calc.ngan, '0');
+    assert.equal(ctx.appState.land_fill_calc.wa, '50');
+});

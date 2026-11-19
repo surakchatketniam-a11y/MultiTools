@@ -1,7 +1,69 @@
 // ==============================================================
 // Multitools Calculator - Engineering & Construction Tools
-// (btu_calc)
+// (btu_calc, land_fill_calc, wall_ceiling_calc, roof_steel_calc,
+//  contractor_payment, plumbing_pump, inch_fraction, shape_calc,
+//  wire_breaker, conduit_fill, wire_data, solar_rooftop, slope_stair)
 // ==============================================================
+
+// Track open/closed state of collapsible advanced sections across re-renders
+var engineeringAdvancedOpen = {};
+
+function renderAdvancedDetailsHTML(sectionKey, title, hint, innerHTML, forceOpen = false) {
+    const isOpen = Boolean(forceOpen || engineeringAdvancedOpen[sectionKey]);
+    return `
+        <details class="tool-advanced-details" data-adv-section="${escapeHTML(sectionKey)}"${isOpen ? ' open' : ''}>
+            <summary>
+                <span class="min-w-0 break-words">${escapeHTML(title)}</span>
+                ${hint ? `<span class="tool-advanced-summary-hint ml-auto">${escapeHTML(hint)}</span>` : ''}
+            </summary>
+            <div class="tool-advanced-body">${innerHTML}</div>
+        </details>`;
+}
+
+function renderMethodNoteDetailsHTML(sectionKey, summaryHint, lines) {
+    const isOpen = Boolean(engineeringAdvancedOpen[sectionKey]);
+    const content = (Array.isArray(lines) ? lines : [lines]).filter(Boolean).map(l => `<div>${l}</div>`).join('');
+    return `
+        <details class="tool-advanced-details" data-adv-section="${escapeHTML(sectionKey)}"${isOpen ? ' open' : ''}>
+            <summary>
+                <span class="min-w-0 break-words">วิธีคิด & ข้อควรระวัง</span>
+                ${summaryHint ? `<span class="tool-advanced-summary-hint ml-auto">${escapeHTML(summaryHint)}</span>` : ''}
+            </summary>
+            <div class="tool-advanced-body text-[11px] text-[var(--app-muted)] space-y-1" role="note">${content}</div>
+        </details>`;
+}
+
+function bindAdvancedDetailsListeners(container) {
+    if (!container || typeof container.querySelectorAll !== 'function') return;
+    container.querySelectorAll('details[data-adv-section]').forEach(el => {
+        el.addEventListener('toggle', () => {
+            engineeringAdvancedOpen[el.dataset.advSection] = el.open;
+        });
+    });
+}
+
+// Re-render while preserving native text input focus & caret position for live updates
+function bindLiveTextInput(input, onUpdate) {
+    if (!input || typeof input.addEventListener !== 'function') return;
+    const handle = () => {
+        const id = input.id;
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        onUpdate(input.value);
+        persistAppState();
+        renderActiveTool();
+        if (id && typeof document !== 'undefined') {
+            const restored = document.getElementById(id);
+            if (restored && typeof restored.focus === 'function') {
+                restored.focus({ preventScroll: true });
+                if (typeof start === 'number' && typeof restored.setSelectionRange === 'function') {
+                    try { restored.setSelectionRange(start, end); } catch (e) {}
+                }
+            }
+        }
+    };
+    input.addEventListener('input', handle);
+}
 
 /* -----------------------------------------------------------
  * TOOL: ขนาดแอร์ BTU & ค่าไฟ Fixed Speed vs Inverter (btu_calc)
@@ -222,23 +284,16 @@ function renderBtuTool(container) {
             </div>` : '';
     }
 
-    container.innerHTML = `
-        <div class="btu-calc-tool flex flex-col gap-3 p-1">
+    const btuAdvOpen = appState.activeFieldIndex >= 2;
+    const btuAdvHint = `เพดาน ${st.height || '2.8'} ม. · ${st.hoursPerDay || '8'} ชม./วัน · ${st.ratePerKwh || '4.5'} บ./หน่วย`;
+    const btuAdvBody = `
             <div class="flex flex-col gap-1.5">
-                ${createKeypadFieldHTML(0, 'ความกว้างห้อง', st.width, 'เมตร', 'เช่น 4')}
-                ${createKeypadFieldHTML(1, 'ความยาวห้อง', st.length, 'เมตร', 'เช่น 4')}
                 ${createKeypadFieldHTML(2, 'ความสูงเพดาน', st.height, 'เมตร', 'เช่น 2.8')}
                 ${createKeypadFieldHTML(3, 'ตัวคูณภาระความร้อน', st.btuPerSqm, 'BTU/ตร.ม.', 'เช่น 750')}
-            </div>
-            <div class="themed-tool-card p-3 space-y-2 text-xs">
-                <div class="font-semibold text-[var(--app-ink)]">เลือกประเภทห้อง (ตัวคูณ BTU/ตร.ม.)</div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${presetChips}</div>
-            </div>
-            <div class="flex flex-col gap-1.5">
                 ${createKeypadFieldHTML(4, 'เปิดแอร์ต่อวัน', st.hoursPerDay, 'ชม.', 'เช่น 8')}
                 ${createKeypadFieldHTML(5, 'ค่าไฟต่อหน่วย', st.ratePerKwh, 'บาท/หน่วย', 'เช่น 4.5')}
             </div>
-            <div class="themed-tool-card p-3 space-y-2 text-xs">
+            <div class="themed-subcard p-3 space-y-2 text-xs">
                 <div class="font-semibold text-[var(--app-ink)]">ค่า SEER ที่ใช้เปรียบเทียบ (BTU/ชม. ต่อวัตต์)</div>
                 <div class="grid grid-cols-2 gap-2">
                     <div class="min-w-0">
@@ -250,13 +305,26 @@ function renderBtuTool(container) {
                         <input id="btuInverterSeer" type="text" inputmode="decimal" class="airbnb-input text-right text-xs w-full min-w-0" style="min-height: 44px;" value="${escapeHTML(st.inverterSeer || '')}" placeholder="20">
                     </div>
                 </div>
+            </div>`;
+
+    container.innerHTML = `
+        <div class="btu-calc-tool flex flex-col gap-3 p-1">
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(0, 'ความกว้างห้อง', st.width, 'เมตร', 'เช่น 4')}
+                ${createKeypadFieldHTML(1, 'ความยาวห้อง', st.length, 'เมตร', 'เช่น 4')}
             </div>
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">เลือกประเภทห้อง (ตัวคูณ BTU/ตร.ม.)</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${presetChips}</div>
+            </div>
+            ${renderAdvancedDetailsHTML('btu_adv', 'ตั้งค่าขั้นสูง (เพดาน, ชั่วโมงเปิด, ค่าไฟ, SEER)', btuAdvHint, btuAdvBody, btuAdvOpen)}
             ${resultHTML}
             ${wireCardHTML}
         </div>
     `;
 
     attachFieldClickListeners(container);
+    bindAdvancedDetailsListeners(container);
 
     const wireBtn = document.getElementById('btnBtuToWire');
     if (wireBtn) {
@@ -282,11 +350,7 @@ function renderBtuTool(container) {
     [['btuFixedSeer', 'fixedSeer'], ['btuInverterSeer', 'inverterSeer']].forEach(([id, key]) => {
         const input = document.getElementById(id);
         if (!input) return;
-        input.addEventListener('change', () => {
-            st[key] = input.value;
-            persistAppState();
-            renderActiveTool();
-        });
+        bindLiveTextInput(input, val => { st[key] = val; });
     });
 
     if (!calc.valid) {
@@ -653,6 +717,17 @@ function renderLandFillTool(container) {
             </div>`;
     }
 
+    const landAdvOpen = appState.activeFieldIndex >= base + 1;
+    const landAdvHint = `ยุบ ${st.shrinkPct || '25'}% · 6 ล้อ ${st.truck6Cap || '5.5'} คิว · 10 ล้อ ${st.truck10Cap || '11'} คิว`;
+    const landAdvBody = `
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(base + 1, 'อัตราการยุบตัวหลังบดอัด', st.shrinkPct, '%', 'เช่น 25')}
+                ${createKeypadFieldHTML(base + 2, 'ความจุรถ 6 ล้อ', st.truck6Cap, 'คิว/เที่ยว', 'เช่น 5.5')}
+                ${createKeypadFieldHTML(base + 3, 'ความจุรถ 10 ล้อ', st.truck10Cap, 'คิว/เที่ยว', 'เช่น 11')}
+                ${createKeypadFieldHTML(base + 4, 'ราคาดิน (ไม่บังคับ)', st.pricePerM3, 'บาท/คิวหลวม', 'เช่น 150')}
+                ${createKeypadFieldHTML(base + 5, 'ค่าเกลี่ยและบดอัด (ไม่บังคับ)', st.spreadPerM3, 'บาท/คิวแน่น', 'เช่น 40')}
+            </div>`;
+
     container.innerHTML = `
         <div class="land-fill-tool flex flex-col gap-3 p-1">
             <div class="segment-group grid-cols-2" role="group" aria-label="วิธีป้อนพื้นที่">
@@ -662,27 +737,22 @@ function renderLandFillTool(container) {
             <div class="flex flex-col gap-1.5">
                 ${areaFields}
                 ${createKeypadFieldHTML(base, 'ความสูงที่ต้องการถม (เฉลี่ย)', st.heightCm, 'ซม.', 'เช่น 50')}
-                ${createKeypadFieldHTML(base + 1, 'อัตราการยุบตัวหลังบดอัด', st.shrinkPct, '%', 'เช่น 25')}
             </div>
             <div class="themed-tool-card p-3 space-y-2 text-xs">
                 <div class="font-semibold text-[var(--app-ink)]">ชนิดวัสดุถม (ค่ากลางของช่วงที่ยังไม่ยืนยัน)</div>
                 <div class="grid grid-cols-1 gap-2">${soilChips}</div>
             </div>
-            <div class="flex flex-col gap-1.5">
-                ${createKeypadFieldHTML(base + 2, 'ความจุรถ 6 ล้อ', st.truck6Cap, 'คิว/เที่ยว', 'เช่น 5.5')}
-                ${createKeypadFieldHTML(base + 3, 'ความจุรถ 10 ล้อ', st.truck10Cap, 'คิว/เที่ยว', 'เช่น 11')}
-                ${createKeypadFieldHTML(base + 4, 'ราคาดิน (ไม่บังคับ)', st.pricePerM3, 'บาท/คิวหลวม', 'เช่น 150')}
-                ${createKeypadFieldHTML(base + 5, 'ค่าเกลี่ยและบดอัด (ไม่บังคับ)', st.spreadPerM3, 'บาท/คิวแน่น', 'เช่น 40')}
-            </div>
+            ${renderAdvancedDetailsHTML('land_fill_adv', 'ตั้งค่าขั้นสูง & ราคา (อัตรายุบ, ความจุรถ, งบประมาณ)', landAdvHint, landAdvBody, landAdvOpen)}
             ${resultHTML}
-            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
-                <div>ตัวคูณเผื่อยุบ = 1 / (1 - อัตรายุบ) เช่น ยุบ 25% ต้องสั่ง x1.33</div>
-                <div>ยังไม่ยืนยัน: อัตรายุบตัวของวัสดุแต่ละชนิดและความจุรถต่อเที่ยวเป็นค่าตั้งต้นจากเอกสารรวบรวม ควรถามผู้ขายดินหรือผู้รับเหมา และข้อมูลนี้เป็นค่าประมาณเพื่อประกอบการตัดสินใจ</div>
-            </div>
+            ${renderMethodNoteDetailsHTML('land_fill_note', 'ค่าประมาณ · ควรถามผู้ขายดิน', [
+                'ตัวคูณเผื่อยุบ = 1 / (1 - อัตรายุบ) เช่น ยุบ 25% ต้องสั่ง x1.33',
+                'ยังไม่ยืนยัน: อัตรายุบตัวของวัสดุแต่ละชนิดและความจุรถต่อเที่ยวเป็นค่าตั้งต้นจากเอกสารรวบรวม ควรถามผู้ขายดินหรือผู้รับเหมา และข้อมูลนี้เป็นค่าประมาณเพื่อประกอบการตัดสินใจ'
+            ])}
         </div>
     `;
 
     attachFieldClickListeners(container);
+    bindAdvancedDetailsListeners(container);
 
     container.querySelectorAll('[data-land-mode]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -815,6 +885,18 @@ function renderWallCeilingTool(container) {
         }).join('');
         const sideChips = [0, 1, 2].map(n => `<button type="button" class="tool-chip-btn wc-side-chip ${Number(st.plasterSides) === n ? 'active font-bold' : ''}" aria-pressed="${Number(st.plasterSides) === n}" data-sides="${n}" style="min-height: 44px;">${n === 0 ? 'ไม่ฉาบ' : `ฉาบ ${n} ด้าน`}</button>`).join('');
         const unverifiedBrick = !activeBrick || activeBrick.source === 'unverified';
+        const masonryAdvOpen = appState.activeFieldIndex >= 3;
+        const masonryAdvHint = `เผื่อ ${st.masonryWastePct || '5'}% · ปูน ${st.plasterCoverage || '2'} ตร.ม./ถุง`;
+        const masonryAdvBody = `
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(3, 'จำนวนก้อนต่อ ตร.ม.', st.bricksPerSqm, 'ก้อน/ตร.ม.', 'เช่น 8.33')}
+                ${createKeypadFieldHTML(4, 'เผื่อแตกหัก', st.masonryWastePct, '%', 'เช่น 5')}
+                ${createKeypadFieldHTML(5, 'ปูนฉาบ 1 ถุงฉาบได้ (หนา 1.5 ซม.)', st.plasterCoverage, 'ตร.ม./ถุง', 'เช่น 2')}
+                ${createKeypadFieldHTML(6, 'ราคาอิฐ (ไม่บังคับ)', st.brickPrice, 'บาท/ก้อน', 'เช่น 8')}
+                ${createKeypadFieldHTML(7, 'ราคาปูนฉาบ (ไม่บังคับ)', st.plasterBagPrice, 'บาท/ถุง', 'เช่น 120')}
+                ${createKeypadFieldHTML(8, 'ค่าแรงก่อ (ไม่บังคับ)', st.masonryLaborPerSqm, 'บาท/ตร.ม.', 'เช่น 180')}
+                ${createKeypadFieldHTML(9, 'ค่าแรงฉาบ (ไม่บังคับ)', st.plasterLaborPerSqm, 'บาท/ตร.ม.', 'เช่น 120')}
+            </div>`;
         body = `
             <div class="flex flex-col gap-1.5">
                 ${createKeypadFieldHTML(0, 'ความยาวผนังรวม', st.wallLength, 'เมตร', 'เช่น 5')}
@@ -825,21 +907,11 @@ function renderWallCeilingTool(container) {
                 <div class="font-semibold text-[var(--app-ink)]">ชนิดอิฐ</div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${brickChips}</div>
             </div>
-            <div class="flex flex-col gap-1.5">
-                ${createKeypadFieldHTML(3, 'จำนวนก้อนต่อ ตร.ม.', st.bricksPerSqm, 'ก้อน/ตร.ม.', 'เช่น 8.33')}
-                ${createKeypadFieldHTML(4, 'เผื่อแตกหัก', st.masonryWastePct, '%', 'เช่น 5')}
-            </div>
             <div class="themed-tool-card p-3 space-y-2 text-xs">
                 <div class="font-semibold text-[var(--app-ink)]">การฉาบปูน</div>
                 <div class="grid grid-cols-3 gap-2">${sideChips}</div>
             </div>
-            <div class="flex flex-col gap-1.5">
-                ${createKeypadFieldHTML(5, 'ปูนฉาบ 1 ถุงฉาบได้ (หนา 1.5 ซม.)', st.plasterCoverage, 'ตร.ม./ถุง', 'เช่น 2')}
-                ${createKeypadFieldHTML(6, 'ราคาอิฐ (ไม่บังคับ)', st.brickPrice, 'บาท/ก้อน', 'เช่น 8')}
-                ${createKeypadFieldHTML(7, 'ราคาปูนฉาบ (ไม่บังคับ)', st.plasterBagPrice, 'บาท/ถุง', 'เช่น 120')}
-                ${createKeypadFieldHTML(8, 'ค่าแรงก่อ (ไม่บังคับ)', st.masonryLaborPerSqm, 'บาท/ตร.ม.', 'เช่น 180')}
-                ${createKeypadFieldHTML(9, 'ค่าแรงฉาบ (ไม่บังคับ)', st.plasterLaborPerSqm, 'บาท/ตร.ม.', 'เช่น 120')}
-            </div>`;
+            ${renderAdvancedDetailsHTML('wc_masonry_adv', 'ตั้งค่าขั้นสูง & ราคา (เผื่อแตกหัก, ปูนฉาบ, ราคาวัสดุ/ค่าแรง)', masonryAdvHint, masonryAdvBody, masonryAdvOpen)}`;
         if (calc.valid) {
             body += `
             <div class="themed-result-card p-4 space-y-3">
@@ -854,12 +926,13 @@ function renderWallCeilingTool(container) {
             </div>`;
             statusHTML = `ต้องใช้อิฐ <span class="text-lg text-[var(--app-accent)] underline">${formatNum(calc.bricks, 0)} ก้อน</span><span class="text-xs font-normal opacity-80 block mt-1">ปูนฉาบ ${formatNum(calc.plasterBags, 0)} ถุง · พื้นที่ผนัง ${formatNum(calc.netAreaSqm, 2)} ตร.ม.</span>`;
         }
-        body += `
-            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
-                <div>จำนวนก้อนต่อ ตร.ม. ของอิฐมวลเบาและอิฐบล็อกคำนวณจากขนาดก้อนรวมร่องปูน</div>
-                ${unverifiedBrick ? '<div>ยังไม่ยืนยัน: จำนวนก้อนของอิฐมอญและความครอบคลุมของปูนฉาบเป็นค่าประมาณ ควรเทียบกับข้อมูลของผู้ผลิตหรือผู้ขายก่อนสั่งซื้อ</div>' : '<div>ยังไม่ยืนยัน: ความครอบคลุมของปูนฉาบเป็นค่าประมาณ ควรเทียบกับข้อมูลของผู้ผลิต</div>'}
-                <div>ไม่รวมปูนก่อ ทราย เสาเอ็น ทับหลัง และเหล็กหนวดกุ้ง เป็นค่าประมาณเพื่อประกอบการตัดสินใจ</div>
-            </div>`;
+        body += renderMethodNoteDetailsHTML('wc_masonry_note', 'ไม่รวมปูนก่อ ทราย เสาเอ็น', [
+            'จำนวนก้อนต่อ ตร.ม. ของอิฐมวลเบาและอิฐบล็อกคำนวณจากขนาดก้อนรวมร่องปูน',
+            unverifiedBrick
+                ? 'ยังไม่ยืนยัน: จำนวนก้อนของอิฐมอญและความครอบคลุมของปูนฉาบเป็นค่าประมาณ ควรเทียบกับข้อมูลของผู้ผลิตหรือผู้ขายก่อนสั่งซื้อ'
+                : 'ยังไม่ยืนยัน: ความครอบคลุมของปูนฉาบเป็นค่าประมาณ ควรเทียบกับข้อมูลของผู้ผลิต',
+            'ไม่รวมปูนก่อ ทราย เสาเอ็น ทับหลัง และเหล็กหนวดกุ้ง เป็นค่าประมาณเพื่อประกอบการตัดสินใจ'
+        ]);
     } else {
         const calc = calculateCeiling(st);
         const currentPanel = parseNumericInput(st.panelAreaSqm);
@@ -867,6 +940,15 @@ function renderWallCeilingTool(container) {
             const active = currentPanel === p.areaSqm;
             return `<button type="button" class="tool-chip-btn wc-panel-chip ${active ? 'active font-bold' : ''}" aria-pressed="${active}" data-panel="${p.key}" style="min-height: 44px;">${p.label}</button>`;
         }).join('');
+        const ceilingAdvOpen = appState.activeFieldIndex >= 1;
+        const ceilingAdvHint = `เผื่อ ${st.ceilingWastePct || '10'}% · ${st.panelAreaSqm || '2.88'} ตร.ม./แผ่น`;
+        const ceilingAdvBody = `
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(1, 'เผื่อเศษตัด', st.ceilingWastePct, '%', 'เช่น 10')}
+                ${createKeypadFieldHTML(2, 'พื้นที่ต่อแผ่น', st.panelAreaSqm, 'ตร.ม./แผ่น', 'เช่น 2.88')}
+                ${createKeypadFieldHTML(3, 'ราคาแผ่น (ไม่บังคับ)', st.panelPrice, 'บาท/แผ่น', 'เช่น 190')}
+                ${createKeypadFieldHTML(4, 'ค่าแรงทำฝ้า (ไม่บังคับ)', st.ceilingLaborPerSqm, 'บาท/ตร.ม.', 'เช่น 180')}
+            </div>`;
         body = `
             <div class="flex flex-col gap-1.5">
                 ${createKeypadFieldHTML(0, 'พื้นที่ฝ้าเพดาน', st.ceilingArea, 'ตร.ม.', 'เช่น 16')}
@@ -875,12 +957,7 @@ function renderWallCeilingTool(container) {
                 <div class="font-semibold text-[var(--app-ink)]">ชนิดแผ่นฝ้า</div>
                 <div class="grid grid-cols-1 gap-2">${panelChips}</div>
             </div>
-            <div class="flex flex-col gap-1.5">
-                ${createKeypadFieldHTML(1, 'เผื่อเศษตัด', st.ceilingWastePct, '%', 'เช่น 10')}
-                ${createKeypadFieldHTML(2, 'พื้นที่ต่อแผ่น', st.panelAreaSqm, 'ตร.ม./แผ่น', 'เช่น 2.88')}
-                ${createKeypadFieldHTML(3, 'ราคาแผ่น (ไม่บังคับ)', st.panelPrice, 'บาท/แผ่น', 'เช่น 190')}
-                ${createKeypadFieldHTML(4, 'ค่าแรงทำฝ้า (ไม่บังคับ)', st.ceilingLaborPerSqm, 'บาท/ตร.ม.', 'เช่น 180')}
-            </div>`;
+            ${renderAdvancedDetailsHTML('wc_ceiling_adv', 'ตั้งค่าขั้นสูง & ราคา (เผื่อเศษ, ขนาดแผ่น, ราคา/ค่าแรง)', ceilingAdvHint, ceilingAdvBody, ceilingAdvOpen)}`;
         if (calc.valid) {
             body += `
             <div class="themed-result-card p-4 space-y-3">
@@ -894,11 +971,10 @@ function renderWallCeilingTool(container) {
             </div>`;
             statusHTML = `ต้องใช้แผ่นฝ้า <span class="text-lg text-[var(--app-accent)] underline">${formatNum(calc.panels, 0)} แผ่น</span><span class="text-xs font-normal opacity-80 block mt-1">พื้นที่ ${formatNum(calc.areaSqm, 2)} ตร.ม. · เผื่อ ${formatNum(calc.wastePct, 1)}%</span>`;
         }
-        body += `
-            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
-                <div>จำนวนแผ่น = พื้นที่ / พื้นที่ต่อแผ่น x (1 + เผื่อเศษตัด) ขนาดแผ่นมาตรฐานเป็นค่าตั้งต้นที่ปรับได้</div>
-                <div>ไม่รวมโครงคร่าว ลวดแขวน สกรู และผงยิปซั่มฉาบรอยต่อ เพราะปริมาณขึ้นกับระยะโครงของแต่ละงาน ควรให้ช่างถอดแบบ</div>
-            </div>`;
+        body += renderMethodNoteDetailsHTML('wc_ceiling_note', 'ไม่รวมโครงคร่าวและอุปกรณ์', [
+            'จำนวนแผ่น = พื้นที่ / พื้นที่ต่อแผ่น x (1 + เผื่อเศษตัด) ขนาดแผ่นมาตรฐานเป็นค่าตั้งต้นที่ปรับได้',
+            'ไม่รวมโครงคร่าว ลวดแขวน สกรู และผงยิปซั่มฉาบรอยต่อ เพราะปริมาณขึ้นกับระยะโครงของแต่ละงาน ควรให้ช่างถอดแบบ'
+        ]);
     }
 
     container.innerHTML = `
@@ -912,6 +988,7 @@ function renderWallCeilingTool(container) {
     `;
 
     attachFieldClickListeners(container);
+    bindAdvancedDetailsListeners(container);
 
     container.querySelectorAll('[data-wc-tab]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1122,7 +1199,7 @@ function renderRoofSteelTool(container) {
     const st = appState.roof_steel_calc;
     const tab = ['roof', 'cut', 'rebar'].includes(st.tab) ? st.tab : 'roof';
     const row = (label, value) => `<div class="flex justify-between gap-2"><span class="text-[var(--app-muted)]">${label}</span><span class="font-semibold font-mono text-right">${value}</span></div>`;
-    const note = lines => `<div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">${lines.map(l => `<div>${l}</div>`).join('')}</div>`;
+    const note = lines => renderMethodNoteDetailsHTML(`rs_${tab}_note`, 'ค่าประมาณ · ควรตรวจแบบโครงสร้าง', lines);
     let body = '';
     let statusHTML = null;
     let emptyText = '';
@@ -1130,6 +1207,16 @@ function renderRoofSteelTool(container) {
     if (tab === 'roof') {
         const calc = calculateRoof(st);
         const sideChips = [1, 2].map(n => `<button type="button" class="tool-chip-btn roof-side-chip ${Number(st.roofSides) === n ? 'active font-bold' : ''}" aria-pressed="${Number(st.roofSides) === n}" data-roof-sides="${n}" style="min-height: 44px;">${n === 1 ? 'หลังคาเพิงหมาแหงน (1 ด้าน)' : 'หลังคาจั่ว (2 ด้าน)'}</button>`).join('');
+        const roofAdvOpen = appState.activeFieldIndex >= 3;
+        const roofAdvHint = `ชายคา ${st.roofOverhang || '0'} ม. · แผ่น ${st.sheetWidth || '0.76'} ม. · แป ${st.purlinSpacing || '1'} ม.`;
+        const roofAdvBody = `
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(3, 'ชายคายื่น (ตามแนวลาด)', st.roofOverhang, 'เมตร', 'เช่น 0.5')}
+                ${createKeypadFieldHTML(4, 'หน้ากว้างใช้งานจริงของแผ่น', st.sheetWidth, 'เมตร', 'เช่น 0.76')}
+                ${createKeypadFieldHTML(5, 'ระยะห่างแป', st.purlinSpacing, 'เมตร', 'เช่น 1')}
+                ${createKeypadFieldHTML(6, 'สกรูยิงหลังคา', st.screwsPerSqm, 'ตัว/ตร.ม.', 'เช่น 5')}
+                ${createKeypadFieldHTML(7, 'ราคาหลังคา (ไม่บังคับ)', st.roofPricePerSqm, 'บาท/ตร.ม.', 'เช่น 350')}
+            </div>`;
         body = `
             <div class="themed-tool-card p-3 space-y-2 text-xs">
                 <div class="font-semibold text-[var(--app-ink)]">รูปแบบหลังคา</div>
@@ -1139,12 +1226,8 @@ function renderRoofSteelTool(container) {
                 ${createKeypadFieldHTML(0, 'ระยะแนวราบต่อ 1 ด้าน (Run)', st.roofRun, 'เมตร', 'เช่น 4')}
                 ${createKeypadFieldHTML(1, 'ความยาวหลังคาตามแนวสันหรือชายคา', st.roofLength, 'เมตร', 'เช่น 6')}
                 ${createKeypadFieldHTML(2, 'องศาความลาดชัน', st.roofAngle, 'องศา', 'เช่น 15')}
-                ${createKeypadFieldHTML(3, 'ชายคายื่น (ตามแนวลาด)', st.roofOverhang, 'เมตร', 'เช่น 0.5')}
-                ${createKeypadFieldHTML(4, 'หน้ากว้างใช้งานจริงของแผ่น', st.sheetWidth, 'เมตร', 'เช่น 0.76')}
-                ${createKeypadFieldHTML(5, 'ระยะห่างแป', st.purlinSpacing, 'เมตร', 'เช่น 1')}
-                ${createKeypadFieldHTML(6, 'สกรูยิงหลังคา', st.screwsPerSqm, 'ตัว/ตร.ม.', 'เช่น 5')}
-                ${createKeypadFieldHTML(7, 'ราคาหลังคา (ไม่บังคับ)', st.roofPricePerSqm, 'บาท/ตร.ม.', 'เช่น 350')}
-            </div>`;
+            </div>
+            ${renderAdvancedDetailsHTML('rs_roof_adv', 'ตั้งค่าขั้นสูง & ราคา (ชายคา, หน้ากว้างแผ่น, แป, สกรู, ราคา)', roofAdvHint, roofAdvBody, roofAdvOpen)}`;
         if (calc.valid) {
             body += `
             <div class="themed-result-card p-4 space-y-3">
@@ -1250,7 +1333,9 @@ function renderRoofSteelTool(container) {
             </div>`;
             statusHTML = `เหล็ก ${rebar.type.key} <span class="text-lg text-[var(--app-accent)] underline">${formatNum(rebar.weightKg, 2)} กก.</span><span class="text-xs font-normal opacity-80 block mt-1">${formatNum(rebar.stockBars, 0)} เส้นเต็ม${con.valid ? ` · คอนกรีต ${formatNum(con.orderM3, 2)} คิว` : ''}</span>`;
         }
-        body += `
+        const conAdvOpen = appState.activeFieldIndex >= 3;
+        const conAdvHint = con.valid ? `${formatNum(con.orderM3, 2)} คิว · เผื่อ ${st.conWastePct || '5'}%` : 'เสา / คาน / ฐานราก';
+        const conAdvBody = `
             <div class="flex flex-col gap-1.5">
                 ${createKeypadFieldHTML(3, 'ความกว้างหน้าตัด', st.conWidth, 'เมตร', 'เช่น 0.2')}
                 ${createKeypadFieldHTML(4, 'ความลึก/หนา', st.conDepth, 'เมตร', 'เช่น 0.3')}
@@ -1259,6 +1344,7 @@ function renderRoofSteelTool(container) {
                 ${createKeypadFieldHTML(7, 'เผื่อสูญเสีย', st.conWastePct, '%', 'เช่น 5')}
                 ${createKeypadFieldHTML(8, 'ราคาคอนกรีต (ไม่บังคับ)', st.conPricePerM3, 'บาท/คิว', 'เช่น 2000')}
             </div>`;
+        body += renderAdvancedDetailsHTML('rs_rebar_concrete', 'คำนวณคอนกรีตโครงสร้างเพิ่มเติม (เสา/คาน/ฐานราก)', conAdvHint, conAdvBody, conAdvOpen);
         if (con.valid) {
             body += `
             <div class="themed-result-card p-4 space-y-3">
@@ -1291,6 +1377,7 @@ function renderRoofSteelTool(container) {
     `;
 
     attachFieldClickListeners(container);
+    bindAdvancedDetailsListeners(container);
 
     container.querySelectorAll('[data-rs-tab]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1314,12 +1401,10 @@ function renderRoofSteelTool(container) {
         });
     });
     container.querySelectorAll('[data-piece-id]').forEach(input => {
-        input.addEventListener('change', () => {
+        bindLiveTextInput(input, val => {
             const target = (st.pieces || []).find(p => p.id === input.dataset.pieceId);
             if (!target) return;
-            target[input.dataset.pieceField] = input.value;
-            persistAppState();
-            renderActiveTool();
+            target[input.dataset.pieceField] = val;
         });
     });
     container.querySelectorAll('[data-piece-remove]').forEach(btn => {
@@ -1494,15 +1579,16 @@ function renderContractorPaymentTool(container) {
                 <button type="button" class="tool-action-btn" id="btnAddInstallment" style="min-height: 44px;">เพิ่มงวด</button>
             </div>
             ${resultHTML}
-            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
-                <div>เปอร์เซ็นต์ของตัวอย่างเป็นเพียงค่าเริ่มต้น ไม่ใช่มาตรฐาน ให้กำหนดตามสัญญาจริงที่ตกลงกัน</div>
-                <div>วิธีคิด: VAT และหัก ณ ที่จ่ายคำนวณจากค่าจ้างงวดนั้นก่อน VAT ส่วนเงินประกันหักจากค่าจ้างงวดนั้น ยอดสุทธิ = ค่าจ้าง + VAT - เงินประกัน - หัก ณ ที่จ่าย</div>
-                <div>ยังไม่ยืนยัน: ภาษีหัก ณ ที่จ่ายใช้กรณีผู้ว่าจ้างเป็นนิติบุคคลและเป็นค่าจ้างทำของ และวิธีจัดการ VAT กับเงินประกันขึ้นกับเงื่อนไขสัญญา ควรสอบถามนักบัญชีหรือผู้ทำสัญญา</div>
-            </div>
+            ${renderMethodNoteDetailsHTML('cp_note', 'ตามสัญญาจริง · ตรวจเงื่อนไขภาษี', [
+                'เปอร์เซ็นต์ของตัวอย่างเป็นเพียงค่าเริ่มต้น ไม่ใช่มาตรฐาน ให้กำหนดตามสัญญาจริงที่ตกลงกัน',
+                'วิธีคิด: VAT และหัก ณ ที่จ่ายคำนวณจากค่าจ้างงวดนั้นก่อน VAT ส่วนเงินประกันหักจากค่าจ้างงวดนั้น ยอดสุทธิ = ค่าจ้าง + VAT - เงินประกัน - หัก ณ ที่จ่าย',
+                'ยังไม่ยืนยัน: ภาษีหัก ณ ที่จ่ายใช้กรณีผู้ว่าจ้างเป็นนิติบุคคลและเป็นค่าจ้างทำของ และวิธีจัดการ VAT กับเงินประกันขึ้นกับเงื่อนไขสัญญา ควรสอบถามนักบัญชีหรือผู้ทำสัญญา'
+            ])}
         </div>
     `;
 
     attachFieldClickListeners(container);
+    bindAdvancedDetailsListeners(container);
 
     container.querySelectorAll('[data-cp-template]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1522,13 +1608,11 @@ function renderContractorPaymentTool(container) {
         });
     });
     container.querySelectorAll('[data-cp-pct]').forEach(input => {
-        input.addEventListener('change', () => {
+        bindLiveTextInput(input, val => {
             const target = rows.find(r => r.id === input.dataset.cpPct);
             if (!target) return;
-            target.pct = input.value;
+            target.pct = val;
             st.template = '';
-            persistAppState();
-            renderActiveTool();
         });
     });
     container.querySelectorAll('[data-cp-remove]').forEach(btn => {
@@ -1649,14 +1733,15 @@ function renderPlumbingTool(container) {
                 <div class="grid grid-cols-1 gap-2">${houseChips}</div>
             </div>
             ${resultHTML}
-            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
-                <div>ขนาดถัง = จำนวนคน x ลิตรต่อคนต่อวัน x จำนวนวันที่สำรอง แล้วเลือกขนาดถังที่ใหญ่ขึ้นไปถัดจากค่าที่คำนวณได้</div>
-                <div>ยังไม่ยืนยัน: ค่า 200 ลิตร/คน/วัน ช่วงวัตต์ปั๊มตามลักษณะบ้าน และขนาดถังมาตรฐาน มาจากเอกสารรวบรวม ไม่ใช่การคำนวณเฮดและอัตราไหล ควรเลือกปั๊มจากอัตราไหล (ลิตร/นาที) และเฮดของรุ่นที่ผู้ผลิตระบุ และให้ช่างประปาตรวจหน้างาน</div>
-            </div>
+            ${renderMethodNoteDetailsHTML('plumbing_note', 'ค่าประมาณ · ตรวจเฮดและอัตราไหล', [
+                'ขนาดถัง = จำนวนคน x ลิตรต่อคนต่อวัน x จำนวนวันที่สำรอง แล้วเลือกขนาดถังที่ใหญ่ขึ้นไปถัดจากค่าที่คำนวณได้',
+                'ยังไม่ยืนยัน: ค่า 200 ลิตร/คน/วัน ช่วงวัตต์ปั๊มตามลักษณะบ้าน และขนาดถังมาตรฐาน มาจากเอกสารรวบรวม ไม่ใช่การคำนวณเฮดและอัตราไหล ควรเลือกปั๊มจากอัตราไหล (ลิตร/นาที) และเฮดของรุ่นที่ผู้ผลิตระบุ และให้ช่างประปาตรวจหน้างาน'
+            ])}
         </div>
     `;
 
     attachFieldClickListeners(container);
+    bindAdvancedDetailsListeners(container);
 
     container.querySelectorAll('.plumb-house-chip').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1808,13 +1893,14 @@ function renderInchFractionTool(container) {
                 <div class="font-semibold text-[var(--app-ink)]">ตารางหุน เป็นนิ้วและมิลลิเมตร (1 นิ้ว = 25.4 มม.)</div>
                 ${hunRows}
             </div>
-            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
-                <div>ตารางนี้เป็นการแปลงหน่วยความยาวเท่านั้น ขนาดเรียกท่อประปา PVC (เช่น ท่อ 4 หุน) เป็นขนาดเรียก ไม่ใช่เส้นผ่านศูนย์กลางนอกจริง จึงต้องตรวจตารางท่อของ มอก. หรือผู้ผลิต ห้ามใช้ค่าในตารางนี้เป็นขนาดจริงของท่อ</div>
-            </div>
+            ${renderMethodNoteDetailsHTML('inch_note', 'แปลงหน่วยความยาวเท่านั้น', [
+                'ตารางนี้เป็นการแปลงหน่วยความยาวเท่านั้น ขนาดเรียกท่อประปา PVC (เช่น ท่อ 4 หุน) เป็นขนาดเรียก ไม่ใช่เส้นผ่านศูนย์กลางนอกจริง จึงต้องตรวจตารางท่อของ มอก. หรือผู้ผลิต ห้ามใช้ค่าในตารางนี้เป็นขนาดจริงของท่อ'
+            ])}
         </div>
     `;
 
     attachFieldClickListeners(container);
+    bindAdvancedDetailsListeners(container);
 
     container.querySelectorAll('[data-inch-mode]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1932,6 +2018,113 @@ function calculateShape(st) {
     return result;
 }
 
+/* -----------------------------------------------------------
+ * WORKFLOW HANDOFFS: shape_calc -> wall_ceiling_calc / land_fill_calc
+ *                    wire_breaker -> conduit_fill / wire_data
+ * ----------------------------------------------------------- */
+
+function buildShapeHandoff(shapeState) {
+    const calc = calculateShape(shapeState || {});
+    if (!calc.valid || !(calc.areaSqm > 0)) return { hasArea: false };
+    const rnw = calc.raiNganWa || splitRaiNganWa(calc.areaSqm);
+    return {
+        hasArea: true,
+        areaSqm: Math.round(calc.areaSqm * 100) / 100,
+        rai: rnw.rai,
+        ngan: rnw.ngan,
+        wa: Math.round(rnw.wa * 100) / 100
+    };
+}
+
+function applyShapeToCeilingHandoff(shapeState) {
+    const h = buildShapeHandoff(shapeState);
+    if (!h.hasArea) return false;
+    const prev = appState.wall_ceiling_calc || {};
+    appState.wall_ceiling_calc = {
+        ...prev,
+        tab: 'ceiling',
+        ceilingArea: String(h.areaSqm),
+        ceilingType: prev.ceilingType || 'gypsum',
+        panelAreaSqm: prev.panelAreaSqm || '2.88',
+        ceilingWastePct: prev.ceilingWastePct || '10'
+    };
+    persistAppState();
+    return true;
+}
+
+function applyShapeToLandFillHandoff(shapeState) {
+    const h = buildShapeHandoff(shapeState);
+    if (!h.hasArea) return false;
+    const prev = appState.land_fill_calc || {};
+    appState.land_fill_calc = {
+        ...prev,
+        mode: 'land',
+        rai: String(h.rai),
+        ngan: String(h.ngan),
+        wa: String(h.wa),
+        heightCm: prev.heightCm || '50',
+        soil: prev.soil || 'general',
+        shrinkPct: prev.shrinkPct || '25',
+        truck6Cap: prev.truck6Cap || '5.5',
+        truck10Cap: prev.truck10Cap || '11'
+    };
+    persistAppState();
+    return true;
+}
+
+function buildWireBreakerHandoff(wireState) {
+    const calc = calculateWireBreaker(wireState || {});
+    if (!calc.valid || calc.wireSizeSqmm === null) return { hasWire: false };
+    const conductorsPerCircuit = calc.phases === 3 ? 5 : 3; // 3P: 3L+N+G, 1P: L+N+G
+    const circuits = Math.max(1, Number(calc.circuits) || 1);
+    const totalConductors = conductorsPerCircuit * circuits;
+    const isSurface = calc.method === 'surface';
+    const rawLength = Math.max(0, Number(calc.wireLengthM) || 0);
+    // For THW single-core ordering, multiply by conductor count; for VAF 2-core flat cable, multiply by circuits
+    const totalLengthM = Math.round((isSurface ? rawLength * circuits : rawLength * totalConductors) * 10) / 10;
+    return {
+        hasWire: true,
+        wireSizeSqmm: calc.wireSizeSqmm,
+        method: calc.method,
+        phases: calc.phases,
+        circuits,
+        conductorsPerCircuit,
+        totalConductors,
+        wireType: isSurface ? 'vaf' : 'thw',
+        lengthPerRunM: rawLength,
+        totalLengthM,
+        canUseConduit: !isSurface
+    };
+}
+
+function applyWireToConduitHandoff(wireState) {
+    const h = buildWireBreakerHandoff(wireState);
+    if (!h.hasWire || !h.canUseConduit) return false;
+    appState.conduit_fill = {
+        mode: 'size',
+        cableType: 'thw',
+        rows: [{ id: '1', size: String(h.wireSizeSqmm), count: String(h.totalConductors) }],
+        wireSize: String(h.wireSizeSqmm),
+        conduit: appState.conduit_fill?.conduit || '20'
+    };
+    persistAppState();
+    return true;
+}
+
+function applyWireToWireDataHandoff(wireState) {
+    const h = buildWireBreakerHandoff(wireState);
+    if (!h.hasWire) return false;
+    const prev = appState.wire_data || {};
+    appState.wire_data = {
+        type: h.wireType,
+        size: String(h.wireSizeSqmm),
+        conductor: prev.conductor || 'stranded',
+        lengthM: h.totalLengthM > 0 ? String(h.totalLengthM) : (prev.lengthM || '100')
+    };
+    persistAppState();
+    return true;
+}
+
 function renderShapeTool(container) {
     if (!appState.shape_calc) {
         appState.shape_calc = {
@@ -1948,6 +2141,7 @@ function renderShapeTool(container) {
         + (def.optionalDepth ? createKeypadFieldHTML(def.fields.length, 'ความหนา/ความลึก (ไม่บังคับ หาปริมาตร)', st.depth, 'เมตร', 'เช่น 0.1') : '');
 
     let resultHTML = '';
+    let handoffCardHTML = '';
     let statusHTML = null;
     let emptyText = 'ป้อนขนาดของรูปทรงที่เลือก';
     if (calc.valid) {
@@ -1968,6 +2162,16 @@ function renderShapeTool(container) {
                     ${calc.volumeM3 !== undefined && !mainIsVolume ? row(`ปริมาตร (หนา ${formatNum(calc.depthM, 3)} ม.)`, `${formatNum(calc.volumeM3, 3)} ลบ.ม.`) : ''}
                 </div>
             </div>`;
+        if (!mainIsVolume) {
+            handoffCardHTML = `
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">นำพื้นที่ ${formatNum(calc.areaSqm, 2)} ตร.ม. ไปคำนวณต่อ</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button type="button" class="tool-action-btn" id="btnShapeToCeiling" style="min-height: 44px;">คำนวณแผ่นฝ้าเพดาน</button>
+                    <button type="button" class="tool-action-btn" id="btnShapeToLandFill" style="min-height: 44px;">คำนวณดินถมที่</button>
+                </div>
+            </div>`;
+        }
         statusHTML = `${mainLabel} <span class="text-lg text-[var(--app-accent)] underline">${mainValue}</span><span class="text-xs font-normal opacity-80 block mt-1">${def.label}${calc.volumeM3 !== undefined && !mainIsVolume ? ` · ปริมาตร ${formatNum(calc.volumeM3, 3)} ลบ.ม.` : ''}</span>`;
     } else if (calc.reason === 'triangle_inequality') {
         resultHTML = `<div class="themed-subcard p-3 text-xs font-semibold" role="alert">ความยาว 3 ด้านนี้ประกอบเป็นสามเหลี่ยมไม่ได้ ผลรวมของสองด้านใดๆ ต้องมากกว่าด้านที่เหลือ</div>`;
@@ -1984,14 +2188,33 @@ function renderShapeTool(container) {
             </div>
             <div class="flex flex-col gap-1.5">${fieldsHTML}</div>
             ${resultHTML}
-            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
-                <div>ป้อนหน่วยเป็นเมตรทั้งหมด 1 ตารางวา = 4 ตร.ม. 1 งาน = 400 ตร.ม. 1 ไร่ = 1,600 ตร.ม.</div>
-                <div>สามเหลี่ยม 3 ด้านใช้สูตรเฮรอน ปริมาตรของรูปทรงแบนคิดจากพื้นที่ x ความหนา ค่านี้เป็นค่าตามรูปทรงอุดมคติ ไม่รวมเผื่อสูญเสีย</div>
-            </div>
+            ${handoffCardHTML}
+            ${renderMethodNoteDetailsHTML('shape_note', 'หน่วยเมตร · ไม่รวมเผื่อสูญเสีย', [
+                'ป้อนหน่วยเป็นเมตรทั้งหมด 1 ตารางวา = 4 ตร.ม. 1 งาน = 400 ตร.ม. 1 ไร่ = 1,600 ตร.ม.',
+                'สามเหลี่ยม 3 ด้านใช้สูตรเฮรอน ปริมาตรของรูปทรงแบนคิดจากพื้นที่ x ความหนา ค่านี้เป็นค่าตามรูปทรงอุดมคติ ไม่รวมเผื่อสูญเสีย'
+            ])}
         </div>
     `;
 
     attachFieldClickListeners(container);
+    bindAdvancedDetailsListeners(container);
+
+    const toCeilingBtn = document.getElementById('btnShapeToCeiling');
+    if (toCeilingBtn) {
+        toCeilingBtn.addEventListener('click', () => {
+            if (!applyShapeToCeilingHandoff({ ...st, shape: def.key })) return;
+            selectTool('wall_ceiling_calc');
+            if (typeof showHistoryToast === 'function') showHistoryToast('ส่งพื้นที่ไปคำนวณฝ้าเพดานแล้ว');
+        });
+    }
+    const toLandFillBtn = document.getElementById('btnShapeToLandFill');
+    if (toLandFillBtn) {
+        toLandFillBtn.addEventListener('click', () => {
+            if (!applyShapeToLandFillHandoff({ ...st, shape: def.key })) return;
+            selectTool('land_fill_calc');
+            if (typeof showHistoryToast === 'function') showHistoryToast('ส่งพื้นที่ไปคำนวณดินถมที่แล้ว');
+        });
+    }
 
     container.querySelectorAll('.shape-chip').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -2042,6 +2265,7 @@ function renderWireBreakerTool(container) {
         : 'ตารางพิกัดกระแสและค่าแรงดันตกยังไม่ได้ตรวจกับหนังสือ วสท. ไม่ควรใช้เป็นข้อมูลสำหรับติดตั้งจริง ต้องให้วิศวกรไฟฟ้าหรือช่างไฟที่มีใบอนุญาตตรวจก่อนเสมอ'];
     if (phases === 3) warnings.push('ระบบ 3 เฟสใช้สายเดี่ยว IEC 01 ร้อยท่อ (ตาราง 5-20 คอลัมน์ 3 สายนำกระแส) และแรงดันตกระหว่างสาย 3 เฟสเท่านั้น สาย VAF เป็นสาย 2 แกนใช้กับ 1 เฟส');
     let resultHTML = '';
+    let wireHandoffHTML = '';
     let statusType = 'empty';
     let statusHTML = 'ป้อนกำลังไฟฟ้าของอุปกรณ์เพื่อคำนวณขนาดสายไฟและเบรกเกอร์';
 
@@ -2129,11 +2353,37 @@ function renderWireBreakerTool(container) {
                     ${row('ใช้ระยะสาย / แรงดัน / PF', `${formatNum(calc.wireLengthM, 1)} ม. / ${formatNum(calc.voltage, 0)} V / ${formatNum(calc.powerFactor, 2)}`)}
                 </div>
             </div>`;
+        const h = buildWireBreakerHandoff(st);
+        if (h.hasWire) {
+            const conduitNote = h.canUseConduit
+                ? `ร้อยท่อ ${h.totalConductors} เส้น (${h.phases === 3 ? '3L+N+G' : 'L+N+G'} x ${h.circuits} วงจร)`
+                : 'สาย VAF เดินเกาะผนัง (ไม่ใช้ท่อร้อยสาย)';
+            const lengthNote = h.totalLengthM > 0 ? `ความยาวสั่งซื้อประมาณ ${formatNum(h.totalLengthM, 1)} ม.` : 'เปิดดูสเปกและจำนวนม้วน';
+            wireHandoffHTML = `
+            <div class="themed-tool-card p-3 space-y-2 text-xs">
+                <div class="font-semibold text-[var(--app-ink)]">ขั้นตอนถัดไปสำหรับสาย ${formatNum(h.wireSizeSqmm, 1)} ตร.มม.</div>
+                <div class="text-[11px] text-[var(--app-muted)]">${conduitNote} · ${lengthNote}</div>
+                <div class="grid grid-cols-1 ${h.canUseConduit ? 'sm:grid-cols-2' : ''} gap-2">
+                    ${h.canUseConduit ? '<button type="button" class="tool-action-btn" id="btnWireToConduit" style="min-height: 44px;">หาขนาดท่อร้อยสาย</button>' : ''}
+                    <button type="button" class="tool-action-btn" id="btnWireToData" style="min-height: 44px;">คำนวณจำนวนม้วน & น้ำหนักสาย</button>
+                </div>
+            </div>`;
+        }
         const vdBad = calc.isVdExceeded;
         // ไม่ใช้สถานะ success เพราะจะบันทึกผลลงประวัติอัตโนมัติ ทั้งที่ยังไม่ได้เทียบกับหนังสือ วสท. โดยตรง
         statusType = 'warning';
         statusHTML = `${vdBad ? 'แรงดันตกเกินเกณฑ์ · ' : ''}เบรกเกอร์ <span class="text-lg text-[var(--app-accent)] underline">${calc.recommendedBreaker} A</span> สาย ${formatNum(calc.wireSizeSqmm, 1)} ตร.มม.<span class="text-xs font-normal opacity-80 block mt-1">${dataChecked ? 'ต้องให้ช่างไฟตรวจก่อนติดตั้งจริง' : 'ยังไม่ยืนยันกับ วสท. ต้องให้ช่างไฟตรวจ'}</span>`;
     }
+
+    const wireAdvOpen = [1, 2, 4, 5].includes(appState.activeFieldIndex);
+    const wireAdvHint = `${st.voltage || (phases === 3 ? '400' : '230')}V · PF ${st.powerFactor || '0.95'} · ${st.ambientC || '40'}°C · ${st.circuits || '1'} วงจร`;
+    const wireAdvBody = `
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(1, phases === 3 ? 'แรงดันระหว่างสาย (3 เฟส)' : 'แรงดันไฟฟ้า (1 เฟส)', st.voltage, 'โวลต์', phases === 3 ? 'เช่น 400' : 'เช่น 230')}
+                ${createKeypadFieldHTML(2, 'ตัวประกอบกำลัง (PF)', st.powerFactor, '', 'เช่น 0.95')}
+                ${createKeypadFieldHTML(4, 'อุณหภูมิแวดล้อม', st.ambientC, '°C', 'เช่น 40')}
+                ${createKeypadFieldHTML(5, 'จำนวนวงจรที่เดินรวมกันในท่อ/แนวเดียวกัน', st.circuits, 'วงจร', 'เช่น 1')}
+            </div>`;
 
     container.innerHTML = `
         <div class="wire-breaker-tool flex flex-col gap-3 p-1">
@@ -2151,11 +2401,7 @@ function renderWireBreakerTool(container) {
             </div>
             <div class="flex flex-col gap-1.5">
                 ${createKeypadFieldHTML(0, 'กำลังไฟฟ้าของโหลด', st.watts, 'วัตต์', 'เช่น 3,500')}
-                ${createKeypadFieldHTML(1, phases === 3 ? 'แรงดันระหว่างสาย (3 เฟส)' : 'แรงดันไฟฟ้า (1 เฟส)', st.voltage, 'โวลต์', phases === 3 ? 'เช่น 400' : 'เช่น 230')}
-                ${createKeypadFieldHTML(2, 'ตัวประกอบกำลัง (PF)', st.powerFactor, '', 'เช่น 0.95')}
                 ${createKeypadFieldHTML(3, 'ระยะสายจากตู้ถึงโหลด', st.wireLengthM, 'เมตร', 'เช่น 15')}
-                ${createKeypadFieldHTML(4, 'อุณหภูมิแวดล้อม', st.ambientC, '°C', 'เช่น 40')}
-                ${createKeypadFieldHTML(5, 'จำนวนวงจรที่เดินรวมกันในท่อ/แนวเดียวกัน', st.circuits, 'วงจร', 'เช่น 1')}
             </div>
             <div class="segment-group grid-cols-2" role="group" aria-label="วิธีเดินสาย">
                 ${methodBtn('conduit', 'ร้อยท่อ (IEC 01 / THW)')}
@@ -2164,17 +2410,37 @@ function renderWireBreakerTool(container) {
             <div class="themed-tool-card p-3 space-y-2 text-xs">
                 <button type="button" class="tool-chip-btn wire-continuous-chip ${st.isContinuous ? 'active font-bold' : ''}" aria-pressed="${Boolean(st.isContinuous)}" id="btnWireContinuous" style="min-height: 44px;">โหลดต่อเนื่อง (แอร์ / EV Charger) คิดเผื่อ 125%</button>
             </div>
+            ${renderAdvancedDetailsHTML('wire_breaker_adv', 'ตั้งค่าขั้นสูง (แรงดัน, PF, อุณหภูมิ, จำนวนวงจรร่วมท่อ)', wireAdvHint, wireAdvBody, wireAdvOpen)}
             ${resultHTML}
-            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
-                <div>รองรับระบบ 1 เฟส (สาย IEC 01 ร้อยท่อ และ VAF) และ 3 เฟส (สาย IEC 01 ร้อยท่อ) สายทองแดงหุ้ม PVC 70 องศา ไม่รวมการเดินสายในผนังหรือเพดานฉนวนความร้อน (กลุ่ม 1) การเดินใต้ดิน สายหลายแกน การเลือกชนิดเบรกเกอร์ (MCB, RCBO) และสายดิน</div>
-                <div>กระแสโหลด 1 เฟส = วัตต์ / (แรงดัน x PF) 3 เฟส = วัตต์ / (sqrt(3) x แรงดันระหว่างสาย x PF)</div>
-                <div>วิธีคิด: เบรกเกอร์ต้องไม่เล็กกว่ากระแสออกแบบ พิกัดกระแสของสายในตารางต้องไม่น้อยกว่า เบรกเกอร์ / (Ca x Cg) ตามคู่มือ พ.ศ. 2564 และแรงดันตกวงจรย่อยไม่เกิน 3% ถ้าเกินจะขยับขนาดสายขึ้น ระยะสายสูงสุด = (แรงดัน x 3% x 1,000) / (mV/A/m x กระแสโหลด)</div>
-                <div>เว้นช่องอุณหภูมิหรือจำนวนวงจรว่างไว้ = 40 องศา และ 1 วงจร (ไม่ลดพิกัด)</div>
-            </div>
+            ${wireHandoffHTML}
+            ${renderMethodNoteDetailsHTML('wire_breaker_note', 'สาย PVC 70°C · คู่มือ 2564', [
+                'รองรับระบบ 1 เฟส (สาย IEC 01 ร้อยท่อ และ VAF) และ 3 เฟส (สาย IEC 01 ร้อยท่อ) สายทองแดงหุ้ม PVC 70 องศา ไม่รวมการเดินสายในผนังหรือเพดานฉนวนความร้อน (กลุ่ม 1) การเดินใต้ดิน สายหลายแกน การเลือกชนิดเบรกเกอร์ (MCB, RCBO) และสายดิน',
+                'กระแสโหลด 1 เฟส = วัตต์ / (แรงดัน x PF) 3 เฟส = วัตต์ / (sqrt(3) x แรงดันระหว่างสาย x PF)',
+                'วิธีคิด: เบรกเกอร์ต้องไม่เล็กกว่ากระแสออกแบบ พิกัดกระแสของสายในตารางต้องไม่น้อยกว่า เบรกเกอร์ / (Ca x Cg) ตามคู่มือ พ.ศ. 2564 และแรงดันตกวงจรย่อยไม่เกิน 3% ถ้าเกินจะขยับขนาดสายขึ้น ระยะสายสูงสุด = (แรงดัน x 3% x 1,000) / (mV/A/m x กระแสโหลด)',
+                'เว้นช่องอุณหภูมิหรือจำนวนวงจรว่างไว้ = 40 องศา และ 1 วงจร (ไม่ลดพิกัด)'
+            ])}
         </div>
     `;
 
     attachFieldClickListeners(container);
+    bindAdvancedDetailsListeners(container);
+
+    const toConduitBtn = document.getElementById('btnWireToConduit');
+    if (toConduitBtn) {
+        toConduitBtn.addEventListener('click', () => {
+            if (!applyWireToConduitHandoff(st)) return;
+            selectTool('conduit_fill');
+            if (typeof showHistoryToast === 'function') showHistoryToast('ส่งขนาดสายและจำนวนเส้นไปหาขนาดท่อร้อยสายแล้ว');
+        });
+    }
+    const toDataBtn = document.getElementById('btnWireToData');
+    if (toDataBtn) {
+        toDataBtn.addEventListener('click', () => {
+            if (!applyWireToWireDataHandoff(st)) return;
+            selectTool('wire_data');
+            if (typeof showHistoryToast === 'function') showHistoryToast('ส่งขนาดสายและความยาวไปคำนวณจำนวนม้วนแล้ว');
+        });
+    }
 
     container.querySelectorAll('.wire-preset-chip').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -2485,13 +2751,15 @@ function renderConduitFillTool(container) {
                 ${segBtn('count', 'ร้อยสายได้กี่เส้น')}
             </div>
             ${body}
-            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
-                <div>สัดส่วนพื้นที่สายรวมต่อพื้นที่ท่อไม่เกิน 53% (1 เส้น), 31% (2 เส้น), 40% (3 เส้นขึ้นไป) ตามตาราง C5 ของคู่มือ พ.ศ. 2564 พื้นที่ท่อคิดจากขนาดเรียก (มม.) ไม่ใช่เส้นผ่านศูนย์กลางภายในจริง ซึ่งต่างกันตามชนิดท่อ (EMT, IMC, RSC, PVC) ควรตรวจกับข้อมูลท่อรุ่นที่ใช้</div>
-                <div>รองรับสายเดี่ยว 60227 IEC 01 (THW) และ NYY แกนเดียว ใช้เส้นผ่านศูนย์กลางนอกสูงสุดจากแค็ตตาล็อก Yazaki ผลคำนวณ THW ตรงกับตาราง C1 ของคู่มือ 126 จาก 131 ช่อง และ NYY ตรงกับตาราง C2 153 จาก 156 ช่อง ส่วนที่ต่างกัน คู่มือให้มากกว่าที่คำนวณได้ 1 เส้น เครื่องมือนี้จึงระมัดระวังกว่า สายชนิดอื่น (เช่น XLPE ตาราง C3) ยังไม่รองรับ</div>
-                <div>ค่าประมาณเพื่อประกอบการตัดสินใจ ไม่รวมการดัดท่อ ระยะดึงสาย และข้อกำหนดเฉพาะของผู้ผลิตท่อ ควรให้ช่างหรือวิศวกรตรวจ</div>
-            </div>
+            ${renderMethodNoteDetailsHTML('conduit_fill_note', 'ตาราง C1/C2/C5 · ไม่รวมการดัดท่อ', [
+                'สัดส่วนพื้นที่สายรวมต่อพื้นที่ท่อไม่เกิน 53% (1 เส้น), 31% (2 เส้น), 40% (3 เส้นขึ้นไป) ตามตาราง C5 ของคู่มือ พ.ศ. 2564 พื้นที่ท่อคิดจากขนาดเรียก (มม.) ไม่ใช่เส้นผ่านศูนย์กลางภายในจริง ซึ่งต่างกันตามชนิดท่อ (EMT, IMC, RSC, PVC) ควรตรวจกับข้อมูลท่อรุ่นที่ใช้',
+                'รองรับสายเดี่ยว 60227 IEC 01 (THW) และ NYY แกนเดียว ใช้เส้นผ่านศูนย์กลางนอกสูงสุดจากแค็ตตาล็อก Yazaki ผลคำนวณ THW ตรงกับตาราง C1 ของคู่มือ 126 จาก 131 ช่อง และ NYY ตรงกับตาราง C2 153 จาก 156 ช่อง ส่วนที่ต่างกัน คู่มือให้มากกว่าที่คำนวณได้ 1 เส้น เครื่องมือนี้จึงระมัดระวังกว่า สายชนิดอื่น (เช่น XLPE ตาราง C3) ยังไม่รองรับ',
+                'ค่าประมาณเพื่อประกอบการตัดสินใจ ไม่รวมการดัดท่อ ระยะดึงสาย และข้อกำหนดเฉพาะของผู้ผลิตท่อ ควรให้ช่างหรือวิศวกรตรวจ'
+            ])}
         </div>
     `;
+
+    bindAdvancedDetailsListeners(container);
 
     container.querySelectorAll('[data-conduit-cable]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -2519,13 +2787,20 @@ function renderConduitFillTool(container) {
         });
     });
     container.querySelectorAll('[data-conduit-field]').forEach(input => {
-        input.addEventListener('change', () => {
+        const applyVal = (val) => {
             const target = (st.rows || []).find(r => r.id === input.dataset.conduitId);
             if (!target) return;
-            target[input.dataset.conduitField] = input.value;
-            persistAppState();
-            renderActiveTool();
-        });
+            target[input.dataset.conduitField] = val;
+        };
+        if (input.tagName === 'SELECT') {
+            input.addEventListener('change', () => {
+                applyVal(input.value);
+                persistAppState();
+                renderActiveTool();
+            });
+        } else {
+            bindLiveTextInput(input, applyVal);
+        }
     });
     container.querySelectorAll('[data-conduit-remove]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -2704,15 +2979,16 @@ function renderWireDataTool(container) {
                 ${createKeypadFieldHTML(0, 'ความยาวที่ต้องการสั่ง (ไม่บังคับ)', st.lengthM, 'เมตร', 'เช่น 100')}
             </div>
             ${resultHTML}
-            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1">
-                <div>ข้อมูลจากแค็ตตาล็อก Thai-Yazaki (สาย 60227 IEC 01 THW ตาม มอก.11 เล่ม 3-2553 และสาย VAF ตาม มอก.11 เล่ม 101-2559) น้ำหนักเป็นค่าประมาณ ขนาดมีพิกัดความคลาดเคลื่อน ผู้ผลิตรายอื่นต่างกันเล็กน้อย</div>
-                <div>กระแสในอากาศและในท่อเป็นของสายนี้ที่ 40°C ตรงกับตารางใน wire_breaker ยังไม่รวมตัวคูณลดพิกัด ต้องให้ช่างไฟตรวจก่อนติดตั้งจริง</div>
-                <div>ถ้าซื้อสายขนาด 50 ตร.มม. ขึ้นไปที่ขายเป็นดรัม ผู้ขายมักตัดขายตามเมตร ให้ตรวจกับร้านก่อน</div>
-            </div>
+            ${renderMethodNoteDetailsHTML('wire_data_note', 'แค็ตตาล็อก Yazaki · ตรวจก่อนติดตั้ง', [
+                'ข้อมูลจากแค็ตตาล็อก Thai-Yazaki (สาย 60227 IEC 01 THW ตาม มอก.11 เล่ม 3-2553 และสาย VAF ตาม มอก.11 เล่ม 101-2559) น้ำหนักเป็นค่าประมาณ ขนาดมีพิกัดความคลาดเคลื่อน ผู้ผลิตรายอื่นต่างกันเล็กน้อย',
+                'กระแสในอากาศและในท่อเป็นของสายนี้ที่ 40°C ตรงกับตารางใน wire_breaker ยังไม่รวมตัวคูณลดพิกัด ต้องให้ช่างไฟตรวจก่อนติดตั้งจริง',
+                'ถ้าซื้อสายขนาด 50 ตร.มม. ขึ้นไปที่ขายเป็นดรัม ผู้ขายมักตัดขายตามเมตร ให้ตรวจกับร้านก่อน'
+            ])}
         </div>
     `;
 
     attachFieldClickListeners(container);
+    bindAdvancedDetailsListeners(container);
 
     container.querySelectorAll('[data-wire-data-type]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -2892,6 +3168,18 @@ function renderSolarRooftopTool(container) {
         resultHTML = `<div class="themed-subcard p-3 text-xs font-semibold" role="alert">${reasons[calc.reason] || 'กรอกข้อมูลให้ครบ'}</div>`;
     }
 
+    const solarAdvOpen = appState.activeFieldIndex >= 2;
+    const solarAdvHint = `${formatNum(numberOrDefault(st.costPerKwp, 35000), 0)} บ./kWp · ขายคืน ${st.exportRate || '2.2'} บ. · ${Number(st.contractYears) === 20 ? 20 : 10} ปี`;
+    const solarAdvBody = `
+            <div class="flex flex-col gap-1.5">
+                ${createKeypadFieldHTML(2, 'ราคาติดตั้งต่อ kWp', st.costPerKwp, 'บาท', '35,000')}
+                ${createKeypadFieldHTML(3, 'ราคารับซื้อไฟส่วนเกิน', st.exportRate, 'บาท/หน่วย', '2.20')}
+            </div>
+            <div class="segment-group grid-cols-2" role="group" aria-label="ระยะสัญญารับซื้อ">
+                ${yearBtn(10)}
+                ${yearBtn(20)}
+            </div>`;
+
     container.innerHTML = `
         <div class="solar-rooftop-tool flex flex-col gap-3 p-1">
             <div class="flex flex-col gap-1.5">
@@ -2902,26 +3190,20 @@ function renderSolarRooftopTool(container) {
                 <div class="font-semibold text-[var(--app-ink)]">สัดส่วนการใช้ไฟช่วงกลางวัน (09:00 - 16:00 น.)</div>
                 <div class="grid grid-cols-1 gap-2">${pctChips}</div>
             </div>
-            <div class="flex flex-col gap-1.5">
-                ${createKeypadFieldHTML(2, 'ราคาติดตั้งต่อ kWp', st.costPerKwp, 'บาท', '35,000')}
-                ${createKeypadFieldHTML(3, 'ราคารับซื้อไฟส่วนเกิน', st.exportRate, 'บาท/หน่วย', '2.20')}
-            </div>
-            <div class="segment-group grid-cols-2" role="group" aria-label="ระยะสัญญารับซื้อ">
-                ${yearBtn(10)}
-                ${yearBtn(20)}
-            </div>
+            ${renderAdvancedDetailsHTML('solar_adv', 'ตั้งค่าขั้นสูง (ราคาติดตั้ง, ราคารับซื้อไฟคืน, สัญญา)', solarAdvHint, solarAdvBody, solarAdvOpen)}
             ${resultHTML}
-            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1" role="note">
-                <div class="font-semibold text-[var(--app-ink)]">ค่าที่ยังไม่ยืนยัน ตรวจก่อนตัดสินใจ</div>
-                <div>${SOLAR_POLICY_NOTE}</div>
-                <div>ใช้ชั่วโมงแดด ${SOLAR_PSH} ชม./วัน และ PR ${SOLAR_PR} (ค่าประมาณจากช่วง 4.0 - 4.5 ชม. และ 0.75 - 0.80) กำลังผลิตลดลงปีละ ${SOLAR_DEGRADATION * 100}% ไม่คิดค่าบำรุงรักษา ค่าเปลี่ยนอินเวอร์เตอร์ และการปรับค่าไฟในอนาคต</div>
-                <div>ราคาติดตั้งต่อ kWp ปรับได้ ค่าเริ่มต้น 35,000 บาท อยู่กลางช่วงราคาตลาดบ้านที่พบ ราว 26,000 - 50,000 บาท/kWp ยังไม่รวมเงินสนับสนุนของรัฐ ซึ่งยังไม่ยืนยัน</div>
-                <div>คิดประหยัดจากค่าไฟเฉลี่ย (ค่าไฟ/หน่วย) ซึ่งต่ำกว่าอัตราขั้นบันไดหน่วยสุดท้ายจริง จึงค่อนข้างระมัดระวัง ให้ผู้ติดตั้งที่ได้รับอนุญาตสำรวจหลังคาและขอแบบก่อนติดตั้งจริง</div>
-            </div>
+            ${renderMethodNoteDetailsHTML('solar_note', 'ค่าประมาณ · ตรวจนโยบาย กกพ.', [
+                '<strong class="text-[var(--app-ink)]">ค่าที่ยังไม่ยืนยัน ตรวจก่อนตัดสินใจ</strong>',
+                SOLAR_POLICY_NOTE,
+                `ใช้ชั่วโมงแดด ${SOLAR_PSH} ชม./วัน และ PR ${SOLAR_PR} (ค่าประมาณจากช่วง 4.0 - 4.5 ชม. และ 0.75 - 0.80) กำลังผลิตลดลงปีละ ${SOLAR_DEGRADATION * 100}% ไม่คิดค่าบำรุงรักษา ค่าเปลี่ยนอินเวอร์เตอร์ และการปรับค่าไฟในอนาคต`,
+                'ราคาติดตั้งต่อ kWp ปรับได้ ค่าเริ่มต้น 35,000 บาท อยู่กลางช่วงราคาตลาดบ้านที่พบ ราว 26,000 - 50,000 บาท/kWp ยังไม่รวมเงินสนับสนุนของรัฐ ซึ่งยังไม่ยืนยัน',
+                'คิดประหยัดจากค่าไฟเฉลี่ย (ค่าไฟ/หน่วย) ซึ่งต่ำกว่าอัตราขั้นบันไดหน่วยสุดท้ายจริง จึงค่อนข้างระมัดระวัง ให้ผู้ติดตั้งที่ได้รับอนุญาตสำรวจหลังคาและขอแบบก่อนติดตั้งจริง'
+            ])}
         </div>
     `;
 
     attachFieldClickListeners(container);
+    bindAdvancedDetailsListeners(container);
 
     container.querySelectorAll('[data-solar-pct]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -3072,10 +3354,10 @@ function renderSlopeStairTool(container) {
                 ${createKeypadFieldHTML(1, 'ความกว้างสุทธิของบันได (ไม่บังคับ)', st.clearWidthCm, 'ซม.', 'เช่น 90')}
             </div>
             ${resultHTML}
-            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1" role="note">
-                <div>เกณฑ์บันไดอ่านจากข้อความกฎกระทรวง ฉบับที่ 55 (พ.ศ. 2543) ข้อ 23 - 26 ข้อ 24 กรณีพื้นที่ชั้นเหนือขึ้นไปรวมกันเกิน 300 ตร.ม. ต้องกว้างไม่น้อยกว่า 150 ซม. หรือมีสองบันได และอาคารชุมนุมคนมีเกณฑ์เพิ่ม ต้องตรวจกับข้อความฉบับเต็ม</div>
-                <div>2R + T อยู่ระหว่าง ${STAIR_COMFORT_MIN_CM} - ${STAIR_COMFORT_MAX_CM} ซม. เป็นแนวปฏิบัติด้านความสบายในการก้าวเดิน ไม่ใช่ข้อบังคับ บันไดโค้งเกิน 90 องศา ลูกนอนเฉลี่ยต้องไม่น้อยกว่าเกณฑ์เดิมและอาจไม่ต้องมีชานพัก (ข้อ 26) ราวบันไดและเกณฑ์อื่นไม่ได้คำนวณ ต้องให้ผู้ออกแบบตรวจ</div>
-            </div>`;
+            ${renderMethodNoteDetailsHTML('slope_stair_note', 'กฎกระทรวง ฉบับที่ 55 (ข้อ 23-26)', [
+                'เกณฑ์บันไดอ่านจากข้อความกฎกระทรวง ฉบับที่ 55 (พ.ศ. 2543) ข้อ 23 - 26 ข้อ 24 กรณีพื้นที่ชั้นเหนือขึ้นไปรวมกันเกิน 300 ตร.ม. ต้องกว้างไม่น้อยกว่า 150 ซม. หรือมีสองบันได และอาคารชุมนุมคนมีเกณฑ์เพิ่ม ต้องตรวจกับข้อความฉบับเต็ม',
+                `2R + T อยู่ระหว่าง ${STAIR_COMFORT_MIN_CM} - ${STAIR_COMFORT_MAX_CM} ซม. เป็นแนวปฏิบัติด้านความสบายในการก้าวเดิน ไม่ใช่ข้อบังคับ บันไดโค้งเกิน 90 องศา ลูกนอนเฉลี่ยต้องไม่น้อยกว่าเกณฑ์เดิมและอาจไม่ต้องมีชานพัก (ข้อ 26) ราวบันไดและเกณฑ์อื่นไม่ได้คำนวณ ต้องให้ผู้ออกแบบตรวจ`
+            ])}`;
     } else {
         const calc = calculatePipeSlope(st);
         const presetChips = SLOPE_PIPE_PRESETS.map(p => `<button type="button" class="tool-chip-btn slope-pipe-chip ${Number(st.pipeRatio) === p.ratio ? 'active font-bold' : ''}" aria-pressed="${Number(st.pipeRatio) === p.ratio}" data-slope-ratio="${p.ratio}" style="min-height: 44px;">${p.label}</button>`).join('');
@@ -3108,11 +3390,11 @@ function renderSlopeStairTool(container) {
                 ${createKeypadFieldHTML(1, 'ความลาดเอียง 1 : N (N =)', st.pipeRatio, '', 'เช่น 100')}
             </div>
             ${resultHTML}
-            <div class="themed-subcard p-3 text-[11px] text-[var(--app-muted)] space-y-1" role="note">
-                <div class="font-semibold text-[var(--app-ink)]">ค่าความลาดยังไม่ยืนยัน</div>
-                <div>อัตรา 1 : 50, 1 : 100 และ 1 : 200 เป็นแนวปฏิบัติของงานท่อระบายน้ำที่พบทั่วไป ยังไม่ได้ตรวจกับข้อกำหนดทางกฎหมายหรือมาตรฐานท่อ ขนาดท่อและโครงการเฉพาะอาจกำหนดต่างกัน ให้ตรวจกับผู้ออกแบบหรือหน่วยงานที่เกี่ยวข้อง</div>
-                <div>สูตรคำนวณคือความยาวท่อ x (1 / N) เป็นเรขาคณิตล้วน</div>
-            </div>`;
+            ${renderMethodNoteDetailsHTML('slope_pipe_note', 'แนวปฏิบัติทั่วไป · ตรวจตามแบบท่อ', [
+                '<strong class="text-[var(--app-ink)]">ค่าความลาดยังไม่ยืนยัน</strong>',
+                'อัตรา 1 : 50, 1 : 100 และ 1 : 200 เป็นแนวปฏิบัติของงานท่อระบายน้ำที่พบทั่วไป ยังไม่ได้ตรวจกับข้อกำหนดทางกฎหมายหรือมาตรฐานท่อ ขนาดท่อและโครงการเฉพาะอาจกำหนดต่างกัน ให้ตรวจกับผู้ออกแบบหรือหน่วยงานที่เกี่ยวข้อง',
+                'สูตรคำนวณคือความยาวท่อ x (1 / N) เป็นเรขาคณิตล้วน'
+            ])}`;
     }
 
     container.innerHTML = `
@@ -3126,6 +3408,7 @@ function renderSlopeStairTool(container) {
     `;
 
     attachFieldClickListeners(container);
+    bindAdvancedDetailsListeners(container);
 
     container.querySelectorAll('[data-slope-mode]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -3211,6 +3494,12 @@ function renderSlopeStairTool(container) {
         splitRaiNganWa,
         calculateShape,
         renderShapeTool,
+        buildShapeHandoff,
+        applyShapeToCeilingHandoff,
+        applyShapeToLandFillHandoff,
+        buildWireBreakerHandoff,
+        applyWireToConduitHandoff,
+        applyWireToWireDataHandoff,
         INCH_MM,
         INCH_DENOMINATORS,
         inchesToFraction,

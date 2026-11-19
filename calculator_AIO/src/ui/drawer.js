@@ -2,6 +2,48 @@
 // Multitools Calculator - Drawer, Tool Menu & Search
 // ==============================================================
 
+var RECENT_TOOLS_STORAGE_KEY = 'calc_pwa_recent_tools';
+var RECENT_TOOLS_LIMIT = 6;
+var sidebarExpandedGroups = null;
+
+function getRecentToolIds() {
+    if (typeof localStorage === 'undefined') return [];
+    try {
+        const parsed = JSON.parse(localStorage.getItem(RECENT_TOOLS_STORAGE_KEY) || '[]');
+        if (!Array.isArray(parsed)) return [];
+        const validIds = new Set(TOOLS_CATALOG.map(t => t.id));
+        return parsed.filter(id => validIds.has(id)).slice(0, RECENT_TOOLS_LIMIT);
+    } catch (e) {
+        return [];
+    }
+}
+
+function recordRecentTool(toolId) {
+    if (!toolId || typeof localStorage === 'undefined') return [];
+    if (!TOOLS_CATALOG.some(t => t.id === toolId)) return getRecentToolIds();
+    const next = [toolId, ...getRecentToolIds().filter(id => id !== toolId)].slice(0, RECENT_TOOLS_LIMIT);
+    try {
+        localStorage.setItem(RECENT_TOOLS_STORAGE_KEY, JSON.stringify(next));
+    } catch (e) {}
+    return next;
+}
+
+function getRecentTools(limit = RECENT_TOOLS_LIMIT) {
+    return getRecentToolIds()
+        .map(id => TOOLS_CATALOG.find(t => t.id === id))
+        .filter(Boolean)
+        .slice(0, limit);
+}
+
+function ensureSidebarExpandedGroups() {
+    if (!sidebarExpandedGroups) {
+        sidebarExpandedGroups = new Set();
+        const activeTool = TOOLS_CATALOG.find(t => t.id === appState.activeToolId);
+        if (activeTool?.group) sidebarExpandedGroups.add(activeTool.group);
+    }
+    return sidebarExpandedGroups;
+}
+
 
 /**************************************************************
  * 4. SIDEBAR MENU RENDERING & NAVIGATION
@@ -20,6 +62,8 @@ function closeSidebar() {
 
 function renderSidebarMenu() {
     if (typeof document === 'undefined' || typeof document.createElement !== 'function') return;
+    const recentSection = document.getElementById('sidebarRecentSection');
+    const recentContainer = document.getElementById('sidebarRecentList');
     const favSection = document.getElementById('sidebarFavSection');
     const favContainer = document.getElementById('sidebarFavList');
     const categoriesContainer = document.getElementById('sidebarCategoriesContainer');
@@ -62,6 +106,7 @@ function renderSidebarMenu() {
         return btn;
     }
 
+    if (recentContainer) recentContainer.innerHTML = '';
     if (favContainer) favContainer.innerHTML = '';
     if (allContainer) allContainer.innerHTML = '';
     if (categoriesContainer) categoriesContainer.innerHTML = '';
@@ -70,6 +115,7 @@ function renderSidebarMenu() {
     if (query) {
         // Search Mode
         if (searchClearBtn) searchClearBtn?.classList?.remove('hidden');
+        if (recentSection) recentSection?.classList?.add('hidden');
         if (favSection) favSection?.classList?.add('hidden');
         if (categoriesContainer) categoriesContainer?.classList?.add('hidden');
         if (searchResults) searchResults?.classList?.remove('hidden');
@@ -89,11 +135,19 @@ function renderSidebarMenu() {
     } else {
         // Normal Categorized Mode
         if (searchClearBtn) searchClearBtn?.classList?.add('hidden');
-        if (favSection) favSection?.classList?.remove('hidden');
         if (categoriesContainer) categoriesContainer?.classList?.remove('hidden');
         if (searchResults) searchResults?.classList?.add('hidden');
 
-        // 1. Render Pinned Favorites
+        // 0. Render Recent Tools (up to 4 in sidebar for fast switching)
+        const recentTools = getRecentTools(4);
+        if (recentTools.length > 0 && recentContainer) {
+            recentTools.forEach(tool => recentContainer.appendChild(createToolButton(tool)));
+            recentSection?.classList?.remove('hidden');
+        } else {
+            recentSection?.classList?.add('hidden');
+        }
+
+        // 1. Render Pinned Favorites (collapsible accordion, collapsed when > 6 if user toggles)
         const favTools = TOOLS_CATALOG.filter(tool => pinned.includes(tool.id));
         if (favTools.length > 0) {
             favTools.forEach(tool => favContainer?.appendChild(createToolButton(tool)));
@@ -102,22 +156,44 @@ function renderSidebarMenu() {
             favSection?.classList?.add('hidden');
         }
 
-        // 2. Render 5 Job-based Categories
+        // 2. Render Job-based Categories as Accordions
         if (categoriesContainer) {
+            const expanded = ensureSidebarExpandedGroups();
             TOOL_GROUPS.forEach(group => {
                 const groupTools = TOOLS_CATALOG.filter(tool => tool.group === group.id);
                 if (!groupTools.length) return;
 
-                const header = document.createElement('div');
-                header.className = 'sidebar-category-header mt-2';
-                header.textContent = group.name;
-                categoriesContainer.appendChild(header);
+                const isOpen = expanded.has(group.id);
+                const listId = `sidebar-group-${group.id}`;
+
+                const headerBtn = document.createElement('button');
+                headerBtn.type = 'button';
+                headerBtn.className = 'sidebar-category-header sidebar-group-toggle';
+                headerBtn.setAttribute('aria-expanded', String(isOpen));
+                headerBtn.setAttribute('aria-controls', listId);
+                headerBtn.dataset.groupToggle = group.id;
+                headerBtn.innerHTML = `<span>${escapeHTML(group.name)} <span class="font-normal opacity-75">(${groupTools.length})</span></span><span class="sidebar-group-chevron" aria-hidden="true">›</span>`;
 
                 const list = document.createElement('div');
+                list.id = listId;
+                if (!isOpen) list.classList.add('hidden');
                 groupTools.forEach(tool => {
                     const btn = createToolButton(tool);
                     list.appendChild(btn);
                 });
+
+                headerBtn.addEventListener('click', () => {
+                    if (expanded.has(group.id)) {
+                        expanded.delete(group.id);
+                    } else {
+                        expanded.add(group.id);
+                    }
+                    const nowOpen = expanded.has(group.id);
+                    headerBtn.setAttribute('aria-expanded', String(nowOpen));
+                    list.classList.toggle('hidden', !nowOpen);
+                });
+
+                categoriesContainer.appendChild(headerBtn);
                 categoriesContainer.appendChild(list);
             });
         }
@@ -128,6 +204,9 @@ function selectTool(toolId) {
     if (toolId === 'loan' && appState.loan) appState.loan.tab = 'amortization';
     appState.activeToolId = toolId;
     appState.activeFieldIndex = 0;
+    recordRecentTool(toolId);
+    const activeTool = TOOLS_CATALOG.find(t => t.id === toolId);
+    if (activeTool?.group) ensureSidebarExpandedGroups().add(activeTool.group);
     renderSidebarMenu();
     renderActiveTool();
 }
@@ -163,6 +242,8 @@ function openEntryOverlay() {
 function renderEntryHome() {
     const query = (document.getElementById('entrySearchInput')?.value || '').trim().toLowerCase();
     const results = document.getElementById('entrySearchResults');
+    const recentSection = document.getElementById('entryRecentSection');
+    const recentList = document.getElementById('entryRecentList');
     const favSection = document.getElementById('entryFavSection');
     const favList = document.getElementById('entryFavList');
     if (!results || !favSection || !favList) return;
@@ -186,6 +267,7 @@ function renderEntryHome() {
         });
         results.innerHTML = '';
         results.classList.remove('hidden');
+        recentSection?.classList.add('hidden');
         favSection.classList.add('hidden');
         document.getElementById('entrySavedSection')?.classList.add('hidden');
         if (matches.length === 0) {
@@ -194,6 +276,13 @@ function renderEntryHome() {
             matches.forEach(tool => results.appendChild(makeButton(tool, 'w-full text-left p-3 min-h-[44px] rounded-xl border border-[var(--color-hairline-soft)] bg-[var(--color-surface-soft)] font-semibold text-[var(--color-ink)] hover:border-[var(--app-accent)]')));
         }
         return;
+    }
+
+    if (recentSection && recentList) {
+        const recent = getRecentTools(6);
+        recentList.innerHTML = '';
+        recentSection.classList.toggle('hidden', recent.length === 0);
+        recent.forEach(tool => recentList.appendChild(makeButton(tool, 'text-left p-3 min-h-[44px] rounded-xl border border-[var(--color-hairline-soft)] bg-[var(--color-surface-soft)] text-sm font-semibold text-[var(--color-ink)] hover:border-[var(--app-accent)]')));
     }
 
     const savedSection = document.getElementById('entrySavedSection');
@@ -818,6 +907,9 @@ if (typeof document !== 'undefined') {
         closeSidebar,
         renderSidebarMenu,
         selectTool,
+        getRecentToolIds,
+        recordRecentTool,
+        getRecentTools,
         getToolSummaryText,
         copyCurrentToolSummary
     };

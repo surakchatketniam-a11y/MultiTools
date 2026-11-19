@@ -219,9 +219,14 @@ function handleSharedKeyInput(key) {
     const clearSnapshot = key === 'CLEAR' ? captureToolSnapshot() : null;
     if (key === 'PREV' || key === 'NEXT') {
         const direction = key === 'NEXT' ? 1 : -1;
-        inputs[(inputs.indexOf(input) + direction + inputs.length) % inputs.length].focus();
+        const target = inputs[(inputs.indexOf(input) + direction + inputs.length) % inputs.length];
+        const parentDetails = target?.closest?.('details');
+        if (parentDetails && !parentDetails.open) parentDetails.open = true;
+        target.focus();
         return;
     }
+    const parentDetails = input?.closest?.('details');
+    if (parentDetails && !parentDetails.open) parentDetails.open = true;
     const selection = input.dataset.visited ? [input.selectionStart, input.selectionEnd] : [input.value.length, input.value.length];
     input.focus();
     input.setSelectionRange(...selection);
