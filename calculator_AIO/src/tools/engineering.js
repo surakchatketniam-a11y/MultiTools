@@ -3139,7 +3139,13 @@ function renderSolarRooftopTool(container) {
         if (calc.warnings.includes('over_export_limit')) warnHTML += `<div>ขนาดระบบเกิน ${SOLAR_EXPORT_LIMIT_KW} kW ร่างประกาศ กกพ. จำกัดการเสนอขายไม่เกิน ${SOLAR_EXPORT_LIMIT_KW} kW ต่อมิเตอร์ (ยังไม่ยืนยัน) รายได้ขายไฟอาจน้อยกว่าที่แสดง</div>`;
         if (calc.warnings.includes('inverter_out_of_range')) warnHTML += '<div>ขนาดเกิน 15 kW ควรปรึกษาผู้ออกแบบและการไฟฟ้า</div>';
         if (calc.warnings.includes('no_payback')) warnHTML += `<div>ไม่คืนทุนภายใน ${SOLAR_LIFETIME_YEARS} ปีตามข้อมูลที่กรอก</div>`;
-        const payback = calc.paybackYears === null ? 'ไม่คืนทุนใน 25 ปี' : `${formatNum(Math.floor(calc.paybackYears), 0)} ปี ${formatNum(Math.round((calc.paybackYears % 1) * 12), 0)} เดือน`;
+        let payback = 'ไม่คืนทุนใน 25 ปี';
+        if (calc.paybackYears !== null) {
+            const totalMonths = Math.round(calc.paybackYears * 12);
+            const paybackY = Math.floor(totalMonths / 12);
+            const paybackM = totalMonths % 12;
+            payback = `${formatNum(paybackY, 0)} ปี ${formatNum(paybackM, 0)} เดือน`;
+        }
         resultHTML = `
             <div class="themed-result-card p-4 space-y-3">
                 <div class="text-xs text-[var(--app-muted)] font-medium">ขนาดระบบที่แนะนำ</div>

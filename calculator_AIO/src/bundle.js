@@ -9425,6 +9425,30 @@ function renderConstructionTool(container) {
         }
     }
 
+    // Helper to update status banner for construction calculator
+    function updateConstructionStatusBanner(curCalc) {
+        if (tab === 'tiles') {
+            if (curCalc.areaSqm > 0) {
+                setStatusBanner('success', `สั่งกระเบื้อง <span class="text-lg text-[var(--app-accent)] underline">${curCalc.boxesNeeded} กล่อง</span><span class="text-xs font-normal opacity-80 block mt-1">พื้นที่ ${formatNum(curCalc.areaSqm, 2)} ตร.ม. · ปูนกาว ${curCalc.adhesiveBags} ถุง · งบรวม ฿${formatMoney(curCalc.costs.totalEstimatedBudget)}</span>`);
+            } else {
+                setStatusBanner('empty', 'กรุณาป้อนความกว้างและความยาวพื้นที่ปูกระเบื้อง');
+            }
+        } else if (tab === 'paint') {
+            if (curCalc.wallAreaSqm > 0) {
+                const topText = `${curCalc.topcoat.pail5Gal > 0 ? `${curCalc.topcoat.pail5Gal} ถังใหญ่` : ''}${curCalc.topcoat.can1Gal > 0 ? ` ${curCalc.topcoat.can1Gal} แกลลอน` : ''}`.trim() || '0 แกลลอน';
+                setStatusBanner('success', `สีทับหน้า <span class="text-lg text-[var(--app-accent)] underline">${topText}</span><span class="text-xs font-normal opacity-80 block mt-1">ผนัง ${formatNum(curCalc.wallAreaSqm, 2)} ตร.ม. (${curCalc.topcoat.coats} เที่ยว) · งบรวม ฿${formatMoney(curCalc.costs.totalEstimatedBudget)}</span>`);
+            } else {
+                setStatusBanner('empty', 'กรุณาป้อนความยาวรอบห้องและความสูงผนัง');
+            }
+        } else {
+            if (curCalc.slabAreaSqm > 0) {
+                setStatusBanner('success', `สั่งคอนกรีต <span class="text-lg text-[var(--app-accent)] underline">${curCalc.readyMixOrderCubicM} คิว</span><span class="text-xs font-normal opacity-80 block mt-1">พื้น ${formatNum(curCalc.slabAreaSqm, 2)} ตร.ม. (หนา ${curCalc.slabThicknessCm} ซม.) · งบรวม ฿${formatMoney(curCalc.costs.totalEstimatedBudget)}</span>`);
+            } else {
+                setStatusBanner('empty', 'กรุณาป้อนขนาดพื้นที่และความหนาคอนกรีต');
+            }
+        }
+    }
+
     // Helper to update DOM live without tearing down buttons
     function updateConstructionDOM() {
         const curCalc = calculateConstructionMaterials(st);
@@ -9468,7 +9492,10 @@ function renderConstructionTool(container) {
             const budgetEl = document.getElementById('concreteTotalBudgetDisplay');
             if (budgetEl) budgetEl.textContent = `฿${formatMoney(curCalc.costs.totalEstimatedBudget)}`;
         }
+        updateConstructionStatusBanner(curCalc);
     }
+
+    updateConstructionStatusBanner(calc);
 }
 
 (function(root) {
@@ -21955,7 +21982,13 @@ function renderSolarRooftopTool(container) {
         if (calc.warnings.includes('over_export_limit')) warnHTML += `<div>ขนาดระบบเกิน ${SOLAR_EXPORT_LIMIT_KW} kW ร่างประกาศ กกพ. จำกัดการเสนอขายไม่เกิน ${SOLAR_EXPORT_LIMIT_KW} kW ต่อมิเตอร์ (ยังไม่ยืนยัน) รายได้ขายไฟอาจน้อยกว่าที่แสดง</div>`;
         if (calc.warnings.includes('inverter_out_of_range')) warnHTML += '<div>ขนาดเกิน 15 kW ควรปรึกษาผู้ออกแบบและการไฟฟ้า</div>';
         if (calc.warnings.includes('no_payback')) warnHTML += `<div>ไม่คืนทุนภายใน ${SOLAR_LIFETIME_YEARS} ปีตามข้อมูลที่กรอก</div>`;
-        const payback = calc.paybackYears === null ? 'ไม่คืนทุนใน 25 ปี' : `${formatNum(Math.floor(calc.paybackYears), 0)} ปี ${formatNum(Math.round((calc.paybackYears % 1) * 12), 0)} เดือน`;
+        let payback = 'ไม่คืนทุนใน 25 ปี';
+        if (calc.paybackYears !== null) {
+            const totalMonths = Math.round(calc.paybackYears * 12);
+            const paybackY = Math.floor(totalMonths / 12);
+            const paybackM = totalMonths % 12;
+            payback = `${formatNum(paybackY, 0)} ปี ${formatNum(paybackM, 0)} เดือน`;
+        }
         resultHTML = `
             <div class="themed-result-card p-4 space-y-3">
                 <div class="text-xs text-[var(--app-muted)] font-medium">ขนาดระบบที่แนะนำ</div>

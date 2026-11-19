@@ -1907,6 +1907,30 @@ function renderConstructionTool(container) {
         }
     }
 
+    // Helper to update status banner for construction calculator
+    function updateConstructionStatusBanner(curCalc) {
+        if (tab === 'tiles') {
+            if (curCalc.areaSqm > 0) {
+                setStatusBanner('success', `สั่งกระเบื้อง <span class="text-lg text-[var(--app-accent)] underline">${curCalc.boxesNeeded} กล่อง</span><span class="text-xs font-normal opacity-80 block mt-1">พื้นที่ ${formatNum(curCalc.areaSqm, 2)} ตร.ม. · ปูนกาว ${curCalc.adhesiveBags} ถุง · งบรวม ฿${formatMoney(curCalc.costs.totalEstimatedBudget)}</span>`);
+            } else {
+                setStatusBanner('empty', 'กรุณาป้อนความกว้างและความยาวพื้นที่ปูกระเบื้อง');
+            }
+        } else if (tab === 'paint') {
+            if (curCalc.wallAreaSqm > 0) {
+                const topText = `${curCalc.topcoat.pail5Gal > 0 ? `${curCalc.topcoat.pail5Gal} ถังใหญ่` : ''}${curCalc.topcoat.can1Gal > 0 ? ` ${curCalc.topcoat.can1Gal} แกลลอน` : ''}`.trim() || '0 แกลลอน';
+                setStatusBanner('success', `สีทับหน้า <span class="text-lg text-[var(--app-accent)] underline">${topText}</span><span class="text-xs font-normal opacity-80 block mt-1">ผนัง ${formatNum(curCalc.wallAreaSqm, 2)} ตร.ม. (${curCalc.topcoat.coats} เที่ยว) · งบรวม ฿${formatMoney(curCalc.costs.totalEstimatedBudget)}</span>`);
+            } else {
+                setStatusBanner('empty', 'กรุณาป้อนความยาวรอบห้องและความสูงผนัง');
+            }
+        } else {
+            if (curCalc.slabAreaSqm > 0) {
+                setStatusBanner('success', `สั่งคอนกรีต <span class="text-lg text-[var(--app-accent)] underline">${curCalc.readyMixOrderCubicM} คิว</span><span class="text-xs font-normal opacity-80 block mt-1">พื้น ${formatNum(curCalc.slabAreaSqm, 2)} ตร.ม. (หนา ${curCalc.slabThicknessCm} ซม.) · งบรวม ฿${formatMoney(curCalc.costs.totalEstimatedBudget)}</span>`);
+            } else {
+                setStatusBanner('empty', 'กรุณาป้อนขนาดพื้นที่และความหนาคอนกรีต');
+            }
+        }
+    }
+
     // Helper to update DOM live without tearing down buttons
     function updateConstructionDOM() {
         const curCalc = calculateConstructionMaterials(st);
@@ -1950,7 +1974,10 @@ function renderConstructionTool(container) {
             const budgetEl = document.getElementById('concreteTotalBudgetDisplay');
             if (budgetEl) budgetEl.textContent = `฿${formatMoney(curCalc.costs.totalEstimatedBudget)}`;
         }
+        updateConstructionStatusBanner(curCalc);
     }
+
+    updateConstructionStatusBanner(calc);
 }
 
 (function(root) {
