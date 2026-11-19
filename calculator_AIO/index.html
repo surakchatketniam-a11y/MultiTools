@@ -2,7 +2,7 @@
 <html lang="th" data-theme="airbnb">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta id="metaThemeColor" name="theme-color" content="#ffffff">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -22,6 +22,8 @@
             if (path && !path.endsWith('/') && !/\.[a-zA-Z0-9]+$/.test(path)) {
                 loc.replace(path + '/' + loc.search + loc.hash);
             }
+            // Prevent iOS Safari pinch-zoom gesture in PWA
+            document.addEventListener('gesturestart', function(e) { e.preventDefault(); }, { passive: false });
         })();
     </script>
     
@@ -281,6 +283,10 @@
             -webkit-user-select: none;
             letter-spacing: 0 !important; /* Strict Thai Typography rule: zero letter-spacing */
             font-style: normal;
+        }
+
+        html, body, button, a, input, select, textarea, [role="button"] {
+            touch-action: manipulation;
         }
 
         input, select {
@@ -1954,7 +1960,7 @@
     <div id="printFormalReceipt" class="hidden"></div>
 
     <!-- Unified Modular Application Bundle (Includes all 19 modular engines and UI components) -->
-    <script src="src/bundle.js?v=93"></script>
+    <script src="src/bundle.js?v=94"></script>
 
     <script>
         function getSafeDateStr(offsetDays = 0) {

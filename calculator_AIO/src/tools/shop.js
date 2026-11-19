@@ -78,10 +78,33 @@ function renderUnitPriceTool(container) {
                 L:    { key: 'L',    label: 'L',    family: 'volume',  factor: 1,     baseUnit: 'ลิตร' }
             };
 
-            container.innerHTML = `<div class="text-xs text-[var(--app-muted)] px-1 pb-1">เคล็ดลับ: พิมพ์ <b>ราคา เว้นวรรค จำนวน</b> ในช่องราคา เช่น <b>864 50</b> ระบบจะแยกช่องให้อัตโนมัติ</div>`;
+            container.innerHTML = `
+                <div class="flex items-center justify-between gap-2 px-1 pb-1.5">
+                    <div class="text-xs text-[var(--app-muted)] leading-snug">เคล็ดลับ: พิมพ์ <b>ราคา เว้นวรรค จำนวน</b> ในช่องราคา เช่น <b>864 50</b> ระบบจะแยกช่องให้อัตโนมัติ</div>
+                    <button type="button" id="btnUnitPriceClearAll" class="tool-chip-btn shrink-0 px-3 text-xs font-semibold flex items-center gap-1" style="min-height: 36px;" title="ล้างข้อมูลทุกช่องในหน้านี้" aria-label="ล้างทุกช่อง">ล้างทั้งหมด</button>
+                </div>`;
+
+            const clearAllBtn = container.querySelector('#btnUnitPriceClearAll');
+            if (clearAllBtn) {
+                clearAllBtn.addEventListener('click', () => {
+                    if (typeof clearCurrentTool === 'function') {
+                        clearCurrentTool();
+                    } else {
+                        rows.forEach(r => { r.price = ''; r.qty = ''; r.unit = 'unit'; });
+                        appState.activeFieldIndex = 0;
+                        renderUnitPriceTool(container);
+                    }
+                });
+            }
 
             function refreshUnitPriceResults() {
                 persistAppState();
+                const hasAnyValue = rows.some(r => String(r.price ?? '').trim() !== '' || String(r.qty ?? '').trim() !== '' || (r.unit && r.unit !== 'unit'));
+                if (clearAllBtn) {
+                    clearAllBtn.disabled = !hasAnyValue;
+                    clearAllBtn.classList.toggle('opacity-45', !hasAnyValue);
+                    clearAllBtn.classList.toggle('cursor-not-allowed', !hasAnyValue);
+                }
                 let invalidCount = 0;
                 container.querySelectorAll('input[data-shared-field]').forEach(input => {
                     const fieldIndex = Number(input.dataset.sharedField);
